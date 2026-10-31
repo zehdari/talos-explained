@@ -1,0 +1,118 @@
+{
+ "cells": 5,
+ "marks": [
+  {
+   "id": "pf_suv",
+   "pack_v": 15.0,
+   "cell_v": 3.0,
+   "label": "Permanent failure",
+   "text": "Below 3.0 V per cell for 10 s the gas gauge locks the pack out for good. It then has to be opened up: a pack this flat is unsafe to charge.",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L422",
+   "line": "- Threshold: 3.0V (Absolute minimum according to maxamps spec sheet)"
+  },
+  {
+   "id": "cuv",
+   "pack_v": 16.0,
+   "cell_v": 3.2,
+   "label": "Empty: output off",
+   "text": "Cell undervoltage. At 3.2 V per cell (16 V for the pack, MaxAmps' recommended cutoff) the BMS turns the output off for 2 s or more. It recovers only after charging past 3.5 V per cell.",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L294",
+   "line": "- Hard stop discharge at 3.2V for 2 seconds"
+  },
+  {
+   "id": "td",
+   "pack_v": 17.5,
+   "cell_v": 3.5,
+   "label": "Swap alert",
+   "text": "Terminate-discharge alarm at 3.5 V per cell, MaxAmps' recommended landing voltage. The notes call it \"the alert for software to swap battery\".",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L389",
+   "line": "- Maxamps recommends landing voltage of 17.5V, so we'll set the alert for software to swap battery"
+  },
+  {
+   "id": "warn",
+   "pack_v": 18.5,
+   "cell_v": 3.7,
+   "label": "Diagnostics warning",
+   "text": "battery_volt.warn in diagnostic_thresholds.yaml. The diagnostics node is no longer run, but the pre-test checks reuse 18.5 V as the minimum bus voltage on batteries.",
+   "source": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/diagnostic_thresholds.yaml#L3",
+   "line": "warn: 18.5"
+  },
+  {
+   "id": "nominal",
+   "pack_v": 18.5,
+   "cell_v": 3.7,
+   "label": "Nominal",
+   "text": "Design voltage of the 5S pack: 3.7 V per cell. Capacity is quoted at this voltage: 8 Ah x 18.5 V = 148 Wh.",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L374",
+   "line": "- Design Voltage: 18.5V"
+  },
+  {
+   "id": "full",
+   "pack_v": 20.75,
+   "cell_v": 4.15,
+   "label": "Charged",
+   "text": "The notes give 4.15 V per cell as the charge voltage, a little under the 4.2 V maximum.",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L2",
+   "line": "Max Voltage to Charge (per cell): 4.15V"
+  },
+  {
+   "id": "cov",
+   "pack_v": 21.0,
+   "cell_v": 4.2,
+   "label": "Overvoltage",
+   "text": "Cell overvoltage protection at 4.2 V per cell (the cell datasheet maximum). Charging resumes only after the cells fall below 4.0 V.",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L301",
+   "line": "- Above 4.2V we'll overvoltage (according to battery datasheet)"
+  }
+ ],
+ "facts": {
+  "pack": {
+   "line": "Designed for MaxAmps 8000 mAh 5S2P 18.5V LiPo battery pack",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L4"
+  },
+  "capacity_wh": {
+   "line": "- Design Capacity: 148 Wh",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L373"
+  },
+  "discharge_oc": {
+   "line": "- Slower limit at 45A (fuse rating) for 5 seconds",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L311"
+  },
+  "discharge_peak": {
+   "line": "- Faster limit at 80A for 2 seconds (peak current draw)",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L312"
+  },
+  "charge_oc": {
+   "line": "- Max charge current @5A - limited by charging fuse on board",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L306"
+  },
+  "ot_discharge": {
+   "line": "- 60 degC discharge max @2s 55C recovery (max operating according to batt datasheet)",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L326"
+  },
+  "ot_charge": {
+   "line": "- 50 degC charging max @2s 45 degC recovery (datasheet doesn't give max charge)",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L324"
+  },
+  "ut": {
+   "line": "- 0C for 2s, 5C recovery [from datasheet]",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L329"
+  },
+  "zero_volt_charge": {
+   "line": "- Below 2.9V, we won't let the battery charge anymore",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L254"
+  },
+  "auto_ship": {
+   "line": "- We'll enter shutdown if the pack isn't touched for 1 week",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L504"
+  },
+  "fuse_off": {
+   "line": "- 0 No fuse right now (keeping off until we're done with robosub at least)",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L281"
+  },
+  "pf_rs24": {
+   "line": "- Once we know that PF won't accidentally fire on us (give it a few months after robosub 2024) **IT DID AT RS24**",
+   "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L10"
+  }
+ }
+}

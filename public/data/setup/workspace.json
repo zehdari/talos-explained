@@ -1,0 +1,739 @@
+{
+ "release_head": "8c6f5f2",
+ "submodules": [
+  {
+   "path": "src/riptide_autonomy",
+   "url": "https://github.com/osu-uwrt/riptide_autonomy",
+   "tracks": "ros2",
+   "pinned": "53b7ed3",
+   "local_branch": "autonomy-mapping"
+  },
+  {
+   "path": "src/riptide_control",
+   "url": "https://github.com/osu-uwrt/riptide_control",
+   "tracks": "master",
+   "pinned": "6cf3640",
+   "local_branch": "mpc"
+  },
+  {
+   "path": "src/riptide_core",
+   "url": "https://github.com/osu-uwrt/riptide_core",
+   "tracks": "master",
+   "pinned": "e822537",
+   "local_branch": "followpath-speed"
+  },
+  {
+   "path": "src/riptide_launch",
+   "url": "https://github.com/osu-uwrt/riptide_launch",
+   "tracks": "",
+   "pinned": "d37af14",
+   "local_branch": "newsim"
+  },
+  {
+   "path": "src/riptide_perception",
+   "url": "https://github.com/osu-uwrt/riptide_perception",
+   "tracks": "",
+   "pinned": "9668f34",
+   "local_branch": "mapping-estimator"
+  },
+  {
+   "path": "src/chameleon_tf",
+   "url": "https://github.com/coalman321/chameleon_tf",
+   "tracks": "",
+   "pinned": "f1d3e19",
+   "local_branch": "HEAD"
+  },
+  {
+   "path": "src/nortek_dvl",
+   "url": "https://github.com/osu-uwrt/nortek_dvl",
+   "tracks": "",
+   "pinned": "d7064fd",
+   "local_branch": "DvlWaterTrackFallback"
+  },
+  {
+   "path": "src/riptide_gui",
+   "url": "https://github.com/osu-uwrt/riptide_gui",
+   "tracks": "",
+   "pinned": "4cea428",
+   "local_branch": "newsim"
+  },
+  {
+   "path": "src/apriltag_msgs",
+   "url": "https://github.com/christianrauch/apriltag_msgs",
+   "tracks": "",
+   "pinned": "84bd66c",
+   "local_branch": "HEAD"
+  },
+  {
+   "path": "src/apriltag_ros",
+   "url": "https://github.com/christianrauch/apriltag_ros",
+   "tracks": "",
+   "pinned": "7b4060c",
+   "local_branch": "CompressedImages"
+  },
+  {
+   "path": "src/riptide_simulator",
+   "url": "https://github.com/osu-uwrt/riptide_simulator",
+   "tracks": "",
+   "pinned": "1fac40d",
+   "local_branch": "newsim"
+  },
+  {
+   "path": "src/opbox_software",
+   "url": "https://github.com/osu-uwrt/opbox_software",
+   "tracks": "",
+   "pinned": "8b11162",
+   "local_branch": "HEAD"
+  },
+  {
+   "path": "nereus",
+   "url": "https://github.com/osu-uwrt/nereus",
+   "tracks": "",
+   "pinned": "727ad13",
+   "local_branch": "main"
+  }
+ ],
+ "packages": [
+  {
+   "name": "apriltag_msgs",
+   "path": "src/apriltag_msgs",
+   "type": "ament_cmake",
+   "repo": "src/apriltag_msgs",
+   "order": 0,
+   "deploy_ignore": false,
+   "description": "AprilTag message definitions",
+   "deps": [],
+   "up_to": [
+    "apriltag_msgs"
+   ],
+   "above": [
+    "apriltag_msgs",
+    "apriltag_ros",
+    "camera_faker",
+    "riptide_bringup2"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "chameleon_tf_msgs",
+   "path": "src/chameleon_tf/chameleon_tf_msgs",
+   "type": "ament_cmake",
+   "repo": "src/chameleon_tf",
+   "order": 1,
+   "deploy_ignore": false,
+   "description": "messages package for the Chameleon transform publisher",
+   "deps": [],
+   "up_to": [
+    "chameleon_tf_msgs"
+   ],
+   "above": [
+    "camera_faker",
+    "chameleon_tf",
+    "chameleon_tf_msgs",
+    "riptide_autonomy2",
+    "riptide_bringup2",
+    "riptide_rviz"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "launch_msgs",
+   "path": "src/riptide_launch/launch_msgs",
+   "type": "ament_cmake",
+   "repo": "src/riptide_launch",
+   "order": 2,
+   "deploy_ignore": false,
+   "description": "TODO: Package description",
+   "deps": [],
+   "up_to": [
+    "launch_msgs"
+   ],
+   "above": [
+    "camera_faker",
+    "launch_msgs",
+    "riptide_bringup2",
+    "riptide_rviz"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "nortek_dvl_msgs",
+   "path": "src/nortek_dvl/nortek_dvl_msgs",
+   "type": "ament_cmake",
+   "repo": "src/nortek_dvl",
+   "order": 3,
+   "deploy_ignore": false,
+   "description": "TODO: Package description",
+   "deps": [],
+   "up_to": [
+    "nortek_dvl_msgs"
+   ],
+   "above": [
+    "camera_faker",
+    "nortek_dvl",
+    "nortek_dvl_msgs",
+    "riptide_autonomy2",
+    "riptide_bringup2",
+    "riptide_hardware2"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "remote_launch",
+   "path": "src/riptide_launch/remote_launch",
+   "type": "ament_python",
+   "repo": "src/riptide_launch",
+   "order": 4,
+   "deploy_ignore": false,
+   "description": "TODO: Package description",
+   "deps": [],
+   "up_to": [
+    "remote_launch"
+   ],
+   "above": [
+    "remote_launch"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_acoustics",
+   "path": "src/riptide_core/riptide_acoustics",
+   "type": "ament_cmake",
+   "repo": "src/riptide_core",
+   "order": 5,
+   "deploy_ignore": false,
+   "description": "TODO: Package description",
+   "deps": [],
+   "up_to": [
+    "riptide_acoustics"
+   ],
+   "above": [
+    "riptide_acoustics"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_descriptions2",
+   "path": "src/riptide_core/riptide_descriptions",
+   "type": "ament_cmake",
+   "repo": "src/riptide_core",
+   "order": 6,
+   "deploy_ignore": false,
+   "description": "The robot description files for UWRT vehicles",
+   "deps": [],
+   "up_to": [
+    "riptide_descriptions2"
+   ],
+   "above": [
+    "c_simulator",
+    "camera_faker",
+    "riptide_bringup2",
+    "riptide_descriptions2",
+    "riptide_mpc"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_mapping2",
+   "path": "src/riptide_perception/riptide_mapping",
+   "type": "ament_cmake",
+   "repo": "src/riptide_perception",
+   "order": 7,
+   "deploy_ignore": false,
+   "description": "Riptide's Mapping System.",
+   "deps": [],
+   "up_to": [
+    "riptide_mapping2"
+   ],
+   "above": [
+    "c_simulator",
+    "camera_faker",
+    "riptide_bringup2",
+    "riptide_mapping2"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_meshes",
+   "path": "src/riptide_gui/riptide_meshes",
+   "type": "ament_cmake",
+   "repo": "src/riptide_gui",
+   "order": 8,
+   "deploy_ignore": true,
+   "description": "TODO: Package description",
+   "deps": [],
+   "up_to": [
+    "riptide_meshes"
+   ],
+   "above": [
+    "camera_faker",
+    "riptide_bringup2",
+    "riptide_meshes",
+    "riptide_rviz"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_msgs2",
+   "path": "src/riptide_core/riptide_msgs",
+   "type": "ament_cmake",
+   "repo": "src/riptide_core",
+   "order": 9,
+   "deploy_ignore": false,
+   "description": "Custom messages for OSU's Riptide AUV.",
+   "deps": [],
+   "up_to": [
+    "riptide_msgs2"
+   ],
+   "above": [
+    "c_simulator",
+    "camera_faker",
+    "opbox_ros_client",
+    "riptide_autonomy2",
+    "riptide_bringup2",
+    "riptide_controllers2",
+    "riptide_gyro",
+    "riptide_hardware2",
+    "riptide_imu",
+    "riptide_motion_panel",
+    "riptide_mpc",
+    "riptide_msgs2",
+    "riptide_rviz"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "serial_library",
+   "path": "src/opbox_software/serial_library",
+   "type": "ament_cmake",
+   "repo": "src/opbox_software",
+   "order": 10,
+   "deploy_ignore": false,
+   "description": "Small communication library for synchronizing mapped values via custom farmes",
+   "deps": [],
+   "up_to": [
+    "serial_library"
+   ],
+   "above": [
+    "opbox_ros_client",
+    "opbox_software",
+    "serial_library"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "tensor_detector",
+   "path": "src/riptide_perception/tensor_detector",
+   "type": "ament_cmake",
+   "repo": "src/riptide_perception",
+   "order": 11,
+   "deploy_ignore": false,
+   "description": "The `Tensor Detector` package is part of the `riptide_perception` suite and contains a node designed for object detection and pose/orientation estimation. The node utilizes a YOLOv8 segmentation model to perform real-time detection and localization of objects using RGB and depth data from a ZED camera.",
+   "deps": [],
+   "up_to": [
+    "tensor_detector"
+   ],
+   "above": [
+    "tensor_detector"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "apriltag_ros",
+   "path": "src/apriltag_ros",
+   "type": "ament_cmake",
+   "repo": "src/apriltag_ros",
+   "order": 12,
+   "deploy_ignore": false,
+   "description": "AprilTag detection node",
+   "deps": [
+    "apriltag_msgs"
+   ],
+   "up_to": [
+    "apriltag_msgs",
+    "apriltag_ros"
+   ],
+   "above": [
+    "apriltag_ros",
+    "camera_faker",
+    "riptide_bringup2"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "c_simulator",
+   "path": "src/riptide_simulator/c_simulator",
+   "type": "ament_cmake",
+   "repo": "src/riptide_simulator",
+   "order": 13,
+   "deploy_ignore": false,
+   "description": "Fossen six-DOF AUV plant, deterministic actuator model, and ROS simulation interfaces.",
+   "deps": [
+    "riptide_descriptions2",
+    "riptide_mapping2",
+    "riptide_msgs2"
+   ],
+   "up_to": [
+    "c_simulator",
+    "riptide_descriptions2",
+    "riptide_mapping2",
+    "riptide_msgs2"
+   ],
+   "above": [
+    "c_simulator",
+    "camera_faker",
+    "riptide_bringup2"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "chameleon_tf",
+   "path": "src/chameleon_tf/chameleon_tf",
+   "type": "ament_cmake",
+   "repo": "src/chameleon_tf",
+   "order": 14,
+   "deploy_ignore": false,
+   "description": "A static TF than can monitor and mimick another transform",
+   "deps": [
+    "chameleon_tf_msgs"
+   ],
+   "up_to": [
+    "chameleon_tf",
+    "chameleon_tf_msgs"
+   ],
+   "above": [
+    "chameleon_tf"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "nortek_dvl",
+   "path": "src/nortek_dvl/nortek_dvl",
+   "type": "ament_cmake",
+   "repo": "src/nortek_dvl",
+   "order": 15,
+   "deploy_ignore": false,
+   "description": "nortek dvl1000 interface layer",
+   "deps": [
+    "nortek_dvl_msgs"
+   ],
+   "up_to": [
+    "nortek_dvl",
+    "nortek_dvl_msgs"
+   ],
+   "above": [
+    "camera_faker",
+    "nortek_dvl",
+    "riptide_bringup2",
+    "riptide_hardware2"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "opbox_software",
+   "path": "src/opbox_software/opbox_software",
+   "type": "ament_cmake",
+   "repo": "src/opbox_software",
+   "order": 16,
+   "deploy_ignore": false,
+   "description": "Opbox softare base libraries and HMI-side code",
+   "deps": [
+    "serial_library"
+   ],
+   "up_to": [
+    "opbox_software",
+    "serial_library"
+   ],
+   "above": [
+    "opbox_ros_client",
+    "opbox_software"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_autonomy2",
+   "path": "src/riptide_autonomy",
+   "type": "ament_cmake",
+   "repo": "src/riptide_autonomy",
+   "order": 17,
+   "deploy_ignore": false,
+   "description": "Package that contains all autonomous code that the robot runs",
+   "deps": [
+    "chameleon_tf_msgs",
+    "nortek_dvl_msgs",
+    "riptide_msgs2"
+   ],
+   "up_to": [
+    "chameleon_tf_msgs",
+    "nortek_dvl_msgs",
+    "riptide_autonomy2",
+    "riptide_msgs2"
+   ],
+   "above": [
+    "riptide_autonomy2"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_controllers2",
+   "path": "src/riptide_control/riptide_controllers",
+   "type": "ament_cmake",
+   "repo": "src/riptide_control",
+   "order": 18,
+   "deploy_ignore": false,
+   "description": "Package to store all code relating to the control of OSU's AUV.",
+   "deps": [
+    "riptide_msgs2"
+   ],
+   "up_to": [
+    "riptide_controllers2",
+    "riptide_msgs2"
+   ],
+   "above": [
+    "riptide_controllers2"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_gyro",
+   "path": "src/riptide_core/riptide_gyro",
+   "type": "ament_cmake",
+   "repo": "src/riptide_core",
+   "order": 19,
+   "deploy_ignore": false,
+   "description": "TODO: Package description",
+   "deps": [
+    "riptide_msgs2"
+   ],
+   "up_to": [
+    "riptide_gyro",
+    "riptide_msgs2"
+   ],
+   "above": [
+    "riptide_gyro"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_imu",
+   "path": "src/riptide_core/riptide_imu",
+   "type": "ament_cmake",
+   "repo": "src/riptide_core",
+   "order": 20,
+   "deploy_ignore": false,
+   "description": "TODO: Package description",
+   "deps": [
+    "riptide_msgs2"
+   ],
+   "up_to": [
+    "riptide_imu",
+    "riptide_msgs2"
+   ],
+   "above": [
+    "riptide_imu"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_motion_panel",
+   "path": "src/riptide_control/riptide_motion_panel",
+   "type": "ament_python",
+   "repo": "src/riptide_control",
+   "order": 21,
+   "deploy_ignore": false,
+   "description": "Phone motion panel: a web page served from the robot to enable, kill and drive it.",
+   "deps": [
+    "riptide_msgs2"
+   ],
+   "up_to": [
+    "riptide_motion_panel",
+    "riptide_msgs2"
+   ],
+   "above": [
+    "riptide_motion_panel"
+   ],
+   "at_pin": false
+  },
+  {
+   "name": "riptide_mpc",
+   "path": "src/riptide_control/riptide_mpc",
+   "type": "ament_cmake",
+   "repo": "src/riptide_control",
+   "order": 22,
+   "deploy_ignore": false,
+   "description": "Test MPC controller: drop-in replacement for complete_controller that predicts with the simulator's Fossen model.",
+   "deps": [
+    "riptide_descriptions2",
+    "riptide_msgs2"
+   ],
+   "up_to": [
+    "riptide_descriptions2",
+    "riptide_mpc",
+    "riptide_msgs2"
+   ],
+   "above": [
+    "riptide_mpc"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_rviz",
+   "path": "src/riptide_gui/riptide_rviz/riptide_rviz",
+   "type": "ament_cmake",
+   "repo": "src/riptide_gui",
+   "order": 23,
+   "deploy_ignore": true,
+   "description": "TODO: Package description",
+   "deps": [
+    "chameleon_tf_msgs",
+    "launch_msgs",
+    "riptide_meshes",
+    "riptide_msgs2"
+   ],
+   "up_to": [
+    "chameleon_tf_msgs",
+    "launch_msgs",
+    "riptide_meshes",
+    "riptide_msgs2",
+    "riptide_rviz"
+   ],
+   "above": [
+    "camera_faker",
+    "riptide_bringup2",
+    "riptide_rviz"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "opbox_ros_client",
+   "path": "src/opbox_software/opbox_ros_client",
+   "type": "ament_cmake",
+   "repo": "src/opbox_software",
+   "order": 24,
+   "deploy_ignore": false,
+   "description": "TODO: Package description",
+   "deps": [
+    "opbox_software",
+    "riptide_msgs2",
+    "serial_library"
+   ],
+   "up_to": [
+    "opbox_ros_client",
+    "opbox_software",
+    "riptide_msgs2",
+    "serial_library"
+   ],
+   "above": [
+    "opbox_ros_client"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_hardware2",
+   "path": "src/riptide_core/riptide_hardware",
+   "type": "ament_cmake",
+   "repo": "src/riptide_core",
+   "order": 25,
+   "deploy_ignore": false,
+   "description": "Hardware abstraction layer for OSU's Riptide AUV.",
+   "deps": [
+    "nortek_dvl",
+    "nortek_dvl_msgs",
+    "riptide_msgs2"
+   ],
+   "up_to": [
+    "nortek_dvl",
+    "nortek_dvl_msgs",
+    "riptide_hardware2",
+    "riptide_msgs2"
+   ],
+   "above": [
+    "camera_faker",
+    "riptide_bringup2",
+    "riptide_hardware2"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "camera_faker",
+   "path": "src/riptide_simulator/camera_faker",
+   "type": "ament_cmake",
+   "repo": "src/riptide_simulator",
+   "order": 26,
+   "deploy_ignore": true,
+   "description": "OpenGL RoboSub visualization with simulated ZED X Mini forward and downward cameras.",
+   "deps": [
+    "apriltag_ros",
+    "c_simulator",
+    "chameleon_tf_msgs",
+    "riptide_descriptions2",
+    "riptide_hardware2",
+    "riptide_meshes",
+    "riptide_msgs2",
+    "riptide_rviz"
+   ],
+   "up_to": [
+    "apriltag_msgs",
+    "apriltag_ros",
+    "c_simulator",
+    "camera_faker",
+    "chameleon_tf_msgs",
+    "launch_msgs",
+    "nortek_dvl",
+    "nortek_dvl_msgs",
+    "riptide_descriptions2",
+    "riptide_hardware2",
+    "riptide_mapping2",
+    "riptide_meshes",
+    "riptide_msgs2",
+    "riptide_rviz"
+   ],
+   "above": [
+    "camera_faker",
+    "riptide_bringup2"
+   ],
+   "at_pin": true
+  },
+  {
+   "name": "riptide_bringup2",
+   "path": "src/riptide_launch/riptide_bringup",
+   "type": "ament_python",
+   "repo": "src/riptide_launch",
+   "order": 27,
+   "deploy_ignore": false,
+   "description": "System bringup for OSU's Riptide AUV.",
+   "deps": [
+    "c_simulator",
+    "camera_faker",
+    "riptide_rviz"
+   ],
+   "up_to": [
+    "apriltag_msgs",
+    "apriltag_ros",
+    "c_simulator",
+    "camera_faker",
+    "chameleon_tf_msgs",
+    "launch_msgs",
+    "nortek_dvl",
+    "nortek_dvl_msgs",
+    "riptide_bringup2",
+    "riptide_descriptions2",
+    "riptide_hardware2",
+    "riptide_mapping2",
+    "riptide_meshes",
+    "riptide_msgs2",
+    "riptide_rviz"
+   ],
+   "above": [
+    "riptide_bringup2"
+   ],
+   "at_pin": true
+  }
+ ],
+ "colcon_ignored": [
+  "src/riptide_control/riptide_teleop",
+  "src/riptide_core/riptide_msgs/matlab_msg_gen",
+  "src/riptide_core/riptide_msgs/msg/matlab_msg_gen"
+ ],
+ "pin_count": 27
+}

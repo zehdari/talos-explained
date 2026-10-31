@@ -1,0 +1,2973 @@
+{
+ "source": {
+  "commit": "b636000",
+  "file": "trees/RepairCompMpcTree.xml"
+ },
+ "main": "BehaviorTree",
+ "calls": [
+  {
+   "parent": "BehaviorTree",
+   "child": "CompMissionTreeMpc",
+   "line": 95,
+   "shared": false,
+   "ports": [
+    {
+     "port": "repair_mission",
+     "key": "1",
+     "value": "1"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "WaitForKillSwitch",
+   "line": 445,
+   "shared": false,
+   "ports": [],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "PrepForRun",
+   "line": 446,
+   "shared": false,
+   "ports": [],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "Dive",
+   "line": 447,
+   "shared": false,
+   "ports": [
+    {
+     "port": "depth",
+     "key": "depth",
+     "value": "-0.56"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "GateTreeMpc",
+   "line": 449,
+   "shared": false,
+   "ports": [
+    {
+     "port": "repair_mission",
+     "key": "repair_mission",
+     "value": null
+    },
+    {
+     "port": "sla_pass_on_left",
+     "key": "sla_pass_on_left",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "SlalomPathMpc",
+   "line": 452,
+   "shared": false,
+   "ports": [
+    {
+     "port": "exit_frame",
+     "key": "pre_torpedo_pose_frame",
+     "value": "pre_torpedo_pose_frame"
+    },
+    {
+     "port": "pass_on_left",
+     "key": "sla_pass_on_left",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "RandomPingerTree",
+   "line": 455,
+   "shared": false,
+   "ports": [
+    {
+     "port": "is_table",
+     "key": "pinger_is_table",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "NewTableTreeMpc",
+   "line": 478,
+   "shared": false,
+   "ports": [
+    {
+     "port": "repair_mission",
+     "key": "repair_mission",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "TorpedoTreeMpc",
+   "line": 491,
+   "shared": false,
+   "ports": [
+    {
+     "port": "repair_mission",
+     "key": "repair_mission",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "TorpedoTreeMpc",
+   "line": 512,
+   "shared": false,
+   "ports": [
+    {
+     "port": "repair_mission",
+     "key": "repair_mission",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "NewTableTreeMpc",
+   "line": 524,
+   "shared": false,
+   "ports": [
+    {
+     "port": "repair_mission",
+     "key": "repair_mission",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "BinTreeMpc",
+   "line": 539,
+   "shared": false,
+   "ports": [
+    {
+     "port": "repair_mission",
+     "key": "repair_mission",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "CompMissionTreeMpc",
+   "child": "KillController",
+   "line": 554,
+   "shared": false,
+   "ports": [],
+   "unmapped": []
+  },
+  {
+   "parent": "PrepForRun",
+   "child": "ReloadActuators",
+   "line": 1810,
+   "shared": false,
+   "ports": [],
+   "unmapped": []
+  },
+  {
+   "parent": "PrepForRun",
+   "child": "SetActuatorsArmed",
+   "line": 1813,
+   "shared": false,
+   "ports": [
+    {
+     "port": "armed",
+     "key": "0",
+     "value": "0"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "Dive",
+   "child": "PrimitiveMovePosition",
+   "line": 764,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout",
+     "key": "60",
+     "value": "60"
+    },
+    {
+     "port": "x",
+     "key": "x",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "y",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "depth",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "Dive",
+   "child": "PrimitiveMoveOrientation",
+   "line": 765,
+   "shared": false,
+   "ports": [
+    {
+     "port": "p",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "r",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "timeout",
+     "key": "15",
+     "value": "15"
+    },
+    {
+     "port": "y",
+     "key": "oy",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "GateTreeMpc",
+   "child": "SetActiveCamera",
+   "line": 1176,
+   "shared": false,
+   "ports": [
+    {
+     "port": "is_dfc",
+     "key": "0",
+     "value": "0"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "GateTreeMpc",
+   "child": "MiniSearchMpc",
+   "line": 1179,
+   "shared": false,
+   "ports": [
+    {
+     "port": "object_name",
+     "key": "alt_subprop",
+     "value": "gate_repair | gate_rescue"
+    },
+    {
+     "port": "parent_object",
+     "key": "alt_subprop",
+     "value": "gate_repair | gate_rescue"
+    },
+    {
+     "port": "prox_x",
+     "key": "max_dist",
+     "value": "3.0"
+    },
+    {
+     "port": "prox_y",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "prox_z",
+     "key": "search_prox_z",
+     "value": "0"
+    },
+    {
+     "port": "target_cov",
+     "key": "target_cov",
+     "value": "0.1"
+    },
+    {
+     "port": "timeout_secs",
+     "key": "search_timeout",
+     "value": "10"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "GateTreeMpc",
+   "child": "MiniSearchMpc",
+   "line": 1183,
+   "shared": false,
+   "ports": [
+    {
+     "port": "object_name",
+     "key": "subprop",
+     "value": "gate_rescue | gate_repair"
+    },
+    {
+     "port": "parent_object",
+     "key": "subprop",
+     "value": "gate_rescue | gate_repair"
+    },
+    {
+     "port": "prox_x",
+     "key": "max_dist",
+     "value": "3.0"
+    },
+    {
+     "port": "prox_y",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "prox_z",
+     "key": "search_prox_z",
+     "value": "0"
+    },
+    {
+     "port": "target_cov",
+     "key": "target_cov",
+     "value": "0.1"
+    },
+    {
+     "port": "timeout_secs",
+     "key": "search_timeout",
+     "value": "10"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "GateTreeMpc",
+   "child": "FlipTree",
+   "line": 1210,
+   "shared": false,
+   "ports": [
+    {
+     "port": "undergate_depth",
+     "key": "undergate_depth",
+     "value": "-1.1"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SlalomPathMpc",
+   "child": "MiniSearchMpc",
+   "line": 2492,
+   "shared": false,
+   "ports": [
+    {
+     "port": "object_name",
+     "key": "slalom_parent",
+     "value": "slalom_parent"
+    },
+    {
+     "port": "parent_object",
+     "key": "slalom_parent",
+     "value": "slalom_parent"
+    },
+    {
+     "port": "prox_x",
+     "key": "msrch_prox",
+     "value": "2.5"
+    },
+    {
+     "port": "prox_y",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "prox_z",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "target_cov",
+     "key": "target_srch_err",
+     "value": "0.3"
+    },
+    {
+     "port": "timeout_secs",
+     "key": "msrch_timeout",
+     "value": "15"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "RandomPingerTree",
+   "child": "Move",
+   "line": 1887,
+   "shared": false,
+   "ports": [
+    {
+     "port": "op",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "or",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "oy",
+     "key": "yaw",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "tx",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "ty",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "tz",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "RandomPingerTree",
+   "child": "Move",
+   "line": 1898,
+   "shared": false,
+   "ports": [
+    {
+     "port": "op",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "or",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "oy",
+     "key": "yaw",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "tx",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "ty",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "tz",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "SetActiveCamera",
+   "line": 1676,
+   "shared": false,
+   "ports": [
+    {
+     "port": "is_dfc",
+     "key": "1",
+     "value": "1"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "DownwardSearchMpc",
+   "line": 1693,
+   "shared": false,
+   "ports": [
+    {
+     "port": "min_dist",
+     "key": "table_dist",
+     "value": "1.5"
+    },
+    {
+     "port": "object_name",
+     "key": "curr_drop",
+     "value": "helmet | warning"
+    },
+    {
+     "port": "target_cov",
+     "key": "table_cov",
+     "value": "0.0005"
+    },
+    {
+     "port": "timeout_sec",
+     "key": "table_timeout",
+     "value": "60"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "DownwardSearchMpc",
+   "line": 1696,
+   "shared": false,
+   "ports": [
+    {
+     "port": "min_dist",
+     "key": "table_dist",
+     "value": "1.5"
+    },
+    {
+     "port": "object_name",
+     "key": "secondary_drop",
+     "value": "warning"
+    },
+    {
+     "port": "target_cov",
+     "key": "table_cov",
+     "value": "0.0005"
+    },
+    {
+     "port": "timeout_sec",
+     "key": "table_timeout",
+     "value": "60"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "SetActuatorsArmed",
+   "line": 1726,
+   "shared": false,
+   "ports": [
+    {
+     "port": "armed",
+     "key": "1",
+     "value": "1"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "pickupObjectMpc",
+   "line": 1732,
+   "shared": false,
+   "ports": [
+    {
+     "port": "claw_close_s",
+     "key": "claw_close_s",
+     "value": "-2.0"
+    },
+    {
+     "port": "claw_link",
+     "key": "claw_link",
+     "value": "talos/claw_link"
+    },
+    {
+     "port": "claw_open_s",
+     "key": "claw_open_s",
+     "value": "2.0"
+    },
+    {
+     "port": "claw_topic",
+     "key": "claw_topic",
+     "value": "command/actuator/claw_move_s"
+    },
+    {
+     "port": "ctrlr_dist",
+     "key": "ctrlr_dist",
+     "value": "0.01"
+    },
+    {
+     "port": "ctrlr_timeout",
+     "key": "ctrlr_timeout",
+     "value": "30"
+    },
+    {
+     "port": "ctrlr_trust",
+     "key": "ctrlr_trust",
+     "value": "0.95"
+    },
+    {
+     "port": "minisearch_prox",
+     "key": "minisearch_prox",
+     "value": "1.5"
+    },
+    {
+     "port": "object_name",
+     "key": "curr_object",
+     "value": "bandage | pill | nut_and_bolt | plug"
+    },
+    {
+     "port": "overtable",
+     "key": "overtable",
+     "value": "0.0"
+    },
+    {
+     "port": "pickup_center_x",
+     "key": "ax",
+     "value": null
+    },
+    {
+     "port": "pickup_center_y",
+     "key": "ay",
+     "value": null
+    },
+    {
+     "port": "pickup_center_z",
+     "key": "az",
+     "value": null
+    },
+    {
+     "port": "pre_overtable",
+     "key": "pre_overtable",
+     "value": "0.15"
+    },
+    {
+     "port": "reset_threshold",
+     "key": "reset_threshold",
+     "value": "1000"
+    },
+    {
+     "port": "search_prox",
+     "key": "search_prox",
+     "value": "2"
+    },
+    {
+     "port": "search_timeout",
+     "key": "search_timeout",
+     "value": "180"
+    },
+    {
+     "port": "target_err",
+     "key": "target_err",
+     "value": "0.5"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "SurfaceTree",
+   "line": 1733,
+   "shared": false,
+   "ports": [
+    {
+     "port": "target_image",
+     "key": "",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "dropObjectMpc",
+   "line": 1734,
+   "shared": false,
+   "ports": [
+    {
+     "port": "claw_close_s",
+     "key": "claw_close_s",
+     "value": "-2.0"
+    },
+    {
+     "port": "claw_drop_s",
+     "key": "claw_drop_s",
+     "value": "0.3"
+    },
+    {
+     "port": "claw_link",
+     "key": "claw_link",
+     "value": "talos/claw_link"
+    },
+    {
+     "port": "claw_open_s",
+     "key": "claw_open_s",
+     "value": "2.0"
+    },
+    {
+     "port": "claw_topic",
+     "key": "claw_topic",
+     "value": "command/actuator/claw_move_s"
+    },
+    {
+     "port": "ctrlr_dist",
+     "key": "ctrlr_dist",
+     "value": "0.01"
+    },
+    {
+     "port": "ctrlr_timeout",
+     "key": "ctrlr_timeout",
+     "value": "30"
+    },
+    {
+     "port": "ctrlr_trust",
+     "key": "ctrlr_trust",
+     "value": "0.95"
+    },
+    {
+     "port": "dropoff_name",
+     "key": "curr_drop",
+     "value": "helmet | warning"
+    },
+    {
+     "port": "minisearch_prox",
+     "key": "minisearch_prox",
+     "value": "1.5"
+    },
+    {
+     "port": "overtable",
+     "key": "pre_overtable",
+     "value": "0.15"
+    },
+    {
+     "port": "reset_threshold",
+     "key": "reset_threshold",
+     "value": "1000"
+    },
+    {
+     "port": "search_prox",
+     "key": "search_prox",
+     "value": "2"
+    },
+    {
+     "port": "search_timeout",
+     "key": "search_timeout",
+     "value": "180"
+    },
+    {
+     "port": "target_err",
+     "key": "target_err",
+     "value": "0.5"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "RelativeMoveNoYaw",
+   "line": 1765,
+   "shared": false,
+   "ports": [
+    {
+     "port": "frame_name",
+     "key": "secondary_drop_frame",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "ax",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "ay",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "midpoint_move_z",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "SpinTreeMpc",
+   "line": 1767,
+   "shared": false,
+   "ports": [
+    {
+     "port": "num_cycles",
+     "key": "num_sorts",
+     "value": "0"
+    },
+    {
+     "port": "target_image",
+     "key": "curr_image",
+     "value": "buoy | compass | sos | hammer_and_wrench"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "RelativeMoveNoYaw",
+   "line": 1769,
+   "shared": false,
+   "ports": [
+    {
+     "port": "frame_name",
+     "key": "secondary_drop_frame",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "ax",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "ay",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "midpoint_move_z",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "SetActuatorsArmed",
+   "line": 1771,
+   "shared": false,
+   "ports": [
+    {
+     "port": "armed",
+     "key": "0",
+     "value": "0"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "NewTableTreeMpc",
+   "child": "SetActiveCamera",
+   "line": 1776,
+   "shared": false,
+   "ports": [
+    {
+     "port": "is_dfc",
+     "key": "0",
+     "value": "0"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "TorpedoTreeMpc",
+   "child": "SetActiveCamera",
+   "line": 2996,
+   "shared": false,
+   "ports": [
+    {
+     "port": "is_dfc",
+     "key": "0",
+     "value": "0"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "TorpedoTreeMpc",
+   "child": "SearchMpc",
+   "line": 2997,
+   "shared": false,
+   "ports": [
+    {
+     "port": "max_dist",
+     "key": "max_dist",
+     "value": "2"
+    },
+    {
+     "port": "min_dist",
+     "key": "min_dist",
+     "value": "1"
+    },
+    {
+     "port": "object_name",
+     "key": "object_name",
+     "value": "torpedo"
+    },
+    {
+     "port": "target_cov",
+     "key": "target_cov",
+     "value": "0.0025"
+    },
+    {
+     "port": "timeout_secs",
+     "key": "search_timeout",
+     "value": "100"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "TorpedoTreeMpc",
+   "child": "SetActuatorsArmed",
+   "line": 3015,
+   "shared": false,
+   "ports": [
+    {
+     "port": "armed",
+     "key": "1",
+     "value": "1"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "TorpedoTreeMpc",
+   "child": "ShootBothObjectsMpc",
+   "line": 3016,
+   "shared": false,
+   "ports": [
+    {
+     "port": "link_1",
+     "key": "talos/torpedo_0_link",
+     "value": "talos/torpedo_0_link"
+    },
+    {
+     "port": "link_2",
+     "key": "talos/torpedo_1_link",
+     "value": "talos/torpedo_1_link"
+    },
+    {
+     "port": "object_1",
+     "key": "torpedo_first",
+     "value": "blood_hole_large | fire_hole_large"
+    },
+    {
+     "port": "object_2",
+     "key": "torpedo_second",
+     "value": "blood_hole_small | fire_hole_small"
+    },
+    {
+     "port": "torpedo_name",
+     "key": "torpedo",
+     "value": "torpedo"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "TorpedoTreeMpc",
+   "child": "SetActuatorsArmed",
+   "line": 3021,
+   "shared": false,
+   "ports": [
+    {
+     "port": "armed",
+     "key": "0",
+     "value": "0"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "TorpedoTreeMpc",
+   "child": "SetActuatorsArmed",
+   "line": 3027,
+   "shared": false,
+   "ports": [
+    {
+     "port": "armed",
+     "key": "0",
+     "value": "0"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "BinTreeMpc",
+   "child": "SetActiveCamera",
+   "line": 178,
+   "shared": false,
+   "ports": [
+    {
+     "port": "is_dfc",
+     "key": "1",
+     "value": "1"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "BinTreeMpc",
+   "child": "DownwardSearchMpc",
+   "line": 184,
+   "shared": false,
+   "ports": [
+    {
+     "port": "min_dist",
+     "key": "search_prox",
+     "value": "2.15"
+    },
+    {
+     "port": "object_name",
+     "key": "object1",
+     "value": "bin_target1"
+    },
+    {
+     "port": "target_cov",
+     "key": "target_err",
+     "value": "0.02"
+    },
+    {
+     "port": "timeout_sec",
+     "key": "search_timeout",
+     "value": "120"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "BinTreeMpc",
+   "child": "SetActuatorsArmed",
+   "line": 186,
+   "shared": false,
+   "ports": [
+    {
+     "port": "armed",
+     "key": "1",
+     "value": "1"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "BinTreeMpc",
+   "child": "ShootDownwardObjectMpc",
+   "line": 188,
+   "shared": false,
+   "ports": [
+    {
+     "port": "dropper_link_name",
+     "key": "dropper_link",
+     "value": "talos/droppers_link"
+    },
+    {
+     "port": "object_name",
+     "key": "object1",
+     "value": "bin_target1"
+    },
+    {
+     "port": "search_prox",
+     "key": "search_prox",
+     "value": "2.15"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "BinTreeMpc",
+   "child": "DownwardSearchMpc",
+   "line": 195,
+   "shared": false,
+   "ports": [
+    {
+     "port": "min_dist",
+     "key": "search_prox",
+     "value": "2.15"
+    },
+    {
+     "port": "object_name",
+     "key": "object2",
+     "value": "bin_target2"
+    },
+    {
+     "port": "target_cov",
+     "key": "target_err",
+     "value": "0.02"
+    },
+    {
+     "port": "timeout_sec",
+     "key": "search_timeout",
+     "value": "120"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "BinTreeMpc",
+   "child": "ShootDownwardObjectMpc",
+   "line": 196,
+   "shared": false,
+   "ports": [
+    {
+     "port": "dropper_link_name",
+     "key": "dropper_link",
+     "value": "talos/droppers_link"
+    },
+    {
+     "port": "object_name",
+     "key": "object2",
+     "value": "bin_target2"
+    },
+    {
+     "port": "search_prox",
+     "key": "search_prox",
+     "value": "2.15"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "BinTreeMpc",
+   "child": "SetActuatorsArmed",
+   "line": 202,
+   "shared": false,
+   "ports": [
+    {
+     "port": "armed",
+     "key": "0",
+     "value": "0"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "BinTreeMpc",
+   "child": "MagnetTreeMpc",
+   "line": 205,
+   "shared": false,
+   "ports": [
+    {
+     "port": "bin_object_vision_class",
+     "key": "bin_object_vision_class",
+     "value": "blood | fire"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "MiniSearchMpc",
+   "child": "PrimitiveMovePosition",
+   "line": 1474,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout",
+     "key": "60",
+     "value": "60"
+    },
+    {
+     "port": "x",
+     "key": "x",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "y",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "z",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "MiniSearchMpc",
+   "child": "PrimitiveMoveOrientation",
+   "line": 1475,
+   "shared": false,
+   "ports": [
+    {
+     "port": "p",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "r",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "timeout",
+     "key": "15",
+     "value": "15"
+    },
+    {
+     "port": "y",
+     "key": "oy",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "FlipTree",
+   "child": "Move",
+   "line": 1033,
+   "shared": false,
+   "ports": [
+    {
+     "port": "op",
+     "key": "pre_flip_op",
+     "value": null
+    },
+    {
+     "port": "or",
+     "key": "pre_flip_or",
+     "value": null
+    },
+    {
+     "port": "oy",
+     "key": "pre_flip_yaw",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "pre_flip_x",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "pre_flip_y",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "undergate_depth",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "Move",
+   "child": "PrimitiveMovePosition",
+   "line": 1504,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout",
+     "key": "15",
+     "value": "15"
+    },
+    {
+     "port": "x",
+     "key": "cx",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "cy",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "z",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "Move",
+   "child": "SmartMovePosition",
+   "line": 1505,
+   "shared": false,
+   "ports": [
+    {
+     "port": "x",
+     "key": "x",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "y",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "z",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "Move",
+   "child": "PrimitiveMoveOrientation",
+   "line": 1506,
+   "shared": false,
+   "ports": [
+    {
+     "port": "p",
+     "key": "or",
+     "value": null
+    },
+    {
+     "port": "r",
+     "key": "op",
+     "value": null
+    },
+    {
+     "port": "timeout",
+     "key": "30",
+     "value": "30"
+    },
+    {
+     "port": "y",
+     "key": "oy",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "DownwardSearchMpc",
+   "child": "DownwardTrack",
+   "line": 919,
+   "shared": false,
+   "ports": [
+    {
+     "port": "frame",
+     "key": "frame",
+     "value": null
+    },
+    {
+     "port": "min_dist",
+     "key": "min_dist",
+     "value": null
+    },
+    {
+     "port": "object_name",
+     "key": "object_name",
+     "value": null
+    },
+    {
+     "port": "target_cov",
+     "key": "target_cov",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "DownwardSearchMpc",
+   "child": "DownwardTrack",
+   "line": 953,
+   "shared": false,
+   "ports": [
+    {
+     "port": "frame",
+     "key": "frame",
+     "value": null
+    },
+    {
+     "port": "min_dist",
+     "key": "min_dist",
+     "value": null
+    },
+    {
+     "port": "object_name",
+     "key": "object_name",
+     "value": null
+    },
+    {
+     "port": "target_cov",
+     "key": "target_cov",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "pickupObjectMpc",
+   "child": "SetActiveCamera",
+   "line": 3227,
+   "shared": false,
+   "ports": [
+    {
+     "port": "is_dfc",
+     "key": "1",
+     "value": "1"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "pickupObjectMpc",
+   "child": "DownwardSearchMpc",
+   "line": 3229,
+   "shared": false,
+   "ports": [
+    {
+     "port": "min_dist",
+     "key": "search_prox",
+     "value": null
+    },
+    {
+     "port": "object_name",
+     "key": "object_name",
+     "value": null
+    },
+    {
+     "port": "target_cov",
+     "key": "target_err",
+     "value": null
+    },
+    {
+     "port": "timeout_sec",
+     "key": "search_timeout",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "pickupObjectMpc",
+   "child": "Move",
+   "line": 3259,
+   "shared": false,
+   "ports": [
+    {
+     "port": "op",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "or",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "oy",
+     "key": "aoy",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "ax",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "ay",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "az",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "pickupObjectMpc",
+   "child": "Move",
+   "line": 3261,
+   "shared": false,
+   "ports": [
+    {
+     "port": "op",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "or",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "oy",
+     "key": "coy",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "cx",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "cy",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "cz",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "pickupObjectMpc",
+   "child": "WaitForController",
+   "line": 3263,
+   "shared": false,
+   "ports": [
+    {
+     "port": "dist",
+     "key": "ctrlr_dist",
+     "value": null
+    },
+    {
+     "port": "link_frame",
+     "key": "claw_link",
+     "value": null
+    },
+    {
+     "port": "target_frame",
+     "key": "object_frame",
+     "value": null
+    },
+    {
+     "port": "timeout",
+     "key": "ctrlr_timeout",
+     "value": null
+    },
+    {
+     "port": "trust",
+     "key": "ctrlr_trust",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "pickupObjectMpc",
+   "child": "Move",
+   "line": 3266,
+   "shared": false,
+   "ports": [
+    {
+     "port": "op",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "or",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "oy",
+     "key": "boy",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "bx",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "by",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "bz",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "pickupObjectMpc",
+   "child": "WaitForController",
+   "line": 3268,
+   "shared": false,
+   "ports": [
+    {
+     "port": "dist",
+     "key": "ctrlr_dist",
+     "value": null
+    },
+    {
+     "port": "link_frame",
+     "key": "claw_link",
+     "value": null
+    },
+    {
+     "port": "target_frame",
+     "key": "object_frame",
+     "value": null
+    },
+    {
+     "port": "timeout",
+     "key": "ctrlr_timeout",
+     "value": null
+    },
+    {
+     "port": "trust",
+     "key": "ctrlr_trust",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "pickupObjectMpc",
+   "child": "Move",
+   "line": 3274,
+   "shared": false,
+   "ports": [
+    {
+     "port": "op",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "or",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "oy",
+     "key": "aoy",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "ax",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "ay",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "az",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SurfaceTree",
+   "child": "Move",
+   "line": 2702,
+   "shared": false,
+   "ports": [
+    {
+     "port": "op",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "or",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "oy",
+     "key": "cur_yaw",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "table_x",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "table_y",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "depth",
+     "value": "-0.5"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SurfaceTree",
+   "child": "RotateToFrame",
+   "line": 2708,
+   "shared": false,
+   "ports": [
+    {
+     "port": "relative_yaw",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "target_frame",
+     "key": "target_image_frame",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SurfaceTree",
+   "child": "Move",
+   "line": 2725,
+   "shared": false,
+   "ports": [
+    {
+     "port": "op",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "or",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "oy",
+     "key": "cur_yaw",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "table_x",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "table_y",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "depth",
+     "value": "-0.5"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "dropObjectMpc",
+   "child": "SetActiveCamera",
+   "line": 3154,
+   "shared": false,
+   "ports": [
+    {
+     "port": "is_dfc",
+     "key": "1",
+     "value": "1"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "dropObjectMpc",
+   "child": "DownwardMove",
+   "line": 3157,
+   "shared": false,
+   "ports": [
+    {
+     "port": "frame",
+     "key": "dropoff_frame",
+     "value": null
+    },
+    {
+     "port": "gx",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "gy",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "gz",
+     "key": "minisearch_prox",
+     "value": null
+    },
+    {
+     "port": "object_name",
+     "key": "dropoff_name",
+     "value": null
+    },
+    {
+     "port": "reset_adjust_threshold",
+     "key": "reset_threshold",
+     "value": null
+    },
+    {
+     "port": "target_Cov",
+     "key": "0",
+     "value": "0"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "dropObjectMpc",
+   "child": "AlignLinkPositionOnly",
+   "line": 3162,
+   "shared": false,
+   "ports": [
+    {
+     "port": "frame_name",
+     "key": "dropoff_frame",
+     "value": null
+    },
+    {
+     "port": "link_name",
+     "key": "claw_link",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "y",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "z",
+     "key": "claw_height",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "dropObjectMpc",
+   "child": "AlignLinkPositionOnly",
+   "line": 3163,
+   "shared": false,
+   "ports": [
+    {
+     "port": "frame_name",
+     "key": "dropoff_frame",
+     "value": null
+    },
+    {
+     "port": "link_name",
+     "key": "claw_link",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "y",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "z",
+     "key": "search_prox",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "dropObjectMpc",
+   "child": "AlignLinkPositionOnly",
+   "line": 3164,
+   "shared": false,
+   "ports": [
+    {
+     "port": "frame_name",
+     "key": "dropoff_frame",
+     "value": null
+    },
+    {
+     "port": "link_name",
+     "key": "claw_link",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "y",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "z",
+     "key": "overtable",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "dropObjectMpc",
+   "child": "WaitForController",
+   "line": 3166,
+   "shared": false,
+   "ports": [
+    {
+     "port": "dist",
+     "key": "ctrlr_dist",
+     "value": null
+    },
+    {
+     "port": "link_frame",
+     "key": "claw_link",
+     "value": null
+    },
+    {
+     "port": "target_frame",
+     "key": "dropoff_frame",
+     "value": null
+    },
+    {
+     "port": "timeout",
+     "key": "ctrlr_timeout",
+     "value": null
+    },
+    {
+     "port": "trust",
+     "key": "ctrlr_trust",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "dropObjectMpc",
+   "child": "AlignLinkPositionOnly",
+   "line": 3173,
+   "shared": false,
+   "ports": [
+    {
+     "port": "frame_name",
+     "key": "dropoff_frame",
+     "value": null
+    },
+    {
+     "port": "link_name",
+     "key": "claw_link",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "y",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "z",
+     "key": "search_prox",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "RelativeMoveNoYaw",
+   "child": "Move",
+   "line": 1943,
+   "shared": false,
+   "ports": [
+    {
+     "port": "op",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "or",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "oy",
+     "key": "cur_yaw",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "gx",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "gy",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "gz",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SpinTreeMpc",
+   "child": "RotateToFrame",
+   "line": 2675,
+   "shared": false,
+   "ports": [
+    {
+     "port": "relative_yaw",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "target_frame",
+     "key": "target_frame",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SpinTreeMpc",
+   "child": "RotateToFrame",
+   "line": 2680,
+   "shared": false,
+   "ports": [
+    {
+     "port": "relative_yaw",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "target_frame",
+     "key": "target_frame",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SpinTreeMpc",
+   "child": "SurfaceTree",
+   "line": 2682,
+   "shared": false,
+   "ports": [
+    {
+     "port": "target_image",
+     "key": "target_image",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "ShootBothObjectsMpc",
+   "child": "WaitForController",
+   "line": 2398,
+   "shared": false,
+   "ports": [
+    {
+     "port": "dist",
+     "key": "ctrler_dist",
+     "value": "0.01"
+    },
+    {
+     "port": "link_frame",
+     "key": "link_1",
+     "value": null
+    },
+    {
+     "port": "target_frame",
+     "key": "object_1_frame",
+     "value": null
+    },
+    {
+     "port": "timeout",
+     "key": "ctrler_timeout",
+     "value": "60"
+    },
+    {
+     "port": "trust",
+     "key": "scale_trust",
+     "value": "0.985"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "ShootBothObjectsMpc",
+   "child": "FireTorpedo",
+   "line": 2405,
+   "shared": false,
+   "ports": [],
+   "unmapped": []
+  },
+  {
+   "parent": "ShootBothObjectsMpc",
+   "child": "WaitForController",
+   "line": 2414,
+   "shared": false,
+   "ports": [
+    {
+     "port": "dist",
+     "key": "ctrler_dist",
+     "value": "0.01"
+    },
+    {
+     "port": "link_frame",
+     "key": "link_2",
+     "value": null
+    },
+    {
+     "port": "target_frame",
+     "key": "object_2_frame",
+     "value": null
+    },
+    {
+     "port": "timeout",
+     "key": "ctrler_timeout",
+     "value": "60"
+    },
+    {
+     "port": "trust",
+     "key": "scale_trust",
+     "value": "0.985"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "ShootBothObjectsMpc",
+   "child": "FireTorpedo",
+   "line": 2421,
+   "shared": false,
+   "ports": [],
+   "unmapped": []
+  },
+  {
+   "parent": "ShootDownwardObjectMpc",
+   "child": "AlignLinkPositionOnly",
+   "line": 2306,
+   "shared": false,
+   "ports": [
+    {
+     "port": "frame_name",
+     "key": "object_frame",
+     "value": null
+    },
+    {
+     "port": "link_name",
+     "key": "dropper_link_name",
+     "value": null
+    },
+    {
+     "port": "x",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "y",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "z",
+     "key": "overbin",
+     "value": "1"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "ShootDownwardObjectMpc",
+   "child": "WaitForController",
+   "line": 2307,
+   "shared": false,
+   "ports": [
+    {
+     "port": "dist",
+     "key": "ctrler_dist",
+     "value": "0.01"
+    },
+    {
+     "port": "link_frame",
+     "key": "dropper_link_name",
+     "value": null
+    },
+    {
+     "port": "target_frame",
+     "key": "object_frame",
+     "value": null
+    },
+    {
+     "port": "timeout",
+     "key": "ctrler_timeout",
+     "value": "30"
+    },
+    {
+     "port": "trust",
+     "key": "ctrler_trust",
+     "value": "0.90"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "ShootDownwardObjectMpc",
+   "child": "FireDropper",
+   "line": 2313,
+   "shared": false,
+   "ports": [],
+   "unmapped": []
+  },
+  {
+   "parent": "MagnetTreeMpc",
+   "child": "SetActiveCamera",
+   "line": 1386,
+   "shared": false,
+   "ports": [
+    {
+     "port": "is_dfc",
+     "key": "0",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "MagnetTreeMpc",
+   "child": "MiniSearchMpc",
+   "line": 1390,
+   "shared": false,
+   "ports": [
+    {
+     "port": "object_name",
+     "key": "magnet1",
+     "value": "magnet_target1"
+    },
+    {
+     "port": "parent_object",
+     "key": "magnet1",
+     "value": "magnet_target1"
+    },
+    {
+     "port": "prox_x",
+     "key": "search_prox_x",
+     "value": "1.0"
+    },
+    {
+     "port": "prox_y",
+     "key": "0",
+     "value": null
+    },
+    {
+     "port": "prox_z",
+     "key": "search_prox_z",
+     "value": "0.2"
+    },
+    {
+     "port": "target_cov",
+     "key": "search_target_cov",
+     "value": "1.25"
+    },
+    {
+     "port": "timeout_secs",
+     "key": "search_timeout",
+     "value": "20"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "MagnetTreeMpc",
+   "child": "ActivateMagnetMpc",
+   "line": 1399,
+   "shared": false,
+   "ports": [
+    {
+     "port": "magnet_frame",
+     "key": "magnet1_frame",
+     "value": "magnet_target1_frame"
+    },
+    {
+     "port": "retreat_path",
+     "key": "m1_retreat",
+     "value": ";"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "MagnetTreeMpc",
+   "child": "MiniSearchMpc",
+   "line": 1410,
+   "shared": false,
+   "ports": [
+    {
+     "port": "object_name",
+     "key": "magnet2",
+     "value": "magnet_target2"
+    },
+    {
+     "port": "parent_object",
+     "key": "magnet2",
+     "value": "magnet_target2"
+    },
+    {
+     "port": "prox_x",
+     "key": "search_prox_x",
+     "value": "1.0"
+    },
+    {
+     "port": "prox_y",
+     "key": "0",
+     "value": null
+    },
+    {
+     "port": "prox_z",
+     "key": "search_prox_z",
+     "value": "0.2"
+    },
+    {
+     "port": "target_cov",
+     "key": "search_target_cov",
+     "value": "1.25"
+    },
+    {
+     "port": "timeout_secs",
+     "key": "search_timeout",
+     "value": "20"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "MagnetTreeMpc",
+   "child": "ActivateMagnetMpc",
+   "line": 1414,
+   "shared": false,
+   "ports": [
+    {
+     "port": "magnet_frame",
+     "key": "magnet2_frame",
+     "value": "magnet_target2_frame"
+    },
+    {
+     "port": "retreat_path",
+     "key": "m2_retreat",
+     "value": ";"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SmartMovePosition",
+   "child": "PrimitiveMovePosition",
+   "line": 2536,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout",
+     "key": "timeout",
+     "value": "1"
+    },
+    {
+     "port": "x",
+     "key": "x",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "y",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "z",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SmartMovePosition",
+   "child": "PrimitiveMovePosition",
+   "line": 2565,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout",
+     "key": "60",
+     "value": "60"
+    },
+    {
+     "port": "x",
+     "key": "old_x",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "old_y",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "old_z",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SmartMovePosition",
+   "child": "PrimitiveMovePosition",
+   "line": 2569,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout",
+     "key": "5",
+     "value": "5"
+    },
+    {
+     "port": "x",
+     "key": "em_x",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "em_y",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "curr_z",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SmartMovePosition",
+   "child": "PrimitiveMovePosition",
+   "line": 2572,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout",
+     "key": "5",
+     "value": "5"
+    },
+    {
+     "port": "x",
+     "key": "em_x",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "em_y",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "-0.75",
+     "value": "-0.75"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "SmartMovePosition",
+   "child": "PrimitiveMovePosition",
+   "line": 2577,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout",
+     "key": "15",
+     "value": "15"
+    },
+    {
+     "port": "x",
+     "key": "em_x",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "em_y",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "em_z",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "DownwardTrack",
+   "child": "PrimitiveMovePosition",
+   "line": 3301,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout",
+     "key": "step_secs",
+     "value": "0.5"
+    },
+    {
+     "port": "x",
+     "key": "ax",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "ay",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "az",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "WaitForController",
+   "child": "AssertTree",
+   "line": 3064,
+   "shared": false,
+   "ports": [
+    {
+     "port": "a",
+     "key": "tx",
+     "value": null
+    },
+    {
+     "port": "aname",
+     "key": "X",
+     "value": "X"
+    },
+    {
+     "port": "b",
+     "key": "trust",
+     "value": null
+    },
+    {
+     "port": "test",
+     "key": ">",
+     "value": ">"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "WaitForController",
+   "child": "AssertTree",
+   "line": 3065,
+   "shared": false,
+   "ports": [
+    {
+     "port": "a",
+     "key": "ty",
+     "value": null
+    },
+    {
+     "port": "aname",
+     "key": "Y",
+     "value": "Y"
+    },
+    {
+     "port": "b",
+     "key": "trust",
+     "value": null
+    },
+    {
+     "port": "test",
+     "key": ">",
+     "value": ">"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "WaitForController",
+   "child": "AssertTree",
+   "line": 3066,
+   "shared": false,
+   "ports": [
+    {
+     "port": "a",
+     "key": "tz",
+     "value": null
+    },
+    {
+     "port": "aname",
+     "key": "Z",
+     "value": "Z"
+    },
+    {
+     "port": "b",
+     "key": "trust",
+     "value": null
+    },
+    {
+     "port": "test",
+     "key": ">",
+     "value": ">"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "WaitForController",
+   "child": "AssertTree",
+   "line": 3067,
+   "shared": false,
+   "ports": [
+    {
+     "port": "a",
+     "key": "tor",
+     "value": null
+    },
+    {
+     "port": "aname",
+     "key": "Roll",
+     "value": "Roll"
+    },
+    {
+     "port": "b",
+     "key": "trust",
+     "value": null
+    },
+    {
+     "port": "test",
+     "key": ">",
+     "value": ">"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "WaitForController",
+   "child": "AssertTree",
+   "line": 3068,
+   "shared": false,
+   "ports": [
+    {
+     "port": "a",
+     "key": "top",
+     "value": null
+    },
+    {
+     "port": "aname",
+     "key": "Pitch",
+     "value": "Pitch"
+    },
+    {
+     "port": "b",
+     "key": "trust",
+     "value": null
+    },
+    {
+     "port": "test",
+     "key": ">",
+     "value": ">"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "WaitForController",
+   "child": "AssertTree",
+   "line": 3069,
+   "shared": false,
+   "ports": [
+    {
+     "port": "a",
+     "key": "toy",
+     "value": null
+    },
+    {
+     "port": "aname",
+     "key": "Yaw",
+     "value": "Yaw"
+    },
+    {
+     "port": "b",
+     "key": "trust",
+     "value": null
+    },
+    {
+     "port": "test",
+     "key": ">",
+     "value": ">"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "WaitForController",
+   "child": "AssertTree",
+   "line": 3078,
+   "shared": false,
+   "ports": [
+    {
+     "port": "a",
+     "key": "link_y",
+     "value": null
+    },
+    {
+     "port": "aname",
+     "key": "Dist",
+     "value": "Dist"
+    },
+    {
+     "port": "b",
+     "key": "dist",
+     "value": null
+    },
+    {
+     "port": "test",
+     "key": "<",
+     "value": "<"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "RotateToFrame",
+   "child": "PrimitiveMoveOrientation",
+   "line": 1990,
+   "shared": false,
+   "ports": [
+    {
+     "port": "p",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "r",
+     "key": "0",
+     "value": "0"
+    },
+    {
+     "port": "timeout",
+     "key": "15",
+     "value": "15"
+    },
+    {
+     "port": "y",
+     "key": "hdg",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "DownwardMove",
+   "child": "AlignLinkPositionOnly",
+   "line": 786,
+   "shared": false,
+   "ports": [
+    {
+     "port": "frame_name",
+     "key": "frame",
+     "value": null
+    },
+    {
+     "port": "link_name",
+     "key": "dfc_link",
+     "value": "talos/dfc_base_link"
+    },
+    {
+     "port": "x",
+     "key": "gx",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "gy",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "gz",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "AlignLinkPositionOnly",
+   "child": "PrimitiveMovePosition",
+   "line": 79,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout",
+     "key": "15",
+     "value": "15"
+    },
+    {
+     "port": "x",
+     "key": "cx",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "cy",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "az",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "AlignLinkPositionOnly",
+   "child": "SmartMovePosition",
+   "line": 80,
+   "shared": false,
+   "ports": [
+    {
+     "port": "x",
+     "key": "ax",
+     "value": null
+    },
+    {
+     "port": "y",
+     "key": "ay",
+     "value": null
+    },
+    {
+     "port": "z",
+     "key": "az",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "FireTorpedo",
+   "child": "WaitForActuators",
+   "line": 1011,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout_secs",
+     "key": "10",
+     "value": null
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "FireDropper",
+   "child": "CheckActuatorStates",
+   "line": 983,
+   "shared": false,
+   "ports": [],
+   "unmapped": []
+  },
+  {
+   "parent": "FireDropper",
+   "child": "WaitForActuators",
+   "line": 984,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout_secs",
+     "key": "10",
+     "value": "10"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "FireDropper",
+   "child": "WaitForActuators",
+   "line": 994,
+   "shared": false,
+   "ports": [
+    {
+     "port": "timeout_secs",
+     "key": "10",
+     "value": "10"
+    }
+   ],
+   "unmapped": []
+  },
+  {
+   "parent": "ActivateMagnetMpc",
+   "child": "WaitForController",
+   "line": 58,
+   "shared": false,
+   "ports": [
+    {
+     "port": "dist",
+     "key": "ctrler_dist",
+     "value": "0.01"
+    },
+    {
+     "port": "link_frame",
+     "key": "magnet_link",
+     "value": "talos/magnet_link"
+    },
+    {
+     "port": "target_frame",
+     "key": "magnet_frame",
+     "value": null
+    },
+    {
+     "port": "timeout",
+     "key": "ctrler_timeout",
+     "value": "20"
+    },
+    {
+     "port": "trust",
+     "key": "ctrler_trust",
+     "value": "0.8"
+    }
+   ],
+   "unmapped": []
+  }
+ ],
+ "trees_in_file": 87
+}

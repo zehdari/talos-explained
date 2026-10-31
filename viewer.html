@@ -4,32 +4,316 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Nereus viewer · How Talos works</title>
-<meta name="description" content="One or two sentences on what this chapter explains.">
+<meta name="description" content="nereus-viewer, the operator program for Talos in the simulator and in the pool: every panel, Enable and KILL on software-kill slot 1, driving and typed moves, running trees, mapping, cameras and point clouds, recording, the sim-only tools, shortcuts, and the ROS topics it uses over Zenoh.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Running Talos</div>
+    <div class="kicker">Running Talos · Chapter 3</div>
     <h1>The Nereus viewer</h1>
-    <p class="lede">One or two sentences: what this is and why a new member should care.</p>
+    <p class="lede">One program on the operator's laptop shows Talos in 3D, enables and kills it, drives it, starts its trees and shows what its cameras see. It works the same against the simulator and against the real robot in the pool.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Three to five bullets a reader can stop after.</li>
+      <li><code>nereus-viewer</code> is the team's operator interface for sim and pool alike. It replaced RViz.</li>
+      <li>Its <strong>Enable / KILL</strong> button owns software-kill slot 1. The viewer starts killed, and Enable latches, so a run survives the tether coming off.</li>
+      <li>Panels around a 3D pool view: Motion (drive), Autonomy (run trees), Mapping, Vision, two camera cards, and Recording, Bagging, Electrical and Actuators.</li>
+      <li>It talks to Talos only through ROS 2 topics, services and actions, over Zenoh from the laptop.</li>
+      <li><kbd>Ctrl+P</kbd> finds every control and takes typed moves like <code>turn left 45 forward 2</code>. Enable and KILL are never on the keyboard.</li>
     </ul></aside>
+
     <div class="prose">
-      <p>Opening paragraph.</p>
-      <h2 id="first-section">First section</h2>
-      <p>Coming soon.</p>
+      <h2 id="what">What it is</h2>
+      <p>Nereus (<a href="https://github.com/osu-uwrt/nereus">osu-uwrt/nereus</a>) has three parts: <code>nereus-sim</code>, the simulator (<a href="nereus.html">Chapter 2</a>); <code>nereus-viewer</code>, this chapter; and the YAML <em>packs</em> that describe the robot, pool and course. The viewer and the simulator share no code. Both only talk ROS 2, so the viewer can't tell a simulated Talos from the real one, apart from a few sim-only tools.</p>
+      <dl class="spec">
+        <dt>Runs on</dt><dd>The operator laptop (op-top at the pool), or any team laptop with the robot workspace built. Never on the Orin.</dd>
+        <dt>Built with</dt><dd>C++, OpenGL and Dear ImGui, from the Nereus repo with <code>./build.sh</code> (<a href="https://github.com/osu-uwrt/nereus/blob/main/README.md">README</a>).</dd>
+        <dt>Started by</dt><dd><code>sim.launch.py</code> in sim, <code>robot.launch.py</code> at the pool (<a href="#pool-vs-sim">below</a>).</dd>
+        <dt>Configured in</dt><dd><a href="https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml"><code>talos_uwrt_panels.yaml</code></a> (panels, topics, toolbar) and <a href="https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_host.yaml"><code>talos_uwrt_host.yaml</code></a> (window, pose source, overlays).</dd>
+        <dt>Manual</dt><dd><a href="https://github.com/osu-uwrt/nereus/blob/main/docs/viewer.md"><code>docs/viewer.md</code></a>, and <kbd>F1</kbd> inside the program.</dd>
+      </dl>
+      <p><strong>Why not RViz?</strong> The team used to run RViz with its own <code>riptide_rviz</code> panels. The viewer took those jobs over one by one: the control panel's kill switch on slot 1, the electrical panel, the bag presets, and the mapping meshes "drawn like RViz" from <code>riptide_rviz/config/markers.yaml</code>. It adds what RViz couldn't do: the same window drives the simulator and the robot, shows simulator truth beside the estimate, scores runs, and edits the prior map. RViz is history now. Don't run its control panel next to the viewer: two senders on slot 1 count as <a href="#enable">competing operators</a>.</p>
     </div>
     <figure class="fig">
-      <div class="panel" id="some-figure"></div>
-      <figcaption><b>Bold lead-in.</b> What to look at. Tap or hover … (if interactive).</figcaption>
+      <video class="media" src="/talos-explained/media/nereus/viewer-tour.mp4" poster="/talos-explained/media/nereus/viewer-tour.jpg" width="1280" height="800" controls muted playsinline preload="none"></video>
+      <figcaption><b>The viewer in 55 seconds.</b> A typed move, thrust arrows and the MPC path, the camera cards, looking through the forward camera, the YOLO point cloud, TF frames, the three layouts, the scorecard and the prior map editor. Recorded in Nereus at 1.4× with the default theme.</figcaption>
     </figure>
+
     <div class="prose">
-      <h2 id="second-section">Second section</h2>
-      <p>Coming soon.</p>
+      <h2 id="tour">A tour of the window</h2>
+      <p>Every window can be moved, docked, tabbed or closed, but everyone starts from the <strong>Standard</strong> layout below: the Motion panel and the Mapping / Vision / Autonomy tabs on the left, the pool view in the middle, and the camera cards and the other panels on the right. Step through it, or tap a number.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel vt" id="tour-fig">
+        <div class="vt-bar">
+          <div class="seg" role="group" aria-label="Which moment" id="tour-state">
+            <button aria-pressed="true" data-s="killed">Just launched</button><button aria-pressed="false" data-s="running">Tree running</button>
+          </div>
+          <div class="vt-step"><button class="btn" id="tour-prev" aria-label="Previous part">←</button><span id="tour-count" aria-live="polite"></span><button class="btn" id="tour-next" aria-label="Next part">→</button></div>
+        </div>
+        <div class="vt-grid">
+          <div class="vt-shot" id="tour-shot">
+            <img id="tour-img" src="/talos-explained/media/nereus/viewer-startup-killed.webp" width="1600" height="1000" alt="The Nereus viewer in its Standard layout: menus and the command bar across the top, the Motion panel and the Autonomy tab on the left, the 3D pool view with Talos in the middle, the forward and downward camera cards and the Actuators tab on the right.">
+            <svg class="vt-mask" viewBox="0 0 1600 1000" preserveAspectRatio="none" aria-hidden="true"><path id="tour-dim"></path><rect id="tour-box"></rect></svg>
+            <div id="tour-dots"></div>
+          </div>
+          <div class="vt-info">
+            <canvas class="vt-loupe" id="tour-loupe" aria-hidden="true"></canvas>
+            <h3 id="tour-title"></h3>
+            <div id="tour-text"></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>The real viewer, part by part.</b> Two screenshots from Nereus with the same layout: right after launch (killed, nothing commanded) and while RepairCompMpcTree drives Talos to the torpedo board. Tap a number or use the arrows; the close-up at the top of the card is cut from the screenshot.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="enable">Enable and KILL</h2>
+      <p>Whether Talos may run is decided in firmware, on the POAC board, from four kill-switch slots. The full rules are in <a href="commanding.html#kill">Commanding Talos</a>. The short form: the robot is killed if any slot asserts a kill, or if a slot that promised heartbeats goes quiet for 500 ms (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/kill_switch.c#L25-L46"><code>kill_switch.c</code></a>). Slot 0 is the physical switch on the hull. <strong>Slot 1 is the viewer's.</strong></p>
+      <ul>
+        <li><strong>It starts killed.</strong> From its first tick the viewer sends a <code>KillSwitchReport</code> on <code>command/software_kill</code> every 50 ms: slot 1, asserting kill unless enabled (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/uwrt_motion.cpp#L101-L109"><code>report()</code></a>). Opening the viewer kills a running robot until someone presses Enable. Measured in sim: 20.3 Hz.</li>
+        <li><strong>Enable latches.</strong> The report carries <code>switch_needs_update = false</code>: "enable latches … untethered runs continue". Close the viewer or unplug the tether, and slot 1 stays clear. Untethered, the physical switch is the only kill.</li>
+        <li><strong>One operator per slot.</strong> Each viewer signs its reports <code>viewer_&lt;host&gt;_&lt;pid&gt;_&lt;n&gt;</code>. If anyone else reports on slot 1, the viewer drops its enable at once ("Another operator owns the enable switch") and refuses Enable until that sender has been quiet for 1 s.</li>
+        <li><strong>KILL does three things</strong>: slot 1 asserts, the controller gets a <code>DISABLED</code> command at the last commanded pose, and a running tree is stopped (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/composition.cpp#L275-L282"><code>composition.cpp</code></a>).</li>
+        <li><strong>The viewer never kills on its own.</strong> If its window freezes for 0.75 s, the pose goes stale for 1 s, or a mode request hangs for 3 s, it only <em>releases manual control</em>: Talos keeps holding its last command (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/ros_runtime.cpp#L167-L177"><code>releaseLocked</code></a>).</li>
+        <li><strong>Never from the keyboard.</strong> Enable and KILL are buttons in the command bar (and at the top of Motion). They aren't in <kbd>Ctrl+P</kbd> and have no shortcut.</li>
+      </ul>
+      <div class="callout safety"><span class="label">At the pool</span>
+        <ul>
+          <li>Enabled with the switch in means the thrusters can spin. Whoever holds the physical switch watches the robot, not the screen (<a href="pool-test.html#kill">the kill switch rules</a>).</li>
+          <li>KILL only works while its messages reach the robot. Untethered, or with the link down, it does nothing. Pull the switch instead.</li>
+          <li>One viewer at a time. A second laptop running the viewer against the same robot fights the first one for slot 1.</li>
+        </ul>
+      </div>
+    </div>
+    <figure class="fig narrow">
+      <div class="vt-bars">
+        <img class="media" src="/talos-explained/img/viewer/command-bar-killed.webp" width="440" height="87" loading="lazy" alt="The left end of the command bar while killed: TALOS · ROBOSUB 2026, a green Enable button, and Robot: killed in orange.">
+        <img class="media" src="/talos-explained/img/viewer/command-bar-enabled.webp" width="440" height="87" loading="lazy" alt="The same while enabled: a red KILL button and Robot: enabled in green.">
+      </div>
+      <figcaption><b>The two states of the command bar.</b> Green <i>Enable</i> while killed, red <i>KILL</i> while enabled. Colour is never the only cue: the label changes too. The text after it is the robot's own <code>state/kill</code>, not the button's state, so a pulled hull switch shows here as "Robot: killed".</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="motion">Driving with the Motion panel</h2>
+      <p>Motion is the manual controls. Every command goes out as a pair of <code>ControllerCommand</code> messages on <code>controller/linear</code> and <code>controller/angular</code>, in the map frame, the same topics a tree's nodes use.</p>
+      <ol>
+        <li><strong>Enable</strong>, from the panel or the command bar.</li>
+        <li>Pick <strong>Position</strong>. The viewer first calls <code>controller_overseer</code>'s <code>setTeleop</code> service (with the MPC it just answers yes), then starts sending. riptide_mpc only acts on Position and Velocity commands (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc.cpp#L45-L72"><code>mpc.cpp</code></a>), so leave <em>Feedforward</em> alone: it's the old controllers' mode, with pose feedback off.</li>
+        <li>Give a target, in one of four ways:
+          <ul>
+            <li>Type numbers in the <strong>Target</strong> column and press <strong>Command</strong>. <strong>Current</strong> copies the actual pose in first.</li>
+            <li>Drag the <strong>pose gizmo</strong> in the pool view: arrows move, rings turn, <kbd>Esc</kbd> mid-drag puts it back.</li>
+            <li><strong>Dive in place</strong>: hold x, y and heading, level, at <code>dive_z</code> = −0.75 m. <strong>Zero roll &amp; pitch</strong> levels Talos where it is.</li>
+            <li><strong>Drive with keys</strong>: <kbd>W</kbd>/<kbd>S</kbd>, <kbd>A</kbd>/<kbd>D</kbd>, <kbd>Space</kbd>/<kbd>Shift</kbd>, <kbd>Q</kbd>/<kbd>E</kbd> move the target one step per press, 25 cm or 15° to start (<kbd>[</kbd> <kbd>]</kbd> change it, 5 cm / 2° to 1 m / 45°). Holding a key doesn't repeat.</li>
+          </ul>
+        </li>
+      </ol>
+      <p>The table reads <strong>Actual</strong> (from TF), <strong>Commanded</strong>, their <strong>Error</strong>, and your <strong>Target</strong>. It also tracks commands it didn't send: during a tree the Commanded column follows the tree's setpoints, so the gizmo shows where autonomy is taking Talos. The viewer broadcasts the command as the TF frame <code>ghost/base_link</code>, too.</p>
+    </div>
+    <figure class="fig">
+      <div class="media-grid vt-grid3">
+        <figure><img class="media" src="/talos-explained/media/nereus/panel-motion-position.webp" width="400" height="520" loading="lazy" alt="Motion panel in Position control: KILL, Robot: enabled, a map-frame table with Actual, Commanded, Error and Target for X 15.50, Y 2.80, Z −1.40 and zero roll, pitch and yaw, then Current, Command, Dive in place, Pose gizmo, Zero roll & pitch and Drive with keys."><figcaption><b>Holding a pose.</b> Error is zero on every axis.</figcaption></figure>
+        <figure><img class="media" src="/talos-explained/media/nereus/panel-motion-autonomy-owns.webp" width="400" height="520" loading="lazy" alt="Motion panel while a tree runs: Autonomy owns motion, the Position switch and every button greyed out, Commanded 16.84, 2.42, −1.47 against Actual 17.58, 2.56, −1.25."><figcaption><b>A tree is driving.</b> "Autonomy owns motion" and the inputs lock.</figcaption></figure>
+        <figure><img class="media" src="/talos-explained/media/nereus/viewer-pose-gizmo.webp" width="1600" height="1000" loading="lazy" alt="The pose gizmo in the pool view: red, green and blue arrows and rings around Talos's target, with the gate behind."><figcaption><b>The pose gizmo.</b> Drag an arrow to move the target, a ring to turn it.</figcaption></figure>
+      </div>
+    </figure>
+
+    <div class="prose">
+      <h3 id="moves">Typed moves</h3>
+      <p>The fastest way to move Talos is <kbd>Ctrl+P</kbd> and a sentence: <code>forward 2</code>, <code>turn right 45</code>, <code>z -1.5</code>, <code>go 15.5 2.8 -1.4 0</code>, or several in a row. Moves start from the pose <em>last commanded</em>, not from where Talos is, so they add up while it's still travelling. The box reads the move back before you press Enter. It only sends while you could press Command: enabled, Position control, a fresh pose, and no tree or other operator driving.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel vm" id="move-fig">
+        <div class="vm-input">
+          <label for="move-text" class="vm-label">Ctrl+P</label>
+          <input id="move-text" type="text" value="turn left 45 forward 2" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="move-read">
+          <button class="btn primary" id="move-send">Send</button>
+          <button class="btn" id="move-reset">Reset</button>
+        </div>
+        <div class="vm-examples" id="move-examples"></div>
+        <div class="vm-read" id="move-read" aria-live="polite"></div>
+        <div class="vm-map" id="move-map"></div>
+        <div class="legend" id="move-legend"></div>
+      </div>
+      <figcaption><b>The viewer's move parser, running here.</b> A line-for-line port of <a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/src/pose_command.cpp"><code>pose_command.cpp</code></a>, checked against the viewer's own tests. Type a move or tap an example: the map shows each step from the last command (top-down, map frame, the course from riptide_mapping's prior map). <i>Send</i> makes the target the new last command, so the next move starts there. Talos starts where the startup screenshot has it, after Dive in place.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="autonomy">Running a tree</h2>
+      <p>The Autonomy panel is a client of <code>doTask</code>, riptide_autonomy's tree runner (<a href="bt-workflow.html#run">Running a tree</a>):</p>
+      <ul>
+        <li><strong>The picker</strong> lists the trees from the <code>autonomy/list_trees</code> service, the XML files in riptide_autonomy's <code>trees/</code> folder. <strong>Refresh</strong> asks again after you add one.</li>
+        <li><strong>Start</strong> sends an <code>ExecuteTree</code> goal on <code>autonomy/run_tree</code>. It's greyed out unless Motion is enabled, has a fresh pose, has no request pending and has no competing operator (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/composition.cpp#L314-L322"><code>mayStart</code></a>). Enable first.</li>
+        <li><strong>While it runs</strong>, Motion says "Autonomy owns motion" and locks, and the <strong>execution stack</strong> (<code>autonomy/tree_stack</code>) lists the nodes running now, outermost first: <code>MISSION</code> › <code>CompMissionTreeMpc</code> › <code>COMP</code> › … The panel also notices trees started by someone else, for example from a terminal.</li>
+        <li><strong>Stop</strong> cancels the goal; KILL stops it too. Afterwards Motion says "Autonomy ended / Command to resume": manual control comes back only when you send a command.</li>
+        <li><strong>Untethered runs.</strong> If the tree ends while the tether is off, its result never arrives. The panel settles the goal from the action's status topic once the link is back, so Start frees up without a restart.</li>
+      </ul>
+      <p>The competition tree waits for the kill switch first: it polls <code>state/kill</code> until Talos is enabled, then waits 6 s more before moving (<a href="commanding.html#kill">Commanding Talos</a>). In sim, Enable plays the part of the switch going in.</p>
+    </div>
+    <figure class="fig">
+      <video class="media" id="run-video" src="/talos-explained/media/nereus/tree-run-behind.mp4" poster="/talos-explained/media/nereus/tree-run-behind.jpg" width="1280" height="800" controls muted playsinline preload="none"></video>
+      <div class="vt-chapters" id="run-chapters" role="group" aria-label="Jump to a task"></div>
+      <figcaption><b>RepairCompMpcTree from the viewer, at 6×.</b> From the kill-switch wait through the gate, the slalom, the pinger step (skipped: Nereus has no acoustics), a torpedo into the large fire hole, and the first table move. The Autonomy panel shows the stack, the camera cards show the images the stack receives, and the MPC path and thrust arrows are on. The camera follows behind Talos with a viewer option that is still being tested (<a href="#layouts">below</a>).</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="seeing">Seeing what Talos sees</h2>
+      <h3 id="cameras">Camera cards</h3>
+      <p>One card per robot camera: <strong>Forward camera</strong> (ffc) and <strong>Downward camera</strong> (dfc), both ZED X Mini at 1920×1200. The header shows the model, resolution and the rate actually arriving.</p>
+      <ul>
+        <li><strong>RGB / Depth</strong> switches the image. The cards show the compressed rectified colour image, <code>&lt;cam&gt;/zed_node/rgb/image_rect_color/compressed</code>.</li>
+        <li><strong>Truth / ROS</strong> (sim only): <em>Truth</em> is the viewer's own render from the true camera pose, fast and noiseless. <em>ROS</em> is the images the stack actually receives. Judge the detector on ROS.</li>
+        <li><strong>Main view</strong> puts that camera in the pool view, to look through it with the course and overlays drawn.</li>
+      </ul>
+      <h3 id="overlays">Overlays in the pool view</h3>
+      <dl class="spec">
+        <dt>Labels</dt><dd>Names on the course elements.</dd>
+        <dt>TF</dt><dd>Axes for every frame. Its arrow opens the TF frames window: the frame tree, axis length, show or hide each frame.</dd>
+        <dt>MPC path</dt><dd>The MPC's predicted path (<code>controller/mpc/predicted_path</code>, 30 stages × 50 ms = 1.5 s ahead), plus any <code>follow_path</code> plan (<a href="control/reference.html">Control, Chapter 4</a>).</dd>
+        <dt>Covariance</dt><dd>Mapping's estimate of each prop as an ellipsoid (1–3 σ), from <code>mapping/&lt;object&gt;</code> (<a href="perception/noise.html">Perception, Chapter 6</a>). At pool scale they are often too small to see.</dd>
+        <dt>Thrust</dt><dd>Each thruster's commanded force from <code>thruster_forces</code> as a red arrow, 0.05 m per newton.</dd>
+        <dt>Detections</dt><dd>The detector's markers, where each object was seen (Vision panel). In sim, <em>Placement</em> draws them from simulator truth, from the estimate (cyan outline), or both.</dd>
+        <dt>Point clouds</dt><dd>Ticks in Vision for the YOLO detections cloud and the front and down ZED clouds. A cloud is only subscribed while it's ticked: they're heavy over the tether.</dd>
+      </dl>
+    </div>
+    <figure class="fig">
+      <div class="media-grid">
+        <figure><img class="media" src="/talos-explained/media/nereus/viewer-mpc-path-thrust.webp" width="1600" height="1000" loading="lazy" alt="Talos travelling across the pool with MPC path on, a thin line ahead of it, and Thrust on, red arrows at the thrusters; the Motion table shows a large error while it moves."><figcaption><b>MPC path and Thrust</b> on a long typed move, <code>go 15.5 2.8 -1.4 0</code>.</figcaption></figure>
+        <figure><img class="media" src="/talos-explained/media/nereus/viewer-point-clouds-close.webp" width="1600" height="1000" loading="lazy" alt="The front camera's depth point cloud drawn as a white sheet over the torpedo board, with coloured YOLO points on its symbols."><figcaption><b>Point clouds.</b> The front camera's depth as a white sheet on the torpedo board.</figcaption></figure>
+        <figure><img class="media" src="/talos-explained/media/nereus/viewer-tf-frames.webp" width="1600" height="1000" loading="lazy" alt="The TF frames window over the pool view: the frame tree with tag36h11:0, world, map, odom, talos/base_link and simulator/talos/base_link, show and hide ticks, and axis length."><figcaption><b>TF frames.</b> Truth (<code>simulator/talos/base_link</code>) and the EKF's <code>talos/base_link</code> side by side.</figcaption></figure>
+        <figure><img class="media" src="/talos-explained/media/nereus/viewer-camera-cards.webp" width="432" height="640" loading="lazy" alt="Both camera cards: Forward camera on the torpedo board and Downward camera on the pool floor, each with RGB/Depth, Truth/ROS and Main view, ZED X Mini 1920x1200 and a live rate."><figcaption><b>Camera cards</b> on ROS, at the torpedo board.</figcaption></figure>
+      </div>
+    </figure>
+
+    <div class="prose">
+      <h2 id="mapping">Mapping and the prior map</h2>
+      <p>The <strong>Mapping</strong> panel controls <code>riptide_mapping2</code> (<a href="perception/map.html">The course map</a>):</p>
+      <ul>
+        <li><strong>Tag calibration</strong>: with Talos looking at the AprilTag board, <strong>Calibrate</strong> runs the <code>map/model_tf</code> action, which averages 10 samples of <code>world</code> → <code>estimated_origin_frame</code> (the tag) and, if they agree closely enough, moves the map there. A bar shows the samples taken.</li>
+        <li><strong>Mapping target</strong>: which object mapping fuses now (empty = automatic, the closest), and <strong>Lock map</strong>, which freezes every estimate. Both go to the <code>mapping_target</code> service and read back from <code>state/mapping</code> (<a href="perception/frames.html#targets">What gets fused</a>).</li>
+        <li><strong>Reset mapping</strong> throws the estimates away and starts again from the prior.</li>
+      </ul>
+      <p><strong>Edit map</strong> in the command bar (<kbd>Ctrl+M</kbd>) opens the <strong>prior map editor</strong> for riptide_mapping's <code>config.yaml</code>. It edits the source tree's copy, so a save reaches the robot at its next build. Move props in 2D or 3D, type poses, re-parent, and <strong>Save</strong>: only the changed values are written, and comments and order stay as they were. A running simulator pauses while you edit. A second layer, <strong>Sim course</strong>, moves the simulator's props instead, and the two can be copied into each other. That is how you test a tree against a course that doesn't match the prior.</p>
+    </div>
+    <figure class="fig">
+      <img class="media" src="/talos-explained/media/nereus/viewer-prior-map-editor.webp" width="1600" height="1000" loading="lazy" alt="The prior map editor: a blue bar reading EDITING PRIOR MAP · config.yaml · simulator paused, the Map objects table on the left with 44 objects and their x, y, z and yaw, a 2D chart of the pool with the props in the middle, and the Inspector on the right showing the map origin on the AprilTag.">
+      <figcaption><b>Editing the prior map.</b> 44 objects from <code>riptide_mapping2</code>'s config with their poses relative to their parents (left), the pool as a 2D chart (middle), and the map origin on the AprilTag in the Inspector (right).</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="robot-panels" data-short="Robot panels">Recording, Bagging, Electrical, Actuators</h2>
+      <p>The tabs under the camera cards are for the real robot. In sim most of their services aren't there, and the panels say so.</p>
+      <dl class="spec">
+        <dt>Recording</dt><dd>SVO recording on the robot, one file per camera, through the ZED driver's <code>start_svo_rec</code> / <code>stop_svo_rec</code>. <strong>Capture image</strong> saves the newest front-camera frame on the robot (<code>capture_image</code>). A red <code>REC</code> chip shows in the command bar while a camera records.</dd>
+        <dt>Bagging</dt><dd><code>ros2 bag record</code> on the robot over SSH (prefilled <code>ros@orin2</code>, bags in <code>~/bags</code>), or on this laptop. A robot bag keeps recording if the viewer closes or the link drops. Pick <em>All</em> topics with a <em>Leave out</em> regex (<code>image|point_cloud</code>), or tick topics and save them as a preset. A red <code>BAG</code> chip shows while it records (<a href="debugging.html#bags">Recording bags</a>).</dd>
+        <dt>Electrical</dt><dd>The old RViz electrical panel: power commands (cycle computer, cycle robot and kill robot power ask first), LEDs, the IMU's magnetometer calibration and registers, <strong>Tare gyro</strong> (hold Talos still), the pinger and IVC.</dd>
+        <dt>Actuators</dt><dd><strong>Arm</strong> first: Fire torpedo, Drop marker and the claw buttons need it. The POAC board only arms while Talos is enabled. <strong>Reload / disarm</strong> tells the board the torpedoes are reloaded (count back to 2). The status line shows claw and torpedo connections and rounds left.</dd>
+      </dl>
+    </div>
+    <figure class="fig">
+      <div class="media-grid vt-grid4">
+        <figure><img class="media" src="/talos-explained/media/nereus/panel-actuators-armed.webp" width="432" height="273" loading="lazy" alt="Actuators panel, armed: Claw Connected, Torpedo Connected, Disarm, Fire torpedo, Drop marker, Open claw."><figcaption><b>Actuators</b>, armed by the tree.</figcaption></figure>
+        <figure><img class="media" src="/talos-explained/media/nereus/panel-recording.webp" width="432" height="590" loading="lazy" alt="Recording panel: SVO path on the robot ~/svos/run, Add date and time, Start and Stop for FFC and DFC marked service unavailable, and Capture image."><figcaption><b>Recording.</b> "Service unavailable" in sim.</figcaption></figure>
+        <figure><img class="media" src="/talos-explained/media/nereus/panel-bagging.webp" width="432" height="590" loading="lazy" alt="Bagging panel: Robot or This computer, ssh ros@orin2 with Can't reach ros@orin2 in red, folder ~/bags, name talos, All or Selected topics."><figcaption><b>Bagging.</b> Here the robot was off, so "Can't reach ros@orin2".</figcaption></figure>
+        <figure><img class="media" src="/talos-explained/media/nereus/panel-electrical.webp" width="432" height="590" loading="lazy" alt="Electrical panel: red Cycle computer, Cycle robot and Kill robot power buttons, Cycle IMU, acoustics, fans and LEDs buttons, Clear depth, the IMU mag cal and register fields, and FOG."><figcaption><b>Electrical.</b> Red buttons ask before they cut power.</figcaption></figure>
+      </div>
+    </figure>
+
+    <div class="prose">
+      <h2 id="sim-tools">Tools that only exist in sim</h2>
+      <dl class="spec">
+        <dt>Simulation</dt><dd>Speed from a crawl to 10× (it sets the simulator's <code>real_time_factor</code>), Pause and 1×. <strong>Sync sim</strong> moves the simulated Talos to where the EKF thinks it is; <strong>Reset sim</strong> puts it back at the start. Sync sim is pinned to the toolbar by default.</dd>
+        <dt>Run tracking</dt><dd>The RoboSub 2026 scorecard: role and coin-flip options, <strong>Start run</strong> (it resets the props), the clock on sim time, per-task status, events (torpedo hits, drops, magnets) and a manual score adjustment. Nereus has no pinger, so pinger points can't score.</dd>
+        <dt>Display</dt><dd>What the pool view draws: water, walls, floor, tiles, the AprilTag board, the course (simulator truth, or the mapping estimate as a translucent <em>ghost</em> over it), the EKF estimate as a translucent robot, and lighting. None of this changes what the robot's cameras see.</dd>
+        <dt>Scene</dt><dd>Water appearance and lighting for this view only, and the simulator's mechanism buttons.</dd>
+        <dt>View › Pool</dt><dd>Restarts the simulator in another pool (RoboSub 2026 or the RPAC dive well). The robot stack keeps running.</dd>
+      </dl>
+    </div>
+    <figure class="fig">
+      <div class="media-grid">
+        <figure><img class="media" src="/talos-explained/media/nereus/viewer-scorecard.webp" width="1600" height="1000" loading="lazy" alt="The RoboSub 2026 scorecard window over the pool view: run clock, coin-flip role, Start run, Stop run, Reset run and tasks, status lines, score adjustment, task status, magnet targets GREEN, and recent dropper and magnet events."><figcaption><b>The scorecard</b> after a tree run. It reads 0 points because this run was started by hand after the gate; the events list is right.</figcaption></figure>
+        <figure><img class="media" src="/talos-explained/media/nereus/viewer-display-window.webp" width="1600" height="1000" loading="lazy" alt="The Display window: water, pool walls and deck, floor, tiles, AprilTag board, Course source (Auto, Mapping ghost, Meshes), Localization estimate (Robot ghost, Control gizmo, Follow) and Viewer lighting."><figcaption><b>Display.</b> What this view draws, separate from what the cameras see.</figcaption></figure>
+      </div>
+    </figure>
+
+    <div class="prose">
+      <h2 id="layouts" data-short="Layouts and shortcuts">Layouts, search and shortcuts</h2>
+      <ul>
+        <li><strong>Layouts</strong>: <em>Standard</em>, <em>Wide view</em> (cameras and map in a strip under the pool view) and <em>Camera wall</em> (big feeds), on <kbd>Ctrl+Shift+1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>. Drag a tab to dock or float any window. <em>Save current as</em> keeps an arrangement under a name in <code>~/.config/nereus/layouts/</code>. <em>Lock layout</em> stops accidental drags during a run.</li>
+        <li><strong>The toolbar is yours</strong>: right-click any button or checkbox in any window and <em>Pin to toolbar</em> (Fire torpedo, Pause, …). The pinned copy works with its window closed.</li>
+        <li><strong>Search</strong> (<kbd>Ctrl+P</kbd>) finds windows, layouts, themes, every button and switch in every window (even closed ones), trees (<em>Run &lt;tree&gt;</em>), plots (<code>plot odom z</code>) and typed moves.</li>
+        <li><strong>Plots and Topics</strong> (Windows menu): live plots of any field of any topic, and a topic browser. Right-click a Motion row for <em>Plot Z</em> (<a href="debugging.html#plots">Plotting live</a>).</li>
+        <li><strong>Themes</strong>: <em>Heat sheet</em> (default, light, for a sunny deck) and its night twin <em>Timing board</em>, plus ten more under View › Theme.</li>
+        <li><strong>Follow and chase</strong>: <kbd>Ctrl+F</kbd> keeps the camera on the focus target. The run video above also turns the camera with Talos's heading (View › <em>Turn with the vehicle</em>), a local change that isn't on Nereus's main branch yet, so your build may not have it.</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="media-grid">
+        <figure><img class="media" src="/talos-explained/media/nereus/viewer-layout-wide.webp" width="1600" height="1000" loading="lazy" alt="Wide view layout: the pool view across the top with the camera cards and course map in a strip beneath."><figcaption><b>Wide view.</b> The pool view gets the width.</figcaption></figure>
+        <figure><img class="media" src="/talos-explained/media/nereus/viewer-layout-camera-wall.webp" width="1600" height="1000" loading="lazy" alt="Camera wall layout: large forward and downward camera feeds with the panels at the side."><figcaption><b>Camera wall.</b> For watching detections.</figcaption></figure>
+      </div>
+    </figure>
+    <figure class="fig narrow">
+      <div class="panel">
+        <div class="controls"><label>Find <input id="keys-find" type="search" placeholder="e.g. layout, tree, map" autocomplete="off"></label><span id="keys-count"></span></div>
+        <div class="vk" id="keys-list"></div>
+      </div>
+      <figcaption><b>Every shortcut, from the viewer's F1 window.</b> Type to filter. "Gizmo" and "Free camera" work in the pool view; the rest work anywhere unless a text field has the keyboard.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="pool-vs-sim" data-short="Pool vs sim">At the pool and in sim</h2>
+      <p>It's the same binary with a different launch file. In sim, <code>sim.launch.py</code> starts the simulator, the whole stack and the viewer, and the viewer takes its scene from the simulator's latched <code>simulator/scenario</code> topic. At the pool, <code>robot.launch.py</code> starts only the viewer. It loads the scenario pack itself and draws Talos at the EKF's estimate.</p>
+    </div>
+    <div class="prose">
+      <pre class="cmd" data-where="your laptop, sim"><code>ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim</code></pre>
+      <pre class="cmd" data-where="op-top, pool"><code>source ~/osu-uwrt/release/scripts/dds_scripts/config_rmw.bash
+ros2 launch nereus robot.launch.py pool:=rpac</code></pre>
+      <div class="table-scroll"><table class="params vs">
+        <thead><tr><th></th><th>In sim</th><th>At the pool</th></tr></thead>
+        <tbody>
+          <tr><td>Talos is drawn at</td><td>Simulator truth (<code>PHYSICS CONNECTED</code>)</td><td>The EKF estimate, <code>map</code> → <code>talos/base_link</code> (<code>ROBOT (ESTIMATE)</code>)</td></tr>
+          <tr><td>Clock</td><td>Sim time from <code>/clock</code></td><td>Wall clock</td></tr>
+          <tr><td>Course drawn</td><td>The simulator's props</td><td>The mapping estimate, as riptide_rviz meshes at mapping's frames. <code>robot_only:=true</code> hides the simulated pool.</td></tr>
+          <tr><td>Kill switch</td><td>The simulator plays the POAC board</td><td>The POAC board, and the physical switch</td></tr>
+          <tr><td>Command bar chips</td><td>Grey, except DVL "Lock"</td><td>FOG temperature, DVL lock, both batteries; CPU temperature if <code>/diagnostics_agg</code> is published</td></tr>
+          <tr><td>Recording, Bagging, Electrical</td><td>Mostly "unavailable"</td><td>Live</td></tr>
+          <tr><td>Simulation, scorecard, Truth/ROS, ghosts</td><td>Yes</td><td>Hidden</td></tr>
+          <tr><td>Closing the viewer</td><td>Ends the whole launch (unless <code>close_with_viewer:=false</code>)</td><td>The robot carries on, still enabled if it was</td></tr>
+        </tbody>
+      </table></div>
+      <p>The camera cards show the ZED driver's compressed images, so they work at the pool too. They're the heaviest thing on the tether: close a card, or switch the layout, if the link struggles. The point clouds are heavier still, and they're off until ticked.</p>
+    </div>
+
+    <div class="prose">
+      <h2 id="ros" data-short="How it connects">How it connects</h2>
+      <p>The viewer is three ROS nodes on the laptop: <code>/nereus_viewer</code> (scene, cameras, overlays), <code>/talos/viewer_panels</code> (every panel) and <code>/talos/viewer_plots</code> (only what you plot). It never logs into the robot except for Bagging, which uses SSH. Everything else crosses as ordinary ROS traffic.</p>
+      <ul>
+        <li><strong>Over Zenoh.</strong> The team runs ROS 2 on <code>rmw_zenoh_cpp</code>. The Orin runs the router, and a laptop that has sourced <code>config_rmw.bash</code> joins it as a client at <code>tcp/orin2:7447</code> (<a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/dds_scripts/zenoh/zenoh_session.json5"><code>zenoh_session.json5</code></a>). Same <code>ROS_DOMAIN_ID</code>, same RMW, and the robot workspace sourced so the viewer knows <code>riptide_msgs2</code> (<a href="computers.html#zenoh">ROS 2 over Zenoh</a>).</li>
+        <li><strong>Names are relative</strong> to the robot namespace, <code>/talos</code>, so <code>command/software_kill</code> is <code>/talos/command/software_kill</code>.</li>
+        <li><strong>Nothing hidden.</strong> Anything the viewer does, you can do from a terminal with the same topic or service. That's how the pre-test tool holds a bench kill on slot 3.</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="panel vw" id="wire-fig">
+        <div class="vw-groups" id="wire-groups" role="group" aria-label="Panel"></div>
+        <div class="vw-head" id="wire-head"></div>
+        <div class="vw-list" id="wire-list"></div>
+      </div>
+      <figcaption><b>Every ROS interface the viewer uses, by panel.</b> Names come from the viewer's config. The "other side" and the rates come from the ROS graph captured while RepairCompMpcTree ran in Nereus. Rates are what a loaded desktop delivered in sim, not robot specs. "On the robot" names who answers when the simulator isn't there. Tap a panel.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="files">Where this lives</h2>
+      <ul class="src-list">
+        <li>The viewer: <a href="https://github.com/osu-uwrt/nereus/tree/main/integrations/ros2/viewer"><code>nereus/integrations/ros2/viewer</code></a>. <code>src/app.cpp</code> is the window and pool view; <code>panels/</code> holds one file per panel and one per provider (<code>uwrt_motion.cpp</code>, <code>uwrt_autonomy.cpp</code>, …); <code>src/prior_map_editor.cpp</code> is Edit map.</li>
+        <li>Its config: <a href="https://github.com/osu-uwrt/nereus/tree/main/content/viewer"><code>nereus/content/viewer</code></a>, with the themes in <code>themes/</code>.</li>
+        <li>Launch files: <a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py"><code>sim.launch.py</code></a> and <a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/robot.launch.py"><code>robot.launch.py</code></a>.</li>
+        <li>Your own settings: <code>~/.config/nereus/</code> (theme, layout, saved layouts and plots, bag presets). Screenshots (<kbd>F12</kbd>): <code>~/Pictures/Nereus/</code>.</li>
+        <li>This page's data: <code>tools/viewer/build_data.py</code> and <code>tools/viewer/test_move.mjs</code> in this site's repo.</li>
+      </ul>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

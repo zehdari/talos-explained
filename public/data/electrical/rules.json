@@ -1,0 +1,135 @@
+{
+ "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/JLCPCB_4Layers.RUL",
+ "stackup_source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/JLCPCB_4Layers.stackup",
+ "rules": [
+  {
+   "rule": "Clearance JLCPCB 4 layer",
+   "label": "Clearance",
+   "mm": 0.2,
+   "mil": "7.874mil",
+   "means": "Minimum gap between copper on different nets"
+  },
+  {
+   "rule": "Width JLCPCB 4 layer",
+   "label": "Track width, minimum",
+   "mm": 0.09,
+   "mil": "3.5433mil",
+   "means": "Thinnest track allowed"
+  },
+  {
+   "rule": "Width JLCPCB 4 layer",
+   "label": "Track width, default",
+   "mm": 0.25,
+   "mil": "9.8425mil",
+   "means": "What a new track starts at; power needs far wider"
+  },
+  {
+   "rule": "RoutingVias JLCPCB 4 layer",
+   "label": "Via hole, default",
+   "mm": 0.5,
+   "mil": "19.685mil",
+   "means": "Drill for a new via"
+  },
+  {
+   "rule": "RoutingVias JLCPCB 4 layer",
+   "label": "Via pad, default",
+   "mm": 1.0,
+   "mil": "39.3701mil",
+   "means": "Copper ring diameter of a new via"
+  },
+  {
+   "rule": "RoutingVias JLCPCB 4 layer",
+   "label": "Via hole, minimum",
+   "mm": 0.3,
+   "mil": "11.811mil",
+   "means": "Smallest drill for a via"
+  },
+  {
+   "rule": "HoleSize JLCPCB Pad",
+   "label": "Pad hole, minimum",
+   "mm": 0.5,
+   "mil": "19.685mil",
+   "means": "Smallest drill for a through-hole pad"
+  },
+  {
+   "rule": "MinimumAnnularRing JLCPCB Via",
+   "label": "Annular ring, via",
+   "mm": 0.075,
+   "mil": "2.9528mil",
+   "means": "Copper left around a via drill"
+  },
+  {
+   "rule": "BoardOutlineClearance JLCPCB",
+   "label": "Copper to board edge",
+   "mm": 0.3,
+   "mil": "11.811mil",
+   "means": "Keep copper this far from the outline"
+  },
+  {
+   "rule": "SilkToSolderMaskClearance JLCPCB",
+   "label": "Silkscreen to pads",
+   "mm": 0.15,
+   "mil": "5.9055mil",
+   "means": "Silk is clipped this far from exposed copper"
+  },
+  {
+   "rule": "ComponentClearance",
+   "label": "Component to component",
+   "mm": 0.254,
+   "mil": "10mil",
+   "means": "Minimum body-to-body gap"
+  }
+ ],
+ "stackup": [
+  {
+   "name": "Top Layer",
+   "kind": "copper",
+   "mm": 0.035,
+   "material": null,
+   "er": null
+  },
+  {
+   "name": "Dielectric 1",
+   "kind": "dielectric",
+   "mm": 0.2,
+   "material": "7628",
+   "er": "4.6"
+  },
+  {
+   "name": "Mid Layer 1",
+   "kind": "copper",
+   "mm": 0.018,
+   "material": null,
+   "er": null
+  },
+  {
+   "name": "Core",
+   "kind": "dielectric",
+   "mm": 1.065,
+   "material": "FR-4",
+   "er": "4.5"
+  },
+  {
+   "name": "Mid Layer 2",
+   "kind": "copper",
+   "mm": 0.018,
+   "material": null,
+   "er": null
+  },
+  {
+   "name": "Dielectric 2",
+   "kind": "dielectric",
+   "mm": 0.2,
+   "material": "7628",
+   "er": "4.6"
+  },
+  {
+   "name": "Bottom Layer",
+   "kind": "copper",
+   "mm": 0.035,
+   "material": null,
+   "er": null
+  }
+ ],
+ "total_mm": 1.57
+}

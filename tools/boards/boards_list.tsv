@@ -1,0 +1,13 @@
+# id	PcbDoc (relative to electric_boogaloo)	ProjectTitle ('' = remove template placeholder)	BoardRevision
+poac	TalosBoards/Year One/PoActuator/Combined_Power_Actuator/PoactuatorPCB4.PcbDoc		
+esc	TempestBoards/MK2/ESC/ESC.PcbDoc_Large.PcbDoc	ESC MK II	1.1
+ccbb	TempestBoards/MK2/CameraCageBB/CameraCageBB.PcbDoc	Camera Cage BB MK II	1.1
+led	TalosBoards/Year One/LED_Board/LED_Control.PcbDoc		
+ivc	TalosBoards/Year Two/IVC/IvcBoard.PcbDoc	IVC Board	1.0
+sbh_mcu	TempestBoards/MK2/SBH_MCU/SBH_MCU.PcbDoc	Smart Battery Housing | MCU	1.1
+sbh_bms	TempestBoards/MK2/SBH_BMS/SBM_BMS.PcbDoc	Smart Battery Housing | BMS	1.1
+agx_breakout	TempestBoards/MK2/Jetson_AGX_Breakout/jetson_agx_breakout.PcbDoc	Jetson AGX Breakout	1.0
+agx_m2	TalosBoards/Year One/Jetson_AGX_M.2/Jetson_AGX_M.2.PcbDoc		
+led_module	TalosBoards/Year One/LED_aluminum/LED_aluminum/LED_Al.PcbDoc	LED Aluminum	1.0
+mk2_power	TempestBoards/MK2/PowerBoard/MK2_PD.PcbDoc	Power MK II	1.1
+mk2_actuator	TempestBoards/MK2/ActuatorMKII/ActuatorMKII.PcbDoc	Actuator MK II	1.1

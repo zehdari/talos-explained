@@ -1,0 +1,484 @@
+{
+ "generated": "2026-10-30",
+ "about": "Power tree from the batteries to the loads, as far as the board designs show. Each node has the board it lives on; edges carry the net name from the design. \"confidence\" is confirmed (seen in a schematic/netlist or code) or inferred.",
+ "nodes": [
+  {
+   "id": "bat_port",
+   "label": "Port battery",
+   "kind": "battery",
+   "board": "sbh_bms",
+   "detail": "5 Li-ion cells in series (BQ40Z80 config), 45 A protector fuse",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "bat_stbd",
+   "label": "Starboard battery",
+   "kind": "battery",
+   "board": "sbh_bms",
+   "detail": "same housing design as port",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "or",
+   "label": "Ideal-diode OR",
+   "kind": "distribution",
+   "board": "poac",
+   "detail": "2 x LTC4412 + 4 x SiR167DP. Whichever battery is higher supplies V+; STAT pins report which are supplying.",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "vplus",
+   "label": "V+ battery bus",
+   "kind": "rail",
+   "board": "poac",
+   "volts": "battery (about 15-21 V for 5 cells)",
+   "detail": "Diagnostics warn below 18.5 V (battery_volt.warn) and list 17 V as thruster_cutoff.",
+   "confidence": "confirmed",
+   "source": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/diagnostic_thresholds.yaml"
+  },
+  {
+   "id": "kill",
+   "label": "Kill switch",
+   "kind": "switch",
+   "board": "poac",
+   "detail": "3 x SiR167DP high-side P-FETs with TC4432 gate drivers. Needs the physical switch AND the RP2040 SOFTWARE_KILL line to allow power.",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "motor_pwr",
+   "label": "MOTOR_PWR",
+   "kind": "rail",
+   "board": "poac",
+   "volts": "V+ when enabled, 0 when killed",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "esc0",
+   "label": "ESC board 0",
+   "kind": "board",
+   "board": "esc",
+   "detail": "reverse protection, 60 A fuse, 4 x 15 A fuses, 4 ESCs",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "esc1",
+   "label": "ESC board 1",
+   "kind": "board",
+   "board": "esc",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "thrusters",
+   "label": "8 thrusters",
+   "kind": "load",
+   "detail": "4 per ESC board",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "vreg",
+   "label": "Vreg",
+   "kind": "rail",
+   "board": "poac",
+   "volts": "V+ minus a Schottky drop",
+   "detail": "MBRB2545CT Schottky from V+; measured as \"balanced_voltage\" (diagnostics expect 18.5-21.5 V)",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "r15",
+   "label": "15 V rail",
+   "kind": "rail",
+   "board": "poac",
+   "volts": 15,
+   "detail": "PS1 TDK-Lambda i6A4W (20 A module). Reported as \"twelve_volt_voltage\"; diagnostics expect 14.7-16.0 V.",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "r5",
+   "label": "5 V rail",
+   "kind": "rail",
+   "board": "poac",
+   "volts": 5,
+   "detail": "PS2 TDK-Lambda i6A4W (20 A module); diagnostics expect 4.7-5.7 V",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "r12",
+   "label": "12 V (servo)",
+   "kind": "rail",
+   "board": "poac",
+   "volts": 12,
+   "detail": "MIC29300-12 LDO from 15 V; only goes to LID_CONN1. Not measured by the ADC.",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "r33",
+   "label": "3.3 V (each board)",
+   "kind": "rail",
+   "volts": 3.3,
+   "detail": "LM1117-3.3 from 5 V on every RP2040 board; the POAC reports its own (3.2-3.4 V expected)",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "servo",
+   "label": "Torpedo/marker servo",
+   "kind": "load",
+   "board": "poac",
+   "detail": "Hiwonder bus servo on the lid connector",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "fan_poac",
+   "label": "Board-stack fan",
+   "kind": "load",
+   "board": "poac",
+   "detail": "5 V, switched",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "stack",
+   "label": "Stack link",
+   "kind": "distribution",
+   "detail": "Mini-Fit Jr: CAN + V+ + 5V + 15V",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "led",
+   "label": "LED board",
+   "kind": "board",
+   "board": "led",
+   "detail": "LED drivers run from V+, logic from 5 V",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "ivc",
+   "label": "IVC board",
+   "kind": "board",
+   "board": "ivc",
+   "detail": "V+ (1.5 A fuse) -> isolated +/-24 V for the transducer amp; 5 V -> +/-5 V for receive",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "ccbb",
+   "label": "Camera cage breakout",
+   "kind": "board",
+   "board": "ccbb",
+   "detail": "gets 15 V and 5 V from the POAC \"CAMERA CAGE\" connector",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "orin",
+   "label": "Jetson AGX Orin",
+   "kind": "load",
+   "board": "ccbb",
+   "detail": "15 V through FDD4141 switch (ORIN_SW, on at boot)",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "dvl",
+   "label": "DVL",
+   "kind": "load",
+   "board": "ccbb",
+   "detail": "15 V injected on pins 7-8 of its Ethernet cable: CCBB J14 (silk \"DVL SUBCONN\") carries 15V + GND there; J13 (silk \"DVL | SWITCH\") passes the data pairs on to the network switch",
+   "confidence": "confirmed (netlist + silk); the DVL's own supply range is not in the designs"
+  },
+  {
+   "id": "switch",
+   "label": "Network switch",
+   "kind": "load",
+   "board": "ccbb",
+   "detail": "5 V on J16 (schematic \"Network Switch Power\", silk \"SWITCH\")",
+   "confidence": "confirmed (connector); switch model not in the designs"
+  },
+  {
+   "id": "peltier",
+   "label": "Peltier cooler",
+   "kind": "load",
+   "board": "ccbb",
+   "detail": "15 V switched (PELT_SW)",
+   "confidence": "inferred (only the connector and switch are confirmed; whether a Peltier is fitted today is unconfirmed)"
+  },
+  {
+   "id": "cage_fans",
+   "label": "Cage fans (up to 4)",
+   "kind": "load",
+   "board": "ccbb",
+   "detail": "5 V switched, tach inputs",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "depth",
+   "label": "Depth sensor",
+   "kind": "load",
+   "board": "ccbb",
+   "detail": "5 V + I2C (MS5837-02BA, i.e. Bar02)",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "rgb",
+   "label": "RGB status strip",
+   "kind": "load",
+   "board": "ccbb",
+   "detail": "5 V",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "ext_can",
+   "label": "External CAN devices",
+   "kind": "load",
+   "board": "ccbb",
+   "detail": "15 V + external CAN on J1/J5",
+   "confidence": "confirmed (connector); what is plugged in today is unconfirmed"
+  }
+ ],
+ "edges": [
+  {
+   "from": "bat_port",
+   "to": "or",
+   "net": "VPORT",
+   "via": "POAC J3 (Anderson PP45)"
+  },
+  {
+   "from": "bat_stbd",
+   "to": "or",
+   "net": "VSTBD",
+   "via": "POAC J4 (Anderson PP45)"
+  },
+  {
+   "from": "or",
+   "to": "vplus",
+   "net": "V+"
+  },
+  {
+   "from": "vplus",
+   "to": "kill",
+   "net": "V+"
+  },
+  {
+   "from": "kill",
+   "to": "motor_pwr",
+   "net": "MOTOR_PWR"
+  },
+  {
+   "from": "motor_pwr",
+   "to": "esc0",
+   "net": "MOTOR_PWR",
+   "via": "Redcube M4 terminals"
+  },
+  {
+   "from": "motor_pwr",
+   "to": "esc1",
+   "net": "MOTOR_PWR",
+   "via": "Redcube M4 terminals"
+  },
+  {
+   "from": "esc0",
+   "to": "thrusters",
+   "net": "ESC phases",
+   "via": "J5 Thruster SubConn"
+  },
+  {
+   "from": "esc1",
+   "to": "thrusters",
+   "net": "ESC phases",
+   "via": "J5 Thruster SubConn"
+  },
+  {
+   "from": "vplus",
+   "to": "vreg",
+   "net": "Vreg",
+   "via": "MBRB2545CT"
+  },
+  {
+   "from": "vreg",
+   "to": "r15",
+   "net": "15V",
+   "via": "PS1"
+  },
+  {
+   "from": "vreg",
+   "to": "r5",
+   "net": "5V",
+   "via": "PS2"
+  },
+  {
+   "from": "r15",
+   "to": "r12",
+   "net": "12V",
+   "via": "MIC29300-12"
+  },
+  {
+   "from": "r12",
+   "to": "servo",
+   "net": "12V",
+   "via": "LID_CONN1"
+  },
+  {
+   "from": "r5",
+   "to": "r33",
+   "net": "3V3",
+   "via": "LM1117-3.3 on each board"
+  },
+  {
+   "from": "r5",
+   "to": "fan_poac",
+   "net": "FAN_PWR"
+  },
+  {
+   "from": "vplus",
+   "to": "stack",
+   "net": "V+",
+   "via": "POAC J5"
+  },
+  {
+   "from": "r15",
+   "to": "stack",
+   "net": "15V",
+   "via": "POAC J5"
+  },
+  {
+   "from": "r5",
+   "to": "stack",
+   "net": "5V",
+   "via": "POAC J5"
+  },
+  {
+   "from": "stack",
+   "to": "led",
+   "net": "V+, 5V"
+  },
+  {
+   "from": "stack",
+   "to": "ivc",
+   "net": "V+, 5V"
+  },
+  {
+   "from": "r5",
+   "to": "esc0",
+   "net": "5V",
+   "via": "ESC stack link (logic)",
+   "confidence": "inferred (ESC J6 carries 5V; the cable to the POAC is not in the designs)"
+  },
+  {
+   "from": "r15",
+   "to": "ccbb",
+   "net": "15V",
+   "via": "POAC J6 -> CCBB J6"
+  },
+  {
+   "from": "r5",
+   "to": "ccbb",
+   "net": "5V",
+   "via": "POAC J6 -> CCBB J6"
+  },
+  {
+   "from": "ccbb",
+   "to": "orin",
+   "net": "ORIN_PWR (15V)",
+   "via": "CCBB J17"
+  },
+  {
+   "from": "ccbb",
+   "to": "dvl",
+   "net": "15V",
+   "via": "CCBB J14 pins 7-8"
+  },
+  {
+   "from": "ccbb",
+   "to": "switch",
+   "net": "5V",
+   "via": "CCBB J16"
+  },
+  {
+   "from": "ccbb",
+   "to": "peltier",
+   "net": "15V switched",
+   "via": "CCBB J3"
+  },
+  {
+   "from": "ccbb",
+   "to": "cage_fans",
+   "net": "FAN_PWR (5V)",
+   "via": "CCBB J2/J4/J7/J8"
+  },
+  {
+   "from": "ccbb",
+   "to": "depth",
+   "net": "5V",
+   "via": "CCBB J15"
+  },
+  {
+   "from": "ccbb",
+   "to": "rgb",
+   "net": "5V",
+   "via": "CCBB J9"
+  },
+  {
+   "from": "ccbb",
+   "to": "ext_can",
+   "net": "15V",
+   "via": "CCBB J1/J5"
+  }
+ ],
+ "measurements": {
+  "topic": "/talos/state/electrical (riptide_msgs2/ElectricalReadings), 1 Hz from the POAC",
+  "fields": [
+   {
+    "field": "three_volt_voltage",
+    "measures": "3V3 on the POAC",
+    "adc": "MCP3428 ch1, 10k/10k",
+    "expect": [
+     3.2,
+     3.4
+    ]
+   },
+   {
+    "field": "balanced_voltage",
+    "measures": "Vreg (battery bus after the Schottky)",
+    "adc": "ch2, 10k/1k",
+    "expect": [
+     18.5,
+     21.5
+    ]
+   },
+   {
+    "field": "twelve_volt_voltage",
+    "measures": "the 15 V rail (name is historical)",
+    "adc": "ch3, 10k/1k",
+    "expect": [
+     14.7,
+     16.0
+    ]
+   },
+   {
+    "field": "five_volt_voltage",
+    "measures": "5V",
+    "adc": "ch4, 10k/1k",
+    "expect": [
+     4.7,
+     5.7
+    ]
+   },
+   {
+    "field": "port_powering / stbd_powering",
+    "measures": "LTC4412 STAT: is this battery supplying V+",
+    "adc": "GPIO 10/11"
+   },
+   {
+    "field": "port_voltage / stbd_voltage",
+    "measures": "always 0 on the POAC",
+    "adc": null
+   }
+  ],
+  "expect_source": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/diagnostic_thresholds.yaml",
+  "code_source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L133-L157"
+ },
+ "sources": {
+  "poac_power_sheet": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator/Poactuator_Power_Circuits.SchDoc",
+  "poac_kill_sheet": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator/Poactuator_KillSwitch.SchDoc",
+  "poac_pdf": "https://github.com/osu-uwrt/electric_boogaloo/releases/tag/talos_boards",
+  "ccbb": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TempestBoards/MK2/CameraCageBB/CameraCageBB.SchDoc",
+  "esc": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TempestBoards/MK2/ESC/ESC.SchDoc",
+  "ivc": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20Two/IVC/PowerAndConnections.SchDoc",
+  "sbh_bms": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TempestBoards/MK2/SBH_BMS/SBH_BMS.SchDoc"
+ }
+}

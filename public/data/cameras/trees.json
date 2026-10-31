@@ -1,0 +1,127 @@
+{
+ "file": "RepairCompMpcTree.xml",
+ "main": "BehaviorTree",
+ "trees": [
+  {
+   "tree": "BinTree",
+   "cams": [
+    "dfc"
+   ],
+   "reachable": false
+  },
+  {
+   "tree": "BinTreeMpc",
+   "cams": [
+    "dfc"
+   ],
+   "reachable": true
+  },
+  {
+   "tree": "BuoyTree",
+   "cams": [
+    "ffc"
+   ],
+   "reachable": false
+  },
+  {
+   "tree": "DemoTableTree",
+   "cams": [
+    "dfc"
+   ],
+   "reachable": false
+  },
+  {
+   "tree": "DeployTankTree",
+   "cams": [
+    "dfc"
+   ],
+   "reachable": false
+  },
+  {
+   "tree": "GateTree",
+   "cams": [
+    "ffc"
+   ],
+   "reachable": false
+  },
+  {
+   "tree": "GateTreeMpc",
+   "cams": [
+    "ffc"
+   ],
+   "reachable": true
+  },
+  {
+   "tree": "MagnetTree",
+   "cams": [
+    "ffc"
+   ],
+   "reachable": false
+  },
+  {
+   "tree": "MagnetTreeMpc",
+   "cams": [
+    "ffc"
+   ],
+   "reachable": true
+  },
+  {
+   "tree": "NewTableTree",
+   "cams": [
+    "dfc",
+    "ffc"
+   ],
+   "reachable": false
+  },
+  {
+   "tree": "NewTableTreeMpc",
+   "cams": [
+    "dfc",
+    "ffc"
+   ],
+   "reachable": true
+  },
+  {
+   "tree": "TorpedoTree",
+   "cams": [
+    "ffc"
+   ],
+   "reachable": false
+  },
+  {
+   "tree": "TorpedoTreeMpc",
+   "cams": [
+    "ffc"
+   ],
+   "reachable": true
+  },
+  {
+   "tree": "dropObject",
+   "cams": [
+    "dfc"
+   ],
+   "reachable": false
+  },
+  {
+   "tree": "dropObjectMpc",
+   "cams": [
+    "dfc"
+   ],
+   "reachable": true
+  },
+  {
+   "tree": "pickupObject",
+   "cams": [
+    "dfc"
+   ],
+   "reachable": false
+  },
+  {
+   "tree": "pickupObjectMpc",
+   "cams": [
+    "dfc"
+   ],
+   "reachable": true
+  }
+ ]
+}

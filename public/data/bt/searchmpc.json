@@ -1,0 +1,839 @@
+{
+ "source": {
+  "repo": "riptide_autonomy",
+  "branch": "autonomy-mapping",
+  "commit": "b636000",
+  "file": "trees/RepairCompMpcTree.xml"
+ },
+ "tree": {
+  "tag": "BehaviorTree",
+  "line": 2062,
+  "id": "SearchMpc",
+  "children": [
+   {
+    "tag": "Sequence",
+    "line": 2063,
+    "name": "Search while moving",
+    "children": [
+     {
+      "tag": "SetBlackboard",
+      "line": 2064,
+      "attrs": {
+       "output_key": "0",
+       "value": "0"
+      }
+     },
+     {
+      "tag": "SetBlackboard",
+      "line": 2065,
+      "name": "First sweep: arc each way round the estimate (rad), at max_dist",
+      "attrs": {
+       "output_key": "sweep_first",
+       "value": "0.5"
+      }
+     },
+     {
+      "tag": "SetBlackboard",
+      "line": 2066,
+      "name": "First sweep: pan each way along the arc (rad); the forward camera's +-27 deg then sees +-dist*tan(27 deg + pan) round the estimate, +-3 m at 2 m",
+      "attrs": {
+       "output_key": "pan_first",
+       "value": "0.5"
+      }
+     },
+     {
+      "tag": "SetBlackboard",
+      "line": 2067,
+      "name": "Wider sweeps after one that saw nothing: arc (rad), new viewing angles for a board facing another way or hidden from one side",
+      "attrs": {
+       "output_key": "sweep_wide",
+       "value": "1.0"
+      }
+     },
+     {
+      "tag": "SetBlackboard",
+      "line": 2068,
+      "name": "Wider sweeps: pan (rad)",
+      "attrs": {
+       "output_key": "pan_wide",
+       "value": "0.7"
+      }
+     },
+     {
+      "tag": "SetBlackboard",
+      "line": 2069,
+      "name": "First sweep: arc per pan (rad); each pan is yaw-rate limited, so fewer pans are faster",
+      "attrs": {
+       "output_key": "pan_step_first",
+       "value": "0.25"
+      }
+     },
+     {
+      "tag": "SetBlackboard",
+      "line": 2070,
+      "name": "Wider sweeps: arc per pan (rad)",
+      "attrs": {
+       "output_key": "pan_step_wide",
+       "value": "0.5"
+      }
+     },
+     {
+      "tag": "SetBlackboard",
+      "line": 2071,
+      "name": "Once seen, hold there at most this long for the map to converge (s)",
+      "attrs": {
+       "output_key": "hold_secs",
+       "value": "8"
+      }
+     },
+     {
+      "tag": "SetBlackboard",
+      "line": 2072,
+      "name": "0: first sweep, 1: wider and further, 2: wider and closer, then round again; moves on only after a sweep that saw nothing",
+      "attrs": {
+       "output_key": "stage",
+       "value": "0"
+      }
+     },
+     {
+      "tag": "Action",
+      "line": 2073,
+      "id": "SetStatus",
+      "attrs": {
+       "status": "searching"
+      }
+     },
+     {
+      "tag": "Action",
+      "line": 2074,
+      "id": "Format",
+      "attrs": {
+       "format": "{object_name}_frame",
+       "out": "frame"
+      }
+     },
+     {
+      "tag": "Action",
+      "line": 2075,
+      "id": "SetMappingTarget",
+      "attrs": {
+       "lock_map": "0",
+       "target_object": "{object_name}",
+       "time_limit_secs": "3"
+      }
+     },
+     {
+      "tag": "ForceSuccess",
+      "line": 2076,
+      "children": [
+       {
+        "tag": "Decorator",
+        "line": 2077,
+        "id": "RetryUntilSuccessfulOrTimeout",
+        "name": "Sweep until the map has it",
+        "attrs": {
+         "num_seconds": "{timeout_secs}"
+        },
+        "children": [
+         {
+          "tag": "Sequence",
+          "line": 2078,
+          "name": "One sweep",
+          "children": [
+           {
+            "tag": "IfThenElse",
+            "line": 2079,
+            "name": "This sweep's arc, pan and distance",
+            "children": [
+             {
+              "tag": "Condition",
+              "line": 2080,
+              "id": "CompareNums",
+              "attrs": {
+               "a": "{stage}",
+               "b": "0",
+               "test": "=="
+              }
+             },
+             {
+              "tag": "Sequence",
+              "line": 2081,
+              "name": "first sweep",
+              "children": [
+               {
+                "tag": "SetBlackboard",
+                "line": 2082,
+                "attrs": {
+                 "output_key": "sweep",
+                 "value": "{sweep_first}"
+                }
+               },
+               {
+                "tag": "SetBlackboard",
+                "line": 2083,
+                "attrs": {
+                 "output_key": "pan",
+                 "value": "{pan_first}"
+                }
+               },
+               {
+                "tag": "SetBlackboard",
+                "line": 2084,
+                "attrs": {
+                 "output_key": "pan_step",
+                 "value": "{pan_step_first}"
+                }
+               },
+               {
+                "tag": "SetBlackboard",
+                "line": 2085,
+                "attrs": {
+                 "output_key": "dist",
+                 "value": "{max_dist}"
+                }
+               }
+              ]
+             },
+             {
+              "tag": "IfThenElse",
+              "line": 2087,
+              "children": [
+               {
+                "tag": "Condition",
+                "line": 2088,
+                "id": "CompareNums",
+                "attrs": {
+                 "a": "{stage}",
+                 "b": "1",
+                 "test": "=="
+                }
+               },
+               {
+                "tag": "Sequence",
+                "line": 2089,
+                "name": "wider and further: more of the sides in view",
+                "children": [
+                 {
+                  "tag": "SetBlackboard",
+                  "line": 2090,
+                  "attrs": {
+                   "output_key": "sweep",
+                   "value": "{sweep_wide}"
+                  }
+                 },
+                 {
+                  "tag": "SetBlackboard",
+                  "line": 2091,
+                  "attrs": {
+                   "output_key": "pan",
+                   "value": "{pan_wide}"
+                  }
+                 },
+                 {
+                  "tag": "SetBlackboard",
+                  "line": 2092,
+                  "attrs": {
+                   "output_key": "pan_step",
+                   "value": "{pan_step_wide}"
+                  }
+                 },
+                 {
+                  "tag": "Action",
+                  "line": 2093,
+                  "id": "Math",
+                  "attrs": {
+                   "a": "{max_dist}",
+                   "b": "1.5",
+                   "operator": "*",
+                   "out": "dist"
+                  }
+                 }
+                ]
+               },
+               {
+                "tag": "Sequence",
+                "line": 2095,
+                "name": "wider and closer: a small or hard to see target, or one beyond the estimate",
+                "children": [
+                 {
+                  "tag": "SetBlackboard",
+                  "line": 2096,
+                  "attrs": {
+                   "output_key": "sweep",
+                   "value": "{sweep_wide}"
+                  }
+                 },
+                 {
+                  "tag": "SetBlackboard",
+                  "line": 2097,
+                  "attrs": {
+                   "output_key": "pan",
+                   "value": "{pan_first}"
+                  }
+                 },
+                 {
+                  "tag": "SetBlackboard",
+                  "line": 2098,
+                  "attrs": {
+                   "output_key": "pan_step",
+                   "value": "{pan_step_wide}"
+                  }
+                 },
+                 {
+                  "tag": "Action",
+                  "line": 2099,
+                  "id": "Math",
+                  "attrs": {
+                   "a": "{max_dist}",
+                   "b": "0.75",
+                   "operator": "*",
+                   "out": "dist"
+                  }
+                 },
+                 {
+                  "tag": "IfThenElse",
+                  "line": 2100,
+                  "children": [
+                   {
+                    "tag": "Condition",
+                    "line": 2101,
+                    "id": "CompareNums",
+                    "attrs": {
+                     "a": "{dist}",
+                     "b": "{min_dist}",
+                     "test": "<"
+                    }
+                   },
+                   {
+                    "tag": "SetBlackboard",
+                    "line": 2102,
+                    "attrs": {
+                     "output_key": "dist",
+                     "value": "{min_dist}"
+                    }
+                   },
+                   {
+                    "tag": "AlwaysSuccess",
+                    "line": 2103
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "Action",
+            "line": 2108,
+            "id": "Info",
+            "attrs": {
+             "message": "Sweeping {sweep} rad each way round {object_name}'s estimate at {dist} m, panning {pan} rad (stage {stage})"
+            }
+           },
+           {
+            "tag": "Action",
+            "line": 2109,
+            "id": "Math",
+            "attrs": {
+             "a": "{sweep}",
+             "b": "-1",
+             "operator": "*",
+             "out": "neg_sweep"
+            }
+           },
+           {
+            "tag": "Action",
+            "line": 2110,
+            "id": "Math",
+            "attrs": {
+             "a": "{sweep}",
+             "b": "-2",
+             "operator": "*",
+             "out": "back_sweep"
+            }
+           },
+           {
+            "tag": "Action",
+            "line": 2111,
+            "id": "AddWaypoint",
+            "name": "in front, facing it",
+            "attrs": {
+             "frame": "{frame}",
+             "heading": "",
+             "look_frame": "{frame}",
+             "look_x": "",
+             "look_y": "",
+             "look_z": "",
+             "out": "sweep_path",
+             "path": "",
+             "pitch": "",
+             "roll": "",
+             "spin": "",
+             "spin_rate": "",
+             "x": "{dist}",
+             "y": "0",
+             "yaw": "",
+             "yaw_frame": "",
+             "yaw_offset": "",
+             "z": "0"
+            }
+           },
+           {
+            "tag": "Action",
+            "line": 2112,
+            "id": "AddArc",
+            "name": "round it one way",
+            "attrs": {
+             "approach": "false",
+             "cx": "0",
+             "cy": "0",
+             "end_radius": "",
+             "frame": "{frame}",
+             "heading": "",
+             "look_frame": "{frame}",
+             "look_x": "",
+             "look_y": "",
+             "look_z": "",
+             "out": "sweep_path",
+             "pan": "{pan}",
+             "pan_step": "{pan_step}",
+             "path": "{sweep_path}",
+             "radius": "{dist}",
+             "spin": "",
+             "spin_rate": "",
+             "start_angle": "0",
+             "sweep": "{sweep}",
+             "yaw": "",
+             "yaw_frame": "",
+             "yaw_offset": "",
+             "z": "0"
+            }
+           },
+           {
+            "tag": "Action",
+            "line": 2113,
+            "id": "AddArc",
+            "name": "across to the other side",
+            "attrs": {
+             "approach": "false",
+             "cx": "0",
+             "cy": "0",
+             "end_radius": "",
+             "frame": "{frame}",
+             "heading": "",
+             "look_frame": "{frame}",
+             "look_x": "",
+             "look_y": "",
+             "look_z": "",
+             "out": "sweep_path",
+             "pan": "{pan}",
+             "pan_step": "{pan_step}",
+             "path": "{sweep_path}",
+             "radius": "{dist}",
+             "spin": "",
+             "spin_rate": "",
+             "start_angle": "{sweep}",
+             "sweep": "{back_sweep}",
+             "yaw": "",
+             "yaw_frame": "",
+             "yaw_offset": "",
+             "z": "0"
+            }
+           },
+           {
+            "tag": "Action",
+            "line": 2114,
+            "id": "AddArc",
+            "name": "back to the middle",
+            "attrs": {
+             "approach": "false",
+             "cx": "0",
+             "cy": "0",
+             "end_radius": "",
+             "frame": "{frame}",
+             "heading": "",
+             "look_frame": "{frame}",
+             "look_x": "",
+             "look_y": "",
+             "look_z": "",
+             "out": "sweep_path",
+             "pan": "{pan}",
+             "pan_step": "{pan_step}",
+             "path": "{sweep_path}",
+             "radius": "{dist}",
+             "spin": "",
+             "spin_rate": "",
+             "start_angle": "{neg_sweep}",
+             "sweep": "{sweep}",
+             "yaw": "",
+             "yaw_frame": "",
+             "yaw_offset": "",
+             "z": "0"
+            }
+           },
+           {
+            "tag": "ForceSuccess",
+            "line": 2115,
+            "children": [
+             {
+              "tag": "ReactiveSequence",
+              "line": 2116,
+              "name": "Sweep, panning, until it is seen (or the map has it)",
+              "children": [
+               {
+                "tag": "Inverter",
+                "line": 2117,
+                "children": [
+                 {
+                  "tag": "Condition",
+                  "line": 2118,
+                  "id": "SeenRecently",
+                  "attrs": {
+                   "max_age_secs": "0.5",
+                   "min_score": "0.2",
+                   "object_name": "{object_name}"
+                  }
+                 }
+                ]
+               },
+               {
+                "tag": "Inverter",
+                "line": 2120,
+                "children": [
+                 {
+                  "tag": "Condition",
+                  "line": 2121,
+                  "id": "MapConverged",
+                  "attrs": {
+                   "object": "{object_name}",
+                   "target_cov": "{target_cov}"
+                  }
+                 }
+                ]
+               },
+               {
+                "tag": "Action",
+                "line": 2123,
+                "id": "FollowPath",
+                "attrs": {
+                 "frame": "",
+                 "max_depth": "-2.5",
+                 "max_speed": "",
+                 "min_depth": "-0.75",
+                 "spin_rate": "",
+                 "timeout": "90",
+                 "waypoints": "{sweep_path}"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "ForceSuccess",
+            "line": 2126,
+            "children": [
+             {
+              "tag": "Sequence",
+              "line": 2127,
+              "name": "Seen: chase it, then hold it centered until the map has it, or it is lost",
+              "children": [
+               {
+                "tag": "Condition",
+                "line": 2128,
+                "id": "SeenRecently",
+                "attrs": {
+                 "max_age_secs": "1.0",
+                 "min_score": "0.2",
+                 "object_name": "{object_name}"
+                }
+               },
+               {
+                "tag": "ForceSuccess",
+                "line": 2129,
+                "children": [
+                 {
+                  "tag": "Action",
+                  "line": 2130,
+                  "id": "CenterDetection",
+                  "name": "Chase: move square on to it (+x along its yaw) at the range it was seen from, keeping it centered; edge detections are cut off and their centers are off",
+                  "attrs": {
+                   "align_tolerance": "",
+                   "align_yaw": "",
+                   "base_frame": "",
+                   "center_depth": "",
+                   "depth_tolerance": "",
+                   "max_age_secs": "",
+                   "max_depth": "-2.5",
+                   "min_depth": "-0.75",
+                   "min_score": "",
+                   "object_frame": "",
+                   "object_name": "{object_name}",
+                   "position_tolerance": "",
+                   "standoff": "",
+                   "timeout_secs": "10",
+                   "yaw_tolerance": ""
+                  }
+                 }
+                ]
+               },
+               {
+                "tag": "Decorator",
+                "line": 2132,
+                "id": "RetryUntilSuccessfulOrTimeout",
+                "name": "Hold it centered until the map has it, or it is lost",
+                "attrs": {
+                 "num_seconds": "{hold_secs}"
+                },
+                "children": [
+                 {
+                  "tag": "Sequence",
+                  "line": 2133,
+                  "children": [
+                   {
+                    "tag": "Action",
+                    "line": 2134,
+                    "id": "Wait",
+                    "attrs": {
+                     "seconds": "0.2"
+                    }
+                   },
+                   {
+                    "tag": "Fallback",
+                    "line": 2135,
+                    "children": [
+                     {
+                      "tag": "Condition",
+                      "line": 2136,
+                      "id": "MapConverged",
+                      "attrs": {
+                       "object": "{object_name}",
+                       "target_cov": "{target_cov}"
+                      }
+                     },
+                     {
+                      "tag": "Inverter",
+                      "line": 2137,
+                      "children": [
+                       {
+                        "tag": "Condition",
+                        "line": 2138,
+                        "id": "SeenRecently",
+                        "attrs": {
+                         "max_age_secs": "2.0",
+                         "min_score": "0.2",
+                         "object_name": "{object_name}"
+                        }
+                       }
+                      ]
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "Action",
+            "line": 2145,
+            "id": "getCovariance",
+            "attrs": {
+             "Covariance": "{cov}",
+             "Target": "{object_name}"
+            }
+           },
+           {
+            "tag": "Fallback",
+            "line": 2146,
+            "children": [
+             {
+              "tag": "Condition",
+              "line": 2147,
+              "id": "CompareNums",
+              "name": "The map has it: done",
+              "attrs": {
+               "a": "{cov}",
+               "b": "{target_cov}",
+               "test": "<"
+              }
+             },
+             {
+              "tag": "ForceFailure",
+              "line": 2148,
+              "name": "Not yet: sweep again round the estimate (it moves to what was seen)",
+              "children": [
+               {
+                "tag": "IfThenElse",
+                "line": 2149,
+                "name": "Saw nothing: widen the next sweep (moving it would be a guess which way)",
+                "children": [
+                 {
+                  "tag": "Inverter",
+                  "line": 2150,
+                  "children": [
+                   {
+                    "tag": "Condition",
+                    "line": 2151,
+                    "id": "SeenRecently",
+                    "attrs": {
+                     "max_age_secs": "20",
+                     "min_score": "0.2",
+                     "object_name": "{object_name}"
+                    }
+                   }
+                  ]
+                 },
+                 {
+                  "tag": "Sequence",
+                  "line": 2153,
+                  "children": [
+                   {
+                    "tag": "Action",
+                    "line": 2154,
+                    "id": "Math",
+                    "attrs": {
+                     "a": "{stage}",
+                     "b": "1",
+                     "operator": "+",
+                     "out": "stage"
+                    }
+                   },
+                   {
+                    "tag": "IfThenElse",
+                    "line": 2155,
+                    "name": "After the closer sweep, round again",
+                    "children": [
+                     {
+                      "tag": "Condition",
+                      "line": 2156,
+                      "id": "CompareNums",
+                      "attrs": {
+                       "a": "{stage}",
+                       "b": "2",
+                       "test": ">"
+                      }
+                     },
+                     {
+                      "tag": "SetBlackboard",
+                      "line": 2157,
+                      "attrs": {
+                       "output_key": "stage",
+                       "value": "0"
+                      }
+                     },
+                     {
+                      "tag": "AlwaysSuccess",
+                      "line": 2158
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "tag": "AlwaysSuccess",
+                  "line": 2161,
+                  "name": "seen but not converged: again round where the map has it now"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "Action",
+      "line": 2168,
+      "id": "getCovariance",
+      "attrs": {
+       "Covariance": "{cov}",
+       "Target": "{object_name}"
+      }
+     },
+     {
+      "tag": "Fallback",
+      "line": 2169,
+      "name": "check covariance",
+      "children": [
+       {
+        "tag": "Condition",
+        "line": 2170,
+        "id": "CompareNums",
+        "attrs": {
+         "a": "{cov}",
+         "b": "{target_cov}",
+         "test": "<"
+        }
+       },
+       {
+        "tag": "ForceFailure",
+        "line": 2171,
+        "children": [
+         {
+          "tag": "Action",
+          "line": 2172,
+          "id": "Error",
+          "attrs": {
+           "message": "Could not find {object_name} after {timeout_secs} seconds."
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "call": {
+  "parent": "TorpedoTreeMpc",
+  "line": 2997,
+  "remap": {
+   "max_dist": "max_dist",
+   "min_dist": "min_dist",
+   "object_name": "object_name",
+   "target_cov": "target_cov",
+   "timeout_secs": "search_timeout"
+  },
+  "values": {
+   "max_dist": "2",
+   "min_dist": "1",
+   "object_name": "torpedo",
+   "target_cov": "0.0025",
+   "timeout_secs": "100"
+  }
+ },
+ "declared": {
+  "max_dist": {
+   "default": "4.0",
+   "doc": null
+  },
+  "min_dist": {
+   "default": "1.75",
+   "doc": null
+  },
+  "object_name": {
+   "default": null,
+   "doc": "Frame to search for"
+  },
+  "target_cov": {
+   "default": "1.25",
+   "doc": "Target covariance to end search"
+  },
+  "timeout_secs": {
+   "default": "120",
+   "doc": "Timeout for search"
+  }
+ }
+}

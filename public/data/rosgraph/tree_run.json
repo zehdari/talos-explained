@@ -1,0 +1,571 @@
+{
+ "tree": "RepairCompMpcTree.xml",
+ "note": "Nereus full stack, robosub pool, MPC on the sim plant (mpc_model:=sim), RepairCompMpcTree started from the viewer's Autonomy panel. Times are simulation seconds after the tree's kill-switch wait ended. The run scorecard was started by hand after the gate and still reported 'Breach outside octagon; scoring ended' with 0 points, so the points are not meaningful here; the task events (simulator/task_events) are.",
+ "steps": [
+  [
+   -0.0,
+   [
+    "WaitForKillSwitch"
+   ]
+  ],
+  [
+   0.0,
+   [
+    "PrepForRun"
+   ]
+  ],
+  [
+   0.0,
+   [
+    "PrepForRun",
+    "Sequence"
+   ]
+  ],
+  [
+   1.1,
+   [
+    "PrepForRun"
+   ]
+  ],
+  [
+   1.1,
+   [
+    "Dive"
+   ]
+  ],
+  [
+   1.1,
+   [
+    "Dive",
+    "Sequence"
+   ]
+  ],
+  [
+   3.0,
+   [
+    "ForceSuccess",
+    "GateTreeMpc",
+    "Sequence"
+   ]
+  ],
+  [
+   26.3,
+   [
+    "ForceSuccess"
+   ]
+  ],
+  [
+   26.3,
+   [
+    "ForceSuccess"
+   ]
+  ],
+  [
+   26.3,
+   [
+    "ForceSuccess",
+    "SlalomPathMpc"
+   ]
+  ],
+  [
+   60.8,
+   [
+    "ForceSuccess",
+    "RandomPingerTree",
+    "Sequence",
+    "SetBlackboard"
+   ]
+  ],
+  [
+   94.3,
+   [
+    "ForceSuccess"
+   ]
+  ],
+  [
+   94.3,
+   [
+    "Torpedo/bin/table tasks"
+   ]
+  ],
+  [
+   94.3,
+   [
+    "Torpedo/bin/table tasks",
+    "is table?"
+   ]
+  ],
+  [
+   94.3,
+   [
+    "Torpedo/bin/table tasks"
+   ]
+  ],
+  [
+   94.3,
+   [
+    "Torpedo/bin/table tasks",
+    "torpedo then table"
+   ]
+  ],
+  [
+   373.9,
+   [
+    "ForceSuccess",
+    "BinTreeMpc",
+    "Sequence",
+    "ForceSuccess"
+   ]
+  ],
+  [
+   476.1,
+   [
+    "ForceSuccess"
+   ]
+  ],
+  [
+   476.1,
+   [
+    "Info"
+   ]
+  ],
+  [
+   476.1,
+   [
+    "ForceSuccess"
+   ]
+  ],
+  [
+   476.1,
+   [
+    "ForceSuccess",
+    "Path: leave bins, straight home through the gate"
+   ]
+  ],
+  [
+   533.8,
+   [
+    "KillController",
+    "Repeat"
+   ]
+  ],
+  [
+   533.8,
+   [
+    "KillController"
+   ]
+  ]
+ ],
+ "events": [
+  [
+   122.2,
+   {
+    "id": 0,
+    "kind": "torpedo",
+    "result": "released",
+    "slot": 0,
+    "target": "",
+    "time": 922.088
+   }
+  ],
+  [
+   122.5,
+   {
+    "id": 0,
+    "kind": "torpedo",
+    "result": "success",
+    "slot": 0,
+    "target": "fire_large",
+    "time": 922.402
+   }
+  ],
+  [
+   127.8,
+   {
+    "kind": "tasks",
+    "result": "reset",
+    "target": "",
+    "time": 927.726
+   }
+  ],
+  [
+   209.6,
+   {
+    "id": "pill",
+    "kind": "claw",
+    "result": "grasped",
+    "target": "",
+    "time": 1009.506
+   }
+  ],
+  [
+   226.5,
+   {
+    "id": "pill",
+    "kind": "claw",
+    "result": "released",
+    "target": "",
+    "time": 1026.364
+   }
+  ],
+  [
+   227.4,
+   {
+    "id": "pill",
+    "kind": "claw",
+    "result": "success",
+    "target": "helmet",
+    "time": 1027.318
+   }
+  ],
+  [
+   247.3,
+   {
+    "id": "nut_and_bolt",
+    "kind": "claw",
+    "result": "grasped",
+    "target": "",
+    "time": 1047.192
+   }
+  ],
+  [
+   264.1,
+   {
+    "id": "nut_and_bolt",
+    "kind": "claw",
+    "result": "released",
+    "target": "",
+    "time": 1064.01
+   }
+  ],
+  [
+   265.0,
+   {
+    "id": "nut_and_bolt",
+    "kind": "claw",
+    "result": "success",
+    "target": "warning",
+    "time": 1064.924
+   }
+  ],
+  [
+   283.0,
+   {
+    "id": "plug",
+    "kind": "claw",
+    "result": "grasped",
+    "target": "",
+    "time": 1082.87
+   }
+  ],
+  [
+   303.6,
+   {
+    "id": "plug",
+    "kind": "claw",
+    "result": "released",
+    "target": "",
+    "time": 1103.478
+   }
+  ],
+  [
+   304.4,
+   {
+    "id": "plug",
+    "kind": "claw",
+    "result": "success",
+    "target": "warning",
+    "time": 1104.272
+   }
+  ],
+  [
+   385.9,
+   {
+    "id": 1,
+    "kind": "dropper",
+    "result": "released",
+    "slot": 0,
+    "target": "",
+    "time": 1185.84
+   }
+  ],
+  [
+   386.4,
+   {
+    "id": 1,
+    "kind": "dropper",
+    "result": "success",
+    "slot": 0,
+    "target": "bin_vinyl2",
+    "time": 1186.272
+   }
+  ],
+  [
+   405.0,
+   {
+    "id": 2,
+    "kind": "dropper",
+    "result": "released",
+    "slot": 1,
+    "target": "",
+    "time": 1204.902
+   }
+  ],
+  [
+   405.4,
+   {
+    "id": 2,
+    "kind": "dropper",
+    "result": "success",
+    "slot": 1,
+    "target": "bin_vinyl3",
+    "time": 1205.254
+   }
+  ],
+  [
+   431.3,
+   {
+    "id": "",
+    "kind": "magnet",
+    "result": "activated",
+    "target": "magnet_target1",
+    "time": 1231.232
+   }
+  ],
+  [
+   466.8,
+   {
+    "id": "",
+    "kind": "magnet",
+    "result": "activated",
+    "target": "magnet_target2",
+    "time": 1266.662
+   }
+  ]
+ ],
+ "final_score": {
+  "adjustment": 0.0,
+  "basket_count": 0,
+  "config_id": "robosub_2026",
+  "elapsed": 669.214,
+  "ended_reason": "Breach outside octagon; scoring ended (timer remains manual)",
+  "gate_passed": false,
+  "heading_bonus": null,
+  "intended_role": "repair",
+  "message": "Run started; pass the gate first",
+  "pinger": {
+   "active": null,
+   "first": null,
+   "mode": "disabled",
+   "stage": 0
+  },
+  "role": null,
+  "role_bonus": null,
+  "rows": [
+   {
+    "key": "gate",
+    "label": "Gate passage / heading / role / style",
+    "points": 0
+   },
+   {
+    "key": "slalom_front",
+    "label": "Slalom row 1",
+    "points": 0
+   },
+   {
+    "key": "slalom_middle",
+    "label": "Slalom row 2",
+    "points": 0
+   },
+   {
+    "key": "slalom_back",
+    "label": "Slalom row 3",
+    "points": 0
+   },
+   {
+    "key": "bins",
+    "label": "Bin markers",
+    "points": 0
+   },
+   {
+    "key": "lights",
+    "label": "Magnet lights",
+    "points": 0
+   },
+   {
+    "key": "torpedoes",
+    "label": "Torpedo openings",
+    "points": 0
+   },
+   {
+    "key": "sequence",
+    "label": "Torpedo sequence bonus",
+    "points": 0
+   },
+   {
+    "key": "distance",
+    "label": "Torpedo distance bonuses",
+    "points": 0
+   },
+   {
+    "key": "surface",
+    "label": "Surface inside octagon",
+    "points": 0
+   },
+   {
+    "key": "facing",
+    "label": "Surface facing image",
+    "points": 0
+   },
+   {
+    "key": "objects_surface",
+    "label": "Surface with objects",
+    "points": 0
+   },
+   {
+    "key": "objects_drop",
+    "label": "Release objects",
+    "points": 0
+   },
+   {
+    "key": "baskets",
+    "label": "Place objects in baskets",
+    "points": 0
+   },
+   {
+    "key": "basket_count",
+    "label": "Signal basket count with turns",
+    "points": 0
+   },
+   {
+    "key": "home",
+    "label": "Return through gate",
+    "points": 0
+   },
+   {
+    "key": "pinger_first",
+    "label": "Random pinger: first task",
+    "points": 0
+   },
+   {
+    "key": "pinger_second",
+    "label": "Random pinger: second task",
+    "points": 0
+   }
+  ],
+  "running": true,
+  "scoring_open": false,
+  "target_class": "fire",
+  "time_bonus_eligible": false,
+  "total": 0.0,
+  "ui": {
+   "actions": [],
+   "demo_targets": [
+    "gate",
+    "torpedo",
+    "bins",
+    "table"
+   ],
+   "focus": [
+    "Course",
+    "Vehicle",
+    "gate",
+    "torpedo",
+    "slalom",
+    "bins",
+    "table",
+    "Payloads",
+    "Claw"
+   ],
+   "manual_adjustment": true,
+   "previews": {
+    "bins": {
+     "camera": "dfc",
+     "depth": 0.55
+    },
+    "gate": {
+     "depth": 0.75
+    },
+    "table": {
+     "camera": "dfc",
+     "depth": 0.55
+    }
+   },
+   "run_inspections": [
+    {
+     "label": "Inspect launcher",
+     "target": "Payloads"
+    },
+    {
+     "label": "Inspect claw",
+     "target": "Claw"
+    },
+    {
+     "label": "Inspect lights",
+     "target": "magnet_target1"
+    }
+   ],
+   "run_options": [
+    {
+     "choices": [
+      {
+       "label": "Survey & Repair",
+       "value": "repair"
+      },
+      {
+       "label": "Search & Rescue",
+       "value": "rescue"
+      }
+     ],
+     "default": "repair",
+     "key": "role",
+     "label": "Coin-flip role",
+     "type": "choice"
+    },
+    {
+     "default": true,
+     "key": "heading_coin",
+     "label": "Heading coin flip",
+     "type": "bool"
+    },
+    {
+     "default": true,
+     "key": "role_coin",
+     "label": "Role coin flip",
+     "type": "bool"
+    }
+   ],
+   "score_fields": [
+    {
+     "key": "basket_count",
+     "label": "Objects in both baskets"
+    },
+    {
+     "key": "time_bonus_eligible",
+     "label": "Time-bonus prerequisites met"
+    }
+   ],
+   "score_note": "Pinger awards await future acoustic integration. No session countdown or automatic time bonus is applied to individual runs.",
+   "status_fields": [
+    {
+     "key": "role",
+     "label": "Role (gate side taken)"
+    },
+    {
+     "key": "intended_role",
+     "label": "Coin-flip role"
+    },
+    {
+     "key": "heading_bonus",
+     "label": "Heading coin bonus"
+    },
+    {
+     "key": "role_bonus",
+     "label": "Role coin bonus (gate side = coin-flip role)"
+    }
+   ],
+   "title": "RoboSub 2026 scorecard"
+  }
+ },
+ "steps_note": "Each entry: [sim s, the execution stack below MISSION > CompMissionTreeMpc > COMP] at the moment the top-level task changed."
+}

@@ -1,0 +1,864 @@
+{
+ "node": "/talos/riptide_mapping2",
+ "source": "ros2 param dump /talos/riptide_mapping2 while the Nereus full stack ran (sim.launch.py active_control_model:=mpc mpc_model:=sim); values are what the node actually loaded in sim",
+ "parameters": {
+  "bin_fit": {
+   "baseline_tol_m": 0.1,
+   "cov_floor_m2": 0.0025,
+   "min_baseline_m": 0.2,
+   "residual_tol_m": 0.1,
+   "z_consistency_tol_m": 0.1
+  },
+  "binary_classifier": {
+   "assignment_gate_m": 0.2,
+   "buffer_size": 500,
+   "buffer_ttl_sec": 8.0,
+   "centroid_ema_alpha": 0.15,
+   "cluster_radius_m": 0.15,
+   "exclusion_radius_m": 0.3,
+   "max_cluster_variance_m2": 0.02,
+   "min_cluster_detections": 6,
+   "min_instance_separation_m": 0.4,
+   "use_3d_distance": false
+  },
+  "confidence_cutoff": 0.2,
+  "estimator": {
+   "acquire_detections": 4,
+   "acquire_far_detections": 12,
+   "acquire_far_s": 2.0,
+   "acquire_prior_chi2": 16.27,
+   "acquire_radius_m": 0.3,
+   "acquire_window_s": 4.0,
+   "child_std_xy": 0.5,
+   "child_std_z": 0.3,
+   "confirm_detections": 10,
+   "course_yaw_std_deg": 2.0,
+   "drift_var_per_m_xy": 0.002,
+   "drift_var_per_m_z": 0.0002,
+   "drift_var_per_s_xy": 1e-05,
+   "drift_var_per_s_z": 1e-06,
+   "fix_merge_distance": 1.0,
+   "gate_chi2": 16.27,
+   "gate_max_rejects": 30,
+   "gate_min_updates": 10,
+   "layout_robust_scale": 2.0,
+   "layout_std_xy": 0.25,
+   "layout_std_z": 0.15,
+   "offset_std_xy": 1.0,
+   "offset_std_z": 0.3,
+   "verify_detections": 3,
+   "yaw_gate_chi2": 10.83,
+   "yaw_std_deg": 30.0
+  },
+  "init_data": {
+   "bandage": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "table_frame",
+    "point_yaw_at_parent": true,
+    "pose": {
+     "x": -0.157078,
+     "y": -0.147819,
+     "yaw": 180.0,
+     "z": 0.03
+    }
+   },
+   "bin": {
+    "class": "fire",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "map",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 13.408019,
+     "y": 12.324713,
+     "yaw": -145.070841,
+     "z": -2.13
+    }
+   },
+   "bin_cad_geometry": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "bin_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": 0.0,
+     "yaw": 0.0,
+     "z": 0.0
+    }
+   },
+   "bin_target1": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": true,
+    "parent": "bin_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": 0.0,
+     "yaw": 0.0,
+     "z": 0.3
+    }
+   },
+   "bin_target2": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": true,
+    "parent": "bin_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": 0.0,
+     "yaw": 0.0,
+     "z": 0.3
+    }
+   },
+   "bin_vinyl1": {
+    "class": "blood",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "bin_cad_geometry_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.474,
+     "y": -0.122,
+     "yaw": 0.0,
+     "z": 0.301
+    }
+   },
+   "bin_vinyl2": {
+    "class": "fire",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": true,
+    "parent": "bin_cad_geometry_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.237,
+     "y": 0.347,
+     "yaw": 0.0,
+     "z": 0.335
+    }
+   },
+   "bin_vinyl3": {
+    "class": "fire",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": true,
+    "parent": "bin_cad_geometry_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": -0.21663,
+     "y": -0.3466,
+     "yaw": 0.0,
+     "z": 0.47036
+    }
+   },
+   "bin_vinyl4": {
+    "class": "blood",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "bin_cad_geometry_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": -0.43325,
+     "y": 0.12206,
+     "yaw": 0.0,
+     "z": 0.57196
+    }
+   },
+   "blood_hole_large": {
+    "class": "",
+    "covar": {
+     "x": 0.5,
+     "y": 0.5,
+     "yaw": 0.5,
+     "z": 0.5
+    },
+    "lock_orientation_to_config": false,
+    "parent": "torpedo_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": -0.029972,
+     "yaw": 0.0,
+     "z": 0.217424
+    }
+   },
+   "blood_hole_small": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "torpedo_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": 0.11176,
+     "yaw": 0.0,
+     "z": -0.0889
+    }
+   },
+   "buoy": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 1.0,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": false,
+    "parent": "octagon_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": -1.38,
+     "y": 0.0,
+     "yaw": 0.0,
+     "z": 0.0
+    }
+   },
+   "compass": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 1.0,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": false,
+    "parent": "octagon_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": 1.38,
+     "yaw": -90.0,
+     "z": 0.0
+    }
+   },
+   "fire_hole_large": {
+    "class": "",
+    "covar": {
+     "x": 0.5,
+     "y": 0.5,
+     "yaw": 0.5,
+     "z": 0.5
+    },
+    "lock_orientation_to_config": false,
+    "parent": "torpedo_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": -0.029972,
+     "yaw": 0.0,
+     "z": 0.217424
+    }
+   },
+   "fire_hole_small": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "torpedo_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": 0.11176,
+     "yaw": 0.0,
+     "z": -0.0889
+    }
+   },
+   "gate": {
+    "class": "",
+    "covar": {
+     "x": 20.0,
+     "y": 20.0,
+     "yaw": 50.0,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": false,
+    "parent": "map",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 4.810167,
+     "y": -2.217889,
+     "yaw": 170.645069,
+     "z": -0.75
+    }
+   },
+   "gate_repair": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 50.0,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": false,
+    "parent": "gate_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": -0.75,
+     "yaw": 0.0,
+     "z": 0.5
+    }
+   },
+   "gate_rescue": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 50.0,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": false,
+    "parent": "gate_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": 0.75,
+     "yaw": 0.0,
+     "z": 0.5
+    }
+   },
+   "hammer_and_wrench": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 1.0,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": false,
+    "parent": "octagon_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": -1.38,
+     "yaw": 90.0,
+     "z": 0.0
+    }
+   },
+   "helmet": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "table_frame",
+    "point_yaw_at_parent": true,
+    "pose": {
+     "x": 0.40168,
+     "y": 0.0,
+     "yaw": 0.0,
+     "z": 0.021457
+    }
+   },
+   "magnet1": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": true,
+    "parent": "bin_cad_geometry_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.76512,
+     "y": 0.37018,
+     "yaw": 0.0,
+     "z": 0.15975
+    }
+   },
+   "magnet2": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": true,
+    "parent": "bin_cad_geometry_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": -0.70442,
+     "y": -0.37018,
+     "yaw": 180.0,
+     "z": 0.466
+    }
+   },
+   "magnet_target1": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "bin_cad_geometry_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.76512,
+     "y": 0.37018,
+     "yaw": 0.0,
+     "z": 0.15975
+    }
+   },
+   "magnet_target2": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "bin_cad_geometry_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": -0.70442,
+     "y": -0.37018,
+     "yaw": 180.0,
+     "z": 0.466
+    }
+   },
+   "nut_and_bolt": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "table_frame",
+    "point_yaw_at_parent": true,
+    "pose": {
+     "x": 0.15,
+     "y": 0.15,
+     "yaw": 0.0,
+     "z": 0.05
+    }
+   },
+   "octagon": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "table_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.082085,
+     "y": -0.064919,
+     "yaw": -134.313351,
+     "z": 1.2352
+    }
+   },
+   "pill": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "table_frame",
+    "point_yaw_at_parent": true,
+    "pose": {
+     "x": -0.082859,
+     "y": 0.192053,
+     "yaw": 180.0,
+     "z": 0.05
+    }
+   },
+   "plug": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "table_frame",
+    "point_yaw_at_parent": true,
+    "pose": {
+     "x": 0.15233,
+     "y": -0.14664,
+     "yaw": 0.0,
+     "z": 0.03
+    }
+   },
+   "post_bin_pose": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "pre_bin_pose_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": 0.0,
+     "yaw": 0.0,
+     "z": 0.5
+    }
+   },
+   "post_table_pose": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 1.0,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": false,
+    "parent": "pre_table_pose_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": -0.002639,
+     "y": 0.002639,
+     "yaw": -0.626838,
+     "z": 0.5
+    }
+   },
+   "pre_bin_pose": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "map",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 13.222851,
+     "y": 10.242817,
+     "yaw": 0.0,
+     "z": -1.3
+    }
+   },
+   "pre_return_home": {
+    "class": "",
+    "covar": {
+     "x": 0.5,
+     "y": 0.5,
+     "yaw": 0.5,
+     "z": 0.5
+    },
+    "lock_orientation_to_config": false,
+    "parent": "map",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 16.410646,
+     "y": -4.05827,
+     "yaw": 90.226263,
+     "z": -1.372
+    }
+   },
+   "pre_table_pose": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 1.0,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": false,
+    "parent": "map",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 17.997015,
+     "y": 8.907473,
+     "yaw": -0.609417,
+     "z": -1.3
+    }
+   },
+   "pre_torpedo_pose": {
+    "class": "",
+    "covar": {
+     "x": 0.5,
+     "y": 0.5,
+     "yaw": 0.5,
+     "z": 0.5
+    },
+    "lock_orientation_to_config": false,
+    "parent": "map",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 16.849613,
+     "y": 2.888054,
+     "yaw": -0.029345,
+     "z": -1.372
+    }
+   },
+   "prequal_gate": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "map",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 4.0,
+     "y": 0.0,
+     "yaw": 180.0,
+     "z": -1.5
+    }
+   },
+   "prequal_pole": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "map",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 14.0,
+     "y": 0.0,
+     "yaw": 180.0,
+     "z": -1.5
+    }
+   },
+   "slalom_back": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 0.001,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": true,
+    "parent": "slalom_front_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": -4.231969,
+     "y": 0.117814,
+     "yaw": 0.0,
+     "z": 0.0
+    }
+   },
+   "slalom_front": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 0.001,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": true,
+    "parent": "slalom_parent_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 0.0,
+     "y": 0.0,
+     "yaw": 0.0,
+     "z": 0.0
+    }
+   },
+   "slalom_middle": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 0.001,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": true,
+    "parent": "slalom_front_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": -2.127361,
+     "y": 0.693981,
+     "yaw": 0.0,
+     "z": 0.0
+    }
+   },
+   "slalom_parent": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 0.001,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": true,
+    "parent": "map",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 8.332382,
+     "y": 0.560795,
+     "yaw": -152.691724,
+     "z": -1.3
+    }
+   },
+   "sos": {
+    "class": "",
+    "covar": {
+     "x": 1.0,
+     "y": 1.0,
+     "yaw": 1.0,
+     "z": 1.0
+    },
+    "lock_orientation_to_config": false,
+    "parent": "octagon_frame",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 1.38,
+     "y": -0.0,
+     "yaw": 180.0,
+     "z": 0.0
+    }
+   },
+   "table": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": true,
+    "parent": "map",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 19.290761,
+     "y": 9.007,
+     "yaw": 89.039804,
+     "z": -1.54
+    }
+   },
+   "torpedo": {
+    "class": "",
+    "covar": {
+     "x": 0.5,
+     "y": 0.5,
+     "yaw": 0.5,
+     "z": 0.5
+    },
+    "lock_orientation_to_config": false,
+    "parent": "map",
+    "point_yaw_at_parent": false,
+    "pose": {
+     "x": 18.35222,
+     "y": 2.480545,
+     "yaw": -169.835651,
+     "z": -1.372
+    }
+   },
+   "warning": {
+    "class": "",
+    "covar": {
+     "x": 0.001,
+     "y": 0.001,
+     "yaw": 0.001,
+     "z": 0.001
+    },
+    "lock_orientation_to_config": false,
+    "parent": "table_frame",
+    "point_yaw_at_parent": true,
+    "pose": {
+     "x": -0.40168,
+     "y": 0.0,
+     "yaw": 0.0,
+     "z": 0.021457
+    }
+   }
+  },
+  "noise": {
+   "base_std": 0.01,
+   "correlation_time": 0.3,
+   "lateral_std_per_m": 0.003,
+   "max_inflation": 30.0,
+   "range_std_per_m": 0.008,
+   "range_std_per_m2": 0.003,
+   "timing_std": 0.03,
+   "yaw_std_deg": 3.0
+  },
+  "odom_topic": "odometry/filtered",
+  "output": {
+   "max_speed": 0.0,
+   "max_yaw_rate_deg": 0.0
+  },
+  "use_sim_time": true
+ }
+}

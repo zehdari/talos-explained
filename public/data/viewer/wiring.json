@@ -1,0 +1,1069 @@
+{
+ "source": "Interface names from nereus content/viewer/talos_uwrt_panels.yaml and talos_uwrt_host.yaml; peers and rates from the ROS graph captured in Nereus on 2026-10-30 (public/data/rosgraph). Rates are what a loaded desktop delivered in sim, not robot specs.",
+ "groups": [
+  {
+   "id": "enable",
+   "title": "Enable / KILL",
+   "node": "/talos/viewer_panels",
+   "items": [
+    {
+     "name": "/talos/command/software_kill",
+     "kind": "topic",
+     "dir": "out",
+     "type": "riptide_msgs2/msg/KillSwitchReport",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 20.3,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "POAC board firmware (talos/PoacBoard/src/ros.c)",
+     "note": "KillSwitchReport on slot 1 every 50 ms",
+     "when": ""
+    },
+    {
+     "name": "/talos/command/software_kill",
+     "kind": "topic",
+     "dir": "in",
+     "type": "riptide_msgs2/msg/KillSwitchReport",
+     "peers": [],
+     "rate": 20.3,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "POAC board firmware (talos/PoacBoard/src/ros.c)",
+     "note": "Watches for anyone else on slot 1 (a competing operator)",
+     "when": ""
+    },
+    {
+     "name": "/talos/state/kill",
+     "kind": "topic",
+     "dir": "in",
+     "type": "std_msgs/msg/Bool",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 19.7,
+     "sim_hz": 0,
+     "sim_only": true,
+     "robot": "POAC board firmware (talos/PoacBoard/src/ros.c)",
+     "note": "\"Robot: killed / enabled\" under the button",
+     "when": ""
+    }
+   ]
+  },
+  {
+   "id": "motion",
+   "title": "Motion and the pose gizmo",
+   "node": "/talos/viewer_panels",
+   "items": [
+    {
+     "name": "/talos/setTeleop",
+     "kind": "service",
+     "dir": "out",
+     "type": "std_srvs/srv/SetBool",
+     "peers": [
+      "/talos/controller_overseer"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Asked before Position / Feedforward control starts",
+     "when": ""
+    },
+    {
+     "name": "/talos/controller/linear",
+     "kind": "topic",
+     "dir": "out",
+     "type": "riptide_msgs2/msg/ControllerCommand",
+     "peers": [
+      "/talos/mpc_controller"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Position half of each command (map frame)",
+     "when": ""
+    },
+    {
+     "name": "/talos/controller/angular",
+     "kind": "topic",
+     "dir": "out",
+     "type": "riptide_msgs2/msg/ControllerCommand",
+     "peers": [
+      "/talos/mpc_controller"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Orientation half of each command",
+     "when": ""
+    },
+    {
+     "name": "/talos/controller/linear",
+     "kind": "topic",
+     "dir": "in",
+     "type": "riptide_msgs2/msg/ControllerCommand",
+     "peers": [
+      "/talos/autonomy"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Also listens, so the gizmo follows a tree's setpoints",
+     "when": ""
+    },
+    {
+     "name": "/tf",
+     "kind": "topic",
+     "dir": "out",
+     "type": "tf2_msgs/msg/TFMessage",
+     "peers": [
+      "/talos/controller_overseer",
+      "/talos/depth_converter",
+      "/talos/physics_simulator",
+      "/talos/riptide_mapping2",
+      "/talos/yolo_orientation"
+     ],
+     "rate": 172.0,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "",
+     "note": "Broadcasts the command as the frame ghost/base_link",
+     "when": ""
+    },
+    {
+     "name": "/tf",
+     "kind": "topic",
+     "dir": "in",
+     "type": "tf2_msgs/msg/TFMessage",
+     "peers": [
+      "/talos/apriltag_36h11",
+      "/talos/ekf_localization_node",
+      "/talos/physics_simulator",
+      "/talos/riptide_mapping2",
+      "/talos/robot_state_publisher"
+     ],
+     "rate": 172.0,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "",
+     "note": "Actual pose: world \u2192 talos/base_link",
+     "when": ""
+    }
+   ]
+  },
+  {
+   "id": "autonomy",
+   "title": "Autonomy",
+   "node": "/talos/viewer_panels",
+   "items": [
+    {
+     "name": "/talos/autonomy/list_trees",
+     "kind": "service",
+     "dir": "out",
+     "type": "riptide_msgs2/srv/ListTrees",
+     "peers": [
+      "/talos/autonomy"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Fills the tree picker",
+     "when": ""
+    },
+    {
+     "name": "/talos/autonomy/run_tree",
+     "kind": "action",
+     "dir": "out",
+     "type": "riptide_msgs2/action/ExecuteTree",
+     "peers": [
+      "/talos/autonomy"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Start sends a goal; Stop cancels it",
+     "when": ""
+    },
+    {
+     "name": "/talos/autonomy/tree_stack",
+     "kind": "topic",
+     "dir": "in",
+     "type": "riptide_msgs2/msg/TreeStack",
+     "peers": [
+      "/talos/autonomy"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "The execution stack shown under the picker",
+     "when": ""
+    }
+   ]
+  },
+  {
+   "id": "mapping",
+   "title": "Mapping",
+   "node": "/talos/viewer_panels",
+   "items": [
+    {
+     "name": "/talos/map/model_tf",
+     "kind": "action",
+     "dir": "out",
+     "type": "chameleon_tf_msgs/action/ModelFrame",
+     "peers": [
+      "/talos/world_to_map"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Tag calibration: averages samples of world \u2192 tag",
+     "when": ""
+    },
+    {
+     "name": "/talos/mapping_target",
+     "kind": "service",
+     "dir": "out",
+     "type": "riptide_msgs2/srv/MappingTarget",
+     "peers": [
+      "/talos/riptide_mapping2"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Set mapping target / Lock map",
+     "when": ""
+    },
+    {
+     "name": "/talos/mapping/reset_mapping",
+     "kind": "service",
+     "dir": "out",
+     "type": "std_srvs/srv/Trigger",
+     "peers": [
+      "/talos/riptide_mapping2"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Reset mapping",
+     "when": ""
+    },
+    {
+     "name": "/talos/state/mapping",
+     "kind": "topic",
+     "dir": "in",
+     "type": "riptide_msgs2/msg/MappingTargetInfo",
+     "peers": [
+      "/talos/riptide_mapping2"
+     ],
+     "rate": 0.3,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Current target and lock",
+     "when": ""
+    }
+   ]
+  },
+  {
+   "id": "actuators",
+   "title": "Actuators",
+   "node": "/talos/viewer_panels",
+   "items": [
+    {
+     "name": "/talos/command/actuator/arm",
+     "kind": "topic",
+     "dir": "out",
+     "type": "std_msgs/msg/Bool",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "POAC board firmware (actuators/ros_torp.c)",
+     "note": "Arm actuators",
+     "when": ""
+    },
+    {
+     "name": "/talos/command/actuator/torpedo",
+     "kind": "topic",
+     "dir": "out",
+     "type": "std_msgs/msg/Empty",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "POAC board firmware (actuators/ros_torp.c)",
+     "note": "Fire torpedo (needs Arm)",
+     "when": ""
+    },
+    {
+     "name": "/talos/command/actuator/dropper",
+     "kind": "topic",
+     "dir": "out",
+     "type": "std_msgs/msg/Empty",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "POAC board firmware (actuators/ros_torp.c)",
+     "note": "Drop marker (needs Arm)",
+     "when": ""
+    },
+    {
+     "name": "/talos/command/actuator/claw",
+     "kind": "topic",
+     "dir": "out",
+     "type": "std_msgs/msg/Bool",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "POAC board firmware (actuators/ros_torp.c)",
+     "note": "Open claw (needs Arm)",
+     "when": ""
+    },
+    {
+     "name": "/talos/command/actuator/claw_move_s",
+     "kind": "topic",
+     "dir": "out",
+     "type": "std_msgs/msg/Float32",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "",
+     "note": "Stop claw (needs Arm)",
+     "when": ""
+    },
+    {
+     "name": "/talos/command/actuator/notify_reload",
+     "kind": "topic",
+     "dir": "out",
+     "type": "std_msgs/msg/Empty",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "",
+     "note": "Reload / disarm",
+     "when": ""
+    },
+    {
+     "name": "/talos/state/actuator/status",
+     "kind": "topic",
+     "dir": "in",
+     "type": "riptide_msgs2/msg/ActuatorStatus",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 46.7,
+     "sim_hz": 50,
+     "sim_only": true,
+     "robot": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
+     "note": "Armed state, connections, rounds left",
+     "when": ""
+    }
+   ]
+  },
+  {
+   "id": "chips",
+   "title": "Command bar chips",
+   "node": "/talos/viewer_panels",
+   "items": [
+    {
+     "name": "/talos/gyro/status",
+     "kind": "topic",
+     "dir": "in",
+     "type": "riptide_msgs2/msg/GyroStatus",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "FOG driver (riptide_gyro driver.cpp)",
+     "note": "FOG: warn 55 \u00b0C, error 75 \u00b0C",
+     "when": ""
+    },
+    {
+     "name": "/talos/dvl/bottom_lock",
+     "kind": "topic",
+     "dir": "in",
+     "type": "std_msgs/msg/Bool",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "DVL driver (nortek_dvl dvl_driver.cpp)",
+     "note": "DVL: bottom lock",
+     "when": ""
+    },
+    {
+     "name": "/diagnostics_agg",
+     "kind": "topic",
+     "dir": "in",
+     "type": "diagnostic_msgs/msg/DiagnosticArray",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "CPU: warn 70 \u00b0C, error 85 \u00b0C",
+     "when": ""
+    },
+    {
+     "name": "/talos/state/battery",
+     "kind": "topic",
+     "dir": "in",
+     "type": "riptide_msgs2/msg/BatteryStatus",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "SmartBattery firmware (talos/SmartBattery/src/ros.c)",
+     "note": "PORT: warn below 50 %, error below 20 %",
+     "when": ""
+    },
+    {
+     "name": "/talos/dvl_twist",
+     "kind": "topic",
+     "dir": "in",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 8.0,
+     "sim_hz": 8,
+     "sim_only": true,
+     "robot": "DVL driver (nortek_dvl dvl_driver.cpp)",
+     "note": "DVL: the simulator's DVL has no lock topic, so a bottom-track velocity counts",
+     "when": ""
+    }
+   ]
+  },
+  {
+   "id": "electrical",
+   "title": "Electrical",
+   "node": "/talos/viewer_panels",
+   "items": [
+    {
+     "name": "/talos/command/electrical",
+     "kind": "topic",
+     "dir": "out",
+     "type": "riptide_msgs2/msg/ElectricalCommand",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "POAC board firmware (talos/PoacBoard/src/ros.c)",
+     "note": "11 power buttons (cycle computer, kill robot power, fans, ...)",
+     "when": ""
+    },
+    {
+     "name": "/talos/command/led",
+     "kind": "topic",
+     "dir": "out",
+     "type": "riptide_msgs2/msg/LedCommand",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "Camera cage board firmware (talos/CameraCageBB/src/ros.c)",
+     "note": "LED colour, brightness and mode",
+     "when": ""
+    },
+    {
+     "name": "/talos/gyro/tare",
+     "kind": "action",
+     "dir": "out",
+     "type": "riptide_msgs2/action/TareGyro",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "FOG driver (riptide_gyro)",
+     "note": "Tare gyro",
+     "when": ""
+    },
+    {
+     "name": "/talos/vectornav/mag_cal",
+     "kind": "action",
+     "dir": "out",
+     "type": "riptide_msgs2/action/MagCal",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "VectorNav IMU driver",
+     "note": "IMU magnetometer calibration",
+     "when": ""
+    },
+    {
+     "name": "/talos/vectornav/config",
+     "kind": "service",
+     "dir": "out",
+     "type": "riptide_msgs2/srv/QueryImuSerial",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "VectorNav IMU driver",
+     "note": "Read / write IMU registers",
+     "when": ""
+    },
+    {
+     "name": "/talos/ivc/pinger/enable",
+     "kind": "topic",
+     "dir": "out",
+     "type": "std_msgs/msg/Bool",
+     "peers": [],
+     "rate": 1.0,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Pinger enable, re-sent every 1 s",
+     "when": ""
+    },
+    {
+     "name": "/talos/ivc/pinger/set_freq_broker_khz",
+     "kind": "topic",
+     "dir": "out",
+     "type": "std_msgs/msg/Int32",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Pinger frequency: 25, 30, 35, 37, 40 kHz",
+     "when": ""
+    },
+    {
+     "name": "/talos/ivc/tx",
+     "kind": "topic",
+     "dir": "out",
+     "type": "std_msgs/msg/UInt8",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "IVC (inter-vehicle comms) byte",
+     "when": ""
+    }
+   ]
+  },
+  {
+   "id": "recording",
+   "title": "Recording",
+   "node": "/talos/viewer_panels",
+   "items": [
+    {
+     "name": "/talos/ffc/zed_node/start_svo_rec",
+     "kind": "service",
+     "dir": "out",
+     "type": "zed_msgs/srv/StartSvoRec",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "ZED driver (zed-ros2-wrapper)",
+     "note": "FFC SVO start",
+     "when": ""
+    },
+    {
+     "name": "/talos/ffc/zed_node/stop_svo_rec",
+     "kind": "service",
+     "dir": "out",
+     "type": "std_srvs/srv/Trigger",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "ZED driver (zed-ros2-wrapper)",
+     "note": "FFC SVO stop",
+     "when": ""
+    },
+    {
+     "name": "/talos/dfc/zed_node/start_svo_rec",
+     "kind": "service",
+     "dir": "out",
+     "type": "zed_msgs/srv/StartSvoRec",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "ZED driver (zed-ros2-wrapper)",
+     "note": "DFC SVO start",
+     "when": ""
+    },
+    {
+     "name": "/talos/dfc/zed_node/stop_svo_rec",
+     "kind": "service",
+     "dir": "out",
+     "type": "std_srvs/srv/Trigger",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "ZED driver (zed-ros2-wrapper)",
+     "note": "DFC SVO stop",
+     "when": ""
+    },
+    {
+     "name": "/talos/capture_image",
+     "kind": "service",
+     "dir": "out",
+     "type": "std_srvs/srv/Trigger",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "picture_taker.py (riptide_hardware2)",
+     "note": "Capture image: saves the newest front-camera frame on the robot",
+     "when": ""
+    }
+   ]
+  },
+  {
+   "id": "scene",
+   "title": "Pool view and overlays",
+   "node": "/nereus_viewer",
+   "items": [
+    {
+     "name": "/talos/simulator/scenario",
+     "kind": "topic",
+     "dir": "in",
+     "type": "std_msgs/msg/String",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": 0,
+     "sim_only": true,
+     "robot": "",
+     "note": "The scene: robot, pool, course (sim). On the robot the viewer loads it itself",
+     "when": ""
+    },
+    {
+     "name": "/tf",
+     "kind": "topic",
+     "dir": "in",
+     "type": "tf2_msgs/msg/TFMessage",
+     "peers": [
+      "/talos/apriltag_36h11",
+      "/talos/ekf_localization_node",
+      "/talos/physics_simulator",
+      "/talos/riptide_mapping2",
+      "/talos/robot_state_publisher"
+     ],
+     "rate": 172.0,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "",
+     "note": "Robot pose and every frame (TF toggle)",
+     "when": ""
+    },
+    {
+     "name": "/talos/controller/mpc/predicted_path",
+     "kind": "topic",
+     "dir": "in",
+     "type": "nav_msgs/msg/Path",
+     "peers": [
+      "/talos/mpc_controller"
+     ],
+     "rate": 20.0,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "MPC path toggle: the predicted path",
+     "when": ""
+    },
+    {
+     "name": "/talos/controller/mpc/planned_path",
+     "kind": "topic",
+     "dir": "in",
+     "type": "nav_msgs/msg/Path",
+     "peers": [
+      "/talos/mpc_controller"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "MPC path toggle: a whole follow_path plan",
+     "when": ""
+    },
+    {
+     "name": "/talos/thruster_forces",
+     "kind": "topic",
+     "dir": "in",
+     "type": "std_msgs/msg/Float32MultiArray",
+     "peers": [
+      "/talos/mpc_controller"
+     ],
+     "rate": 20.3,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Thrust toggle: red arrows, 0.05 m per newton",
+     "when": "only while Thrust is on"
+    },
+    {
+     "name": "/talos/yolo_orientation/visualization_marker_array",
+     "kind": "topic",
+     "dir": "in",
+     "type": "visualization_msgs/msg/MarkerArray",
+     "peers": [
+      "/talos/yolo_orientation"
+     ],
+     "rate": 10.7,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Detector markers (Vision panel)",
+     "when": ""
+    },
+    {
+     "name": "/talos/mapping/torpedo",
+     "kind": "topic",
+     "dir": "in",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+     "peers": [
+      "/talos/riptide_mapping2"
+     ],
+     "rate": 0.7,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Covariance toggle: one mapping/<object> topic per prop",
+     "when": "only while Covariance is on"
+    },
+    {
+     "name": "/talos/yolo_orientation/point_cloud",
+     "kind": "topic",
+     "dir": "in",
+     "type": "sensor_msgs/msg/PointCloud2",
+     "peers": [
+      "/talos/yolo_orientation"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Point cloud: YOLO detections",
+     "when": "only while ticked in Vision"
+    },
+    {
+     "name": "/talos/ffc/zed_node/point_cloud/cloud_registered",
+     "kind": "topic",
+     "dir": "in",
+     "type": "sensor_msgs/msg/PointCloud2",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 4.7,
+     "sim_hz": 5,
+     "sim_only": true,
+     "robot": "ZED driver (zed-ros2-wrapper)",
+     "note": "Point cloud: Front camera",
+     "when": "only while ticked in Vision"
+    },
+    {
+     "name": "/talos/dfc/zed_node/point_cloud/cloud_registered",
+     "kind": "topic",
+     "dir": "in",
+     "type": "sensor_msgs/msg/PointCloud2",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 2.3,
+     "sim_hz": 5,
+     "sim_only": true,
+     "robot": "ZED driver (zed-ros2-wrapper)",
+     "note": "Point cloud: Down camera",
+     "when": "only while ticked in Vision"
+    },
+    {
+     "name": "/talos/simulator/actual_thruster_forces",
+     "kind": "topic",
+     "dir": "in",
+     "type": "std_msgs/msg/Float32MultiArray",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 100.0,
+     "sim_hz": 100,
+     "sim_only": true,
+     "robot": "",
+     "note": "Spins the drawn propellers",
+     "when": ""
+    },
+    {
+     "name": "/talos/command/led",
+     "kind": "topic",
+     "dir": "in",
+     "type": "riptide_msgs2/msg/LedCommand",
+     "peers": [
+      "/talos/autonomy",
+      "/talos/riptide_mapping2"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "Camera cage board firmware (talos/CameraCageBB/src/ros.c)",
+     "note": "Colours the drawn LED bars",
+     "when": ""
+    },
+    {
+     "name": "/talos/simulator/claw_joints",
+     "kind": "topic",
+     "dir": "in",
+     "type": "std_msgs/msg/Float64MultiArray",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 50.3,
+     "sim_hz": 50,
+     "sim_only": true,
+     "robot": "",
+     "note": "Claw jaw positions",
+     "when": ""
+    },
+    {
+     "name": "/talos/simulator/task_objects",
+     "kind": "topic",
+     "dir": "in",
+     "type": "visualization_msgs/msg/MarkerArray",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 50.0,
+     "sim_hz": 50,
+     "sim_only": true,
+     "robot": "",
+     "note": "Loose props (table items, magnets)",
+     "when": ""
+    },
+    {
+     "name": "/talos/simulator/projectiles",
+     "kind": "topic",
+     "dir": "in",
+     "type": "visualization_msgs/msg/MarkerArray",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 50.0,
+     "sim_hz": 50,
+     "sim_only": true,
+     "robot": "",
+     "note": "Torpedoes and markers in flight",
+     "when": ""
+    }
+   ]
+  },
+  {
+   "id": "cameras",
+   "title": "Camera cards",
+   "node": "/nereus_viewer",
+   "items": [
+    {
+     "name": "/talos/ffc/zed_node/rgb/image_rect_color/compressed",
+     "kind": "topic",
+     "dir": "in",
+     "type": "sensor_msgs/msg/CompressedImage",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 12.0,
+     "sim_hz": 15,
+     "sim_only": true,
+     "robot": "ZED driver (zed-ros2-wrapper)",
+     "note": "Forward camera, ROS source",
+     "when": ""
+    },
+    {
+     "name": "/talos/dfc/zed_node/rgb/image_rect_color/compressed",
+     "kind": "topic",
+     "dir": "in",
+     "type": "sensor_msgs/msg/CompressedImage",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 15.3,
+     "sim_hz": 15,
+     "sim_only": true,
+     "robot": "ZED driver (zed-ros2-wrapper)",
+     "note": "Downward camera, ROS source",
+     "when": ""
+    },
+    {
+     "name": "/talos/ffc/zed_node/depth/depth_registered",
+     "kind": "topic",
+     "dir": "in",
+     "type": "sensor_msgs/msg/Image",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 11.7,
+     "sim_hz": 15,
+     "sim_only": true,
+     "robot": "ZED driver (zed-ros2-wrapper)",
+     "note": "Depth view",
+     "when": "only while Depth is chosen"
+    }
+   ]
+  },
+  {
+   "id": "scorecard",
+   "title": "Scorecard (sim only)",
+   "node": "/talos/viewer_panels",
+   "items": [
+    {
+     "name": "/talos/simulator/run_command",
+     "kind": "topic",
+     "dir": "out",
+     "type": "std_msgs/msg/String",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "",
+     "note": "Start run / Stop run / options",
+     "when": ""
+    },
+    {
+     "name": "/talos/simulator/reset_tasks",
+     "kind": "topic",
+     "dir": "out",
+     "type": "std_msgs/msg/Empty",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "",
+     "note": "Reset run & tasks",
+     "when": ""
+    },
+    {
+     "name": "/talos/simulator/run_score",
+     "kind": "topic",
+     "dir": "in",
+     "type": "std_msgs/msg/String",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 50.0,
+     "sim_hz": 50,
+     "sim_only": true,
+     "robot": "",
+     "note": "Clock, points and status lines",
+     "when": ""
+    },
+    {
+     "name": "/talos/simulator/task_score",
+     "kind": "topic",
+     "dir": "in",
+     "type": "std_msgs/msg/String",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": 50.0,
+     "sim_hz": 50,
+     "sim_only": true,
+     "robot": "",
+     "note": "Per-task status",
+     "when": ""
+    },
+    {
+     "name": "/talos/simulator/task_events",
+     "kind": "topic",
+     "dir": "in",
+     "type": "std_msgs/msg/String",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": 0,
+     "sim_only": true,
+     "robot": "",
+     "note": "Recent events (torpedo hit, dropper, magnet, ...)",
+     "when": ""
+    }
+   ]
+  },
+  {
+   "id": "simulation",
+   "title": "Simulation window (sim only)",
+   "node": "/talos/viewer_panels",
+   "items": [
+    {
+     "name": "/talos/physics_simulator/set_parameters",
+     "kind": "service",
+     "dir": "out",
+     "type": "rcl_interfaces/srv/SetParameters",
+     "peers": [],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": false,
+     "robot": "",
+     "note": "Speed: sets real_time_factor (up to 10x)",
+     "when": ""
+    },
+    {
+     "name": "/talos/sync_sim_to_estimate",
+     "kind": "service",
+     "dir": "out",
+     "type": "std_srvs/srv/Trigger",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "",
+     "note": "Sync sim: moves the simulated robot to the EKF estimate",
+     "when": ""
+    },
+    {
+     "name": "/talos/reset_sim_to_start",
+     "kind": "service",
+     "dir": "out",
+     "type": "std_srvs/srv/Trigger",
+     "peers": [
+      "/talos/physics_simulator"
+     ],
+     "rate": null,
+     "sim_hz": null,
+     "sim_only": true,
+     "robot": "",
+     "note": "Reset sim: back to the start pose",
+     "when": ""
+    }
+   ]
+  }
+ ]
+}

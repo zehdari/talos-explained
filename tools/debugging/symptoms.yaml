@@ -1,0 +1,323 @@
+# Symptom -> likely cause -> check, for the Debugging chapter's symptom finder.
+# Every entry comes from code, config or a recorded incident (the "src" list says where).
+# Fields may hold inline HTML. build_data.py checks that every repo link points at a file that exists in the
+# local checkout of that branch, then writes public/data/debugging/symptoms.json.
+#
+# src: [label, repo, path, line(s) or null]   repo keys are listed in build_data.py
+#      [label, href]                          a chapter of this site or an external page
+categories:
+  net: Network
+  launch: Launcher
+  sensors: Sensors and boards
+  est: Localization
+  ctrl: Control and ESCs
+  kill: Kill switch
+  vision: Perception
+  sim: Nereus
+  data: Bags and time
+  tools: Workflow
+
+symptoms:
+  # ------------------------------------------------------------------ network
+  - id: zenoh-nothing
+    cat: net
+    symptom: '<code>ros2 topic list</code> shows nothing from <code>/talos</code>, only <code>/parameter_events</code> and <code>/rosout</code>'
+    cause: 'Your shell isn''t on Zenoh, or it can''t reach the router on the Orin. The team''s client config connects to <code>tcp/orin2:7447</code>, so <code>orin2</code> must resolve on your machine. The ros2 daemon may also still hold the RMW from before you sourced.'
+    check: '<code>echo $RMW_IMPLEMENTATION</code> must say <code>rmw_zenoh_cpp</code> (the <code>rmw</code> alias prints the team setting). <code>ping orin2</code>. Then <code>ros2 topic list --no-daemon</code>.'
+    src:
+      - [zenoh_session.json5, release, scripts/dds_scripts/zenoh/zenoh_session.json5, null]
+      - [config_rmw.bash, release, scripts/dds_scripts/config_rmw.bash, null]
+  - id: zenoh-router-died
+    cat: net
+    symptom: 'Everyone loses the robot at once; the launcher page says <b>Discovery: Self Hosted (CRASHED!)</b>'
+    cause: 'The launcher runs the Zenoh router (<code>rmw_zenohd</code>) itself. If the router exits, the launcher logs its output and stops, and systemd restarts the whole service, which stops every launch.'
+    check: '<code>journalctl -u ros_launcher -n 100</code> on the Orin: look for <code>Zenoh Router Died!</code> and the router''s stderr just after it.'
+    src:
+      - [launcher.py run_discovery_server, launch, remote_launch/remote_launch/launcher.py, 751-804]
+      - [ros_launcher.service, launch, remote_launch/ros_launcher.service, null]
+  - id: type-unknown
+    cat: net
+    symptom: '<code>ros2 topic echo</code> says the message type is invalid; the viewer''s plot row says <i>Can''t read this topic</i>'
+    cause: 'The message type (usually a <code>riptide_msgs2</code> one) isn''t installed in your shell: only <code>/opt/ros</code> is sourced.'
+    check: '<code>source ~/osu-uwrt/release/install/setup.bash</code>, then start the tool (or the viewer) again from that shell.'
+    src:
+      - ['viewer.md: Plots', nereus, docs/viewer.md, 154-200]
+  - id: hz-over-link
+    cat: net
+    symptom: '<code>ros2 topic hz</code> on a laptop says a camera stream is slow'
+    cause: 'A rate measured on a laptop is the rate that crossed the tether or Wi-Fi, not what the Orin publishes. Subscribing to several camera streams at once loads the link further.'
+    check: 'Measure one topic at a time. For the true rate, run <code>ros2 topic hz</code> on the Orin over SSH.'
+    src:
+      - ['pretest_checks: rates measured one topic at a time', 'pool-test.html#pretest']
+
+  # ------------------------------------------------------------------ launcher
+  - id: launcher-down
+    cat: launch
+    symptom: 'The launcher page at <code>http://orin2:8080</code> doesn''t load'
+    cause: '<code>ros_launcher.service</code> is down or restarting. It restarts 0.5 s after any exit, but systemd gives up if it fails 5 times in 15 s.'
+    check: '<code>systemctl status ros_launcher</code> (its status line names the launch file and how many launches are active), then <code>journalctl -u ros_launcher -n 100</code>.'
+    src:
+      - [ros_launcher.service, launch, remote_launch/ros_launcher.service, null]
+  - id: launch-pending
+    cat: launch
+    symptom: 'A launch sits at <b>3/4 completed</b> on the launcher page instead of <b>Running</b>'
+    cause: 'The launcher counts a launch as running once every topic listed for it in the launch YAML has been seen. One hasn''t: that node didn''t start, or the topic was renamed. Hover the bar for <i>Pending Topics</i>. riptide_navigation''s entry lists <code>/a</code>.'
+    check: 'Read the launch''s output on the launcher page (cyan while starting). <code>ros2 topic hz</code> on the pending topic.'
+    src:
+      - [main.js progress bar, launch, remote_launch/pages/main.js, 67-88]
+      - [talos_launch_bench_mpc.yaml, launch, remote_launch/launches/talos_launch_bench_mpc.yaml, 43-57]
+  - id: launch-died
+    cat: launch
+    symptom: 'A launch''s bar on the launcher page says <b>ERROR!</b>'
+    cause: 'Its <code>ros2 launch</code> process exited (a node crashed with the launch, or a monitored topic''s monitor died). The launcher logs <code>Launch died</code> and stops the rest of it.'
+    check: 'The launch''s output on the launcher page shows the crash. The launcher''s own log: <code>journalctl -u ros_launcher --since "10 min ago"</code>.'
+    src:
+      - [launcher.py _launch_task, launch, remote_launch/remote_launch/launcher.py, 399-500]
+  - id: cameras-wrong-nav
+    cat: launch
+    symptom: 'ZED topics missing or camera frames not in TF, with the bench launch file loaded'
+    cause: '<code>talos_launch_bench_mpc.yaml</code> lists <b>two</b> <code>navigation.launch.py</code> entries. The cameras need riptide_hardware2''s one, which publishes the robot model and both ZED camera frames, running alongside <code>zed.launch.py</code>. riptide_navigation''s (<code>mode:=replacement</code>) is the other one.'
+    check: 'On the launcher page, check the package under the running <code>navigation.launch.py</code>. <code>ros2 run tf2_ros tf2_echo talos/base_link talos/ffc_camera_link</code>.'
+    src:
+      - [talos_launch_bench_mpc.yaml, launch, remote_launch/launches/talos_launch_bench_mpc.yaml, 29-82]
+      - [navigation.launch.py, core, riptide_hardware/launch/navigation.launch.py, 86-96]
+  - id: abandoned
+    cat: launch
+    symptom: 'The launcher page lists <b>Abandoned Launches</b> or <b>Orphans</b>'
+    cause: 'You loaded another launch file while launches were running (they become zombies and are asked to stop), or processes escaped a launch''s shutdown. Orphans can keep publishing and confuse everything after.'
+    check: '<code>systemctl status ros_launcher</code> says "N Launches Active; M Abandoned". Stop launches before loading a new file. As a last resort, <code>sudo systemctl restart ros_launcher</code> stops every node.'
+    src:
+      - [launcher.py load_file, launch, remote_launch/remote_launch/launcher.py, 725-746]
+
+  # ------------------------------------------------------------------ sensors and boards
+  - id: no-firmware
+    cat: sensors
+    symptom: 'No <code>state/firmware</code>, no depth, no thruster telemetry'
+    cause: 'The CAN side is down: the hardware launch (it runs the micro-ROS agent for the boards) isn''t running, <code>can0</code> is down, or a board is unpowered.'
+    check: '<code>ros2 topic echo /talos/state/firmware --field board_name</code> should list every board within a few seconds. On the Orin: <code>ip -br link show can0</code>, then <code>candump can0</code> for the boards'' own frames (see <a href="firmware.html#debug">Firmware</a>).'
+    src:
+      - [Debugging a board, 'firmware.html#debug']
+      - [pool-test.html pretest, 'pool-test.html#pretest']
+  - id: dvl-lock
+    cat: sensors
+    symptom: '<code>dvl_twist</code> stops; MPC warns <code>Stale sensors, using EKF instead: dvl</code>'
+    cause: 'The DVL lost bottom lock (too close to the floor, beams on a wall, bubbles, out of the water). The driver only publishes <code>dvl_twist</code> when the velocity is valid, and the MPC calls the DVL stale after 1 s. On the <code>DvlWaterTrackFallback</code> branch the water-track velocity goes to <code>dvl/water_twist</code>, but nothing uses it yet: it is relative to the water, not the floor.'
+    check: '<code>ros2 topic echo /talos/dvl/bottom_lock</code>; <code>ros2 topic hz /talos/dvl_twist</code> (8 Hz when locked).'
+    src:
+      - [dvl_driver.cpp, dvl, nortek_dvl/src/dvl_driver.cpp, 160-225]
+      - [mpc.yaml dvl_timeout, control, riptide_mpc/config/mpc.yaml, 25]
+  - id: dvl-settings
+    cat: sensors
+    symptom: 'DVL velocities about 1 % off, or it stops measuring after you poked at it'
+    cause: 'Its settings changed (speed of sound 1480 m/s fixed, 8 Hz, water track on). Connecting to ports 9000/9001 is the command interface and stops the measurement.'
+    check: 'Read the settings from the DVL''s web page, Measurement Configuration, at <code>192.168.1.212</code>. Don''t open 9000/9001 just to look.'
+    src:
+      - [The DVL, 'sensors.html#dvl']
+  - id: fake-dvl
+    cat: sensors
+    symptom: 'On the bench, <code>dvl_twist</code> runs at 8 Hz but only ever reads near zero, and every DVL beam is valid'
+    cause: 'Expected with the bench launch file. <code>talos_launch_bench_mpc.yaml</code> starts <code>hardware_fake_dvl.launch.py</code>, which runs <code>fake_dvl.py</code> instead of the DVL driver: zero velocity plus 5 mm/s of random noise, every beam flagged valid, stamped as it is sent (not back-dated).'
+    check: 'On the launcher page, see which hardware launch is loaded: <code>hardware.launch.py</code> (pool file <code>talos_launch_mpc.yaml</code>) runs the real DVL. <code>ros2 node list | grep fake_dvl</code>.'
+    src:
+      - [talos_launch_bench_mpc.yaml, launch, remote_launch/launches/talos_launch_bench_mpc.yaml, 2-17]
+      - [fake_dvl.py, core, riptide_hardware/riptide_hardware2/fake_dvl.py, 24-73]
+      - [hardware_fake_dvl.launch.py, core, riptide_hardware/launch/hardware_fake_dvl.launch.py, 65-72]
+
+  # ------------------------------------------------------------------ localization
+  - id: ekf-lag
+    cat: est
+    symptom: 'EKF velocity trails the DVL by 0.2–0.35 s; roll and pitch rates are small and late'
+    cause: 'The IMU reports <code>angular_velocity_covariance</code> 0.01, but its measured still noise is about 1e-6, so the EKF hardly trusts it: rates lag the IMU by ~455 ms at 12–15 % of their size. DVL messages arrive ~125 ms after their stamp and <code>smooth_lagged_data</code> is off. The MPC''s own estimator is on time; mapping''s motion model uses the EKF.'
+    check: 'Record the IMU, FOG, DVL, depth and <code>odometry/filtered</code>, then cross-correlate (or replay the EKF, below).'
+    src:
+      - [vectornav.yaml, core, riptide_imu/config/vectornav.yaml, 27]
+      - [talos_ekf.yaml, core, riptide_hardware/cfg/talos_ekf.yaml, null]
+      - [The EKF covariance figure, 'sensors.html#imu']
+  - id: drift-still
+    cat: est
+    symptom: 'Talos sits still on the bench but its pose creeps'
+    cause: 'Usually heading: an old or bad FOG tare. The pre-test limits are 1 m per hour of position drift and 0.5° per minute of yaw.'
+    check: 'Watch <code>odometry/filtered</code> for a minute. Tare only with Talos still on a <b>level</b> surface: <code>ros2 action send_goal /talos/gyro/tare riptide_msgs2/action/TareGyro "{num_samples: 100000, timeout_seconds: 20}"</code>'
+    src:
+      - [The FOG, 'sensors.html#fog']
+  - id: mount-mismatch
+    cat: est
+    symptom: 'MPC log: <code>&lt;frame&gt; mount in the vehicle YAML differs from TF by … deg / … cm</code>'
+    cause: 'The vehicle YAML the MPC loads and the URDF behind TF disagree about where a sensor sits. One of them was edited.'
+    check: '<code>ros2 run tf2_ros tf2_echo talos/base_link talos/imu_link</code>, compared with <code>riptide_descriptions/config/talos.yaml</code>.'
+    src:
+      - [mpc_controller_node.cpp mount check, control, riptide_mpc/src/mpc_controller_node.cpp, 640-650]
+
+  # ------------------------------------------------------------------ control and ESCs
+  - id: esc-delay
+    cat: ctrl
+    symptom: 'Enabled, but the thrusters do nothing for about 5 seconds'
+    cause: 'Normal. A kill cuts ESC power; when power returns the ESC boards hold <code>ESC_POWERON_DELAY</code> for 5000 ms while the ESCs start up, and the overseer keeps <code>motion_enabled</code> false.'
+    check: '<code>ros2 topic echo /talos/state/thrusters/telemetry --field disabled_flags</code>: bit 2 (value 4) is the power-on delay. It clears by itself.'
+    src:
+      - [dshot.h ESC_POWERUP_DELAY_MS, firmware, talos/ESCBoard/include/dshot.h, 20-29]
+      - [core1.c disabled flags, firmware, talos/ESCBoard/src/core1.c, 236-283]
+      - [What can stop the thrusters, 'commanding.html#stops']
+  - id: rpm-stale
+    cat: ctrl
+    symptom: 'Thrusters stop mid-run; telemetry shows <code>TGT_RPM_STALE</code>, then <code>TGT_RPM_STALE_PENALTY</code>'
+    cause: 'No RPM command reached the ESC board for 500 ms while the thrusters were spinning. The board raises a fault and refuses commands for 1 s more. The controller stopped, stalled or lost CAN.'
+    check: 'The MPC''s log for <code>CAN thruster command failed</code> (the direct sign) or <code>MPC failed</code>. <code>ros2 topic hz /talos/command/requested_rpm</code> (20 Hz) only shows the MPC is ticking: it is a copy of what goes over CAN. <code>candump can0</code> on the Orin shows the frames themselves (<a href="firmware.html#debug">Firmware</a>).'
+    src:
+      - [dshot.h timeouts, firmware, talos/ESCBoard/include/dshot.h, 20-26]
+      - [core1.c, firmware, talos/ESCBoard/src/core1.c, 262-276]
+  - id: no-fresh-odom
+    cat: ctrl
+    symptom: 'MPC log: <code>No fresh odometry; thrusters off</code>'
+    cause: 'The newest <code>odometry/filtered</code> is more than 0.5 s old, judged by its <b>header stamp</b> against the MPC''s clock. The EKF stopped, or the two run on machines whose clocks disagree.'
+    check: '<code>ros2 topic hz /talos/odometry/filtered</code> (30 Hz). If the MPC isn''t on the Orin, compare clocks (<code>chronyc tracking</code>).'
+    src:
+      - [mpc_controller_node.cpp, control, riptide_mpc/src/mpc_controller_node.cpp, 1320-1330]
+      - [mpc.yaml odom_timeout, control, riptide_mpc/config/mpc.yaml, 48]
+  - id: stale-sensors
+    cat: ctrl
+    symptom: 'MPC log: <code>Stale sensors, using EKF instead: gyro fog dvl</code>'
+    cause: 'The listed channels went quiet longer than their timeouts (gyro 0.2 s, FOG 0.1 s, IMU orientation 0.5 s, DVL 1.0 s, depth 0.5 s), so the MPC''s estimator borrows the EKF for them. Only <code>dvl</code> is routine (bottom lock).'
+    check: '<code>ros2 topic hz</code> on each named topic.'
+    src:
+      - [mpc_controller_node.cpp, control, riptide_mpc/src/mpc_controller_node.cpp, 659-679]
+      - [mpc.yaml estimator timeouts, control, riptide_mpc/config/mpc.yaml, 22-27]
+  - id: hw-output-off
+    cat: ctrl
+    symptom: 'MPC runs and publishes <code>thruster_forces</code>, but the ESCs never get RPM'
+    cause: 'Hardware output is off. The log says why: <code>hardware_output is off</code>, <code>running on simulation time</code>, <code>can0 does not exist</code> or <code>the model has no hardware section</code>.'
+    check: 'Search the MPC''s start-up log for <code>Hardware output</code>. <code>ros2 param get /talos/mpc_controller hardware_output</code>; on the Orin <code>ip -br link show can0</code>.'
+    src:
+      - [mpc_controller_node.cpp, control, riptide_mpc/src/mpc_controller_node.cpp, 680-702]
+  - id: table-mode
+    cat: ctrl
+    symptom: 'Talos moves weakly; thrusters never pass 500 RPM'
+    cause: '<code>table_mode</code> was left on after a bench test. It caps every thruster at 500 RPM; the log says <code>Table mode ON</code>.'
+    check: '<code>ros2 param get /talos/mpc_controller table_mode</code>, then <code>ros2 param set /talos/mpc_controller table_mode false</code>.'
+    src:
+      - [mpc_controller_node.cpp, control, riptide_mpc/src/mpc_controller_node.cpp, 100-106]
+  - id: solve-slow
+    cat: ctrl
+    symptom: 'MPC log: <code>MPC solve … ms exceeds the control period</code>'
+    cause: 'The solve took longer than the 50 ms tick. In a 20-minute pool session the median was 30 ms and the 95th percentile 35 ms, so this is unusual: something else is loading the Orin''s CPU.'
+    check: '<code>ros2 topic echo /talos/controller/mpc/solve_time_ms</code>; the CPU chip in the viewer''s command bar; <code>top</code> on the Orin.'
+    src:
+      - [mpc_controller_node.cpp, control, riptide_mpc/src/mpc_controller_node.cpp, 1366-1371]
+      - [Solving it every 50 ms, 'control/solver.html']
+  - id: disturbance
+    cat: ctrl
+    symptom: 'Holding still, the MPC''s learned disturbance sits at a constant few N·m'
+    cause: 'The model''s statics (buoyancy, centre of buoyancy) are wrong. On 2026-10-26 a tethered identification run fitted the tether''s pull into the statics; the next untethered run showed +2.7 N·m pitch, +0.7 N·m roll and +1.3 N heave of constant disturbance.'
+    check: 'Average <code>controller/mpc/disturbance</code> over a hold. Never take statics or added mass from a tethered run.'
+    src:
+      - [Feedback and model error, 'control/estimation.html#offsetfree']
+      - [System identification, 'control/identify.html#statics']
+
+  # ------------------------------------------------------------------ kill switch
+  - id: viewer-kills
+    cat: kill
+    symptom: 'The robot was enabled; opening the viewer killed it'
+    cause: 'Normal. From its first tick the viewer reports on slot 1, asserting kill until someone presses Enable.'
+    check: 'Press Enable in the viewer.'
+    src:
+      - [The kill system, 'commanding.html#kill']
+  - id: competing-operator
+    cat: kill
+    symptom: 'Enable drops by itself: <i>Another operator owns the enable switch</i>'
+    cause: 'Something else published on slot 1 (a second viewer, the old RViz control panel, a script). The viewer yields at once and refuses Enable until that sender has been quiet for 1 s.'
+    check: '<code>ros2 topic info -v /talos/command/software_kill</code> lists the publishers; <code>ros2 topic echo /talos/command/software_kill --field sender_id</code> names them.'
+    src:
+      - [uwrt_motion.cpp, nereus, integrations/ros2/viewer/panels/uwrt_motion.cpp, 35-45]
+  - id: enabled-forever
+    cat: kill
+    symptom: 'Talos stays enabled with nobody driving'
+    cause: 'A script cleared its slot with <code>switch_asserting_kill: false, switch_needs_update: false</code>. That latches: the slot stays clear forever. It happened on 2026-10-20 with a bench script releasing slot 3.'
+    check: 'Kill from the viewer (or pull the switch), then find the script. Scripts should hold slot 3 with <code>needs_update: true</code>, so they kill when they die.'
+    src:
+      - [kill_switch.c, firmware, lib/titan_safety/src/kill_switch.c, 25-75]
+      - [KillSwitchReport.msg, core, riptide_msgs/msg/KillSwitchReport.msg, null]
+  - id: killed-mystery
+    cat: kill
+    symptom: 'Killed, and no one pressed anything'
+    cause: 'A slot reporting with <code>needs_update: true</code> went quiet for 500 ms (its sender died or the link dropped), or the POAC board lost its micro-ROS connection: it is killed whenever it has none.'
+    check: '<code>ros2 topic echo /talos/state/firmware</code>: <code>kill_switches_timed_out</code> and <code>kill_switches_asserting_kill</code> are bitmasks by slot.'
+    src:
+      - [kill_switch.c, firmware, lib/titan_safety/src/kill_switch.c, 25-45]
+      - [The kill system, 'commanding.html#kill']
+
+  # ------------------------------------------------------------------ perception
+  - id: model-swap
+    cat: vision
+    symptom: 'After <code>set_camera_is_dfc</code>, detections keep coming from the old camera, or stop for a while'
+    cause: 'The swap is asynchronous. The service answers "Successfully switched" at once; the detector reconfigures and loads the other model afterwards.'
+    check: 'Watch <code>header.frame_id</code> of <code>/talos/detected_objects</code> until it names the new camera. The pre-test tool allows up to 90 s.'
+    src:
+      - [yolo_orientation.py, perception, tensor_detector/src/yolo_orientation.py, 171-197]
+  - id: torpedo-classes
+    cat: vision
+    symptom: 'Holding up the torpedo board, <code>detected_objects</code> never says <code>fire</code> or <code>blood</code>'
+    cause: 'Expected. On the front camera the detector''s torpedo task consumes the fire and blood detections and publishes <code>torpedo</code> plus <code>fire_hole_large</code>, <code>fire_hole_small</code>, <code>blood_hole_large</code> and <code>blood_hole_small</code>.'
+    check: '<code>ros2 topic echo /talos/detected_objects --field detections</code> and read the class ids.'
+    src:
+      - [Props made of several pieces, 'perception/composites.html']
+  - id: config-not-taking
+    cat: tools
+    symptom: 'You edited a config YAML and nothing changed'
+    cause: 'Nodes read the copy in <code>install/&lt;pkg&gt;/share</code>, not your source tree. Rebuild (or build with <code>--symlink-install</code>). On the robot, nothing changes until the code is deployed. (Building this site turned up a mapping prior that differed between the source and installed <code>config.yaml</code>.)'
+    check: '<code>ros2 pkg prefix riptide_mapping2</code>, then diff that package''s <code>share/</code> config against <code>src/</code>. On a running node, <code>ros2 param get</code>.'
+    src:
+      - [Setting up your machine, 'setup.html#sourcing']
+
+  # ------------------------------------------------------------------ Nereus
+  - id: sim-offset-prior
+    cat: sim
+    symptom: 'In sim, mapping''s course offset starts hugely uncertain (about 17,900 m²)'
+    cause: 'A start-up bug: mapping stamps <code>last_predict_time</code> when the node starts, before <code>/clock</code> arrives, so the first drift prediction covers about 1.8 × 10<sup>9</sup> s (time zero to the sim clock). Only in sim; on the robot the clock is wall time.'
+    check: 'Echo <code>/talos/mapping/&lt;object&gt;</code> covariance right after start. A fix would start the first prediction at the first <code>/clock</code> message.'
+    src:
+      - [mapping.py, perception, riptide_mapping/riptide_mapping2/mapping.py, 216]
+      - [mapping.py predict_offset, perception, riptide_mapping/riptide_mapping2/mapping.py, 921-927]
+  - id: clock-step
+    cat: sim
+    symptom: 'The viewer loses TF (robot frozen, frames missing) right after a clock change'
+    cause: 'A clock that steps backwards by more than about 10 s makes the Nereus viewer drop TF. That is why the opbox time setup lets the robot step its clock only in its first three updates after boot.'
+    check: '<code>chronyc tracking</code> on each machine. Restart the viewer after a big step.'
+    src:
+      - [Time sync, 'computers.html#time']
+
+  # ------------------------------------------------------------------ bags and time
+  - id: bag-no-metadata
+    cat: data
+    symptom: '<code>ros2 bag info</code> fails: the bag folder has a <code>.db3</code> but no <code>metadata.yaml</code>'
+    cause: 'The recorder was killed instead of stopped: <code>metadata.yaml</code> is written when it closes.'
+    check: '<code>ros2 bag reindex &lt;bag folder&gt;</code> rebuilds it from the data. Stop recorders with Ctrl-C (the viewer''s Stop does that).'
+    src:
+      - ['viewer.md: Bagging', nereus, docs/viewer.md, 294-322]
+  - id: bag-start-offset
+    cat: data
+    symptom: 'Playing a bag from the middle, TF can''t connect the robot to the world'
+    cause: '<code>--start-offset</code> skips everything before it, including <code>/tf_static</code>, where most static frames are published only once, at start-up (one is re-sent every 2 s).'
+    check: 'Re-publish the bag''s statics with a static broadcaster (this chapter''s <code>static_tf_from_bag.py</code>), or play from the start.'
+    src:
+      - [static_tf_from_bag.py, site, tools/debugging/static_tf_from_bag.py, null]
+  - id: replay-leak
+    cat: data
+    symptom: 'A replay shows two of everything, or something on the robot reacts to it'
+    cause: 'The replay shares a graph with live nodes. Bag messages and live ones mix, and a replayed command could reach the robot.'
+    check: 'Isolate the replay: <code>RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=&lt;unused&gt;</code> and unset the <code>ZENOH_*</code> variables.'
+    src:
+      - [Replay section, '#replay']
+  - id: negative-age
+    cat: data
+    symptom: 'In a bag, messages seem to arrive before they were sent'
+    cause: 'The recorder''s clock is behind the publisher''s. A bench bag from 2026-10-27 has every message "arriving" about 37 ms early.'
+    check: '<code>chronyc tracking</code> on both machines, or record on the Orin itself.'
+    src:
+      - [Time section, '#time']
+  - id: checkbt-rewrites
+    cat: tools
+    symptom: '<code>git status</code> says every behaviour tree changed after a check'
+    cause: '<code>checkBT</code> re-saves every tree file in place (XML re-escaped, trailing newline dropped).'
+    check: 'Snapshot the trees folder before running it and restore afterwards, or <code>git checkout</code> the trees you didn''t mean to change.'
+    src:
+      - [Checking the XML, 'bt-workflow.html#checkbt']

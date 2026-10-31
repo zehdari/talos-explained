@@ -1,0 +1,125 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "computers.html"
+        ],
+        "createdAt": "2026-10-31T01:30:53.714Z",
+        "reason": "agent: imgs use data-src filled by JS with the Vite base URL (pattern from the sister sites), not placeholders"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "setup.html"
+        ],
+        "createdAt": "2026-10-31T01:30:53.738Z",
+        "reason": "agent: imgs use data-src filled by JS with the Vite base URL (pattern from the sister sites), not placeholders"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "cameras.html"
+        ],
+        "createdAt": "2026-10-31T01:30:53.751Z",
+        "reason": "agent: imgs use data-src filled by JS with the Vite base URL (pattern from the sister sites), not placeholders"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "computers.html"
+        ],
+        "createdAt": "2026-10-31T01:30:53.764Z",
+        "reason": "agent: inherits the shared theme of the two existing sister sites (h1 clamp 2.4-4rem, h2 1.6-2.15rem over 1.19rem body); static check misses the CSS"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "robosub.html"
+        ],
+        "createdAt": "2026-10-31T01:30:53.781Z",
+        "reason": "agent: inherits the shared theme of the two existing sister sites (h1 clamp 2.4-4rem, h2 1.6-2.15rem over 1.19rem body); static check misses the CSS"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "code-map.html"
+        ],
+        "createdAt": "2026-10-31T01:30:53.802Z",
+        "reason": "agent: inherits the shared theme of the two existing sister sites (h1 clamp 2.4-4rem, h2 1.6-2.15rem over 1.19rem body); static check misses the CSS"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "setup.html"
+        ],
+        "createdAt": "2026-10-31T01:30:53.818Z",
+        "reason": "agent: inherits the shared theme of the two existing sister sites (h1 clamp 2.4-4rem, h2 1.6-2.15rem over 1.19rem body); static check misses the CSS"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "bt.html"
+        ],
+        "createdAt": "2026-10-31T01:30:53.826Z",
+        "reason": "agent: inherits the shared theme of the two existing sister sites (h1 clamp 2.4-4rem, h2 1.6-2.15rem over 1.19rem body); static check misses the CSS"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "bt-nodes.html"
+        ],
+        "createdAt": "2026-10-31T01:30:53.841Z",
+        "reason": "agent: inherits the shared theme of the two existing sister sites (h1 clamp 2.4-4rem, h2 1.6-2.15rem over 1.19rem body); static check misses the CSS"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "commanding.html"
+        ],
+        "createdAt": "2026-10-31T01:30:53.849Z",
+        "reason": "agent: inherits the shared theme of the two existing sister sites (h1 clamp 2.4-4rem, h2 1.6-2.15rem over 1.19rem body); static check misses the CSS"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "cameras.html"
+        ],
+        "createdAt": "2026-10-31T01:30:53.860Z",
+        "reason": "agent: inherits the shared theme of the two existing sister sites (h1 clamp 2.4-4rem, h2 1.6-2.15rem over 1.19rem body); static check misses the CSS"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "bt.html"
+        ],
+        "createdAt": "2026-10-31T01:33:27.986Z",
+        "reason": "agent: data-src filled by JS with the Vite base URL; file public/img/bt/tdr2022-groot.webp exists"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "commanding.html"
+        ],
+        "createdAt": "2026-10-31T01:59:27.943Z",
+        "reason": "agent: data-src filled by JS with the Vite base URL; public/img/commanding/poac-kill-switch.webp exists"
+      }
+    ]
+  }
+}

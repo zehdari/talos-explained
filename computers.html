@@ -4,32 +4,310 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Computers and networks · How Talos works</title>
-<meta name="description" content="One or two sentences on what this chapter explains.">
+<meta name="description" content="The Jetson AGX Orin inside Talos and what runs on it, the ros_launcher service, deploying to ~/colcon_deploy, the CAN link to the boards, the robot LAN and tether, ROS 2 over Zenoh, the operator laptop and the opbox, time sync with chrony, and SSH and journalctl.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">The vehicle</div>
+    <div class="kicker">The vehicle · Chapter 10</div>
     <h1>Computers and networks</h1>
-    <p class="lede">One or two sentences: what this is and why a new member should care.</p>
+    <p class="lede">One computer in the hull runs the whole robot. A few machines on the surface watch it, record it and keep its clock right. Which box does what, how they connect, and how your laptop joins in.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Three to five bullets a reader can stop after.</li>
+      <li>Every ROS node of the real robot runs on one <strong>Jetson AGX Orin</strong> (<code>orin2</code>). A systemd service, <code>ros_launcher</code>, starts the nodes. They run the code that <code>colcon deploy</code> copied to <code>~/colcon_deploy</code>.</li>
+      <li>The circuit boards hang off a CAN bus, <code>can0</code>. A micro-ROS agent turns their messages into ROS topics, and the MPC writes thruster RPMs straight onto the bus.</li>
+      <li>ROS 2 runs over <strong>Zenoh</strong>. A router on the Orin listens on TCP port 7447, and laptops connect to it as clients, on the LAN or through Tailscale. Both paths run over the tether.</li>
+      <li>The <strong>opbox</strong>, a Raspberry Pi in the operator box, gets the robot network onto the internet through campus Wi-Fi. It also serves the time that every clock follows.</li>
+      <li><strong>op-top</strong>, the team laptop, is the operator station. It runs the Nereus viewer, deploys code and runs the pre-test checks.</li>
     </ul></aside>
+
     <div class="prose">
-      <p>Opening paragraph.</p>
-      <h2 id="first-section">First section</h2>
-      <p>Coming soon.</p>
+      <p>Each machine has one job. The Orin does all the real-time work: sensors, estimation, control, vision, mapping and the mission tree. Everything outside the hull is optional while Talos runs. You can pull the tether and the robot keeps going, which is how competition runs work. This chapter covers each machine, then the links between them, then the commands you'll use to reach them.</p>
+
+      <h2 id="map">The network at a glance</h2>
+      <p>One box holds what is inside the hull, the other the surface. Pick a kind of traffic to see where it flows. Tap any machine for what it runs and where it lives.</p>
     </div>
     <figure class="fig">
-      <div class="panel" id="some-figure"></div>
-      <figcaption><b>Bold lead-in.</b> What to look at. Tap or hover … (if interactive).</figcaption>
+      <div class="panel">
+        <div class="seg net-filter" role="group" aria-label="Traffic to show" id="net-filter"></div>
+        <div class="net-flow" id="net-flow"></div>
+        <div id="net-graph"></div>
+        <div class="graph-note" id="net-note"></div>
+      </div>
+      <figcaption><b>Talos's computers and links.</b> Solid lines are cables. Dashed lines are Tailscale tunnels, the encrypted overlay network the team uses for remote access. They are logical links, not cables: their packets travel the same tether, router, opbox and Wi-Fi. Addresses are on the robot LAN. Tap or hover a machine.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="orin" data-short="The Orin">The Orin: Talos's only computer</h2>
+      <p>The Orin is an NVIDIA Jetson AGX Orin, bought in 2022 and the team's main vehicle computer since then (<a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2025/07/Robosub_2025.pdf">2025 design report</a>). It's an ARM (aarch64) computer with an NVIDIA GPU, which the YOLO detector and the ZED depth processing use.</p>
+      <dl class="spec">
+        <dt>Hostname</dt><dd><code>orin2</code>, 192.168.1.24 on the robot LAN. Log in as user <code>ros</code>.</dd>
+        <dt>Software</dt><dd>Ubuntu 22.04, ROS 2 Humble, <code>rmw_zenoh_cpp</code>, the ZED SDK and wrapper, and the micro-ROS agent.</dd>
+        <dt>Ethernet</dt><dd><code>eth0</code>, a static address set by systemd-networkd (gateway 192.168.1.1). NetworkManager is masked.</dd>
+        <dt>CAN</dt><dd><code>can0</code> internal bus at 1 Mbit/s, <code>can1</code> external bus at 250 kbit/s, both with a transmit queue of 1000.</dd>
+        <dt>Serial</dt><dd>VectorNav IMU on <code>/dev/ttyTHS1</code>. Fibre-optic gyro on <code>/dev/ttyTHS2</code>, through the team's own board that turns the Orin carrier's M.2 slot into an RS-422 port (<a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2024/06/TDR_THEOhioStateUniversity_RS2024.pdf">2024 TDR</a>).</dd>
+        <dt>Cameras</dt><dd>Two ZED X Mini stereo cameras on a GMSL2 capture card.</dd>
+        <dt>Network</dt><dd>A small Ethernet switch in the camera cage joins the Orin, the DVL and the tether.</dd>
+        <dt>DVL</dt><dd>Nortek DVL1000 over Ethernet, at 192.168.1.212 (hostname <code>uwrt-dvl</code>).</dd>
+        <dt>No desktop</dt><dd>The setup boots to <code>multi-user.target</code>. You reach the Orin over SSH or ROS, never with a screen.</dd>
+      </dl>
+      <p class="src">The Orin's environment: the service sources <code>uwrt_config/source/zenoh_server.bash</code>, which sources <a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/uwrt_config/source/client.bash"><code>client.bash</code></a>: ROS, the source-built <code>rmw_zenoh_cpp</code>, the ZED wrapper workspace, <code>config_rmw.bash</code>, <code>~/colcon_deploy</code> and the micro-ROS agent workspace. Interface setup: <a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/config_target/configure_jetpack.bash#L38-L76"><code>configure_jetpack.bash</code></a>. Serial ports: <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml"><code>talos_launch_mpc.yaml</code></a>. Hardware list: the <a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">2026 design report</a>.</p>
+
+    </div>
+    <figure class="fig narrow">
+      <img class="media" data-src="img/computers/tdr24-camera-cage.webp" width="1100" height="878" alt="Exploded render of Talos's 2024 camera cage: from the top, a printed lid, the Camera Cage Breakout Board, a plate, the network switch, another plate, the AGX Orin with the M.2 breakout board beside it, the Nvidia Orin Hat, the VN-100 IMU, the VG103S fibre-optic gyro in its ring mounts, the cage frame and a ZED 2i stereo camera." loading="lazy">
+      <figcaption><b>Where the Orin lives.</b> The 2024 camera cage, exploded: the Orin, the network switch, the camera cage breakout board, the M.2 breakout for the gyro's RS-422 link, the IMU and the gyro on shelves around it. Talos has since swapped the single ZED 2i for two ZED X Minis. From the <a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2024/06/TDR_THEOhioStateUniversity_RS2024.pdf">2024 TDR</a>, Fig. 18.</figcaption>
     </figure>
     <div class="prose">
-      <h2 id="second-section">Second section</h2>
-      <p>Coming soon.</p>
+      <h3>Why one computer</h3>
+      <ul>
+        <li><strong>The loop never leaves the hull.</strong> Sensors, the EKF, the 50 ms MPC and the thruster commands all run on one machine with one clock. A dropped tether can't stall control.</li>
+        <li><strong>Competition runs are untethered.</strong> Autonomy has to run without any help from the surface, so the surface machines only observe and command.</li>
+        <li><strong>Cameras stay local.</strong> Two raw camera streams are far too big for the tether (see <a href="#frame">below</a>), so the detector runs next to the cameras.</li>
+      </ul>
+
+      <h2 id="launcher" data-short="ros_launcher">ros_launcher: starting the stack without SSH</h2>
+      <p>Nobody types <code>ros2 launch</code> on the robot. The Orin runs the <strong>remote launcher</strong> (<code>remote_launch</code> in <code>riptide_launch</code>) as a systemd service, <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/ros_launcher.service"><code>ros_launcher.service</code></a>. It starts at boot and does four jobs:</p>
+      <ul>
+        <li><strong>It starts the Zenoh router.</strong> With <code>--start-discovery-server</code> it runs <code>rmw_zenohd</code>, the ROS 2 router that every node and laptop connects to. If the router dies, the launcher shuts itself down and systemd restarts the whole service.</li>
+        <li><strong>It serves a web page and a websocket on port 8080.</strong> You can open <code>http://orin2:8080</code> in a browser. Scripts such as the pre-test checks use the websocket.</li>
+        <li><strong>It loads a launch-file list</strong> (a YAML file in <code>remote_launch/launches/</code>) and starts or stops each entry on request. It never starts an entry by itself.</li>
+        <li><strong>It watches.</strong> An entry only counts as <em>running</em> once every topic in its list has published. Child processes stay in the service's cgroup, so the launcher can report any that escape shutdown as <em>zombies</em>.</li>
+      </ul>
+    </div>
+    <figure class="fig narrow">
+      <img class="media" id="launcher-img" data-src="img/computers/launcher-ui.webp" width="1350" height="925" alt="The remote launcher's web page: a table of launch entries (hardware, navigation, control_system, zed, tensorrt, mapping, autonomy, diagnostics), each with Start and Stop buttons, a Log checkbox and a progress bar reading Stopped. The hardware row is expanded to list its monitored topics." loading="lazy">
+      <figcaption><b>The launcher's page.</b> This is the real <code>launcher.py</code> with <code>talos_launch_mpc.yaml</code> loaded, run on a desk computer, so every entry is stopped. Expanding an entry (+) lists the topics it must publish before the bar reads <i>Running</i>.</figcaption>
+    </figure>
+    <div class="prose">
+      <ul>
+        <li><strong>After a boot, nothing runs.</strong> The launcher comes up empty. When you open its page, the page asks it to load the list you used last (your browser remembers it). You then press Start on each entry yourself, top to bottom.</li>
+        <li><strong>The lists are read from the installed package.</strong> The launcher reads <code>launches/</code> from <code>remote_launch</code>'s share directory in <code>~/colcon_deploy/install</code>. To change a list, edit it in <code>riptide_launch</code> and deploy <code>remote_launch</code>.</li>
+      </ul>
+      <p>Each robot mode has its own launch-file list. Three are current for the MPC. Pick one to see its entries in list order, the order you start them in. Tap an entry to see its arguments and the topics the launcher waits for.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel">
+        <div class="seg launch-pick" role="group" aria-label="Launch file" id="launch-pick"></div>
+        <p class="launch-desc" id="launch-desc"></p>
+        <ol class="launch-list" id="launch-list"></ol>
+      </div>
+      <figcaption><b>The launcher's lists, parsed from <a href="https://github.com/osu-uwrt/riptide_launch/tree/newsim/remote_launch/launches"><code>remote_launch/launches</code></a>.</b> The older non-MPC files (<code>talos_launch.yaml</code>, <code>_bench</code>, <code>_debug</code>, <code>_sim_hil</code>) are still there but use the old controllers. Tap an entry to open it.</figcaption>
+    </figure>
+    <div class="prose">
+      <div class="callout safety"><span class="label">Thrusters</span>
+        <ul>
+          <li><strong>Starting <code>control_system</code> on an enabled robot spins the thrusters.</strong> On the bench, keep the robot killed before you start it, and keep hands clear.</li>
+          <li><strong>Force Reset kills every node without cleanup.</strong> Use the normal Stop buttons unless the launcher is stuck.</li>
+        </ul>
+      </div>
+      <p>The service file settles a few behaviours you'll notice:</p>
+      <table class="params">
+        <thead><tr><th>Setting</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td><code>User=ros</code></td><td>Everything runs as <code>ros</code>, sourcing <code>/home/ros/colcon_deploy/install/setup.bash</code> first.</td></tr>
+          <tr><td><code>Restart=always</code></td><td>A crashed launcher comes back after 500 ms. More than 5 restarts in 15 s and systemd gives up.</td></tr>
+          <tr><td><code>KillSignal=SIGINT</code></td><td>A stop sends Ctrl-C, so the launcher can stop its launches cleanly. After 15 s it gets SIGKILL.</td></tr>
+          <tr><td><code>Type=notify</code></td><td>The launcher tells systemd when it's ready and posts its status, so <code>systemctl status ros_launcher</code> shows what's running.</td></tr>
+          <tr><td><code>StandardOutput=journal</code></td><td>All node output goes to the journal under <code>ros_launcher</code>. That's where you read logs (<a href="#ssh">below</a>).</td></tr>
+        </tbody>
+      </table>
+      <p>The full launch sequence, with each entry and what it starts, is in <a href="launch.html">Launching the stack</a>.</p>
+
+      <h2 id="deploy" data-short="Deploying code">Getting code onto the Orin: ~/colcon_deploy</h2>
+      <p><code>~/colcon_deploy</code> isn't a git checkout. Code goes on with <strong><code>colcon deploy</code></strong>, a verb the team added to colcon (<a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/colcon_riptide/README.md"><code>colcon_riptide</code></a> in <code>riptide_setup</code>). You run it from the release workspace on op-top:</p>
+<pre class="cmd" data-where="op-top">cd ~/osu-uwrt/release
+colcon deploy orin2 --packages-select riptide_mpc   # one package
+colcon deploy orin2 --clean        # clean rebuild of everything</pre>
+      <ol>
+        <li><strong>Sync.</strong> <code>rsync -vrzc --delete</code> copies each selected package's source to <code>~/colcon_deploy/src</code>, leaving out <code>.git</code>. A package with a <code>DEPLOY_IGNORE</code> file is skipped.</li>
+        <li><strong>Build on the robot.</strong> It writes a build script to the Orin and runs <code>colcon build</code> there with <code>-DBUILD_DEPLOY=ON</code>, so packages can tell they're building for the vehicle.</li>
+        <li><strong>Restart what you changed</strong> in the launcher. A running node keeps the old code until it restarts.</li>
+      </ol>
+      <p>Why build on the Orin? It's ARM and op-top is x86, so binaries built on op-top won't run on the Orin. Building in place keeps the robot's install matched to its own libraries.</p>
+      <ul>
+        <li><strong>Don't edit files on the Orin.</strong> No git tracks <code>~/colcon_deploy</code>, and the next deploy overwrites the change.</li>
+        <li><strong>Deploy from <code>release</code>.</strong> The <a href="https://github.com/osu-uwrt/riptide_release">release repo</a> pins every package as a submodule. Its README asks for a tag with the date after each pool test, so you can find out what the robot ran.</li>
+        <li><strong>Defaults:</strong> user <code>ros</code> and <code>~/colcon_deploy</code>. Override them with <code>--username</code> and <code>--remote_dir</code>.</li>
+      </ul>
+
+      <h2 id="can">CAN: the link to the boards</h2>
+      <p>The circuit boards talk to the Orin only over CAN. Each board has an RP2040 microcontroller, and the boards exchange ROS 2 messages over the team's own CAN protocol (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">2026 TDR</a>). Every board has its own CAN client ID. The Orin reaches the internal bus as <code>can0</code> and the external bus as <code>can1</code>.</p>
+      <p>The firmware runs the internal bus as CAN FD: 1 Mbit/s nominal, 5 Mbit/s for the data phase (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_boards/include/robots/talos.h#L16-L18"><code>talos.h</code></a>). The Orin setup script only sets the 1 Mbit/s nominal rate (<a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/config_target/configure_jetpack.bash#L52-L60"><code>configure_jetpack.bash</code></a>). Check the live setting with <code>ip -details link show can0</code>.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel" id="can-table"></div>
+      <figcaption><b>Who is on which bus</b>, from the CANmore client IDs (<a href="https://github.com/osu-uwrt/titan_canmore/blob/master/canmore/include/canmore/client_ids.h"><code>client_ids.h</code></a>) and the bus rates in <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_boards/include/robots/talos.h"><code>robots/talos.h</code></a>. Talos's POAC board (power and actuators combined) reports as client 1. Greyed IDs are assigned to boards Talos doesn't use.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>Two different programs talk on <code>can0</code>:</p>
+      <ul>
+        <li><strong>The micro-ROS agent, <code>copro_agent</code></strong> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/copro_agent.launch.py#L11-L18"><code>copro_agent.launch.py</code></a>). It runs <code>micro_ros_agent can -D can0 -m rmw</code> and is started by <code>hardware.launch.py</code>. Each board runs a micro-ROS client, and the agent bridges its publishers and subscribers into the ROS graph. <code>state/firmware</code> and <code>state/depth/raw</code>, for example, both come in this way. The team wrote the <code>-m rmw</code> middleware so the agent hands messages to whatever RMW the Orin runs, which today is Zenoh.</li>
+        <li><strong>The MPC itself.</strong> When hardware output is on, <code>mpc_controller</code> opens a raw CAN socket and sends each ESC board one 8-byte frame every control tick: four signed 16-bit RPMs, big-endian (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c"><code>send_thruster_cmd_canbus.c</code></a>). Thrusters 0–3 go to client 2 and thrusters 4–7 to client 3. The same numbers are published on <code>command/requested_rpm</code> so you can see them.</li>
+      </ul>
+      <p>The MPC only enables CAN output when all four checks pass (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L681-L702"><code>configureHardwareOutput</code></a>):</p>
+      <ul>
+        <li><code>hardware_output</code> isn't <code>off</code>.</li>
+        <li>The model file has a <code>hardware</code> section, with <code>can_interface: can0</code>.</li>
+        <li>The node isn't running on simulation time. In the code's words, "a simulator on the vehicle computer never drives the real thrusters".</li>
+        <li><code>/sys/class/net/can0</code> exists.</li>
+      </ul>
+      <p>On your laptop there's no <code>can0</code>, so the same node runs in Nereus and only publishes <code>thruster_forces</code>.</p>
+      <p>The boards themselves, their firmware and how to talk to one with a USB-CAN adapter are in <a href="boards.html">The circuit boards</a> and <a href="firmware.html">Firmware on the boards</a>.</p>
+
+      <h2 id="lan">The robot LAN and the tether</h2>
+      <p>Everything with an IP address sits on one wired network, 192.168.1.0/24, behind the team router (192.168.1.1). Inside Talos, the Orin, the DVL and the tether meet at a small network switch in the camera cage (<a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2024/06/TDR_THEOhioStateUniversity_RS2024.pdf">2024 TDR</a>). For pool tests, Talos joins the LAN through an Ethernet tether. For competition runs and some test runs, the tether comes off and Talos is on its own.</p>
+      <table class="params">
+        <thead><tr><th>Name</th><th>Address</th><th>What</th></tr></thead>
+        <tbody>
+          <tr><td>router</td><td>192.168.1.1</td><td>Gateway for the robot LAN</td></tr>
+          <tr><td><code>orin2</code></td><td>192.168.1.24</td><td>Talos's Orin</td></tr>
+          <tr><td><code>uwrt-dvl</code></td><td>192.168.1.212</td><td>The DVL (web settings page, TCP data)</td></tr>
+          <tr><td><code>opbox</code></td><td>192.168.5.69</td><td>The opbox, on the router's other side (192.168.5.0/24)</td></tr>
+        </tbody>
+      </table>
+      <ul>
+        <li><strong>Names come from <code>/etc/hosts</code>.</strong> The launch configs and tools use <code>orin2</code>, so add <code>192.168.1.24 orin2</code> to <code>/etc/hosts</code> on your laptop. <code>riptide_setup</code>'s <a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/setup_scripts/hardware/setup_hosts.bash"><code>setup_hosts.bash</code></a> still adds an older entry, <code>orin</code> at 192.168.1.23. Talos is <code>orin2</code>.</li>
+        <li><strong>A tether pulls on the robot.</strong> Fine for testing, but don't trust physics measured with it on. A tethered identification run fitted the tether's pull as buoyancy (<a href="control/identify.html">System identification</a>).</li>
+        <li><strong>Losing the tether doesn't stop Talos.</strong> The viewer's enable latches, and its watchdogs release manual control but never kill (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/ros_runtime.cpp#L166-L170"><code>ros_runtime.cpp</code></a>). That's what lets untethered runs work.</li>
+      </ul>
+      <div class="callout safety"><span class="label">Kill</span>
+        <p>With the tether off, or the link down, the only way to stop Talos is the <strong>physical kill switch</strong>. Software KILL only works while your messages reach the robot. Kill switch slots are explained in <a href="commanding.html">Commanding Talos</a>.</p>
+      </div>
+
+      <h2 id="zenoh">ROS 2 over Zenoh</h2>
+      <p>ROS 2 sends messages through a pluggable middleware layer (the RMW). Talos uses <code>rmw_zenoh_cpp</code>. The team switched from Fast DDS, the default, after a year of problems they traced to its unreliability. They chose Zenoh because it handles large amounts of traffic, discovers peers efficiently and gives more reliable communication between processes (<a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2025/07/Robosub_2025.pdf">2025 TDR</a>). The older Fast DDS discovery-server scripts are still in the release repo as history.</p>
+      <ul>
+        <li><strong>One router, on the Orin.</strong> The launcher starts <code>rmw_zenohd</code>, which listens on TCP port 7447. Nodes on the Orin find each other through it.</li>
+        <li><strong>Laptops are clients.</strong> A client session opens one TCP connection to the router. Every message to or from your laptop goes over it, and the robot never opens a connection back.</li>
+        <li><strong>Both ends need the same RMW.</strong> A laptop on Fast DDS won't see a single topic. If topics are missing, check <code>echo $RMW_IMPLEMENTATION</code> first.</li>
+        <li><strong>The <code>ros2</code> daemon caches the old RMW.</strong> The team's Zenoh source script runs <code>ros2 daemon stop</code>. Otherwise, add <code>--no-daemon</code> to <code>ros2 topic list</code>.</li>
+      </ul>
+      <p>The release repo picks the RMW per machine. <a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/dds_scripts/config_rmw.bash"><code>config_rmw.bash</code></a> reads <code>~/.uwrt/default_rmw</code> (set it with <code>changermw</code>). For Zenoh it sources <a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/dds_scripts/zenoh/source_rmw.bash"><code>zenoh/source_rmw.bash</code></a>, whose session config is a client of <code>tcp/orin2:7447</code> (<a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/dds_scripts/zenoh/zenoh_session.json5"><code>zenoh_session.json5</code></a>). The same can be done in one environment variable, which is handy over Tailscale (<a href="#join">below</a>).</p>
+
+      <h2 id="frame" data-short="A camera frame's trip">Follow a camera frame to your laptop</h2>
+      <p>Camera images are the biggest thing on the network, and they show every stage of the system. Step through one forward-camera frame, from the sensor to the Nereus viewer on op-top.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls trip-controls">
+          <button class="btn primary" id="trip-play" type="button">Play</button>
+          <button class="btn" id="trip-prev" type="button" aria-label="Previous stage">‹ Back</button>
+          <button class="btn" id="trip-next" type="button" aria-label="Next stage">Next ›</button>
+          <span class="trip-count" id="trip-count"></span>
+        </div>
+        <div class="trip" id="trip"></div>
+        <div class="trip-detail" id="trip-detail" aria-live="polite"></div>
+      </div>
+      <figcaption><b>One frame, sensor to screen.</b> The bar on each stage is the frame's size there: 9.2 MB as raw pixels, 0.54 MB as the JPEG that leaves the Orin. The JPEG is a real frame grabbed from <code>/talos/ffc/zed_node/rgb/image_rect_color/compressed</code> on the bench. Tap a stage or press Play.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>The arithmetic is why vision runs on the robot. A raw 1920×1200 BGRA frame is 9.2 MB, or about 1.1 Gbit/s at 15 fps for one camera, more than a gigabit Ethernet link carries. The JPEG is 17 times smaller, about 64 Mbit/s at 15 fps. Two habits follow:</p>
+      <ul>
+        <li><strong>Subscribe to <code>/compressed</code> topics from a laptop, never raw images or point clouds.</strong> Each client gets its own copy over the tether.</li>
+        <li><strong>Measure topic rates one at a time.</strong> Subscribing to several camera streams at once loads the link and skews every rate. The pre-test checks expect at least 8 Hz on each compressed camera topic and 3 Hz on the detector's annotated image.</li>
+      </ul>
+
+      <h2 id="opbox">The opbox</h2>
+      <p>The opbox is the operator box, and inside it is a Raspberry Pi (a Compute Module 4 running Debian 12) with hostname <code>opbox</code>. Its first two jobs are networking:</p>
+      <ul>
+        <li><strong>Internet passthrough.</strong> The Pi's <code>wlan0</code> joins campus Wi-Fi. Its <code>eth0</code> (192.168.5.69) is a NetworkManager <em>shared</em> connection that NATs the router's traffic out over the Wi-Fi. That gives the robot LAN internet access for <code>apt</code>, pip and GitHub without moving any cables.</li>
+        <li><strong>Time server.</strong> It runs chrony as the team clock (<a href="#time">next section</a>). It has a battery-backed real-time clock, so it keeps time across reboots even with no internet.</li>
+      </ul>
+      <div class="callout"><span class="label">Hands off its network settings</span>
+        <p>Every machine on the LAN reaches the internet through the opbox. Don't change its routing, DNS or Wi-Fi setup without asking whoever looks after it.</p>
+      </div>
+      <p>Its third job was an operator panel. <a href="https://github.com/osu-uwrt/opbox_software/tree/dev"><code>opbox_software</code></a> drives a kill button with red, yellow and green LEDs, a buzzer and pop-up alerts. It talks to <code>opbox_ros_client</code> on the robot over UDP port 10510 and opens a diagnostics page in a browser. Read the current code before you rely on any of it:</p>
+      <ul>
+        <li>The robot-side code that would publish the button as a kill report is <strong>commented out</strong> (<a href="https://github.com/osu-uwrt/opbox_software/blob/dev/opbox_ros_client/src/main.cpp#L168-L175"><code>main.cpp</code></a>). The opbox button does not kill Talos.</li>
+        <li>Its alerts come from <code>/diagnostics</code>, and the team no longer runs the diagnostics node.</li>
+        <li><code>opbox_ros_client</code> isn't in any of the launcher's Talos lists.</li>
+      </ul>
+
+      <h2 id="time" data-short="Time sync">Time: why every clock has to agree</h2>
+      <p>Every ROS message carries a timestamp from the clock of the machine that made it. Most of Talos's own timing is safe, because the sensors, EKF, MPC and mapping all stamp and compare on the Orin's single clock. The trouble starts when a second machine is involved:</p>
+      <ul>
+        <li><strong>Bags.</strong> A bag recorded on op-top stores op-top's receive times next to the Orin's header stamps. Merge it with a bag from the robot and it lines up only if the clocks agree.</li>
+        <li><strong>The viewer.</strong> Its live plots compare each header stamp with the arrival time, averaged over many messages. If that gap is over 0.5 s they show <i>clock offset</i>, which is really clock offset plus delay (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/plots_hub.cpp#L162-L165"><code>plots_hub.cpp</code></a>).</li>
+        <li><strong>Jumps.</strong> A clock that steps backwards by more than about 10 s during a run makes the Nereus viewer drop TF.</li>
+        <li><strong>No internet at the pool.</strong> Without a reachable time server, a machine's clock can drift and nothing corrects it.</li>
+      </ul>
+      <p>Drag the offset below to see what a laptop makes of a message from the robot.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel">
+        <div class="controls">
+          <label>clock offset <input type="range" id="clk-off" min="-1500" max="1500" step="10" value="0"><output id="clk-off-o"></output></label>
+          <label>network delay <input type="range" id="clk-lat" min="0" max="300" step="5" value="40"><output id="clk-lat-o"></output></label>
+        </div>
+        <div id="clk-svg"></div>
+        <div class="clk-verdict" id="clk-verdict" aria-live="polite"></div>
+      </div>
+      <figcaption><b>Apparent age = network delay + clock offset.</b> The Orin stamps a message and the laptop compares the stamp with its own clock. A laptop clock running ahead makes everything look late, and one running behind makes messages look like they come from the future. The delay slider is yours to play with, not a measured value.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>The fix is <strong>chrony</strong>, with the opbox as the one source everyone follows. The settings live in <code>/etc/chrony/conf.d/opbox-server.conf</code> on the opbox and <code>/etc/chrony/conf.d/opbox.conf</code> on each client. The script that writes the client file isn't in a team repo yet, so check what a machine really follows with <code>chronyc sources</code> on it. The intended setup:</p>
+      <table class="params">
+        <thead><tr><th>Machine</th><th>Follows</th><th>Steps the clock</th></tr></thead>
+        <tbody>
+          <tr><td>opbox</td><td>Internet pool when online, else its RTC (<code>local stratum 10 orphan</code>)</td><td>n/a, it's the server</td></tr>
+          <tr><td>Talos (Orin)</td><td>The opbox only (<code>server 192.168.5.69 iburst prefer</code>), internet pools commented out</td><td><code>makestep 1 3</code>: only in its first three updates after boot. After that chrony slews (speeds up or slows down) and never jumps under a running stack. Untethered, it free-runs, which is harmless: all of Talos's own timing uses its one clock.</td></tr>
+          <tr><td>op-top</td><td>The opbox, preferred, with the internet pool as fallback</td><td><code>makestep 1 -1</code>: any time it's more than 1 s off, for example after booting offline</td></tr>
+        </tbody>
+      </table>
+      <p>Before chrony, the team set the robot's clock by hand from a laptop. <code>colcon timesync orin2</code> (<a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/colcon_riptide/colcon_riptide/verb/timesync.py"><code>timesync.py</code></a>) SSHes in and runs <code>sudo date --set</code> and <code>hwclock --systohc</code>. It still works as a fallback. The pre-test checks measure the op-top to Orin offset over SSH and warn above 50 ms.</p>
+<pre class="cmd" data-where="any machine">chronyc sources -v     # which servers, which one is selected (*), last offset
+chronyc tracking       # how far off this clock is right now</pre>
+
+      <h2 id="optop">op-top, the operator laptop</h2>
+      <p>op-top is the team laptop (user <code>uwrt</code>, with an RTX 4070 laptop GPU). Anything an operator does goes through it:</p>
+      <ul>
+        <li><strong>The Nereus viewer</strong>, the operator UI for both the simulator and the real robot. It enables and kills Talos, drives it, starts trees, sets mapping targets, fires actuators and records bags. RViz used to fill this role and isn't used any more. See <a href="viewer.html">The Nereus viewer</a>.</li>
+        <li><strong>The Nereus simulator</strong>, which needs the GPU to render cameras for the real YOLO detector (<a href="nereus.html">Nereus</a>).</li>
+        <li><strong>The release workspace</strong>, <code>~/osu-uwrt/release</code>, built for x86. You deploy from here.</li>
+        <li><strong>The pre-test checks</strong> (<code>pretest</code>), which read the robot over SSH, the launcher websocket and ROS (<a href="pool-test.html">Pool test day</a>).</li>
+        <li><strong>Its keyboard</strong> (<a href="https://github.com/osu-uwrt/optop_software/blob/master/src/optop_led_control.cpp"><code>optop_software</code></a>). The backlight shows the link at a glance. It pings <code>orin2</code> every 2 s. Two answered pings in a row turn it bright white, and two missed pings turn it dim white. Once something publishes on <code>command/led</code>, it shows Talos's own LED colour.</li>
+      </ul>
+
+      <h2 id="join">Joining from your own laptop</h2>
+      <p>Any Ubuntu 22.04 machine with ROS 2 Humble can join the robot's ROS graph (<a href="setup.html">Setting up your machine</a>). There are two ways to reach the Orin:</p>
+      <ul>
+        <li><strong>On the robot LAN</strong>, plugged into the team router: use <code>orin2</code> with the hosts entry above.</li>
+        <li><strong>From anywhere, with Tailscale.</strong> The team runs a private Tailscale network (a tailnet). Machines on it reach each other by name through encrypted tunnels, wherever they are. Tailscale is a tunnel over the internet path, not a separate link: it only reaches Talos while the tether is in and the opbox has internet. Ask a team lead to add your machine, then use the Orin's tailnet name or address in place of <code>orin2</code>. The team doesn't publish those.</li>
+      </ul>
+<pre class="cmd" data-where="your laptop">sudo apt install ros-humble-rmw-zenoh-cpp
+source /opt/ros/humble/setup.bash
+source ~/osu-uwrt/release/install/setup.bash        # riptide_msgs2 and friends
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='mode="client";connect/endpoints=["tcp/orin2:7447"];scouting/multicast/enabled=false'
+ros2 daemon stop
+ros2 topic list --no-daemon | head
+ros2 topic hz /talos/odometry/filtered</pre>
+      <ul>
+        <li><strong>Client mode works one way.</strong> Your laptop dials the Orin, and nothing on the robot ever has to reach you. Keep it that way: never set anything up that makes the robot open connections to a personal machine.</li>
+        <li><strong>Multicast scouting off.</strong> Without it, your laptop won't go hunting for other Zenoh nodes on whatever network you're on.</li>
+        <li><strong>Sim at your desk?</strong> Open a fresh shell without <code>ZENOH_CONFIG_OVERRIDE</code> and run your own router (<code>ros2 run rmw_zenoh_cpp rmw_zenohd</code>). Otherwise every sim node joins the robot's router, and the sim's camera images cross the tether. A different <code>ROS_DOMAIN_ID</code> (the planned pre-test sim stage uses 77) is a second guard. <code>ROS_LOCALHOST_ONLY</code> is a DDS setting and does nothing under Zenoh.</li>
+        <li><strong>One operator at a time.</strong> Anyone connected can publish. Two viewers enabling on the same kill-switch slot fight each other, and the viewer drops its enable when it sees another publisher there.</li>
+      </ul>
+
+      <h2 id="ssh" data-short="SSH and logs">SSH, logs and the usual commands</h2>
+      <p>SSH is for looking, not for running the stack. Use key login (the release repo's <a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/config_host/relationship.bash"><code>relationship.bash</code></a> makes and installs a key). Tools like <code>colcon deploy</code> and the viewer's bag recorder expect it.</p>
+<pre class="cmd" data-where="your laptop">ssh ros@orin2
+journalctl -u ros_launcher -f -o cat             # follow every node's output live
+journalctl -u ros_launcher --since "10 min ago"  # what just happened
+systemctl status ros_launcher                    # is it up, what is it running
+sudo systemctl restart ros_launcher              # last resort: stops every node
+ip -br link show can0                            # CAN up?
+candump can0                                     # raw CAN traffic, needs can-utils (Ctrl-C to stop)
+df -h ~                                          # room left for bags</pre>
+      <ul>
+        <li><strong>Read logs in the journal.</strong> Nodes started by the launcher have no terminal, so their output goes to the journal. The old README's <code>ros2_launch_service</code> name is out of date: the unit is <code>ros_launcher</code>.</li>
+        <li><strong>Record bags on the robot.</strong> The viewer's Bagging panel runs <code>ros2 bag record</code> over SSH as <code>ros@orin2</code>. The bag keeps recording if the link drops or the viewer closes, and it's saved under <code>/home/ros/bags/</code>. Copy it off with <code>rsync</code> or <code>scp -r</code>. See <a href="debugging.html">Debugging, bags and data</a>.</li>
+        <li><strong>Looking is fine, changing isn't.</strong> Don't edit code, run <code>apt upgrade</code> or rebuild on the Orin by hand. Deploy from the release workspace so the robot always runs code you can name.</li>
+      </ul>
+      <p class="src">Where this lives: <code>riptide_launch/remote_launch</code> (launcher and launch lists), <code>riptide_release/scripts</code> (Orin setup, Zenoh configs, time setting), <code>riptide_setup/colcon_riptide</code> (deploy, timesync), <code>opbox_software</code>, <code>optop_software</code>, <code>titan_canmore</code> (CAN IDs).</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

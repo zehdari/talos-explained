@@ -4,32 +4,324 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Firmware on the boards · How Talos works</title>
-<meta name="description" content="One or two sentences on what this chapter explains.">
+<meta name="description" content="The C firmware on Talos's RP2040 boards: the titan_firmware repository, building with the Pico SDK, how a board knows its CAN ID, the main loop, the CANmore CAN protocol, micro-ROS and the copro agent, watchdogs, faults and kill switches, the ESC boards' RPM loop, the depth sensor, flashing over CAN and debugging.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">The vehicle</div>
+    <div class="kicker">The vehicle · Chapter 4</div>
     <h1>Firmware on the boards</h1>
-    <p class="lede">One or two sentences: what this is and why a new member should care.</p>
+    <p class="lede">Every circuit board in Talos has a small computer of its own, running C that the team wrote. It reads sensors, switches power, spins thrusters and decides whether Talos may move. This chapter is that code: how it is built, how it talks over CAN, how it keeps Talos safe, and how to flash and debug it.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Three to five bullets a reader can stop after.</li>
+      <li>Each board has a Raspberry Pi <strong>RP2040</strong> microcontroller. Its firmware lives in <code>titan_firmware</code>: one CMake project per board, on the Pico SDK, sharing one set of libraries and one main loop.</li>
+      <li>Boards talk over <strong>CAN</strong> with <strong>CANmore</strong>, the team's protocol. The frame ID carries the board's client ID, the direction and a channel or sequence number, so all the data bytes are payload.</li>
+      <li>Each board is a <strong>micro-ROS</strong> node. The <code>copro_agent</code> on the Orin bridges its topics into ROS. Thruster RPMs skip ROS: the MPC writes raw CAN frames straight to the ESC boards.</li>
+      <li>Every board starts killed and kills itself if it loses the agent. The POAC board decides kill from its four slots (the hull switch and three software ones); the other boards kill themselves if <code>state/kill</code> from the POAC goes quiet for 500 ms.</li>
+      <li>Boards are reflashed over CAN through a bootloader with <code>upload_tool</code>, and inspected with <code>canmore_cli</code> or a debug probe on the board's SWD pads.</li>
     </ul></aside>
+
     <div class="prose">
-      <p>Opening paragraph.</p>
-      <h2 id="first-section">First section</h2>
-      <p>Coming soon.</p>
+      <h2 id="boards" data-short="One MCU per board">One microcontroller per board</h2>
+      <p>Six kinds of board carry the same RP2040. Why each board got its own, and the RP2040 + CAN block they share, are in <a href="boards.html#rp2040">The circuit boards</a>. The firmware each one runs:</p>
+      <table class="params">
+        <thead><tr><th>Board</th><th>Project</th><th>CAN</th><th>Its job in firmware</th></tr></thead>
+        <tbody>
+          <tr><td>POAC (power + actuators)</td><td><code>talos/PoacBoard</code></td><td>internal, 1</td><td>Kill switch and software kill, rail voltages, fans, the torpedo and marker servo</td></tr>
+          <tr><td>ESC board ×2</td><td><code>talos/ESCBoard</code></td><td>internal, 2 and 3</td><td>An RPM loop for four thrusters each, ESC telemetry</td></tr>
+          <tr><td>Camera cage board</td><td><code>talos/CameraCageBB</code></td><td>internal, 4</td><td>Depth sensor, power switches for the Orin, fans and Peltier, the status light strip</td></tr>
+          <tr><td>LED board</td><td><code>talos/LEDBoard</code></td><td>internal, 6</td><td>The lights, with temperature limits</td></tr>
+          <tr><td>IVC board</td><td><code>talos/IVCBoard</code></td><td>internal, 8</td><td>Acoustic modem: two tones, 17 and 19 kHz</td></tr>
+          <tr><td>Smart battery housing ×2</td><td><code>talos/SmartBattery</code></td><td>external, housing serial</td><td>Battery gauge, display, soft power switch</td></tr>
+        </tbody>
+      </table>
+      <p>The Mark 2 power board (<code>talos/PowerBoard</code>) and actuator board (<code>talos/Actuator</code>) are retired. The POAC replaced both and kept the power board's client ID 1.</p>
+
+      <h2 id="repo" data-short="The repository">The titan_firmware repository</h2>
+      <p><a href="https://github.com/osu-uwrt/titan_firmware">osu-uwrt/titan_firmware</a> holds the firmware for every UWRT vehicle; <code>riptide_setup</code> clones it to <code>~/osu-uwrt/development/titan_firmware</code>.</p>
+      <dl class="spec">
+        <dt><code>talos/</code></dt><dd>One CMake project per board</dd>
+        <dt><code>lib/</code></dt><dd>Shared code. <code>driver_*</code> talk to one chip each; <code>titan_*</code> are the team's infrastructure (safety, bootloader, CAN, versioning). The Pico SDK and <code>titan_canmore</code> are git submodules.</dd>
+        <dt><code>tools/</code></dt><dd><code>upload_tool</code>, <code>canmore_cli</code>, <code>archive.sh</code>, a Wireshark dissector, <code>DeviceList.jsonc</code></dd>
+        <dt><code>docs/</code></dt><dd>Five short guides: setup, testing, micro-ROS, new projects, deployment. Read them before your first flash.</dd>
+        <dt>Others</dt><dd><code>examples/</code> holds new-project templates; <code>puddles/</code>, <code>mercury/</code>, <code>lilboat/</code> and <code>SBCBoard/</code> are other vehicles and projects</dd>
+      </dl>
     </div>
     <figure class="fig">
-      <div class="panel" id="some-figure"></div>
-      <figcaption><b>Bold lead-in.</b> What to look at. Tap or hover … (if interactive).</figcaption>
+      <div class="panel">
+        <div class="controls"><span class="seg" role="group" aria-label="Board" id="lib-pick"></span></div>
+        <div id="lib-list" class="lib-list"></div>
+      </div>
+      <figcaption><b>Who uses which library.</b> Read from each project's <code>target_link_libraries</code> on <code>master</code> (<code>tools/firmware/extract.py</code>); faded rows are libraries the selected board doesn't use. Tap a board.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="build">Building an image</h2>
+      <p>The firmware is C on the <a href="https://github.com/raspberrypi/pico-sdk">Pico SDK</a>, built with CMake and the <code>gcc-arm-none-eabi</code> cross compiler, on Linux (WSL works). Full setup: <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/docs/01_Setup.md"><code>docs/01_Setup.md</code></a>.</p>
+<pre class="cmd" data-where="laptop"><code><span class="c"># once, on Ubuntu</span>
+sudo apt install git build-essential cmake pkg-config gcc-arm-none-eabi \
+  libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib libusb-1.0-0-dev
+cd ~/osu-uwrt/development/titan_firmware
+git submodule update --init
+(cd lib/pico-sdk &amp;&amp; git submodule update --init)
+(cd lib/micro_ros_pico &amp;&amp; ./build.sh)      <span class="c"># once: builds libmicroros in Docker</span>
+
+cd talos/ESCBoard &amp;&amp; mkdir build &amp;&amp; cd build
+cmake ..                                   <span class="c"># RelWithDebInfo unless you ask for Debug</span>
+make -j8
+make info                                  <span class="c"># what is inside the image</span></code></pre>
+      <p>A project's <code>CMakeLists.txt</code> names its board, its robot and its libraries. Trimmed from the POAC board's:</p>
+<pre><code><span class="k">set</span>(PICO_BOARD talos/poac_board)        <span class="c"># lib/titan_boards/include/boards/talos/poac_board.h</span>
+<span class="k">set</span>(UWRT_ROBOT talos)                   <span class="c"># lib/titan_boards/include/robots/talos.h</span>
+titan_use_upload_tool(poac_board)       <span class="c"># adds make upload / upload_ota / info</span>
+titan_enable_bootloader(poac_board can) <span class="c"># bootloader that listens on CAN</span>
+<span class="k">target_link_libraries</span>(poac_board PUBLIC
+    driver_led titan_logger titan_safety micro_ros_can ...)</code></pre>
+      <table class="params">
+        <thead><tr><th>Output</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td><code>poac_board.elf</code></td><td>The program with debug symbols. Keep it: GDB and crash addresses need the exact ELF that is on the board.</td></tr>
+          <tr><td><code>poac_board_ota.uf2</code></td><td>The application only, for the bootloader (<code>make upload_ota</code>)</td></tr>
+          <tr><td><code>poac_board_with_bl.uf2</code></td><td>Bootloader and application, for USB or SWD (<code>make upload</code>)</td></tr>
+        </tbody>
+      </table>
+      <ul>
+        <li><strong>Build type.</strong> Put only <code>RelWithDebInfo</code> (the default) on the vehicle; the type is cached, so delete <code>build/</code> to switch (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/docs/02_Testing_Firmware.md">testing docs</a>).</li>
+        <li><strong>Version.</strong> Every image carries <code>major.minor</code>, branch, commit and a release type (<code>DEBUG</code>, <code>DEV</code>, <code>CLEAN</code>, <code>TAGGED</code>) that the board reports (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_version/include/titan/version.h"><code>version.h</code></a>).</li>
+        <li><strong>Messages are compiled in.</strong> <code>build.sh</code> takes the <code>riptide_msgs2</code> types from <code>riptide_core</code>: change a message a board uses, and you rebuild libmicroros and reflash that board.</li>
+      </ul>
+
+      <h2 id="identity" data-short="Who am I">How a board knows who it is</h2>
+      <table class="params">
+        <thead><tr><th>When</th><th>How</th><th>Used by</th></tr></thead>
+        <tbody>
+          <tr><td>Compile time</td><td>The board header names the bus and client ID (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_boards/include/boards/talos/poac_board.h#L10-L17"><code>poac_board.h</code></a>), from <a href="https://github.com/osu-uwrt/titan_canmore/blob/f6273e2c25f0202788be01e41338a6bbd6320006/canmore/include/canmore/client_ids.h"><code>client_ids.h</code></a>.</td><td>POAC, camera cage, LED, IVC</td></tr>
+          <tr><td>At boot, from a jumper</td><td>A solder jumper pulls GPIO 29 high. Open: board 0, client 2, thrusters 0–3. Bridged: board 1, client 3, thrusters 4–7 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/main.c#L36-L49"><code>load_client_id</code></a>). The bootloader reads the same pin, so one image fits both. Thrusters are numbered from 0 here, as in the code; <a href="boards.html#esc">The circuit boards</a> counts 1–8.</td><td>ESC boards</td></tr>
+          <tr><td>At boot, from flash</td><td>A serial-number byte at <code>0x101FF000</code>, written once per housing, becomes the client ID. A blank byte stops the firmware (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/src/main.c#L188-L201"><code>main.c</code></a>).</td><td>Smart battery housings</td></tr>
+        </tbody>
+      </table>
+      <p>On ROS each board is a node in <code>/talos</code> (<code>poac_board</code>, <code>esc_board_0</code> and <code>_1</code>, <code>camera_cage_bb</code>, <code>led_board</code>, <code>ivc_board</code>). Every second each publishes <code>state/firmware</code>: name, client ID, version, uptime, fault bits and kill-switch bits.</p>
+
+      <h2 id="loop" data-short="The main loop">One loop, every board</h2>
+      <p>There is no operating system. Each board runs one loop on core 0, written the same way in every project (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/main.c#L214-L335"><code>PoacBoard/src/main.c</code></a>): background tasks (CAN heartbeat, status LED), then the ROS tasks if the agent is connected, then <code>safety_tick()</code>, which checks the kill switches and feeds the watchdog.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div id="life-graph"></div>
+        <div class="graph-note" id="life-note"></div>
+      </div>
+      <figcaption><b>A board's life, from power-on.</b> The dot on each state is its status LED colour; times come from the bootloader, <code>titan_safety</code> and the board's <code>main.c</code>. Tap or hover a state.</figcaption>
     </figure>
     <div class="prose">
-      <h2 id="second-section">Second section</h2>
-      <p>Coming soon.</p>
+      <ul>
+        <li><strong>Never block.</strong> Slow work goes to interrupts, DMA, the PIO state machines or core 1.</li>
+        <li><strong>At most one ROS timeout per pass.</strong> A reliable publish can wait 30 ms for the agent, and the ROS task list stops at its first error.</li>
+        <li><strong>Core 1</strong> runs the timing-critical work (the ESC thruster loop, the battery gauge) and must check in every 250 ms, or the board panics and resets.</li>
+        <li><strong>Periodic tasks are checked.</strong> A critical task that misses a run raises <code>TIMER_MISSED</code>.</li>
+      </ul>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel">
+        <div class="controls"><span class="seg" role="group" aria-label="Board" id="timer-pick"></span></div>
+        <div id="timer-list"></div>
+      </div>
+      <figcaption><b>What each board does, and how often.</b> The <code>_MS</code> and <code>_INTERVAL</code> constants in each project's <code>main.c</code> on <code>master</code>. Tap a board.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="can" data-short="CAN and CANmore">CAN and CANmore</h2>
+      <p>CAN is a two-wire bus where every node hears every frame. A frame has an identifier (11 bits, or 29 in an "extended" frame) and up to 8 data bytes. The lower ID wins when two nodes start at once, and every frame must be acknowledged by another node.</p>
+      <table class="params">
+        <thead><tr><th>Bus</th><th>On the Orin</th><th>Speed</th><th>Boards</th></tr></thead>
+        <tbody>
+          <tr><td>Internal</td><td><code>can0</code></td><td>1 Mbit/s</td><td>POAC, both ESC boards, camera cage, LED, IVC</td></tr>
+          <tr><td>External</td><td><code>can1</code></td><td>250 kbit/s</td><td>The smart battery housings</td></tr>
+        </tbody>
+      </table>
+      <p>The firmware sets the internal bus up for CAN FD (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_boards/include/robots/talos.h#L16-L25"><code>robots/talos.h</code></a>), but in practice every frame is classic, at most 8 bytes: the boards only send classic frames (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/driver_canbus/src/can_interface.c#L356">"TODO: Enable CAN FD"</a>), and the Orin brings <code>can0</code> up as classic CAN (<a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/config_target/configure_jetpack.bash#L51-L67"><code>configure_jetpack.bash</code></a>).</p>
+
+      <h3 id="canmore">Why a protocol of their own</h3>
+      <p>micro-ROS packets are much longer than 8 bytes, and XRCE's own framing for byte streams would repeat what CAN already does. <strong>CANmore</strong> (<a href="https://github.com/osu-uwrt/titan_canmore">titan_canmore</a>) puts what is needed to reassemble a message into the frame ID, so all 8 data bytes carry payload, and leaves room for traffic that isn't ROS.</p>
+      <ul>
+        <li><strong>ID layout.</strong> Client ID (5 bits, 1–31), type (0 message, 1 utility), direction (0 board to Orin, 1 Orin to board) and a 4-bit sequence number or channel. The client ID is the top of the ID, so the POAC (1) wins arbitration over the ESC boards (2, 3).</li>
+        <li><strong>Messages</strong> carry ROS traffic, up to 1024 bytes. The first frame is extended and holds the length; the last is extended and holds a CRC-18 of the whole message. Lose one frame and the message is dropped; XRCE's reliable streams resend it.</li>
+        <li><strong>Utility frames</strong> are single frames on 16 channels: 0 thruster commands, 13 remote terminal, 14 control interface (register reads and writes for debugging and the bootloader), 15 heartbeat (one byte every 500 ms from every board).</li>
+      </ul>
+      <p>Pick a kind of frame to see how it is built, or paste a line from <code>candump</code> to decode it.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel canx" id="canx"></div>
+      <figcaption><b>CANmore, bit by bit.</b> Ported from <a href="https://github.com/osu-uwrt/titan_canmore/blob/f6273e2c25f0202788be01e41338a6bbd6320006/canmore/include/canmore/protocol.h#L104-L140"><code>protocol.h</code></a> and <a href="https://github.com/osu-uwrt/titan_canmore/blob/f6273e2c25f0202788be01e41338a6bbd6320006/canmore/src/msg_encoding.c#L78"><code>msg_encoding.c</code></a>; the thruster example is a real MPC command from the 2026-10-24 pool run. Tap any field.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="microros" data-short="micro-ROS">From topic to frames: micro-ROS</h2>
+      <p>A board doesn't run DDS itself. It runs a small XRCE-DDS client that asks an <strong>agent</strong> on the Orin to create its publishers and subscribers and carry its messages.</p>
+      <dl class="spec">
+        <dt>On the board</dt><dd>One <code>rclc</code> node, up to 15 publishers and 15 subscribers (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/micro_ros_pico/microros_static_library/library_generation/colcon.meta#L43-L57"><code>colcon.meta</code></a>). <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/micro_ros_pico/transport_can/transport_can.c"><code>transport_can.c</code></a> hands each packet to the CANmore encoder.</dd>
+        <dt>On the Orin</dt><dd><code>copro_agent</code> runs <code>micro_ros_agent can -D can0 -v4 -m rmw</code>, restarted if it dies (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/copro_agent.launch.py#L11-L18"><code>copro_agent.launch.py</code></a>, started by <code>hardware.launch.py</code>)</dd>
+        <dt>The agent</dt><dd><a href="https://github.com/osu-uwrt/micro-ros-agent">osu-uwrt/micro-ros-agent</a> pins four submodules and builds them with <code>build_agent.bash</code>: the team's fork of eProsima's agent, <a href="https://github.com/osu-uwrt/Micro-XRCE-DDS-Agent/tree/Happyxrce">Micro-XRCE-DDS-Agent</a> at <code>Happyxrce</code>; <a href="https://github.com/osu-uwrt/micro-ROS-Agent-impl">micro-ROS-Agent-impl</a>, the team's fork of <code>micro_ros_agent</code>; <code>titan_canmore</code>; and <code>micro_ros_msgs</code>.</dd>
+        <dt><code>can</code></dt><dd>The CAN transport, not in upstream micro-ROS (<a href="https://github.com/osu-uwrt/Micro-XRCE-DDS-Agent/blob/Happyxrce/src/cpp/transport/can/CanAgentLinux.cpp"><code>CanAgentLinux.cpp</code></a>). It reassembles each board's frames with <code>canmore_cpp</code>.</dd>
+        <dt><code>-m rmw</code></dt><dd>A middleware the team added in 2025 (<a href="https://github.com/osu-uwrt/Micro-XRCE-DDS-Agent/blob/Happyxrce/src/cpp/middleware/rmw/RmwMiddleware.cpp"><code>RmwMiddleware.cpp</code></a>): the agent hands messages to the Orin's ROS 2 middleware (Zenoh today) instead of speaking DDS itself.</dd>
+        <dt>External bus</dt><dd>The <code>can1</code> agent in <code>copro_agent.launch.py</code> is commented out. How the battery housings reach ROS today is unconfirmed.</dd>
+      </dl>
+      <ul>
+        <li><strong>Connecting.</strong> A board pings the agent once a second. When it answers, the board creates its node and turns its safety on. If more than 7 heartbeat publishes in a row fail (one every 100 ms), it tears the node down, kills itself and pings again.</li>
+        <li><strong>No services.</strong> The boards only use topics, since June 2025 (<a href="https://github.com/osu-uwrt/titan_firmware/commit/783b8e0">783b8e0</a>, for the Zenoh agent).</li>
+      </ul>
+      <div class="callout"><span class="label">nano_ros: not on Talos</span>
+        <p><a href="https://github.com/osu-uwrt/nano_ros">osu-uwrt/nano_ros</a> (started August 2026) is an experiment to replace micro-ROS with something lighter. Only a USB test project on its <code>nano_ros</code> branch uses it; every Talos board still runs micro-ROS.</p>
+      </div>
+
+      <h2 id="safety" data-short="Safety">Watchdogs, faults and crashes</h2>
+      <p><code>titan_safety</code> is the first thing every board starts (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/include/titan/safety.h"><code>safety.h</code></a>). It assumes the firmware will hang or crash sometime, and makes sure the board then resets into a safe state and leaves a record.</p>
+      <dl class="spec">
+        <dt>Watchdog</dt><dd>3 s while starting and waiting for the agent, 250 ms once connected (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/safety_internal.h#L25-L52"><code>safety_internal.h</code></a>). A pass with under 50 ms to spare (500 ms at start-up) raises <code>WATCHDOG_WARNING</code>.</dd>
+        <dt>Last words</dt><dd>One timer tick before the watchdog fires, an interrupt saves the address the code was stuck at.</dd>
+        <dt>Crash log</dt><dd>24 entries in RAM that survives a reset: reason, uptime and fault bits. A crashed board comes back with <code>WATCHDOG_RESET</code> raised.</dd>
+        <dt>Faults</dt><dd>A 32-bit word, one bit per fault (bits 0 and 1 the library's, the rest per board). Any fault flashes the LED red and sets the error bit in the CAN heartbeat.</dd>
+        <dt>Debugger</dt><dd>The watchdog pauses while a debugger halts the CPU.</dd>
+      </dl>
+      <p>The status LED (blue enabled, green killed, yellow no agent, red no CAN, flashing red a fault) is explained, with a tester, in <a href="boards.html#rp2040">The circuit boards</a>. The bootloader adds three: white in its 0.5 s boot delay, cyan blinking blue while being flashed, and dim red if it couldn't start the CAN chip (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_bootloader/src/status_led.c"><code>status_led.c</code></a>).</p>
+
+      <h2 id="kill" data-short="Kill switches">Kill switches in firmware</h2>
+      <p>The kill logic is part of <code>titan_safety</code> and runs on every board. A board has <strong>slots</strong>. Each report sets a slot's "asserting kill" flag and, optionally, "needs update": the report must then repeat within 500 ms. The rule (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/kill_switch.c#L25-L59"><code>kill_switch.c</code></a>):</p>
+      <div class="M" data-narrow="\begin{aligned} \text{killed} = {} &amp; \text{no slot reported yet} \\ \lor\ &amp; \text{a slot asserts kill} \\ \lor\ &amp; \text{a needs-update slot is} \\ &amp; \text{older than 500 ms} \end{aligned}">\text{killed} = \text{no slot reported yet} \;\lor\; \text{a slot asserts kill} \;\lor\; \text{a needs-update slot is older than 500 ms}</div>
+      <ul>
+        <li><strong>One board decides.</strong> Only the POAC board has the switch and four slots (physical, viewer, topside, debug). It drives the soft-kill pin that gates thruster power, and publishes the result on <code>state/kill</code> every 150 ms.</li>
+        <li><strong>The rest follow.</strong> Every other board has one slot, fed by <code>state/kill</code> with "needs update" set. If the POAC board or the agent goes quiet, they all kill themselves 500 ms later (a little more: timeouts are checked in <code>safety_tick</code>).</li>
+        <li><strong>Losing the agent kills a board</strong>: <code>safety_deinit</code> calls the kill handler (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/kill_switch.c#L88-L90"><code>kill_switch.c</code></a>).</li>
+        <li><strong>An agent restart doesn't hold Talos killed.</strong> Slots keep their last report across an agent outage; only a reboot clears them (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/safety.c#L57-L80"><code>safety.c</code></a>). When the agent returns, the board re-runs the rule at once, so a latched enable, like the Nereus viewer's, comes back without anyone pressing Enable. To keep Talos killed, pull the switch.</li>
+        <li><strong>Actuators.</strong> The POAC board won't arm the servo while killed, or fire unless enabled and armed (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/ros_torp.c#L90-L113"><code>ros_torp.c</code></a>). A kill doesn't disarm an armed servo: that is a TODO in <code>safety_handle_kill</code>.</li>
+      </ul>
+      <p>Who owns which slot, the sender lock and the kill circuit are in <a href="commanding.html#kill">Commanding Talos</a>.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div id="kill-graph"></div>
+        <div class="graph-note" id="kill-note"></div>
+      </div>
+      <figcaption><b>How one decision reaches every board.</b> Solid lines are wires, dashed lines are ROS topics over CAN; only the POAC board can cut thruster power. Tap or hover a box.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="thrusters" data-short="Thrusters">Thrusters: from RPM to DShot</h2>
+      <p>Each ESC board drives four ESCs (<a href="thrusters-hw.html">Thrusters and ESCs</a> has the hardware). Targets arrive two ways, and expire after 500 ms either way:</p>
+      <ul>
+        <li><strong>Raw CAN, channel 0.</strong> The MPC sends one 8-byte frame per board every 50 ms, ID <code>0x0B0</code> for board 0 and <code>0x0F0</code> for board 1 (<a href="commanding.html#can">Commanding Talos</a>), handled with no ROS involved.</li>
+        <li><strong>The ROS topic</strong> <code>command/thruster_rpm</code> (eight values; each board takes its four), used by some calibration scripts.</li>
+      </ul>
+      <p>Core 1 runs the loop (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/core1.c#L115-L483"><code>core1.c</code></a>):</p>
+      <ul>
+        <li><strong>Talk.</strong> Each ESC gets its throttle over <strong>DShot600</strong>, a 600 kbit/s digital protocol generated by the PIO. With bidirectional DShot the ESC answers with its electrical RPM; over 7 pole pairs, that is the motor RPM.</li>
+        <li><strong>Control.</strong> Per thruster: a fitted feed-forward from RPM to throttle, plus P on a 100-sample average of the measured RPM, plus I within 300 RPM of the target. Output is limited to ±725 of ±999; a change of direction is held at zero for 2 ms.</li>
+        <li><strong>Guard.</strong> If any disabled flag below is set, all four ESCs get zero. A pass takes at least 400 µs; in the 2026-10-24 pool run the loop ran at <strong>2376 Hz</strong>.</li>
+      </ul>
+      <table class="params">
+        <thead><tr><th>Bit</th><th>Disabled flag</th><th>Set while</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td><code>SAFETY_KILLED</code></td><td>The board's kill rule says killed</td></tr>
+          <tr><td>1</td><td><code>ESC_BOARD_OFF</code></td><td>The ESC supply reads under 9 V: thruster power is cut</td></tr>
+          <tr><td>2</td><td><code>ESC_POWERON_DELAY</code></td><td>Less than 5 s since ESC power came back</td></tr>
+          <tr><td>3</td><td><code>TGT_RPM_STALE</code></td><td>No new target for 500 ms</td></tr>
+          <tr><td>4</td><td><code>TGT_RPM_STALE_PENALTY</code></td><td>1 s after targets went stale mid-spin, so a slow sender can't make the thrusters stutter</td></tr>
+          <tr><td>5</td><td><code>CONTROLLER_UNCONFIGURED</code></td><td>A tuning value was never set</td></tr>
+        </tbody>
+      </table>
+      <p>A kill cuts ESC power, so after every kill the ESC boards show <code>ESC_BOARD_OFF</code>, then <code>ESC_POWERON_DELAY</code> for 5 s (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/include/dshot.h#L21-L29"><code>dshot.h</code></a>): the pause between Enable and the first thrust.</p>
+      <ul>
+        <li><strong>Reversible DShot.</strong> The team patched the APD 80F3 ESCs' own firmware so they reverse in DShot mode (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/esc_firmware_patching/README.md">README</a>).</li>
+        <li><strong>Reversed motors.</strong> Slots 0 and 3 on each board are inverted (mask <code>0b1001</code>): thrusters 0, 3, 4 and 7 spin the other way for the same target.</li>
+        <li><strong>Telemetry.</strong> Every 500 ms each board publishes <code>state/thrusters/telemetry</code>: supply voltage, disabled flags, loop ticks, and per ESC its RPM, current, temperature and error counts. <code>state/thrusters/rpm</code> stays empty on the CAN path.</li>
+      </ul>
+      <div class="callout"><span class="label">A one-byte bug</span>
+        <p>Until the fix (<a href="https://github.com/osu-uwrt/titan_firmware/commit/3135fe2">3135fe2</a>, written 4 October) was merged to <code>master</code> on 10 October 2026, the channel-0 handler read each RPM as <code>(buf[idx] &lt;&lt; 8) | buf[idx]</code>: the high byte twice. A 300 RPM target (<code>01 2C</code>) arrived as 257. The CAN explorer above shows what the old firmware heard.</p>
+      </div>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls"><span class="seg" role="group" aria-label="Thruster" id="pool-pick"></span><label class="chk"><input type="checkbox" id="pool-raw"> sign as the ESC reports it</label></div>
+        <div id="pool-rpm"></div>
+        <div id="pool-cur"></div>
+        <div class="pool-stats" id="pool-stats"></div>
+      </div>
+      <figcaption><b>Ninety seconds of one ESC board in the pool, 2026-10-24.</b> The line is the RPM target the MPC put on CAN; the dots are the RPM the ESC reported, twice a second, sign-flipped for the reversed motors unless you tick the box. The ESCs' current telemetry (below) sits at 0.04 A most of the time with occasional spikes, so don't use it to estimate thrust or power. Tap or hover to read values.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="depth">The depth sensor</h2>
+      <p>The camera cage board reads the Bar02 pressure sensor over I²C (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/driver_depth/src/depth.c"><code>driver_depth</code></a>; <a href="sensors.html#depth">Navigation sensors</a> covers the physics).</p>
+      <ul>
+        <li><strong>Every 50 ms</strong> (20 Hz) a reading goes out on <code>state/depth/raw</code>, variance 0.003, frame <code>talos/pressure_link</code>, negative below the surface.</li>
+        <li><strong>Zeroed at power-up:</strong> it skips 20 readings and blends the next 20 into a surface pressure. Depth is <span class="m">(p - p_\text{surface}) / (997 \cdot 9.80665)</span>.</li>
+        <li><strong>The zero survives a watchdog reset</strong> (it sits in RAM a reset doesn't clear), but not a power cycle. Re-zero at the surface with <code>CLEAR_DEPTH</code> on <code>command/electrical</code>.</li>
+        <li><strong>Timestamps.</strong> On <code>master</code> the clock syncs with the agent once per connection, drifts about 43 ppm (150 ms an hour), and a stamp lands 35–45 ms after the measurement. The unmerged <code>fix/depth-timestamps</code> branch resyncs every 5 s (<a href="https://github.com/osu-uwrt/titan_firmware/commit/39c07af">39c07af</a>).</li>
+      </ul>
+
+      <h2 id="flash" data-short="Flashing">Flashing and upgrading</h2>
+      <p>The first 16 kB of flash hold the <strong>titan bootloader</strong>; the application starts at <code>0x10004000</code> (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_bootloader/bootloader_runtime/memmap_bootloader.ld#L29-L30"><code>memmap_bootloader.ld</code></a>). At power-up it listens 500 ms for a request on channel 14 (<code>B0 07 10 AD</code>). Then it checks the CRC-32 of the application's first 256-byte page (its boot stage), so a blank or half-erased image isn't started, and jumps to it. A request or a bad CRC keeps it in the bootloader, taking an image, until it finishes or sits idle for 30 s (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_bootloader/src/main.c#L74-L157"><code>main.c</code></a>). <code>upload_tool</code> can also send a running board there, so an upgrade needs no buttons.</p>
+      <table class="params">
+        <thead><tr><th>Way</th><th>Needs</th><th>Command</th></tr></thead>
+        <tbody>
+          <tr><td>CAN, through the bootloader</td><td>The board on a bus with your computer: the Orin, or a USB-CAN adapter</td><td><code>make upload_ota</code>, or <code>upload_tool file_ota.uf2</code></td></tr>
+          <tr><td>USB</td><td>Board power (most Mark 2 boards don't take it from USB), BOOT held during reset</td><td><code>make upload</code>, or copy the UF2 to the <code>RPI-RP2</code> drive</td></tr>
+          <tr><td>SWD</td><td>A Pico running Picoprobe, a Tag-Connect cable, OpenOCD 0.12</td><td><code>make upload</code></td></tr>
+        </tbody>
+      </table>
+      <p>For a pool test, <code>tools/archive.sh</code> tags the commit, builds every project and packs the OTA images into <code>full_ota.tar</code> for <code>~/firmware_deploy</code> on the Orin (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/docs/05_Deployment.md">deployment docs</a>). Flash every board, including both ESC boards and every battery housing. If <code>~/firmware_deploy/bin</code> is missing or its tools are old, copy <code>tools/tools_build.sh</code> to the Orin and run <code>./tools_build.sh firmware_deploy</code> first.</p>
+<pre class="cmd" data-where="orin"><code>cd ~/firmware_deploy/ota &amp;&amp; tar -xvf full_ota.tar
+../bin/upload_tool poac_board_ota.uf2          <span class="c"># asks which matching board, then flashes</span>
+../bin/upload_tool -w esc_board_ota.uf2        <span class="c"># catch a crashing board in its boot delay, then power-cycle it</span>
+../bin/upload_tool -i esc_board_ota.uf2        <span class="c"># what is this file?</span></code></pre>
+      <div class="callout safety"><span class="label">Before you flash</span><ul>
+        <li><strong>Kill the robot and keep clear of the propellers.</strong> A flashed POAC board reboots and cuts thruster power, and every board comes back killed.</li>
+        <li><strong>Send the <code>_ota</code> image over CAN, not <code>_with_bl</code>.</strong> An interrupted bootloader upload needs USB or SWD to recover, which is hard on a sealed battery housing.</li>
+        <li><strong>Mind USB power.</strong> The battery housing's MCU board takes USB power unprotected: unplug everything else first (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/docs/02_Testing_Firmware.md#connection-setup">testing docs</a>).</li>
+      </ul></div>
+
+      <h2 id="debug" data-short="Debugging">Debugging a board</h2>
+      <p>Work from the outside in: the LED, then <code>state/firmware</code>, then the CAN bus, then the board itself.</p>
+      <table class="params">
+        <thead><tr><th>You see</th><th>Look at</th></tr></thead>
+        <tbody>
+          <tr><td>A board missing from <code>state/firmware</code>, LED yellow</td><td>The agent: is <code>copro_agent</code> running? Its log shows CANmore decode errors.</td></tr>
+          <tr><td>LED red</td><td>Nothing acknowledges the board: the cable, the termination (exactly two ends), or <code>can0</code> down on the Orin</td></tr>
+          <tr><td>LED flashing red</td><td>Decode the <code>faults</code> word below, or <code>fault</code> in <code>canmore_cli</code></td></tr>
+          <tr><td>Enabled, thrusters silent</td><td><code>disabled_flags</code> in <code>state/thrusters/telemetry</code></td></tr>
+          <tr><td><code>uptime_ms</code> keeps dropping</td><td>The board is resetting: <code>crashlog</code> in <code>canmore_cli</code></td></tr>
+          <tr><td>Odd behaviour after an update</td><td>Version and release type in <code>state/firmware</code>, then <code>upload_tool -i</code> on the file you flashed</td></tr>
+        </tbody>
+      </table>
+<pre class="cmd" data-where="orin"><code>ros2 topic echo /talos/state/firmware --no-daemon   <span class="c"># every board, once a second</span>
+ip -details -statistics link show can0             <span class="c"># bus state, bitrate, error counters</span>
+candump -td can0                                   <span class="c"># every frame, with the gap since the last</span>
+candump can0,02F:03F                               <span class="c"># heartbeats only (utility, board to Orin, channel 15)</span>
+candump can0,0B0:7BF                               <span class="c"># thruster frames to both ESC boards</span>
+candump -l any,0:0,#FFFFFFFF                       <span class="c"># log everything, for Wireshark</span></code></pre>
+      <ul>
+        <li><strong>canmore_cli</strong> (<code>~/firmware_deploy/bin</code>) finds every board from its heartbeats. Pick one, then <code>version</code>, <code>safetystatus</code>, <code>fault</code>, <code>crashlog</code>, <code>reboot</code>, <code>enterbl</code>, <code>gdbserver</code> (GDB over CAN), or <code>@</code> for a board's own commands.</li>
+        <li><strong>Wireshark</strong> decodes CANmore with <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/tools/canmore_dissector.lua"><code>canmore_dissector.lua</code></a> in <code>~/.local/lib/wireshark/plugins</code> ("Decode As" CANMORE).</li>
+        <li><strong>Serial console.</strong> Every board logs on a 115200-baud debug UART, passed through by the Picoprobe (<code>screen /dev/ttyACM0 115200</code>), boot messages and last crash included.</li>
+        <li><strong>GDB.</strong> <code>openocd -f interface/cmsis-dap.cfg -c 'adapter speed 2000' -f target/rp2040.cfg</code>, then <code>gdb-multiarch -ex "target extended-remote :3333" esc_board.elf</code>, with the ELF from the same build.</li>
+      </ul>
+      <p>The numbers in <code>state/firmware</code> and the ESC telemetry are bit fields. Pick a board and paste one in:</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel" id="decoder"></div>
+      <figcaption><b>Decode a status number.</b> Fault names come from each project's <code>safety_interface.h</code> on <code>master</code>; "never raised" marks faults defined but raised nowhere in that board's code. Type a number in decimal or hex.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="sources" data-short="Where this lives">Where this lives</h2>
+      <ul class="src-list">
+        <li><a href="https://github.com/osu-uwrt/titan_firmware">osu-uwrt/titan_firmware</a> (<code>master</code>, 058df2a, 2026-10-10): every board's firmware, the libraries, <code>tools/</code> and <code>docs/</code>.</li>
+        <li><a href="https://github.com/osu-uwrt/titan_canmore">osu-uwrt/titan_canmore</a>: the protocol and client IDs. A submodule of titan_firmware (at f6273e2) and of the agent.</li>
+        <li><a href="https://github.com/osu-uwrt/micro-ros-agent">osu-uwrt/micro-ros-agent</a>: the agent build, pinning <a href="https://github.com/osu-uwrt/Micro-XRCE-DDS-Agent/tree/Happyxrce">Micro-XRCE-DDS-Agent@Happyxrce</a> (CAN transport, <code>rmw</code> middleware) and <a href="https://github.com/osu-uwrt/micro-ROS-Agent-impl">micro-ROS-Agent-impl</a>.</li>
+        <li><a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/copro_agent.launch.py"><code>copro_agent.launch.py</code></a> in riptide_core; <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c"><code>send_thruster_cmd_canbus.c</code></a> in riptide_control.</li>
+        <li>This chapter's data: <code>tools/firmware/extract.py</code> (constants, faults and libraries from <code>master</code>) and <code>tools/firmware/extract_pool.py</code> (the pool-run telemetry).</li>
+      </ul>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

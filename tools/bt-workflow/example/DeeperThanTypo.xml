@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<root main_tree_to_execute="BehaviorTree">
+    <BehaviorTree ID="BehaviorTree">
+        <Sequence>
+            <Condition ID="DeeperThan" depth="-0.5"/>
+        </Sequence>
+    </BehaviorTree>
+</root>

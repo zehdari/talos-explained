@@ -1,0 +1,205 @@
+[
+ {
+  "name": "apriltag_msgs",
+  "build_type": "ament_cmake",
+  "folder": "apriltag_msgs",
+  "repo": "apriltag_msgs",
+  "ignored": false
+ },
+ {
+  "name": "apriltag_ros",
+  "build_type": "ament_cmake",
+  "folder": "apriltag_ros",
+  "repo": "apriltag_ros",
+  "ignored": false
+ },
+ {
+  "name": "chameleon_tf",
+  "build_type": "ament_cmake",
+  "folder": "chameleon_tf/chameleon_tf",
+  "repo": "chameleon_tf",
+  "ignored": false
+ },
+ {
+  "name": "chameleon_tf_msgs",
+  "build_type": "ament_cmake",
+  "folder": "chameleon_tf/chameleon_tf_msgs",
+  "repo": "chameleon_tf",
+  "ignored": false
+ },
+ {
+  "name": "nortek_dvl",
+  "build_type": "ament_cmake",
+  "folder": "nortek_dvl/nortek_dvl",
+  "repo": "nortek_dvl",
+  "ignored": false
+ },
+ {
+  "name": "nortek_dvl_msgs",
+  "build_type": "ament_cmake",
+  "folder": "nortek_dvl/nortek_dvl_msgs",
+  "repo": "nortek_dvl",
+  "ignored": false
+ },
+ {
+  "name": "opbox_ros_client",
+  "build_type": "ament_cmake",
+  "folder": "opbox_software/opbox_ros_client",
+  "repo": "opbox_software",
+  "ignored": false
+ },
+ {
+  "name": "opbox_software",
+  "build_type": "ament_cmake",
+  "folder": "opbox_software/opbox_software",
+  "repo": "opbox_software",
+  "ignored": false
+ },
+ {
+  "name": "serial_library",
+  "build_type": "ament_cmake",
+  "folder": "opbox_software/serial_library",
+  "repo": "opbox_software",
+  "ignored": false
+ },
+ {
+  "name": "riptide_autonomy2",
+  "build_type": "ament_cmake",
+  "folder": "riptide_autonomy",
+  "repo": "riptide_autonomy",
+  "ignored": false
+ },
+ {
+  "name": "riptide_controllers2",
+  "build_type": "ament_cmake",
+  "folder": "riptide_control/riptide_controllers",
+  "repo": "riptide_control",
+  "ignored": false
+ },
+ {
+  "name": "riptide_motion_panel",
+  "build_type": "ament_python",
+  "folder": "riptide_control/riptide_motion_panel",
+  "repo": "riptide_control",
+  "ignored": false
+ },
+ {
+  "name": "riptide_mpc",
+  "build_type": "ament_cmake",
+  "folder": "riptide_control/riptide_mpc",
+  "repo": "riptide_control",
+  "ignored": false
+ },
+ {
+  "name": "riptide_teleop2",
+  "build_type": "ament_python",
+  "folder": "riptide_control/riptide_teleop",
+  "repo": "riptide_control",
+  "ignored": true
+ },
+ {
+  "name": "riptide_acoustics",
+  "build_type": "ament_cmake",
+  "folder": "riptide_core/riptide_acoustics",
+  "repo": "riptide_core",
+  "ignored": false
+ },
+ {
+  "name": "riptide_descriptions2",
+  "build_type": "ament_cmake",
+  "folder": "riptide_core/riptide_descriptions",
+  "repo": "riptide_core",
+  "ignored": false
+ },
+ {
+  "name": "riptide_gyro",
+  "build_type": "ament_cmake",
+  "folder": "riptide_core/riptide_gyro",
+  "repo": "riptide_core",
+  "ignored": false
+ },
+ {
+  "name": "riptide_hardware2",
+  "build_type": "ament_cmake",
+  "folder": "riptide_core/riptide_hardware",
+  "repo": "riptide_core",
+  "ignored": false
+ },
+ {
+  "name": "riptide_imu",
+  "build_type": "ament_cmake",
+  "folder": "riptide_core/riptide_imu",
+  "repo": "riptide_core",
+  "ignored": false
+ },
+ {
+  "name": "riptide_msgs2",
+  "build_type": "ament_cmake",
+  "folder": "riptide_core/riptide_msgs",
+  "repo": "riptide_core",
+  "ignored": false
+ },
+ {
+  "name": "riptide_meshes",
+  "build_type": "ament_cmake",
+  "folder": "riptide_gui/riptide_meshes",
+  "repo": "riptide_gui",
+  "ignored": false
+ },
+ {
+  "name": "riptide_rviz",
+  "build_type": "ament_cmake",
+  "folder": "riptide_gui/riptide_rviz/riptide_rviz",
+  "repo": "riptide_gui",
+  "ignored": false
+ },
+ {
+  "name": "launch_msgs",
+  "build_type": "ament_cmake",
+  "folder": "riptide_launch/launch_msgs",
+  "repo": "riptide_launch",
+  "ignored": false
+ },
+ {
+  "name": "remote_launch",
+  "build_type": "ament_python",
+  "folder": "riptide_launch/remote_launch",
+  "repo": "riptide_launch",
+  "ignored": false
+ },
+ {
+  "name": "riptide_bringup2",
+  "build_type": "ament_python",
+  "folder": "riptide_launch/riptide_bringup",
+  "repo": "riptide_launch",
+  "ignored": false
+ },
+ {
+  "name": "riptide_mapping2",
+  "build_type": "ament_cmake",
+  "folder": "riptide_perception/riptide_mapping",
+  "repo": "riptide_perception",
+  "ignored": false
+ },
+ {
+  "name": "tensor_detector",
+  "build_type": "ament_cmake",
+  "folder": "riptide_perception/tensor_detector",
+  "repo": "riptide_perception",
+  "ignored": false
+ },
+ {
+  "name": "c_simulator",
+  "build_type": "ament_cmake",
+  "folder": "riptide_simulator/c_simulator",
+  "repo": "riptide_simulator",
+  "ignored": false
+ },
+ {
+  "name": "camera_faker",
+  "build_type": "ament_cmake",
+  "folder": "riptide_simulator/camera_faker",
+  "repo": "riptide_simulator",
+  "ignored": false
+ }
+]

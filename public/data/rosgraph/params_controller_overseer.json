@@ -1,0 +1,13 @@
+{
+ "node": "/talos/controller_overseer",
+ "source": "ros2 param dump /talos/controller_overseer while the Nereus full stack ran (sim.launch.py active_control_model:=mpc mpc_model:=sim); values are what the node actually loaded in sim",
+ "parameters": {
+  "active_control_model": "mpc",
+  "disable_native_ff": false,
+  "robot": "talos",
+  "thruster_solver_node_name": "",
+  "use_sim_time": true,
+  "vehicle_config": "",
+  "write_ff_autotune": false
+ }
+}

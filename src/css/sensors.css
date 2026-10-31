@@ -1,0 +1,77 @@
+/* Navigation sensors chapter. */
+
+/* ---------- sensor explorer ---------- */
+.sx-explorer { display: flex; flex-direction: column; }
+.sx-chips { margin: 0.9rem 1rem 0.2rem; align-self: flex-start; background: var(--paper); }
+.sx-body { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+.sx-view { position: relative; min-height: 430px; background: linear-gradient(180deg, #e3f1f3, var(--water)); overflow: hidden; margin-top: 0.7rem; }
+.sx-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.sx-view.no-gl::after { content: 'This figure needs WebGL.'; position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--sans); color: var(--ink-2); }
+.sx-labels { position: absolute; inset: 0; pointer-events: none; }
+.sx-label {
+  position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer;
+  font-family: var(--sans); font-size: 0.76rem; font-weight: 600; color: var(--ink);
+  background: rgba(243, 247, 247, 0.92); border: 1px solid var(--rule); border-radius: 999px;
+  padding: 0.12rem 0.5rem; white-space: nowrap; touch-action: manipulation;
+}
+.sx-label.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.sx-label.muted { cursor: default; font-weight: 450; color: var(--muted); background: rgba(243, 247, 247, 0.7); font-size: 0.7rem; }
+.sx-hint { position: absolute; left: 0.7rem; bottom: 0.6rem; font-family: var(--sans); font-size: 0.75rem; color: var(--ink-2); background: rgba(243, 247, 247, 0.85); padding: 0.15rem 0.55rem; border-radius: 999px; pointer-events: none; }
+.sx-card { padding: 1rem 1.2rem 1.1rem; font-family: var(--sans); font-size: 0.9rem; line-height: 1.45; color: var(--ink); }
+.sx-card h3 { font-size: 1.15rem; margin: 0.1rem 0 0.4rem; font-stretch: 105%; }
+.sx-card p { margin: 0 0 0.7rem; color: var(--ink-2); }
+.sx-card dl.spec { font-size: 0.84rem; gap: 0.25rem 0.8rem; margin-bottom: 0.7rem; }
+.sx-card code { font-size: 0.78rem; overflow-wrap: anywhere; }
+.sx-more { font-size: 0.84rem; }
+@media (max-width: 860px) {
+  .sx-body { grid-template-columns: 1fr; }
+  .sx-view { min-height: 330px; }
+}
+@media (max-width: 520px) {
+  .sx-card dl.spec { grid-template-columns: 1fr; }
+}
+
+/* ---------- message timeline ---------- */
+svg.tl .tl-row { cursor: pointer; outline: none; }
+svg.tl .tl-row.dim { opacity: 0.35; }
+svg.tl .tl-row.hot .label { fill: var(--accent); font-weight: 650; }
+svg.tl .tl-unit { fill: var(--muted); }
+.tl-count { color: var(--muted); }
+
+/* ---------- FOG rig photo with its facts ---------- */
+.sx-rig { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+.sx-rig .media { border-radius: 8px; }
+.sx-rig dl.spec { font-size: 0.86rem; margin: 0; }
+@media (max-width: 560px) {
+  .sx-rig { grid-template-columns: 1fr; }
+  .sx-rig .media { max-width: 17rem; }
+  .sx-rig dl.spec { grid-template-columns: 1fr; }
+}
+
+/* ---------- DVL beams ---------- */
+.dvl-wrap { display: grid; grid-template-columns: minmax(0, 19rem) minmax(0, 1fr); gap: 1.2rem; align-items: center; }
+svg.dvl-top { max-width: 19rem; margin: 0 auto; }
+svg.dvl-top .dvl-beam { cursor: pointer; outline: none; touch-action: manipulation; }
+svg.dvl-top .dvl-beam:focus-visible circle { stroke: var(--accent); stroke-width: 2.5; }
+svg.dvl-top .dvl-val { fill: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; }
+.dvl-out { font-family: var(--sans); font-size: 0.88rem; color: var(--ink-2); }
+.dvl-out table.params { margin: 0 0 0.7rem; max-width: 18rem; }
+.dvl-out td, .dvl-out th { text-align: right; }
+.dvl-out td:first-child, .dvl-out th:first-child { text-align: left; }
+.dvl-verdict { margin: 0 0 0.5rem; padding: 0.5rem 0.7rem; border-radius: 6px; background: var(--paper); line-height: 1.4; }
+.dvl-verdict b { color: var(--ink); }
+.dvl-verdict.warn { background: #fde9df; }
+.dvl-verdict.no { background: var(--paper-3); }
+.dvl-tip { font-size: 0.8rem; color: var(--muted); margin: 0; }
+@media (max-width: 640px) {
+  .dvl-wrap { grid-template-columns: 1fr; }
+}
+
+/* ---------- troubleshooting ---------- */
+.tr-list { display: grid; gap: 0.6rem; }
+.tr-item { background: var(--paper); border-radius: 8px; padding: 0.65rem 0.85rem; font-family: var(--sans); font-size: 0.88rem; line-height: 1.45; color: var(--ink-2); }
+.tr-item code { font-size: 0.78rem; overflow-wrap: anywhere; }
+.tr-sym { color: var(--ink); font-weight: 600; margin-bottom: 0.25rem; }
+.tr-tag { display: inline-block; font-size: 0.68rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-right: 0.5rem; }
+.tr-row { display: grid; grid-template-columns: 3.6rem minmax(0, 1fr); gap: 0.5rem; }
+.tr-row span { color: var(--muted); font-size: 0.8rem; padding-top: 0.05rem; }

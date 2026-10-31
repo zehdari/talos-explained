@@ -1,0 +1,161 @@
+{
+ "node": "/talos/mpc_controller",
+ "source": "ros2 param dump /talos/mpc_controller while the Nereus full stack ran (sim.launch.py active_control_model:=mpc mpc_model:=sim); values are what the node actually loaded in sim",
+ "parameters": {
+  "compensate_delay": true,
+  "control_period": 0.05,
+  "depth_topic": "depth/pose",
+  "dvl_topic": "dvl_twist",
+  "estimator": {
+   "depth_time_constant": 0.3,
+   "depth_timeout": 0.5,
+   "disturbance_force_time_constant": 3.0,
+   "disturbance_gate_rate": 0.2,
+   "disturbance_gate_speed": 0.1,
+   "disturbance_torque_time_constant": 3.0,
+   "dvl_gain": 0.7,
+   "dvl_latency": 0.0,
+   "dvl_timeout": 1.0,
+   "estimate_disturbance": true,
+   "fallback_time_constant": 0.3,
+   "fog_gain": 1.0,
+   "fog_timeout": 0.1,
+   "gyro_gain": 1.0,
+   "gyro_timeout": 0.2,
+   "heading_time_constant": 2.0,
+   "horizontal_time_constant": 2.0,
+   "max_disturbance_force": 20.0,
+   "max_disturbance_torque": 5.0,
+   "reset_angle": 0.5,
+   "reset_distance": 1.0,
+   "tilt_time_constant": 1.0,
+   "tilt_timeout": 0.5
+  },
+  "fog_topic": "gyro/twist",
+  "hardware": {
+   "rpm_offset": 0.0,
+   "spin_bias": 0.0
+  },
+  "hardware_output": "auto",
+  "horizon_steps": 30,
+  "hydrodynamics_config": "/tmp/nmedia/run/sim.mpc/hydrodynamics.yaml",
+  "identification": {
+   "allow": false,
+   "auto_off": 10.0,
+   "max_bias": 8.0,
+   "max_fixed": 12.0,
+   "timeout": 0.5
+  },
+  "imu_topic": "vectornav/imu",
+  "linear_velocity_frame": "body",
+  "linearization_step": 0.025,
+  "model_step": 0.002,
+  "motion": {
+   "angular_accel": 0.8,
+   "angular_jerk": 3.0,
+   "angular_speed": 1.0,
+   "governor_angle": 0.05,
+   "governor_lag": 0.15,
+   "governor_stop_angle": 0.25,
+   "governor_stop_lag": 0.4,
+   "linear_accel": 0.5,
+   "linear_accel_vertical": 0.2,
+   "linear_jerk": 2.0,
+   "linear_jerk_vertical": -1.0,
+   "linear_speed": 0.6,
+   "linear_speed_vertical": 0.3,
+   "max_reference_lag": 1.0,
+   "max_reference_lag_angle": 0.8,
+   "profile": true
+  },
+  "odom_timeout": 0.5,
+  "odom_topic": "odometry/filtered",
+  "path": {
+   "corner_radius": 0.3,
+   "finish_angle": 0.1,
+   "finish_position": 0.1,
+   "finish_rate": 0.15,
+   "finish_speed": 0.1,
+   "follow_frames": true,
+   "frame_accel": 0.3,
+   "frame_speed": 0.2,
+   "heading_blend": 0.3,
+   "kink_speed": 0.03,
+   "lateral_accel": 0.3,
+   "progress_timeout": 10.0,
+   "success_trust": 0.8,
+   "turn_drift": 0.05
+  },
+  "qp_max_iterations": 50,
+  "respect_motion_enabled": true,
+  "sqp_iterations": 1,
+  "state_source": "sensors",
+  "table_mode": false,
+  "thruster_model": {
+   "delay": 0.03,
+   "efficiencies": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "fall_time_constant": 0.06,
+   "force_deadband": 0.0,
+   "forward_scale": 1.0,
+   "reverse_scale": 1.0,
+   "rise_time_constant": 0.08,
+   "slew_rate": 300.0,
+   "startup_force": 0.0,
+   "startup_time_constant": 0.0
+  },
+  "trust": {
+   "angular_velocity_threshold": 0.03,
+   "attitude_threshold": 0.035,
+   "decay_tau": 1.0,
+   "growth_tau": 0.25,
+   "linear_velocity_threshold": 0.03,
+   "position_threshold": 0.02
+  },
+  "use_sim_time": true,
+  "vehicle_config": "/tmp/nmedia/run/sim.mpc/vehicle.yaml",
+  "weights": {
+   "angular_damping": [
+    10.0,
+    10.0,
+    10.0
+   ],
+   "angular_velocity": [
+    50.0,
+    50.0,
+    50.0
+   ],
+   "attitude": [
+    3000.0,
+    3000.0,
+    300.0
+   ],
+   "linear_damping": [
+    20.0,
+    20.0,
+    20.0
+   ],
+   "linear_velocity": [
+    100.0,
+    100.0,
+    100.0
+   ],
+   "position": [
+    400.0,
+    400.0,
+    400.0
+   ],
+   "terminal_factor": 5.0,
+   "thrust": 0.001,
+   "thrust_rate": 0.05
+  }
+ }
+}

@@ -1,0 +1,326 @@
+# The pool-test checklist on pool-test.html. One entry per step:
+#   id     stable key (ticks are stored under it in localStorage; don't rename casually)
+#   t      what to do, as one line
+#   safety true for steps where people or hardware can get hurt
+#   checks the pretest_checks ids that cover it (optional)
+#   why    HTML, one or two sentences
+#   cmd    exact command(s) (optional); where = which machine runs it
+#   refs   [label, href] links (optional)
+# Sources: the team's PRE_TEST_CHECKS document, riptide_release README, pretest_checks, the Nereus viewer docs.
+
+- id: days
+  title: Days before
+  steps:
+    - id: updates
+      t: Do any apt upgrades or driver updates now, not this week
+      checks: R4
+      why: >-
+        The team's pre-test document: updates "MUST be done DAYS in advance", because what they break is often
+        inexplicable. <code>pretest repo</code> warns when either machine changed packages in the last 3 days.
+      cmd: ./pretest repo --only R4
+      where: op-top
+      refs: [["#freeze", "Freeze the code"]]
+    - id: charge
+      t: Charge both battery housings
+      why: >-
+        Talos runs on two smart battery housings, port and starboard, ORed onto one bus. Each is five Li-ion cells
+        in series. Full is about 20.7 V; the viewer turns a pack amber below 50 % and red below 20 %.
+      refs: [["#batteries", "Batteries"]]
+
+- id: bench
+  title: The day before, on the bench
+  steps:
+    - id: orings
+      t: Inspect and clean the O-ring sealing surfaces (inside both lids)
+      checks: B0
+      why: >-
+        Dirt on a sealing surface is how water gets in. Check every time the hull is sealed.
+    - id: benchnew
+      t: Bench-test every new or changed piece of software on the robot itself
+      why: >-
+        "Integration is hell": a new YOLO model is tested on the ZED and the Orin, not only on a laptop. This is
+        the part of the day that takes hours.
+    - id: pin
+      t: Commit and push every submodule, then commit release with the new pins
+      checks: R1, R2
+      why: >-
+        One release commit names the exact code that goes in the water. A pin that isn't pushed can't be checked
+        out by anyone else, and can't be rolled back to.
+      cmd: |-
+        cd ~/osu-uwrt/release
+        git submodule status            # '+' = checked out away from its pin
+        git add src/riptide_control     # each submodule you changed
+        git commit -m "Pre RPAC test 10-30-26"
+        git push
+      where: op-top
+      refs: [["#freeze", "Freeze the code"], ["setup.html#git", "Git and release"]]
+    - id: build
+      t: Clean build on op-top
+      why: >-
+        colcon never removes a deleted package from <code>install/</code>, and stale build caches cause the
+        "dumb compile errors" the document warns about.
+      cmd: |-
+        cd ~/osu-uwrt/release
+        rm -rf build install log && colcon build
+      where: op-top
+    - id: deploy
+      t: Delete the Orin's workspace and deploy clean
+      checks: R3
+      why: >-
+        Forces a clean build on the Orin. Afterwards <code>pretest repo</code> compares every deployed file with
+        release (an rsync dry run) and checks the build is newer than the sources.
+      cmd: |-
+        source ~/osu-uwrt/riptide_setup/install/setup.bash
+        ssh ros@orin2 'rm -rf ~/colcon_deploy'
+        cd ~/osu-uwrt/release && colcon deploy orin2 --clean
+      where: op-top
+      refs: [["setup.html#deploy", "colcon deploy"]]
+    - id: repo
+      t: "pretest repo: pins, pushed, robot runs this code, trees parse"
+      checks: R1–R5
+      why: >-
+        All PASS before you go on. R5 runs <code>checkBT</code> on every tree (it rewrites the files, so the tool
+        restores them afterwards).
+      cmd: |-
+        cd ~/osu-uwrt/release/pretest_checks
+        ./pretest repo --with-tests
+      where: op-top
+      refs: [["#pretest", "pretest_checks"]]
+    - id: sim
+      t: Run the trees you'll run at the pool in Nereus, with the real detector
+      why: >-
+        Nereus renders the cameras and the stack's own YOLO detector runs on them, so a tree is tested end to end
+        before it costs pool time. The tool's <code>sim</code> stage is planned, not built: run it by hand.
+      cmd: |-
+        ros2 run rmw_zenoh_cpp rmw_zenohd                 # terminal 1
+        ros2 launch nereus sim.launch.py pool:=rpac active_control_model:=mpc   # terminal 2
+      where: op-top
+      refs: [["bt-workflow.html", "Writing and testing trees"], ["nereus.html", "Nereus"]]
+    - id: benchrun
+      t: "pretest bench: boards, rates, kill, ESCs, controller, drift, TF, DVL, cameras"
+      checks: B1–B13
+      why: >-
+        Read-only, about five minutes, robot on the bench on a power supply. It starts the stopped bench launches
+        (sensors and perception only) and runs the controller only under a held software kill.
+      cmd: ./pretest bench
+      where: op-top
+      refs: [["#pretest", "What each check does"]]
+    - id: tare
+      t: Tare the gyro only if B10 warns, with Talos level and still
+      checks: B10
+      why: >-
+        A tare taken tilted or moving bakes an error into every heading. The tool reports the bias but never tares
+        on its own.
+      cmd: >-
+        ros2 action send_goal /talos/gyro/tare riptide_msgs2/action/TareGyro
+        "{num_samples: 100000, timeout_seconds: 20}"
+      where: op-top
+      refs: [["sensors.html#fog-tare", "FOG tare"]]
+    - id: guided
+      t: "pretest guided: localization by hand, vision, AprilTag, thruster test, actuators"
+      safety: true
+      checks: G0–G7
+      why: >-
+        A person at the robot, a second person at the kill switch, the Nereus viewer open. The thruster test (G4)
+        is the only step that spins anything.
+      cmd: ./pretest guided --apriltag --actuators torpedo,dropper
+      where: op-top
+      refs: [["#thruster-test", "The thruster test"]]
+    - id: dryrun
+      t: Dry-run every procedure you plan for the pool (identification, a tune, a tree)
+      checks: G6
+      why: >-
+        "You should be 100% confident in your ability to perform all planned operations." Pool time spent
+        learning a procedure is wasted.
+    - id: recommit
+      t: Changed anything? Commit, bump release, redeploy, rerun repo and bench
+      checks: G7
+      why: >-
+        G7 fails if the release checkout or the deployed code changed since G0. Never plan on git at the pool:
+        fix it now.
+    - id: pvt
+      t: Depressurization test (PVT), then the green subconn cover on
+      safety: true
+      checks: G6
+      why: >-
+        The hull is pumped down by hand (0.05 bar in the 2025 design report) and watched for at least 5 minutes.
+        The green cover says Talos is sealed and tested. Open it again and the test has to be repeated.
+    - id: handsoff
+      t: Tell the team nobody opens Talos or swaps parts until the test
+      why: >-
+        Any internal mechanical or electrical change voids the localization and thruster tests you just did.
+
+- id: pack
+  title: Pack and leave
+  steps:
+    - id: packlist
+      t: Pack everything on the pack list
+      refs: [["#pack", "Pack list"]]
+    - id: summary
+      t: Check the summary of the latest runs
+      why: >-
+        One line per stage with its latest result, so everyone can see what was tested and what was skipped.
+      cmd: ./pretest summary
+      where: op-top
+    - id: leave
+      t: Leave on time
+      why: >-
+        The release README's third pre-test step: "Leave for the pool on time. (no, really, try to leave on time)".
+
+- id: setup
+  title: At the pool, on deck
+  steps:
+    - id: network
+      t: Router, opbox and tether up; op-top on the robot LAN
+      why: >-
+        Everything talks over the team router (192.168.1.0/24). The tether joins Talos to it; the opbox gives the
+        LAN internet and the time server.
+      cmd: |-
+        ping -c 3 orin2
+        chronyc tracking        # op-top's clock against the opbox
+      where: op-top
+      refs: [["computers.html#lan", "The robot LAN and the tether"], ["computers.html#time", "Time"]]
+    - id: power
+      t: Kill switch OUT, then power Talos on
+      safety: true
+      why: >-
+        With the switch out the thrusters have no power, whatever any software does. Talos boots killed, and the
+        launcher service starts on its own.
+      refs: [["#power", "Power-on order"]]
+    - id: launcher
+      t: "Launcher: load talos_launch_mpc.yaml, start the sensors, perception and autonomy"
+      why: >-
+        Start hardware, navigation (riptide_hardware2's, the first of the two), zed, tensorrt, mapping and
+        autonomy. Leave control_system for later. The diagnostics node is no longer used.
+      cmd: "http://orin2:8080"
+      where: browser
+      refs: [["computers.html#launcher", "ros_launcher"]]
+    - id: viewer
+      t: Start the Nereus viewer against the robot
+      why: >-
+        The viewer is the operator UI. It kills Talos on slot 1 from the moment it opens, until someone presses
+        Enable.
+      cmd: |-
+        source ~/osu-uwrt/release/scripts/dds_scripts/config_rmw.bash   # Zenoh client of orin2
+        ros2 launch nereus robot.launch.py pool:=rpac
+      where: op-top
+      refs: [["viewer.html", "The Nereus viewer"]]
+    - id: health
+      t: "Quick health check: boards, rails and battery bus, rates, kill, ESCs"
+      checks: B3–B7
+      why: >-
+        Catches what the drive over changed. <code>pretest dayof</code> is planned for this; until then, run the
+        bench checks that don't start anything. In the viewer: FOG and CPU temperatures, PORT and STBD charge.
+      cmd: ./pretest bench --only B3,B4,B5,B6,B7 --power battery
+      where: op-top
+    - id: controller
+      t: Start control_system last, with Talos killed
+      safety: true
+      why: >-
+        An enabled robot with the controller running spins its thrusters. Killed, the MPC publishes zero thrust.
+      refs: [["commanding.html#stops", "What stops the thrusters"]]
+
+- id: water
+  title: In the water
+  steps:
+    - id: killholder
+      t: Name the kill-switch holder; switch out; two people lift Talos in
+      safety: true
+      why: >-
+        Talos is about 32 kg dry. One person's only job is the switch: they hold it, and they pull it when anyone
+        says so.
+      refs: [["#kill", "Kill switch rules"]]
+    - id: buoyancy
+      t: "Killed, Talos floats: rises slowly and settles at the surface"
+      why: >-
+        The MPC model has Talos about 1.7 N positive, close to RoboSub's minimum of 0.5 % of its mass. A robot that
+        sinks or rises fast has changed since it was weighed.
+      refs: [["#trim", "Buoyancy and trim"]]
+    - id: enable
+      t: Switch in, Enable in the viewer, wait for the ESCs, Dive in place
+      safety: true
+      why: >-
+        The ESC boards hold their motors for about 5 s after power comes back. Dive in place targets the current
+        x, y and heading, level, at the configured depth.
+      refs: [["viewer.html", "Driving from the viewer"]]
+    - id: firstmoves
+      t: "Small moves first: forward 0.5, turn 30, then hold and watch"
+      why: >-
+        Type moves into the viewer's search (Ctrl+P). While it holds, plot the MPC's disturbance estimate: a large
+        constant torque means the model's buoyancy or trim is off.
+      cmd: "plot disturbance        # Ctrl+P in the viewer: /talos/controller/mpc/disturbance"
+      where: viewer
+      refs: [["#trim", "Buoyancy and trim"]]
+    - id: sensors
+      t: "Sensor sanity: DVL lock, depth, both cameras, detections, still pose"
+      why: >-
+        Each fails in its own way in water: no bottom lock near the floor or a wall, depth offset, a fogged lens.
+        Check them before blaming a tree.
+      refs: [["#sensors", "Sensor checks"]]
+    - id: map
+      t: Put the course in the prior map, then calibrate on the AprilTag
+      why: >-
+        The trees navigate in the map frame. Edit the prior map in the viewer (Ctrl+M), deploy riptide_mapping2,
+        then Calibrate in the Mapping panel with the tag in view.
+      cmd: |-
+        cd ~/osu-uwrt/release && colcon deploy orin2 --packages-select riptide_mapping2
+        # then restart mapping in the launcher; Calibrate in the viewer's Mapping panel
+      where: op-top
+      refs: [["#course", "Mapping the course"]]
+    - id: bag
+      t: Start a bag before every run
+      why: >-
+        A run you didn't record can't be debugged at home. Record on the robot, so the bag survives the tether.
+      refs: [["#bags", "Recording"]]
+    - id: trees
+      t: "Run trees: Enable, Start, unplug, insert the switch"
+      safety: true
+      why: >-
+        A tree waits for <code>state/kill</code> to go false, then 6 s more. Untethered, the physical switch is
+        the only kill.
+      refs: [["#trees", "Running trees"]]
+    - id: ident
+      t: Identification runs, untethered, from the committed model
+      why: >-
+        A tethered run fits the tether's pull as buoyancy. Leave 3 m clear ahead and to port, and 2.5 m below.
+      cmd: ros2 launch riptide_mpc pool_identify.launch.py wait_for_trigger:=true max_iterations:=1
+      where: Orin
+      refs: [["#ident", "Identification"], ["control/identify.html", "System identification"]]
+
+- id: after
+  title: After
+  steps:
+    - id: out
+      t: Kill switch out, Talos out with two people, power off
+      safety: true
+      why: >-
+        Out first: nobody's hands go near the thrusters while the robot can be enabled.
+    - id: copy
+      t: Copy bags, SVOs and identification sessions off the Orin
+      why: >-
+        They live only on the robot until copied, and the next clean deploy or full disk is not a backup.
+      cmd: |-
+        rsync -a ros@orin2:/home/ros/bags/ ~/bags/
+        rsync -a ros@orin2:/home/ros/osu-uwrt/mpc_identification/ ~/mpc_identification/
+      where: op-top
+      refs: [["#data", "Data"]]
+    - id: fixes
+      t: Commit what changed at the pool, bump release
+      why: >-
+        Prior-map edits, tuned parameters and models are files on op-top or the Orin. Commit them in their
+        submodules, then commit release with the new pins, so the next test starts from them.
+    - id: tag
+      t: Tag release with the date and publish a GitHub release
+      why: >-
+        The README: tag with the date of the test and release it, with notes on what was tested, as a backup to
+        roll back to.
+      cmd: |-
+        cd ~/osu-uwrt/release
+        git tag 10-30-26-talos && git push origin 10-30-26-talos
+        gh release create 10-30-26-talos --title "Pool test 10-30-26" --notes-file notes.md
+      where: op-top
+      refs: [["#after", "After the test"]]
+    - id: writeup
+      t: "Write it up: what was tested, what broke, where the data is"
+      why: >-
+        The release notes are the team's record of the day. Bag and session paths make the data findable.

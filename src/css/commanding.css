@@ -1,0 +1,108 @@
+/* Commanding Talos: the message viewer, the flow graph's steps, the CAN frame and the kill simulator. */
+
+/* ---------- message definitions ---------- */
+.msg-tabs { margin-bottom: 0.7rem; }
+pre.msgdef { margin: 0; max-height: 26rem; overflow: auto; font-size: 0.76rem; }
+pre.msgdef .k { color: #ffb58a; }
+pre.msgdef .f { color: #ffffff; }
+pre.msgdef .c { color: #7fa3ad; }
+pre.msgdef .sep { color: #7fa3ad; }
+.msg-src { font-family: var(--sans); font-size: 0.8rem; color: var(--muted); margin-top: 0.45rem; overflow-wrap: anywhere; }
+
+/* ---------- flow graph ---------- */
+#flow-graph { margin-top: 0.2rem; }
+#flow-note { min-height: 2.8em; }
+#flow-note ul.io { margin: 0.35rem 0 0; padding-left: 1.1em; }
+#flow-note ul.io li { margin-bottom: 0.15rem; }
+#flow-note .dir { color: var(--muted); }
+#flow-note code, .flow-steps code { font-size: 0.8em; overflow-wrap: anywhere; }
+.flow-steps { font-family: var(--sans); font-size: 0.86rem; color: var(--ink-2); margin: 0.6rem 0 0; padding-left: 1.5em; }
+.flow-steps li { margin-bottom: 0.25rem; }
+.flow-steps button { font: inherit; color: inherit; text-align: left; background: none; border: 0; padding: 0.2rem 0.5rem; border-radius: 6px; cursor: pointer; }
+.flow-steps button:hover { background: var(--paper); }
+.flow-steps button[aria-pressed='true'] { background: var(--paper); color: var(--ink); box-shadow: inset 2px 0 0 var(--accent); }
+
+/* ---------- force -> RPM -> CAN ---------- */
+.can-pick { flex-wrap: wrap; }
+.can-readout { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; font-family: var(--sans); font-size: 0.9rem; color: var(--ink-2); font-variant-numeric: tabular-nums; margin-bottom: 0.8rem; }
+.can-readout b { color: var(--ink); }
+.can-frames { display: grid; gap: 0.7rem; }
+.can-frames .frame { background: var(--paper); border-radius: 8px; padding: 0.55rem 0.7rem 0.6rem; }
+.can-frames .fhead { font-family: var(--sans); font-size: 0.84rem; color: var(--ink-2); margin-bottom: 0.45rem; }
+.can-frames .fhead b { font-family: var(--mono); color: var(--ink); font-weight: 600; }
+.can-frames .fhead small { display: block; font-family: var(--mono); font-size: 0.7rem; color: var(--muted); margin-top: 0.1rem; overflow-wrap: anywhere; }
+.can-frames .bytes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; }
+.can-frames .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; text-align: center; }
+.can-frames .pair span { font-family: var(--mono); font-size: 0.86rem; background: var(--paper-2); border-radius: 4px; padding: 0.3rem 0; color: var(--muted); }
+.can-frames .pair small { grid-column: 1 / -1; font-family: var(--sans); font-size: 0.72rem; color: var(--muted); }
+.can-frames .pair.on span { background: var(--accent); color: #fff; }
+.can-frames .pair.on small { color: var(--ink); font-weight: 650; }
+
+/* ---------- kill simulator ---------- */
+.killsim { font-family: var(--sans); }
+.ks-head .controls { margin-bottom: 0.4rem; }
+.ks-label { font-size: 0.86rem; color: var(--ink-2); }
+.ks-say { font-size: 0.9rem; line-height: 1.45; color: var(--ink); background: var(--paper); border-radius: 8px; padding: 0.55rem 0.8rem; margin: 0 0 0.9rem; min-height: 3.1em; }
+.ks-say code { font-size: 0.82em; }
+.ks-grid { display: grid; grid-template-columns: minmax(0, 18.5rem) minmax(0, 1fr); grid-template-areas: 'controls status' 'controls detail'; grid-template-rows: auto 1fr; gap: 0 1.1rem; align-items: start; }
+.ks-controls { grid-area: controls; }
+.ks-status { grid-area: status; }
+.ks-detail { grid-area: detail; }
+.ks-group { margin-bottom: 0.85rem; }
+.ks-group h4 { font-size: 0.78rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 0.35rem; }
+.ks-group h4 small { font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); margin-left: 0.3rem; }
+.ks-row { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.4rem; }
+.ks-mini { font-size: 0.82rem; color: var(--ink-2); min-width: 7rem; }
+.ks-check { font-size: 0.82rem; color: var(--ink-2); display: inline-flex; align-items: center; gap: 0.3rem; }
+.ks-check input { accent-color: var(--accent); }
+.killsim .btn:disabled { opacity: 0.45; cursor: default; }
+.killsim .btn.ks-enable { background: var(--ink); color: var(--paper); border-color: var(--ink); min-width: 5.6rem; font-weight: 650; }
+.killsim .btn.ks-enable.kill { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.ks-verdict { border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.95rem; font-weight: 600; line-height: 1.35; margin-bottom: 0.6rem; }
+.ks-verdict .t { float: right; font-weight: 400; font-size: 0.8rem; color: inherit; opacity: 0.75; font-variant-numeric: tabular-nums; margin-left: 0.6rem; }
+.ks-verdict.stop { background: #fde9df; color: #8a2c08; box-shadow: inset 3px 0 0 var(--accent); }
+.ks-verdict.idle { background: var(--paper); color: var(--ink); box-shadow: inset 3px 0 0 var(--s4); }
+.ks-verdict.go { background: #dcefe6; color: #0f4d37; box-shadow: inset 3px 0 0 var(--prediction); }
+.ks-chain { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.35rem; margin-bottom: 0.6rem; }
+.ks-chain .chip { background: var(--paper); border-radius: 6px; padding: 0.3rem 0.45rem; border-top: 3px solid var(--rule); min-width: 0; }
+.ks-chain .chip small { display: block; font-size: 0.7rem; color: var(--muted); }
+.ks-chain .chip b { display: block; font-size: 0.78rem; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.ks-chain .chip.ok { border-top-color: var(--prediction); }
+.ks-chain .chip.no { border-top-color: var(--accent); }
+table.params.ks-slots { margin: 0 0 0.6rem; font-size: 0.8rem; }
+table.params.ks-slots td { padding-top: 0.28rem; padding-bottom: 0.28rem; }
+table.params.ks-slots tr.off td { color: var(--muted); }
+table.params.ks-slots tr.bad td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left: 0.4rem; }
+table.params.ks-slots td.lock { font-family: var(--mono); font-size: 0.7rem; overflow-wrap: anywhere; }
+.ks-slots .y { color: #0f6e4c; font-weight: 600; }
+.ks-slots .n { color: #a8360a; font-weight: 600; }
+.ks-strips svg { display: block; }
+.ks-strips .lane { fill: var(--paper); }
+.ks-strips .on { fill: var(--state); opacity: 0.85; }
+.ks-strips .on.thrust { fill: var(--accent); opacity: 1; }
+.ks-strips .lname { font-size: 11px; fill: var(--ink-2); text-anchor: end; dominant-baseline: central; }
+.ks-strips .lname.in { text-anchor: start; fill: var(--ink); paint-order: stroke; stroke: var(--paper-2); stroke-width: 3px; }
+.ks-strips .tick { font-size: 10px; fill: var(--muted); }
+.ks-log { list-style: none; padding: 0; margin: 0.5rem 0 0; font-size: 0.8rem; color: var(--ink-2); min-height: 9.5em; }
+.ks-log li { padding: 0.12rem 0; border-bottom: 1px solid var(--rule); }
+.ks-log li span { display: inline-block; min-width: 3.9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ks-log li.bad { color: #8a2c08; }
+.ks-log li.good { color: #0f4d37; }
+
+@media (max-width: 760px) {
+  .ks-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'status' 'controls' 'detail'; grid-template-rows: auto; }
+  .ks-controls { margin-top: 0.4rem; }
+  .ks-chain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ks-chain .chip:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 520px) {
+  .can-frames .pair span { font-size: 0.78rem; }
+  /* "Enabled" is also shown by the dimmed row and the "–" in Asserting, so it goes first on a phone. */
+  table.params.ks-slots th:nth-child(2), table.params.ks-slots td:nth-child(2) { display: none; }
+  table.params.ks-slots td.lock { font-size: 0.66rem; }
+}
+.flow-steps button { display: block; width: 100%; }
+.fig .media.sch { background: #fff; }
+.fig a.sch-link { display: block; cursor: zoom-in; }
+table.params td small { font-size: 0.76rem; color: var(--muted); }

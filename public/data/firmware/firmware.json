@@ -1,0 +1,1398 @@
+{
+ "generated_by": "tools/firmware/extract.py",
+ "titan_firmware": {
+  "rev": "master",
+  "commit": "058df2a",
+  "date": "2026-10-10"
+ },
+ "projects": [
+  {
+   "id": "poac",
+   "name": "POAC board",
+   "dir": "talos/PoacBoard",
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/talos/PoacBoard",
+   "pico_board": "talos/poac_board",
+   "program_name": "Actuator Board Firmware",
+   "version": "1.0",
+   "bootloader": "can",
+   "bus": "internal",
+   "client_ids": [
+    1
+   ],
+   "libs": [
+    "driver_async_i2c",
+    "driver_canbus",
+    "driver_led",
+    "driver_mcp3426",
+    "driver_sht41",
+    "micro_ros_pico",
+    "pico-sdk",
+    "titan_binary_info",
+    "titan_boards",
+    "titan_bootloader",
+    "titan_canmore",
+    "titan_debug",
+    "titan_dual_stdio_usb",
+    "titan_logger",
+    "titan_queue",
+    "titan_safety",
+    "titan_version"
+   ],
+   "faults": [
+    {
+     "bit": 0,
+     "name": "WATCHDOG_RESET",
+     "desc": "The last reset was a crash (watchdog timeout, panic, hard fault or failed assert). Raised at boot; see the crash log.",
+     "raised": true
+    },
+    {
+     "bit": 1,
+     "name": "WATCHDOG_WARNING",
+     "desc": "The main loop got within 50 ms of the watchdog timeout (500 ms before safety is initialised).",
+     "raised": true
+    },
+    {
+     "bit": 2,
+     "name": "CAN_INTERNAL_ERROR",
+     "desc": "The CAN driver or the MCP2517FD reported an internal error.",
+     "raised": true
+    },
+    {
+     "bit": 3,
+     "name": "ROS_ERROR",
+     "desc": "A micro-ROS call failed while setting up publishers and subscribers (RCRETCHECK).",
+     "raised": true
+    },
+    {
+     "bit": 4,
+     "name": "TIMER_MISSED",
+     "desc": "A critical periodic task in the main loop ran late and skipped one or more runs.",
+     "raised": true
+    },
+    {
+     "bit": 5,
+     "name": "ROS_BAD_COMMAND",
+     "desc": "A ROS command was rejected (bad kill slot, someone else trying to clear a locked kill, bad value).",
+     "raised": true
+    },
+    {
+     "bit": 6,
+     "name": "ADC_ERROR",
+     "desc": "The MCP3428 rail-voltage ADC failed an I2C transfer.",
+     "raised": true
+    },
+    {
+     "bit": 7,
+     "name": "SHT41_ERROR",
+     "desc": "The SHT41 temperature/humidity sensor failed to read.",
+     "raised": true
+    }
+   ],
+   "timers": [
+    {
+     "name": "UROS_CONNECT_PING_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "HEARTBEAT_TIME_MS",
+     "ms": 100,
+     "used": true
+    },
+    {
+     "name": "FIRMWARE_STATUS_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "LED_UPTIME_INTERVAL_MS",
+     "ms": 250,
+     "used": true
+    },
+    {
+     "name": "KILLSWITCH_PUBLISH_TIME_MS",
+     "ms": 150,
+     "used": true
+    },
+    {
+     "name": "ELECTRICAL_READINGS_INTERVAL",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "AUXSWITCH_INTERVAL",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "ACTUATOR_STATUS_TIME_MS",
+     "ms": 500,
+     "used": true
+    },
+    {
+     "name": "SERVO_TRANSMIT_PERIOD_MS",
+     "ms": 10,
+     "used": true
+    },
+    {
+     "name": "SERVO_PING_PERIOD_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "SERVO_UPDATE_CMD_STATUS_PERIOD_MS",
+     "ms": 100,
+     "used": true
+    }
+   ],
+   "publishes": [
+    {
+     "topic": "heartbeat",
+     "type": "std_msgs/Int8"
+    },
+    {
+     "topic": "state/actuator/busy",
+     "type": "std_msgs/Bool"
+    },
+    {
+     "topic": "state/actuator/cmd_feedback",
+     "type": "std_msgs/String"
+    },
+    {
+     "topic": "state/actuator/cmd_status",
+     "type": "std_msgs/Bool"
+    },
+    {
+     "topic": "state/actuator/dynamixel",
+     "type": "riptide_msgs2/DynamixelStatus"
+    },
+    {
+     "topic": "state/actuator/status",
+     "type": "riptide_msgs2/ActuatorStatus"
+    },
+    {
+     "topic": "state/aux",
+     "type": "std_msgs/Bool"
+    },
+    {
+     "topic": "state/batteries_balanced",
+     "type": "std_msgs/Bool"
+    },
+    {
+     "topic": "state/electrical",
+     "type": "riptide_msgs2/ElectricalReadings"
+    },
+    {
+     "topic": "state/firmware",
+     "type": "riptide_msgs2/FirmwareStatus"
+    },
+    {
+     "topic": "state/humidity/poacboard",
+     "type": "std_msgs/Float32"
+    },
+    {
+     "topic": "state/kill",
+     "type": "std_msgs/Bool"
+    },
+    {
+     "topic": "state/physkill_notify",
+     "type": "std_msgs/Bool"
+    },
+    {
+     "topic": "state/temp/poacboard",
+     "type": "std_msgs/Float32"
+    }
+   ],
+   "subscribes": [
+    {
+     "topic": "command/actuator/arm",
+     "type": "std_msgs/Bool"
+    },
+    {
+     "topic": "command/actuator/dropper",
+     "type": "std_msgs/Empty"
+    },
+    {
+     "topic": "command/actuator/notify_reload",
+     "type": "std_msgs/Empty"
+    },
+    {
+     "topic": "command/actuator/torpedo",
+     "type": "std_msgs/Empty"
+    },
+    {
+     "topic": "command/actuator/torpedo_marker/go_home",
+     "type": "std_msgs/Empty"
+    },
+    {
+     "topic": "command/actuator/torpedo_marker/set_home",
+     "type": "std_msgs/Empty"
+    },
+    {
+     "topic": "command/electrical",
+     "type": "riptide_msgs2/ElectricalCommand"
+    },
+    {
+     "topic": "command/software_kill",
+     "type": "riptide_msgs2/KillSwitchReport"
+    }
+   ],
+   "kill_input": "slots",
+   "last_change": "2025-08-26"
+  },
+  {
+   "id": "esc",
+   "name": "ESC boards",
+   "dir": "talos/ESCBoard",
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/talos/ESCBoard",
+   "pico_board": "mk2/esc_board",
+   "program_name": "ESC Board Firmware",
+   "version": "1.0",
+   "bootloader": "can",
+   "bus": "internal",
+   "client_ids": [
+    2,
+    3
+   ],
+   "libs": [
+    "driver_canbus",
+    "driver_led",
+    "micro_ros_pico",
+    "pico-sdk",
+    "titan_binary_info",
+    "titan_boards",
+    "titan_bootloader",
+    "titan_canmore",
+    "titan_debug",
+    "titan_logger",
+    "titan_safety",
+    "titan_version"
+   ],
+   "faults": [
+    {
+     "bit": 0,
+     "name": "WATCHDOG_RESET",
+     "desc": "The last reset was a crash (watchdog timeout, panic, hard fault or failed assert). Raised at boot; see the crash log.",
+     "raised": true
+    },
+    {
+     "bit": 1,
+     "name": "WATCHDOG_WARNING",
+     "desc": "The main loop got within 50 ms of the watchdog timeout (500 ms before safety is initialised).",
+     "raised": true
+    },
+    {
+     "bit": 2,
+     "name": "CAN_INTERNAL_ERROR",
+     "desc": "The CAN driver or the MCP2517FD reported an internal error.",
+     "raised": true
+    },
+    {
+     "bit": 3,
+     "name": "ROS_ERROR",
+     "desc": "A micro-ROS call failed while setting up publishers and subscribers (RCRETCHECK).",
+     "raised": true
+    },
+    {
+     "bit": 4,
+     "name": "TIMER_MISSED",
+     "desc": "A critical periodic task in the main loop ran late and skipped one or more runs.",
+     "raised": true
+    },
+    {
+     "bit": 5,
+     "name": "ROS_BAD_COMMAND",
+     "desc": "A ROS command was rejected (bad kill slot, someone else trying to clear a locked kill, bad value).",
+     "raised": false
+    },
+    {
+     "bit": 6,
+     "name": "RPM_CMD_TIMEOUT",
+     "desc": "RPM targets stopped arriving (500 ms) while a thruster was spinning.",
+     "raised": true
+    },
+    {
+     "bit": 7,
+     "name": "RAW_MODE",
+     "desc": "The RPM loop is bypassed: targets go to the ESCs as raw throttle (tuning mode).",
+     "raised": true
+    }
+   ],
+   "timers": [
+    {
+     "name": "UROS_CONNECT_PING_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "HEARTBEAT_TIME_MS",
+     "ms": 100,
+     "used": true
+    },
+    {
+     "name": "FIRMWARE_STATUS_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "LED_UPTIME_INTERVAL_MS",
+     "ms": 250,
+     "used": true
+    },
+    {
+     "name": "TELEM_PUBLISH_RATE_MS",
+     "ms": 500,
+     "used": true
+    }
+   ],
+   "publishes": [
+    {
+     "topic": "state/firmware",
+     "type": "riptide_msgs2/FirmwareStatus"
+    },
+    {
+     "topic": "state/fw_heartbeat",
+     "type": "std_msgs/Int8"
+    },
+    {
+     "topic": "state/thrusters/cmd",
+     "type": "riptide_msgs2/DshotRPMFeedback"
+    },
+    {
+     "topic": "state/thrusters/rpm",
+     "type": "riptide_msgs2/DshotRPMFeedback"
+    },
+    {
+     "topic": "state/thrusters/telemetry",
+     "type": "riptide_msgs2/DshotPartialTelemetry"
+    }
+   ],
+   "subscribes": [
+    {
+     "topic": "command/thruster_rpm",
+     "type": "riptide_msgs2/DshotCommand"
+    },
+    {
+     "topic": "state/kill",
+     "type": "std_msgs/Bool"
+    }
+   ],
+   "kill_input": "state/kill",
+   "last_change": "2026-10-04"
+  },
+  {
+   "id": "ccbb",
+   "name": "Camera cage board",
+   "dir": "talos/CameraCageBB",
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/talos/CameraCageBB",
+   "pico_board": "mk2/camera_cage_bb",
+   "program_name": "Camera Cage BB Firmware",
+   "version": "1.0",
+   "bootloader": "can",
+   "bus": "internal",
+   "client_ids": [
+    4
+   ],
+   "libs": [
+    "driver_async_i2c",
+    "driver_canbus",
+    "driver_depth",
+    "driver_led",
+    "driver_sht41",
+    "driver_status_strip",
+    "micro_ros_pico",
+    "pico-sdk",
+    "titan_binary_info",
+    "titan_boards",
+    "titan_bootloader",
+    "titan_canmore",
+    "titan_debug",
+    "titan_logger",
+    "titan_safety",
+    "titan_version"
+   ],
+   "faults": [
+    {
+     "bit": 0,
+     "name": "WATCHDOG_RESET",
+     "desc": "The last reset was a crash (watchdog timeout, panic, hard fault or failed assert). Raised at boot; see the crash log.",
+     "raised": true
+    },
+    {
+     "bit": 1,
+     "name": "WATCHDOG_WARNING",
+     "desc": "The main loop got within 50 ms of the watchdog timeout (500 ms before safety is initialised).",
+     "raised": true
+    },
+    {
+     "bit": 2,
+     "name": "CAN_INTERNAL_ERROR",
+     "desc": "The CAN driver or the MCP2517FD reported an internal error.",
+     "raised": true
+    },
+    {
+     "bit": 3,
+     "name": "ROS_ERROR",
+     "desc": "A micro-ROS call failed while setting up publishers and subscribers (RCRETCHECK).",
+     "raised": true
+    },
+    {
+     "bit": 4,
+     "name": "TIMER_MISSED",
+     "desc": "A critical periodic task in the main loop ran late and skipped one or more runs.",
+     "raised": true
+    },
+    {
+     "bit": 5,
+     "name": "ROS_BAD_COMMAND",
+     "desc": "A ROS command was rejected (bad kill slot, someone else trying to clear a locked kill, bad value).",
+     "raised": true
+    },
+    {
+     "bit": 6,
+     "name": "DEPTH_INIT_ERROR",
+     "desc": "The depth sensor failed to start or zero; the driver stops until restarted.",
+     "raised": true
+    },
+    {
+     "bit": 7,
+     "name": "DEPTH_ERROR",
+     "desc": "Depth reads failed 5 times in a row, or a read overran.",
+     "raised": true
+    },
+    {
+     "bit": 8,
+     "name": "SHT41_ERROR",
+     "desc": "The SHT41 temperature/humidity sensor failed to read.",
+     "raised": true
+    }
+   ],
+   "timers": [
+    {
+     "name": "UROS_CONNECT_PING_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "HEARTBEAT_TIME_MS",
+     "ms": 100,
+     "used": true
+    },
+    {
+     "name": "FIRMWARE_STATUS_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "WATER_TEMP_PUBLISH_INTERVAL_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "LED_UPTIME_INTERVAL_MS",
+     "ms": 250,
+     "used": true
+    },
+    {
+     "name": "LEAK_PUBLISH_INTERVAL_MS",
+     "ms": 1000,
+     "used": true
+    }
+   ],
+   "publishes": [
+    {
+     "topic": "state/depth/raw",
+     "type": "riptide_msgs2/Depth"
+    },
+    {
+     "topic": "state/depth/temp",
+     "type": "std_msgs/Float32"
+    },
+    {
+     "topic": "state/firmware",
+     "type": "riptide_msgs2/FirmwareStatus"
+    },
+    {
+     "topic": "state/fw_heartbeat",
+     "type": "std_msgs/Int8"
+    },
+    {
+     "topic": "state/humidity/cameracage",
+     "type": "std_msgs/Float32"
+    },
+    {
+     "topic": "state/leak",
+     "type": "std_msgs/Bool"
+    },
+    {
+     "topic": "state/temp/cameracage",
+     "type": "std_msgs/Float32"
+    }
+   ],
+   "subscribes": [
+    {
+     "topic": "command/electrical",
+     "type": "riptide_msgs2/ElectricalCommand"
+    },
+    {
+     "topic": "command/led",
+     "type": "riptide_msgs2/LedCommand"
+    },
+    {
+     "topic": "state/kill",
+     "type": "std_msgs/Bool"
+    },
+    {
+     "topic": "state/physkill_notify",
+     "type": "std_msgs/Bool"
+    }
+   ],
+   "kill_input": "state/kill",
+   "last_change": "2025-08-09"
+  },
+  {
+   "id": "led",
+   "name": "LED board",
+   "dir": "talos/LEDBoard",
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/talos/LEDBoard",
+   "pico_board": "talos/led_board",
+   "program_name": "LED Board Firmware",
+   "version": "1.0",
+   "bootloader": "can",
+   "bus": "internal",
+   "client_ids": [
+    6
+   ],
+   "libs": [
+    "driver_canbus",
+    "driver_led",
+    "micro_ros_pico",
+    "pico-sdk",
+    "titan_binary_info",
+    "titan_boards",
+    "titan_bootloader",
+    "titan_canmore",
+    "titan_debug",
+    "titan_logger",
+    "titan_safety",
+    "titan_version"
+   ],
+   "faults": [
+    {
+     "bit": 0,
+     "name": "WATCHDOG_RESET",
+     "desc": "The last reset was a crash (watchdog timeout, panic, hard fault or failed assert). Raised at boot; see the crash log.",
+     "raised": true
+    },
+    {
+     "bit": 1,
+     "name": "WATCHDOG_WARNING",
+     "desc": "The main loop got within 50 ms of the watchdog timeout (500 ms before safety is initialised).",
+     "raised": true
+    },
+    {
+     "bit": 2,
+     "name": "CAN_INTERNAL_ERROR",
+     "desc": "The CAN driver or the MCP2517FD reported an internal error.",
+     "raised": true
+    },
+    {
+     "bit": 3,
+     "name": "ROS_ERROR",
+     "desc": "A micro-ROS call failed while setting up publishers and subscribers (RCRETCHECK).",
+     "raised": true
+    },
+    {
+     "bit": 4,
+     "name": "TIMER_MISSED",
+     "desc": "A critical periodic task in the main loop ran late and skipped one or more runs.",
+     "raised": true
+    },
+    {
+     "bit": 5,
+     "name": "LED_TEMP_WARN",
+     "desc": "LED module temperature warning.",
+     "raised": false
+    },
+    {
+     "bit": 6,
+     "name": "LED_OVERTEMP",
+     "desc": "LED module over temperature: the LEDs are limited.",
+     "raised": true
+    },
+    {
+     "bit": 7,
+     "name": "BUCK_OVERTEMP",
+     "desc": "LED driver over temperature.",
+     "raised": false
+    }
+   ],
+   "timers": [
+    {
+     "name": "UROS_CONNECT_PING_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "HEARTBEAT_TIME_MS",
+     "ms": 100,
+     "used": true
+    },
+    {
+     "name": "FIRMWARE_STATUS_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "LED_UPTIME_INTERVAL_MS",
+     "ms": 250,
+     "used": true
+    }
+   ],
+   "publishes": [
+    {
+     "topic": "heartbeat",
+     "type": "std_msgs/Int8"
+    },
+    {
+     "topic": "state/firmware",
+     "type": "riptide_msgs2/FirmwareStatus"
+    }
+   ],
+   "subscribes": [
+    {
+     "topic": "command/led",
+     "type": "riptide_msgs2/LedCommand"
+    },
+    {
+     "topic": "state/depth/raw",
+     "type": "riptide_msgs2/Depth"
+    },
+    {
+     "topic": "state/kill",
+     "type": "std_msgs/Bool"
+    },
+    {
+     "topic": "state/physkill_notify",
+     "type": "std_msgs/Bool"
+    }
+   ],
+   "kill_input": "state/kill",
+   "last_change": "2024-11-16"
+  },
+  {
+   "id": "ivc",
+   "name": "IVC board",
+   "dir": "talos/IVCBoard",
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/talos/IVCBoard",
+   "pico_board": "talos/ivc_board",
+   "program_name": "Template Project",
+   "version": "1.0",
+   "bootloader": "can",
+   "bus": "internal",
+   "client_ids": [
+    8
+   ],
+   "libs": [
+    "driver_canbus",
+    "driver_led",
+    "micro_ros_pico",
+    "pico-sdk",
+    "titan_binary_info",
+    "titan_boards",
+    "titan_bootloader",
+    "titan_canmore",
+    "titan_debug",
+    "titan_dual_stdio_usb",
+    "titan_logger",
+    "titan_queue",
+    "titan_safety",
+    "titan_version"
+   ],
+   "faults": [
+    {
+     "bit": 0,
+     "name": "WATCHDOG_RESET",
+     "desc": "The last reset was a crash (watchdog timeout, panic, hard fault or failed assert). Raised at boot; see the crash log.",
+     "raised": true
+    },
+    {
+     "bit": 1,
+     "name": "WATCHDOG_WARNING",
+     "desc": "The main loop got within 50 ms of the watchdog timeout (500 ms before safety is initialised).",
+     "raised": true
+    },
+    {
+     "bit": 2,
+     "name": "CAN_INTERNAL_ERROR",
+     "desc": "The CAN driver or the MCP2517FD reported an internal error.",
+     "raised": true
+    },
+    {
+     "bit": 3,
+     "name": "ROS_ERROR",
+     "desc": "A micro-ROS call failed while setting up publishers and subscribers (RCRETCHECK).",
+     "raised": true
+    },
+    {
+     "bit": 4,
+     "name": "TIMER_MISSED",
+     "desc": "A critical periodic task in the main loop ran late and skipped one or more runs.",
+     "raised": true
+    }
+   ],
+   "timers": [
+    {
+     "name": "UROS_CONNECT_PING_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "HEARTBEAT_TIME_MS",
+     "ms": 100,
+     "used": true
+    },
+    {
+     "name": "FIRMWARE_STATUS_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "LED_UPTIME_INTERVAL_MS",
+     "ms": 250,
+     "used": true
+    }
+   ],
+   "publishes": [
+    {
+     "topic": "heartbeat",
+     "type": "std_msgs/Int8"
+    },
+    {
+     "topic": "ivc/debug_rx_mag",
+     "type": "std_msgs/Float32"
+    },
+    {
+     "topic": "ivc/rx",
+     "type": "std_msgs/Int8"
+    },
+    {
+     "topic": "state/firmware",
+     "type": "riptide_msgs2/FirmwareStatus"
+    }
+   ],
+   "subscribes": [
+    {
+     "topic": "ivc/debug_tx_frequency",
+     "type": "std_msgs/Float32"
+    },
+    {
+     "topic": "ivc/tx",
+     "type": "std_msgs/Int8"
+    },
+    {
+     "topic": "state/kill",
+     "type": "std_msgs/Bool"
+    }
+   ],
+   "kill_input": "state/kill",
+   "last_change": "2025-08-14"
+  },
+  {
+   "id": "sbh",
+   "name": "Smart battery housings",
+   "dir": "talos/SmartBattery",
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/talos/SmartBattery",
+   "pico_board": "mk2/sbh_mcu",
+   "program_name": "Smart Battery Firmware",
+   "version": "1.0",
+   "bootloader": "can",
+   "bus": "external",
+   "client_ids": [],
+   "libs": [
+    "driver_async_i2c",
+    "driver_canbus",
+    "driver_led",
+    "driver_sht41",
+    "driver_ssd1306",
+    "micro_ros_pico",
+    "pico-sdk",
+    "titan_binary_info",
+    "titan_boards",
+    "titan_bootloader",
+    "titan_canmore",
+    "titan_debug",
+    "titan_logger",
+    "titan_safety",
+    "titan_version"
+   ],
+   "faults": [
+    {
+     "bit": 0,
+     "name": "WATCHDOG_RESET",
+     "desc": "The last reset was a crash (watchdog timeout, panic, hard fault or failed assert). Raised at boot; see the crash log.",
+     "raised": true
+    },
+    {
+     "bit": 1,
+     "name": "WATCHDOG_WARNING",
+     "desc": "The main loop got within 50 ms of the watchdog timeout (500 ms before safety is initialised).",
+     "raised": true
+    },
+    {
+     "bit": 2,
+     "name": "CAN_INTERNAL_ERROR",
+     "desc": "The CAN driver or the MCP2517FD reported an internal error.",
+     "raised": true
+    },
+    {
+     "bit": 3,
+     "name": "ROS_ERROR",
+     "desc": "A micro-ROS call failed while setting up publishers and subscribers (RCRETCHECK).",
+     "raised": true
+    },
+    {
+     "bit": 4,
+     "name": "TIMER_MISSED",
+     "desc": "A critical periodic task in the main loop ran late and skipped one or more runs.",
+     "raised": true
+    },
+    {
+     "bit": 5,
+     "name": "SHT41_ERROR",
+     "desc": "The SHT41 temperature/humidity sensor failed to read.",
+     "raised": true
+    },
+    {
+     "bit": 6,
+     "name": "BQ40_NOT_CONNECTED",
+     "desc": "The battery gauge (BQ40Z80) does not answer on SMBus.",
+     "raised": true
+    },
+    {
+     "bit": 7,
+     "name": "BQ40_SAFETY_STATUS",
+     "desc": "The battery gauge reports a safety condition.",
+     "raised": true
+    },
+    {
+     "bit": 8,
+     "name": "BQ40_PF_STATUS",
+     "desc": "The battery gauge reports a permanent failure.",
+     "raised": true
+    },
+    {
+     "bit": 9,
+     "name": "BQ40_MISMATCHED_SERIAL",
+     "desc": "The gauge's serial number does not match the housing serial stored in flash.",
+     "raised": true
+    },
+    {
+     "bit": 10,
+     "name": "BQ40_COMMAND_FAIL",
+     "desc": "A command to the battery gauge failed.",
+     "raised": true
+    }
+   ],
+   "timers": [
+    {
+     "name": "UROS_CONNECT_PING_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "HEARTBEAT_TIME_MS",
+     "ms": 100,
+     "used": true
+    },
+    {
+     "name": "FIRMWARE_STATUS_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "BATTERY_STATUS_TIME_MS",
+     "ms": 1000,
+     "used": true
+    },
+    {
+     "name": "LED_UPTIME_INTERVAL_MS",
+     "ms": 250,
+     "used": true
+    },
+    {
+     "name": "PWRCYCL_CHECK_INTERVAL_MS",
+     "ms": 250,
+     "used": false
+    }
+   ],
+   "publishes": [
+    {
+     "topic": "state/battery",
+     "type": "riptide_msgs2/BatteryStatus"
+    },
+    {
+     "topic": "state/firmware",
+     "type": "riptide_msgs2/FirmwareStatus"
+    },
+    {
+     "topic": "state/fw_heartbeat",
+     "type": "std_msgs/Int8"
+    },
+    {
+     "topic": "status/humidity/smartbattery",
+     "type": "std_msgs/Float32"
+    },
+    {
+     "topic": "status/temp/smartbattery",
+     "type": "std_msgs/Float32"
+    }
+   ],
+   "subscribes": [
+    {
+     "topic": "command/electrical",
+     "type": "riptide_msgs2/ElectricalCommand"
+    },
+    {
+     "topic": "command/software_kill",
+     "type": "riptide_msgs2/KillSwitchReport"
+    },
+    {
+     "topic": "state/kill",
+     "type": "std_msgs/Bool"
+    },
+    {
+     "topic": "state/leak",
+     "type": "std_msgs/Bool"
+    }
+   ],
+   "kill_input": "state/kill",
+   "last_change": "2024-12-18"
+  }
+ ],
+ "libs": [
+  {
+   "name": "driver_async_i2c",
+   "kind": "driver",
+   "desc": "Interrupt-driven I2C, so sensor reads never block the main loop.",
+   "used_by": [
+    "poac",
+    "ccbb",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/driver_async_i2c"
+  },
+  {
+   "name": "driver_canbus",
+   "kind": "driver",
+   "desc": "The MCP2517FD CAN controller over SPI, CANmore framing, heartbeats and utility channels.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/driver_canbus"
+  },
+  {
+   "name": "driver_cd74hc4051",
+   "kind": "driver",
+   "desc": "CD74HC4051 analog multiplexer.",
+   "used_by": [],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/driver_cd74hc4051"
+  },
+  {
+   "name": "driver_depth",
+   "kind": "driver",
+   "desc": "MS5837 pressure sensor: zeroing, polling, depth.",
+   "used_by": [
+    "ccbb"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/driver_depth"
+  },
+  {
+   "name": "driver_dynamixel",
+   "kind": "driver",
+   "desc": "Dynamixel servo bus (older actuator designs).",
+   "used_by": [],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/driver_dynamixel"
+  },
+  {
+   "name": "driver_led",
+   "kind": "driver",
+   "desc": "The RGB status LED every board has.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/driver_led"
+  },
+  {
+   "name": "driver_mcp3426",
+   "kind": "driver",
+   "desc": "MCP342x ADC (the POAC board's rail voltages).",
+   "used_by": [
+    "poac"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/driver_mcp3426"
+  },
+  {
+   "name": "driver_sht41",
+   "kind": "driver",
+   "desc": "SHT41 temperature and humidity sensor.",
+   "used_by": [
+    "poac",
+    "ccbb",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/driver_sht41"
+  },
+  {
+   "name": "driver_ssd1306",
+   "kind": "driver",
+   "desc": "SSD1306 OLED display (smart battery housings).",
+   "used_by": [
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/driver_ssd1306"
+  },
+  {
+   "name": "driver_status_strip",
+   "kind": "driver",
+   "desc": "The camera cage's RGB status strip.",
+   "used_by": [
+    "ccbb"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/driver_status_strip"
+  },
+  {
+   "name": "driver_wiznet",
+   "kind": "driver",
+   "desc": "WIZnet Ethernet chip (Puddles' backplane, not Talos).",
+   "used_by": [],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/driver_wiznet"
+  },
+  {
+   "name": "micro_ros_pico",
+   "kind": "ros",
+   "desc": "micro-ROS for the RP2040: the prebuilt libmicroros.a plus the CAN, USB and Ethernet transports.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/micro_ros_pico"
+  },
+  {
+   "name": "pico-sdk",
+   "kind": "sdk",
+   "desc": "Raspberry Pi's C SDK for the RP2040: GPIO, PIO, timers, multicore, USB. A git submodule.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/raspberrypi/pico-sdk/tree/6a7db34ff63345a7badec79ebea3aaef1712f374"
+  },
+  {
+   "name": "titan_binary_info",
+   "kind": "titan",
+   "desc": "Extra Pico binary-info records (CAN client IDs, version) that upload_tool reads out of a UF2.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/titan_binary_info"
+  },
+  {
+   "name": "titan_boards",
+   "kind": "titan",
+   "desc": "One header per board (pins, CAN bus, client ID) and one per robot (namespace, CAN rates). PICO_BOARD and UWRT_ROBOT pick them.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/titan_boards"
+  },
+  {
+   "name": "titan_bootloader",
+   "kind": "titan",
+   "desc": "The 16 kB bootloader that lets a board be reflashed over CAN or Ethernet.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/titan_bootloader"
+  },
+  {
+   "name": "titan_canmore",
+   "kind": "titan",
+   "desc": "The CANmore protocol: frame IDs, message fragmentation, heartbeats, register-mapped debug. A git submodule shared with the Orin-side tools.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_canmore/tree/f6273e2c25f0202788be01e41338a6bbd6320006"
+  },
+  {
+   "name": "titan_debug",
+   "kind": "titan",
+   "desc": "Debug server on CAN channel 14: crash log, faults, memory, GDB stub and remote commands for canmore_cli.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/titan_debug"
+  },
+  {
+   "name": "titan_dual_stdio_usb",
+   "kind": "titan",
+   "desc": "USB serial console that can also reboot the chip into its bootloader.",
+   "used_by": [
+    "poac",
+    "ivc"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/titan_dual_stdio_usb"
+  },
+  {
+   "name": "titan_logger",
+   "kind": "titan",
+   "desc": "LOG_INFO / LOG_WARN / LOG_ERROR with a unit name, printed to the debug UART.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/titan_logger"
+  },
+  {
+   "name": "titan_queue",
+   "kind": "titan",
+   "desc": "A small fixed-size queue used by drivers.",
+   "used_by": [
+    "poac",
+    "ivc"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/titan_queue"
+  },
+  {
+   "name": "titan_safety",
+   "kind": "titan",
+   "desc": "Watchdog, fault bits, kill switches, crash log and the core 1 check-in.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/titan_safety"
+  },
+  {
+   "name": "titan_version",
+   "kind": "titan",
+   "desc": "Builds the version tag (major.minor, branch, commit, dirty flag, builder, time) into the image.",
+   "used_by": [
+    "poac",
+    "esc",
+    "ccbb",
+    "led",
+    "ivc",
+    "sbh"
+   ],
+   "url": "https://github.com/osu-uwrt/titan_firmware/tree/master/lib/titan_version"
+  }
+ ],
+ "canmore": {
+  "commit": "f6273e2",
+  "fields": {
+   "CANMORE_CLIENT_ID_LENGTH": 5,
+   "CANMORE_TYPE_LENGTH": 1,
+   "CANMORE_DIRECTION_LENGTH": 1,
+   "CANMORE_NOC_LENGTH": 4,
+   "CANMORE_EXTRA_LENGTH": 18,
+   "CANMORE_MSG_LEN_LENGTH": 11,
+   "CANMORE_MSG_SUBTYPE_LENGTH": 6,
+   "CANMORE_MSG_SINGLE_LENGTH": 1
+  },
+  "channels": {
+   "thruster_cmds": 0,
+   "camera_feed": 12,
+   "remote_tty": 13,
+   "control_interface": 14,
+   "heartbeat": 15
+  },
+  "modes": {
+   "none": 0,
+   "normal": 1,
+   "bootloader": 2,
+   "linux": 3,
+   "boot_delay": 5
+  },
+  "heartbeat_interval_ms": 500,
+  "max_msg_length": 1024,
+  "max_frame": 8,
+  "max_fd_frame": 64,
+  "bootloader_request": [
+   "0xB0",
+   "0x07",
+   "0x10",
+   "0xAD"
+  ],
+  "crc18": {
+   "poly": "0x23979",
+   "init": "0x3FFFF"
+  },
+  "client_ids": {
+   "POWER_BOARD": 1,
+   "ESC_BOARD0": 2,
+   "ESC_BOARD1": 3,
+   "CAMERA_CAGE_BB": 4,
+   "ACTUATOR_BOARD": 5,
+   "LED_BOARD": 6,
+   "SBC_BOARD": 7,
+   "IVC_BOARD": 8,
+   "SMART_BATERY_PORT": 1,
+   "SMART_BATERY_STBD": 2,
+   "DOWNWARDS_CAMERA": 6
+  },
+  "links": {
+   "protocol": "https://github.com/osu-uwrt/titan_canmore/blob/f6273e2c25f0202788be01e41338a6bbd6320006/canmore/include/canmore/protocol.h",
+   "msg_encoding": "https://github.com/osu-uwrt/titan_canmore/blob/f6273e2c25f0202788be01e41338a6bbd6320006/canmore/src/msg_encoding.c",
+   "client_ids": "https://github.com/osu-uwrt/titan_canmore/blob/f6273e2c25f0202788be01e41338a6bbd6320006/canmore/include/canmore/client_ids.h"
+  },
+  "buses": {
+   "internal": {
+    "id": 1,
+    "fd": true,
+    "rate": 1000000,
+    "fd_rate": 5000000
+   },
+   "external": {
+    "id": 2,
+    "fd": false,
+    "rate": 250000
+   }
+  }
+ },
+ "safety": {
+  "watchdog_setup_ms": 3000,
+  "watchdog_active_ms": 250,
+  "warn_setup_ms": 500,
+  "warn_active_ms": 50,
+  "core1_checkin_ms": 250,
+  "kill_timeout_ms": 500,
+  "crash_log_entries": 24,
+  "max_fault_id": 31,
+  "links": {
+   "safety_h": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/include/titan/safety.h",
+   "safety_c": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/safety.c#L81",
+   "internal_h": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/safety_internal.h#L26",
+   "kill_switch_c": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/kill_switch.c#L25"
+  }
+ },
+ "esc": {
+  "dshot_min_update_rate_ms": 500,
+  "dshot_update_disable_time_ms": 1000,
+  "esc_powerup_delay_ms": 5000,
+  "dshot_rate": 600,
+  "esc_power_threshold_mv": 9000,
+  "telem_packet_delay": 100,
+  "telem_max_missed_dshot_packets": 20,
+  "dshot_min_frame_time_us": 400,
+  "esc_num_pole_pairs": 7,
+  "disabled_flags": [
+   {
+    "bit": 0,
+    "name": "SAFETY_KILLED"
+   },
+   {
+    "bit": 1,
+    "name": "ESC_BOARD_OFF"
+   },
+   {
+    "bit": 2,
+    "name": "ESC_POWERON_DELAY"
+   },
+   {
+    "bit": 3,
+    "name": "TGT_RPM_STALE"
+   },
+   {
+    "bit": 4,
+    "name": "TGT_RPM_STALE_PENALTY"
+   },
+   {
+    "bit": 5,
+    "name": "CONTROLLER_UNCONFIGURED"
+   }
+  ],
+  "p_gain": 100000,
+  "i_gain": 1000,
+  "i_bound": 300,
+  "hard_limit": 725,
+  "min_command": 0,
+  "links": {
+   "dshot_h": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/include/dshot.h#L29",
+   "core1_c": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/core1.c#L227",
+   "main_c": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/main.c#L131",
+   "dshot_c": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/dshot.c#L259",
+   "controller": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/Thruster_Controller/ThrusterController.c#L78",
+   "ros_c": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/ros.c#L215"
+  }
+ },
+ "bootloader": {
+  "watchdog_timeout_ms": 3000,
+  "link_delay_ms": 5000,
+  "boot_delay_ms": 500,
+  "bootloader_timeout_sec": 30,
+  "size": "16k",
+  "app_origin": "0x10004000",
+  "links": {
+   "main_c": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_bootloader/src/main.c#L74",
+   "ld": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_bootloader/bootloader_runtime/memmap_bootloader.ld#L29"
+  }
+ },
+ "depth": {
+  "polling_ms": 50,
+  "bad_reads_fault": 5,
+  "fluid_density": 997,
+  "oversampling": 5
+ }
+}

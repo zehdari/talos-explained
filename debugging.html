@@ -4,32 +4,292 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Debugging, bags and data · How Talos works</title>
-<meta name="description" content="One or two sentences on what this chapter explains.">
+<meta name="description" content="How to find out what Talos is doing: work down the chain from the network to the logs, a symptom finder built from real incidents, the ros2 command line, logs, live plots, recording bags (what, how big), reading them in Python, replaying them into the Nereus viewer or a node, and timestamps versus clocks.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Running Talos</div>
+    <div class="kicker">Running Talos · Chapter 5</div>
     <h1>Debugging, bags and data</h1>
-    <p class="lede">One or two sentences: what this is and why a new member should care.</p>
+    <p class="lede">"Talos isn't working" is never the real problem. This chapter is how to find the real one: what to check in what order, what each failure has looked like before, and how to record a run so you can study it at home.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Three to five bullets a reader can stop after.</li>
+      <li>Work down the chain: <b>network</b>, <b>launches</b>, <b>topic rates</b>, <b>enable</b>, <b>values</b>, <b>logs</b>. Stop at the first step that fails; most problems are in the first two.</li>
+      <li>Live, use the <code>ros2</code> command line (with <code>--no-daemon</code> over Zenoh), the launcher page for node output and the Nereus viewer's Plots.</li>
+      <li>Record a bag of every run, on the robot. Without cameras the robot's topics are about 0.4 MB/s of messages (about 0.5 MB/s on disk); one camera stream adds about 2.3 MB/s.</li>
+      <li>A bag is a SQLite file you can read in twenty lines of Python, or replay into the viewer, or into a node with new parameters to test a fix without the pool.</li>
+      <li><code>header.stamp</code> is when something was measured, on the clock of the machine that stamped it. Compare stamps only from the same clock.</li>
     </ul></aside>
+
     <div class="prose">
-      <p>Opening paragraph.</p>
-      <h2 id="first-section">First section</h2>
-      <p>Coming soon.</p>
+      <h2 id="chain">Work down the chain</h2>
+      <p>Talos is a chain: your laptop reaches the Orin over Zenoh, the launcher starts the nodes, the nodes publish topics, the kill system lets the thrusters move, and the code turns all of that into behaviour. A break anywhere looks the same from the deck: nothing happens. So check the links in order, cheapest first.</p>
+    </div>
+    <figure class="fig narrow" id="diagnose-fig">
+      <div class="panel">
+        <ol class="dx" id="dx"></ol>
+      </div>
+      <figcaption><b>Diagnose, one question at a time.</b> Run the command, compare with what a healthy Talos shows, then tap <i>Yes</i> to go on or <i>No</i> to see what usually causes it. Rates are from a 20-minute pool session on 2026-10-26.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="symptoms" data-short="Symptom finder">Symptoms seen on Talos</h2>
+      <p>Each entry below happened, or is written into the code as a known way to fail. Search for the words you see (a log line, a topic, a flag), or filter by part of the system. Every entry links to where it comes from.</p>
+    </div>
+    <figure class="fig" id="symptom-fig">
+      <div class="panel">
+        <div class="sf-bar">
+          <input type="search" id="sf-q" placeholder="Search: stale, kill, DVL, ESC_POWERON…" aria-label="Search symptoms" autocomplete="off">
+          <span class="sf-count" id="sf-count" aria-live="polite"></span>
+        </div>
+        <div class="sf-cats" id="sf-cats" role="group" aria-label="Filter by part"></div>
+        <div class="sf-list" id="sf-list"></div>
+      </div>
+      <figcaption><b>Symptom, likely cause, what to check.</b> Tap a symptom to open it. Commands assume a shell that can see Talos (the next section).</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="cli" data-short="The ros2 CLI">The ros2 command line</h2>
+      <p>Everything on Talos is a topic, a service, an action or a parameter, and the <code>ros2</code> tool can look at all of them from any machine on the robot's Zenoh network. First, a shell that can see Talos (details in <a href="computers.html#join">Computers and networks</a>):</p>
+<pre class="cmd" data-where="your laptop"><code>source /opt/ros/humble/setup.bash
+<span class="c"># riptide_msgs2 and friends, or echo can't decode them</span>
+source ~/osu-uwrt/release/install/setup.bash
+<span class="c"># Zenoh client to tcp/orin2:7447</span>
+source ~/osu-uwrt/release/scripts/dds_scripts/config_rmw.bash
+<span class="c"># --no-daemon: the daemon may still hold an old RMW</span>
+ros2 topic list --no-daemon | grep /talos</code></pre>
+      <h3 id="cli-topics">Topics</h3>
+<pre class="cmd"><code>ros2 topic hz /talos/vectornav/imu                <span class="c"># rate: 400 Hz on Talos</span>
+ros2 topic echo /talos/state/kill --once          <span class="c"># one message, then exit</span>
+ros2 topic echo /talos/state/thrusters/telemetry --field disabled_flags
+ros2 topic echo /talos/odometry/filtered --field pose.pose.position --no-arr
+ros2 topic info -v /talos/command/software_kill   <span class="c"># who publishes, with what QoS</span></code></pre>
+      <ul>
+        <li><b><code>hz</code> measures what reaches you.</b> From a laptop, a camera's rate is the tether's rate. Measure one stream at a time, or on the Orin.</li>
+        <li><b><code>--field</code></b> keeps the output to the part you care about; <b><code>--no-arr</code></b> hides covariance arrays.</li>
+        <li><b><code>info -v</code></b> is how you find a second publisher you didn't expect, like a competing operator on the kill topic.</li>
+      </ul>
+      <h3 id="cli-nodes">Nodes and parameters</h3>
+<pre class="cmd"><code>ros2 node list
+ros2 node info /talos/mpc_controller              <span class="c"># its topics, services, actions</span>
+ros2 param get /talos/mpc_controller table_mode
+ros2 param set /talos/mpc_controller table_mode false
+ros2 param dump /talos/mpc_controller > live.yaml <span class="c"># then diff against riptide_mpc/config/mpc.yaml</span></code></pre>
+      <p>A parameter set at the pool lives until the node restarts. The pre-test checks compare the node's live parameters with the deployed <code>mpc.yaml</code> to catch tuning left behind.</p>
+      <h3 id="cli-calls">Services, actions and TF</h3>
+<pre class="cmd"><code>ros2 service call /talos/set_camera_is_dfc std_srvs/srv/SetBool "{data: true}"
+ros2 action send_goal /talos/gyro/tare riptide_msgs2/action/TareGyro \
+  "{num_samples: 100000, timeout_seconds: 20}"     <span class="c"># still and level only</span>
+ros2 run tf2_ros tf2_echo talos/base_link talos/dvl_link
+ros2 run tf2_tools view_frames                    <span class="c"># the whole TF tree as a PDF</span></code></pre>
+      <p>Services and actions change things on the robot. Read what they do before calling one (<a href="interfaces.html">Appendix A</a> lists them).</p>
+
+      <h2 id="logs">Where the logs are</h2>
+      <p>Nodes started by the launcher have no terminal. Their output goes to four places, and each answers a different question:</p>
+      <div class="table-scroll"><table class="params logs-table">
+        <thead><tr><th>Where</th><th>What's in it</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td>Launcher page<br><code>http://orin2:8080</code></td><td>Every launch's stdout and stderr, live. Cyan while starting, green while running, orange while stopping (<a href="computers.html#launcher">the launcher</a>).</td><td>A node that crashed on start-up; what a launch printed.</td></tr>
+          <tr><td><code>/rosout</code></td><td>Every node's log messages (info, warnings, errors) as a topic.</td><td>Watching warnings from a laptop: <code>ros2 topic echo /rosout --field msg</code>, or <code>rqt_console</code>.</td></tr>
+          <tr><td><code>journalctl -u ros_launcher</code></td><td>The launcher itself: launches starting, stopping, dying; the Zenoh router's crash output.</td><td>"Why did everything stop?"</td></tr>
+          <tr><td><code>~/.ros/log/</code> on the Orin (<a href="computers.html#ssh">over SSH</a>)</td><td>ROS 2's default log file per node, and a <code>launch.log</code> per launch.</td><td>Reading back a run after the fact.</td></tr>
+        </tbody>
+      </table></div>
+      <p>The launcher pipes each launch's output to its web page only; it doesn't reach the journal (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py#L365-L397"><code>launcher.py</code></a>). The MPC's lines worth searching for, all from <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp"><code>mpc_controller_node.cpp</code></a>:</p>
+      <ul class="loglines">
+        <li><code>Hardware output ENABLED</code> or <code>Hardware output disabled (…)</code>: at start-up, says whether RPM goes to the ESCs.</li>
+        <li><code>Table mode ON: thruster RPM capped at 500</code></li>
+        <li><code>Stale sensors, using EKF instead: …</code> and <code>No fresh odometry; thrusters off</code></li>
+        <li><code>MPC failed, thrusters off: …</code>, <code>MPC produced a nonfinite command</code>, <code>CAN thruster command failed</code></li>
+        <li><code>MPC solve … ms exceeds the control period</code></li>
+      </ul>
+
+      <h2 id="plots">Plotting live</h2>
+      <p>The Nereus viewer's <b>Plots</b> window (<i>Windows › Plots</i>) is the team's live plotter, on the robot and in sim (<a href="viewer.html">Chapter 3</a>):</p>
+      <ul>
+        <li>Lanes of series on one time axis; type <code>plot odom z</code> in the search (Ctrl+P), or right-click a Motion table row for <i>Plot Z</i> (actual, commanded, error).</li>
+        <li><b>Time from <i>Header</i></b> (default) plots each sample at its stamp. On the robot a row that says <code>clock offset 1.2 s</code> means your clock and the Orin's disagree.</li>
+        <li>A row says why a line stopped: <code>stale 4.2 s</code>, <code>no publisher</code>.</li>
+        <li><i>Export visible span as CSV</i> writes <code>~/Documents/Nereus/plots/</code> for a quick look in Python or a spreadsheet.</li>
+      </ul>
+      <p>PlotJuggler is the usual third-party tool for this. The team's old FastDDS scripts ran it as a discovery-server superclient, but <code>riptide_setup</code> doesn't install it today.</p>
+
+      <h2 id="bags">Recording bags</h2>
+      <p>A <span class="term">bag</span> is a recording of topics: every message, with the time the recorder received it. Record one for every pool run; a run that wasn't recorded can't be debugged at home.</p>
+      <ul>
+        <li><b>On the robot.</b> The viewer's <i>Bagging</i> panel runs <code>ros2 bag record</code> on <code>ros@orin2</code> into <code>~/bags</code>. It keeps going if the tether drops, and it gets every message, not just what crossed the tether (<a href="pool-test.html#bags">Pool test day</a>).</li>
+        <li><b>By hand</b>, the panel's command with the launcher's environment (from <a href="https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml#L66-L82"><code>talos_uwrt_panels.yaml</code></a>):</li>
+      </ul>
+<pre class="cmd" data-where="on the Orin"><code>source ~/colcon_deploy/install/setup.bash
+source ~/uwrt_config/source/zenoh_server.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+<span class="c"># everything except the camera streams</span>
+ros2 bag record -o ~/bags/run_$(date +%F_%H%M%S) -a -x 'image|point_cloud'
+<span class="c"># Ctrl-C to stop: that writes metadata.yaml</span>
+ros2 bag info ~/bags/run_...                      <span class="c"># duration, topics, counts</span></code></pre>
+<pre class="cmd" data-where="your laptop"><code><span class="c"># bags exist only on the robot until copied</span>
+rsync -a ros@orin2:/home/ros/bags/ ~/bags/</code></pre>
+      <dl class="spec">
+        <dt>Format</dt><dd>A folder holding <code>metadata.yaml</code> and one <code>.db3</code> SQLite file: Humble's default <code>sqlite3</code> storage. Every Talos bag used on this site is one. MCAP needs its storage plugin installed (<code>-s mcap</code>).</dd>
+        <dt>Killed recorder</dt><dd>No <code>metadata.yaml</code>. <code>ros2 bag reindex &lt;folder&gt;</code> rebuilds it.</dd>
+        <dt>What to leave out</dt><dd>Images and point clouds, unless you need them (<code>-x 'image|point_cloud'</code>). For camera video, the viewer's Recording panel writes lossless <code>.svo2</code> files instead.</dd>
+        <dt>Presets</dt><dd><i>Selected</i> plus a preset records just one task's topics: <i>Random pinger</i> comes from <code>talos_uwrt_panels.yaml</code>; <i>Save</i> adds your own to <code>~/.config/nereus/bag_presets.yaml</code> (<a href="https://github.com/osu-uwrt/nereus/blob/main/docs/viewer.md?plain=1#L310-L312"><code>viewer.md</code></a>).</dd>
+        <dt>Sim</dt><dd>Add <code>--use-sim-time</code> so bag times follow <code>/clock</code> (<a href="perception/workflow.html#record">Perception, Chapter 11</a>).</dd>
+        <dt>Camera files</dt><dd>An <code>.svo2</code> plays back through the ZED wrapper in place of a live camera: <code>ros2 launch zed_wrapper zed_camera.launch.py camera_model:=&lt;model&gt; svo_path:=&lt;file&gt;</code> (<a href="https://github.com/stereolabs/zed-ros2-wrapper/blob/f6978f529c0d28106e9d19a746fd5e00acb75e34/zed_wrapper/launch/zed_camera.launch.py#L421-L424"><code>zed_camera.launch.py</code></a>; needs the ZED SDK).</dd>
+        <dt>Disk</dt><dd>The Bagging panel shows the robot's free space, yellow under 5 GB.</dd>
+      </dl>
+    </div>
+    <figure class="fig" id="budget-fig">
+      <div class="panel">
+        <div class="bb">
+          <div class="bb-list" id="bb-list"></div>
+          <div class="bb-out">
+            <div class="controls"><label>Run length <input type="range" id="bb-min" min="1" max="120" step="1" value="20"> <output id="bb-min-o"></output></label></div>
+            <div class="bb-total" id="bb-total"></div>
+            <div class="bb-stack" id="bb-stack" aria-hidden="true"></div>
+            <div class="bb-note" id="bb-note"></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>How big will the bag be?</b> Tick what you'd record. Ticked by default: the robot's own topics, measured from the identification session <code>talos_20261026_204748</code> (1,234 s, 581 MB on disk); detector and mapping topics from a Nereus mission bag. The real ZED streams weren't recorded in either.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <p>Two lessons from the numbers. Without cameras, the 400 Hz IMU and 475 Hz FOG are about four fifths of a robot-only bag. Keep them anyway: no estimator can be replayed without them. With a camera, the camera is the bag.</p>
+
+      <h2 id="python" data-short="Bags in Python">Reading a bag in Python</h2>
+      <p><code>rosbag2_py</code> reads a bag message by message; <code>deserialize_message</code> turns the bytes back into the ROS message. This reads the EKF and the DVL from the 2026-10-26 pool session and compares their horizontal speeds (<a href="https://github.com/zehdari/talos-explained/blob/main/tools/debugging/read_bag.py"><code>read_bag.py</code></a>):</p>
+<pre><code>import sys
+import numpy as np
+import rosbag2_py
+from rclpy.serialization import deserialize_message
+from rosidl_runtime_py.utilities import get_message
+
+reader = rosbag2_py.SequentialReader()
+reader.open(rosbag2_py.StorageOptions(uri=sys.argv[1], storage_id='sqlite3'),
+            rosbag2_py.ConverterOptions('cdr', 'cdr'))
+types = {t.name: t.type for t in reader.get_all_topics_and_types()}
+want = ['/talos/odometry/filtered', '/talos/dvl_twist']
+reader.set_filter(rosbag2_py.StorageFilter(topics=want))   <span class="c"># skip everything else</span>
+
+rows = {k: [] for k in want}
+while reader.has_next():
+    topic, data, t_recv = reader.read_next()     <span class="c"># t_recv: when the recorder got it (ns)</span>
+    msg = deserialize_message(data, get_message(types[topic]))
+    stamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9   <span class="c"># when it was measured</span>
+    v = msg.twist.twist.linear
+    if topic.endswith('filtered'):
+        rows[topic].append([stamp, msg.pose.pose.position.z, np.hypot(v.x, v.y)])
+    else:                                         <span class="c"># dvl_link is turned 45° from the body</span>
+        rows[topic].append([stamp, np.hypot(v.x, v.y), t_recv * 1e-9 - stamp])
+
+odom, dvl = (np.array(rows[k]) for k in want)
+print(f'odometry: {len(odom)} msgs, depth {odom[:, 1].min():.2f} to {odom[:, 1].max():.2f} m')
+print(f'dvl: {len(dvl)} msgs, median age when recorded {np.median(dvl[:, 2]) * 1000:.0f} ms')
+ekf = np.interp(dvl[:, 0], odom[:, 0], odom[:, 2])   <span class="c"># EKF speed at the DVL's stamps</span>
+print(f'horizontal speed, EKF minus DVL: rms {np.sqrt(np.mean((ekf - dvl[:, 1]) ** 2)):.3f} m/s')</code></pre>
+<pre class="cmd out"><code><span class="c">$ python3 read_bag.py talos_20261026_204748/bag</span>
+odometry: 37009 msgs, depth -3.43 to -0.76 m
+dvl: 9856 msgs, median age when recorded 126 ms
+horizontal speed, EKF minus DVL: rms 0.022 m/s</code></pre>
+      <ul>
+        <li><b>Source the workspace first</b> (<code>/opt/ros/humble</code> and <code>release/install</code>), or <code>get_message</code> can't find <code>riptide_msgs2</code> types.</li>
+        <li><b>Filter topics</b>: deserializing 500,000 IMU messages you don't need is most of the run time. Images are slowest of all.</li>
+        <li><b>Index by <code>header.stamp</code></b> for anything about physics; use the receive time only to ask how late something arrived.</li>
+        <li><b>Save to <code>.npz</code></b> once and analyse from that. Reading a 20-minute bag takes seconds to minutes; loading an array takes milliseconds.</li>
+      </ul>
+      <p>The analyses behind this site's control, sensor and perception figures all start like this:</p>
+      <div class="table-scroll"><table class="params">
+        <thead><tr><th>Question</th><th>How</th></tr></thead>
+        <tbody>
+          <tr><td>How well did the MPC hold each identification segment?</td><td>An extractor pulls odometry, reference, MPC disturbance and thrust into an <code>.npz</code>; an analyser cuts it by the session's <code>segments.csv</code> and prints RMS attitude and position error per segment. Feeds <a href="control/identify.html">System identification</a>.</td></tr>
+          <tr><td>How late are the EKF's rates and velocity?</td><td>Cross-correlate the IMU, FOG and DVL against <code>odometry/filtered</code>; the lag at the peak and the gain. Feeds <a href="sensors.html#imu">Navigation sensors</a> and the replay below.</td></tr>
+          <tr><td>What did mapping believe during a mission?</td><td><a href="https://github.com/zehdari/talos-explained/blob/main/tools/perception/bag_to_mission.py"><code>bag_to_mission.py</code></a> replays <code>/tf</code> into a <code>tf2_ros.Buffer</code> and writes every estimate and detection to JSON. Feeds <a href="perception/mission.html">One mission in Nereus</a>.</td></tr>
+          <tr><td>How big, how fast, how old? (this chapter)</td><td><a href="https://github.com/zehdari/talos-explained/blob/main/tools/debugging/bag_stats.py"><code>bag_stats.py</code></a> reads the <code>.db3</code> with plain <code>sqlite3</code>, and the stamps straight from the message bytes.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="replay">Replaying a bag</h2>
+      <p><code>ros2 bag play</code> publishes a bag's messages again, in time. With <code>--clock</code> it also publishes <code>/clock</code>, and nodes started with <code>use_sim_time:=true</code> live in the bag's time. Two uses:</p>
+      <h3 id="replay-viewer">Into the viewer</h3>
+      <p>The viewer draws a real robot from <code>map → talos/base_link</code> in TF, so a bag with <code>/tf</code>, <code>/tf_static</code> and odometry is enough to watch a run again, with the recorded thrust as arrows:</p>
     </div>
     <figure class="fig">
-      <div class="panel" id="some-figure"></div>
-      <figcaption><b>Bold lead-in.</b> What to look at. Tap or hover … (if interactive).</figcaption>
+      <img class="media" data-src="img/debugging/viewer-replay.webp" width="1080" height="853" loading="lazy" alt="The Nereus viewer showing Talos replayed from a pool bag: the Motion table reads its recorded pose, red arrows show each thruster's recorded force, and mapping's estimated props (gate, slalom poles, signs) stand around it.">
+      <figcaption><b>The 2026-10-26 pool session, replayed.</b> 625 s in, Talos sways sideways at about 0.4 m/s; the arrows are the recorded <code>thruster_forces</code> and the Motion table is the recorded pose. The pool is hidden (<code>--robot-only</code>) because the model's pool isn't where this run was flown; the props are mapping's estimates from the bag's TF.</figcaption>
     </figure>
     <div class="prose">
-      <h2 id="second-section">Second section</h2>
-      <p>Coming soon.</p>
+<pre class="cmd" data-where="every terminal"><code>source /opt/ros/humble/setup.bash
+<span class="c"># a private graph: nothing here reaches the robot, nothing reaches in</span>
+source ~/osu-uwrt/release/install/setup.bash
+unset ZENOH_CONFIG_OVERRIDE ZENOH_ROUTER_CONFIG_URI ZENOH_SESSION_CONFIG_URI
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=91</code></pre>
+<pre class="cmd" data-where="terminal 1"><code><span class="c"># runs until Ctrl-C; see below</span>
+python3 static_tf_from_bag.py BAG</code></pre>
+<pre class="cmd" data-where="terminal 2"><code>cd ~/osu-uwrt/release/nereus
+./build/ros-viewer/nereus-viewer --scenario /tmp/resolved.json \
+  --pose-source estimate --use-sim-time true --robot-only --thrust</code></pre>
+<pre class="cmd" data-where="terminal 3, last"><code>ros2 bag play BAG --clock 100 --start-offset 622 --topics /tf /tf_static \
+  /talos/odometry/filtered /talos/thruster_forces /talos/state/kill</code></pre>
+      <ul>
+        <li><b>Isolate the replay.</b> On the team's Zenoh network the bag's messages would mix with the live robot's, and a replayed command could reach it. A local-only FastDDS domain can't.</li>
+        <li><b><code>--start-offset</code> skips <code>/tf_static</code></b>: most static frames are published only once, at start-up (one is re-sent every 2 s). <a href="https://github.com/zehdari/talos-explained/blob/main/tools/debugging/static_tf_from_bag.py"><code>static_tf_from_bag.py</code></a> re-publishes the bag's statics; without it TF can't join <code>world</code> to <code>odom</code>.</li>
+        <li><code>robot.launch.py</code> runs the viewer on wall-clock time for the live robot; for a bag, start it yourself with <code>--use-sim-time true</code>. Make <code>/tmp/resolved.json</code> with <code>.venv/bin/python -m nereus.packs resolve content/packs/scenarios/talos_uwrt -o /tmp/resolved.json</code>. The full recipe is <a href="https://github.com/zehdari/talos-explained/blob/main/tools/debugging/viewer_replay.sh"><code>viewer_replay.sh</code></a>.</li>
+      </ul>
+
+      <h3 id="replay-node">Into a node, with new parameters</h3>
+      <p>The strongest debugging tool there is: replay a run's <b>inputs</b> into a node, change one thing, and compare its output with what the robot did. The EKF lag (<a href="#s-ekf-lag">symptom above</a>) was worked out this way, without a pool test:</p>
+      <ol>
+        <li>Play only the EKF's inputs: <code>vectornav/imu</code>, <code>gyro/twist</code>, <code>dvl_twist</code>, <code>depth/pose</code>. Not its old output, or two EKFs publish <code>odometry/filtered</code>.</li>
+        <li>Run <code>robot_localization</code>'s <code>ekf_node</code> with <code>talos_ekf.yaml</code>, <code>use_sim_time:=true</code>, under the robot's name (<code>-r __ns:=/talos -r __node:=ekf_localization_node</code>) and with the change under test.</li>
+        <li>Publish the sensor mounts: the bag's static TF, plus <code>dvl_link</code>, which is on <code>/tf</code> (it hangs off a revolute joint), not <code>/tf_static</code>.</li>
+        <li>Record the new <code>odometry/filtered</code> and compare. First run it unchanged: the replay must match the live EKF, or nothing after means anything. It did, exactly.</li>
+      </ol>
+      <div class="table-scroll"><table class="params">
+        <thead><tr><th>EKF change (pool and bench bags, 2026-10-27)</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Unchanged</td><td>roll/pitch rates ~455 ms late at 12–15 % gain; velocity 351 ms behind the DVL</td></tr>
+          <tr><td>Gyro covariance 1e-5 (from 0.01)</td><td>roll/pitch rates 45 ms late, gain ×0.97</td></tr>
+          <tr><td><code>smooth_lagged_data</code>, history 1.0 s</td><td>velocity 292 ms</td></tr>
+          <tr><td>…and velocity process noise ×100</td><td>velocity 96 ms, no extra noise</td></tr>
+          <tr><td>No IMU acceleration fusion</td><td>velocity 394 ms (worse)</td></tr>
+        </tbody>
+      </table></div>
+      <p>The same recipe works for mapping (replay <code>detected_objects</code>, odometry and TF) and for anything else whose inputs you recorded. The MPC's identification fits can be redone offline too: <code>ros2 run riptide_mpc identify_fit --dir &lt;session copy&gt; --model &lt;prior&gt;</code> refits a saved session.</p>
+
+      <h2 id="time">Stamps and clocks</h2>
+      <p>Every message in a bag carries two times:</p>
+      <ul>
+        <li><b><code>header.stamp</code></b>: set by the publisher, meant to say when the data was <i>measured</i>, on the publisher's clock.</li>
+        <li><b>Receive time</b>: when the recorder got it, on the recorder's clock.</li>
+      </ul>
+      <p>The difference is a message's age when recorded. On a bag recorded on the Orin, both clocks are the same, so the age is real latency plus any deliberate back-dating:</p>
+    </div>
+    <figure class="fig narrow" id="age-fig">
+      <div class="panel">
+        <div class="controls"><span class="seg" role="group" aria-label="Bag" id="age-pick"><button type="button" data-k="pool" aria-pressed="true">Pool (on the Orin)</button><button type="button" data-k="bench" aria-pressed="false">Bench (another clock)</button></span></div>
+        <div id="age-chart"></div>
+        <div class="graph-note" id="age-note"></div>
+      </div>
+      <figcaption><b>How old each message was when the recorder got it.</b> Box: middle half of the messages; whiskers: 5th to 95th percentile; tick: median. About 4,000 evenly spaced messages per topic (all of them if there are fewer), stamps read from the bags. Tap or hover a topic for its histogram and why it looks that way.</figcaption>
+    </figure>
+    <div class="prose">
+      <ul>
+        <li><b>The DVL is 125 ms old by design.</b> The driver back-dates each stamp by the DVL's own <code>dt2</code>, the time from the echo to the output (<a href="https://github.com/osu-uwrt/nortek_dvl/blob/DvlWaterTrackFallback/nortek_dvl/src/dvl_driver.cpp#L152-L159"><code>dvl_driver.cpp</code></a>). The stamp says when the water moved, which is what a filter needs.</li>
+        <li><b>The MPC's reference is ~32 ms old</b> because it is stamped at the start of the tick and published after the solve (median 30 ms).</li>
+        <li><b>The bench bag's ages are all about −37 ms.</b> Messages can't arrive before they were sent: the recorder's clock was behind the Orin's. Every cross-machine comparison from that bag is off by that much. Its <code>dvl_twist</code> isn't back-dated: the bench launch file runs <code>fake_dvl.py</code>, not the DVL driver.</li>
+      </ul>
+      <p>What this means when debugging:</p>
+      <ul>
+        <li><b>Compare stamps only from one clock.</b> Anything that checks freshness against its own clock breaks across machines with different clocks: the MPC stops the thrusters when the newest odometry's stamp is 0.5 s old (<code>odom_timeout</code>), and its estimator drops sensor messages stamped more than 1 s ago.</li>
+        <li><b>Keep the clocks together.</b> The opbox runs a chrony time server for the robot and the laptops (<a href="computers.html#time">Computers and networks</a>); <code>chronyc tracking</code> says how far off a machine is. The older <code>colcon timesync orin2</code> sets the Orin's date over SSH as text to the second, so it is only good to about a second (<a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/colcon_riptide/colcon_riptide/verb/timesync.py#L44-L52"><code>timesync.py</code></a>).</li>
+        <li><b>Don't step a running robot's clock.</b> A backwards step of more than about 10 s makes the Nereus viewer drop TF.</li>
+        <li><b>In sim, everything runs on <code>/clock</code>.</b> A node that reads the clock before <code>/clock</code> arrives gets zero; that is the cause of the sim-only <a href="#s-sim-offset-prior">mapping offset bug</a>.</li>
+      </ul>
+      <p>The rest of the operator's side is in <a href="viewer.html">the viewer</a> and <a href="pool-test.html">Pool test day</a>; the topics, services and frames named here are all in <a href="interfaces.html">Appendix A</a>.</p>
+      <p class="src">Data: identification session <code>talos_20261026_204748</code> (pool), bench bag <code>imu_ekf_bench</code> (2026-10-27) and Nereus mission bag <code>mission1</code>. Built by <a href="https://github.com/zehdari/talos-explained/blob/main/tools/debugging/bag_stats.py"><code>bag_stats.py</code></a> and <a href="https://github.com/zehdari/talos-explained/blob/main/tools/debugging/build_data.py"><code>build_data.py</code></a>; symptoms in <a href="https://github.com/zehdari/talos-explained/blob/main/tools/debugging/symptoms.yaml"><code>symptoms.yaml</code></a>, every repo link checked against the source.</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

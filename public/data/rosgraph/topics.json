@@ -1,0 +1,4023 @@
+{
+ "captured": "2026-10-30 21:23:46",
+ "note": "Captured from the Nereus full stack (sim.launch.py active_control_model:=mpc mpc_model:=sim, robosub pool, rmw_zenoh_cpp) on a desktop under heavy load (other jobs running): rates are what this machine delivered, not robot specs. Each topic was measured alone for 3s with a best-effort subscription (rate_hz: pass 1, robot holding still before the tree run; rate_hz_pass2: pass 2, holding still after it); 0 = no message in that window, null = no publisher. sim_configured_hz is the rate the Nereus bridge is configured to publish at (0 = published on events, not on a timer; /clock is published every 2 ms physics step). On the real robot the topics the simulator publishes come from the sensor drivers and the firmware (micro-ROS) instead.",
+ "topics": [
+  {
+   "topic": "/Cam_PC/autonomy/bag_trigger",
+   "type": "std_msgs/msg/Bool",
+   "rate_hz": 1.0,
+   "rate_hz_pass2": 1.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 5,
+   "latched": false,
+   "publishers": [
+    "/talos/autonomy"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/clock",
+   "type": "rosgraph_msgs/msg/Clock",
+   "rate_hz": 308.0,
+   "rate_hz_pass2": 500.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 12,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/autonomy",
+    "/talos/transform_listener_impl_614365ea9f40",
+    "/talos/mpc_controller",
+    "/talos/robot_state_publisher",
+    "/talos/joint_state_publisher",
+    "/talos/odom_to_world_broadcaster",
+    "/talos/ekf_localization_node",
+    "/talos/transform_listener_impl_7bab0422ede0",
+    "/talos/controller_overseer",
+    "/talos/riptide_mapping2",
+    "/talos/ActuatorTranslator",
+    "/nereus_viewer_timing",
+    "/riptide_acoustics",
+    "/talos/surface_frame_node",
+    "/talos/viewer_plots",
+    "/talos/depth_converter",
+    "/talos/transform_listener_impl_55e17ce7d0a0",
+    "/talos/apriltag_36h11",
+    "/talos/apriltag/tag_container",
+    "/talos/viewer_panels",
+    "/talos/calibrate_drag",
+    "/talos/world_to_map",
+    "/nereus_viewer",
+    "/talos/transform_listener_impl_615b131aa9e0"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/diagnostics",
+   "type": "diagnostic_msgs/msg/DiagnosticArray",
+   "rate_hz": 1.33,
+   "rate_hz_pass2": 2.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 562,
+   "latched": false,
+   "publishers": [
+    "/talos/ekf_localization_node"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/diagnostics_agg",
+   "type": "diagnostic_msgs/msg/DiagnosticArray",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/events/write_split",
+   "type": "rosbag2_interfaces/msg/WriteSplitEvent",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/parameter_events",
+   "type": "rcl_interfaces/msg/ParameterEvent",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/sim_supervisor",
+    "/talos/mpc_controller",
+    "/talos/riptide_mapping2",
+    "/talos/joint_state_publisher",
+    "/talos/autonomy",
+    "/talos/yolo_orientation",
+    "/talos/odom_to_world_broadcaster",
+    "/launch_ros_2751029",
+    "/talos/ActuatorTranslator",
+    "/talos/calibrate_drag",
+    "/nereus_viewer",
+    "/talos/physics_simulator",
+    "/talos/apriltag_36h11",
+    "/talos/viewer_panels",
+    "/talos/ekf_localization_node",
+    "/talos/surface_frame_node",
+    "/talos/depth_converter",
+    "/talos/robot_state_publisher",
+    "/talos/world_to_map",
+    "/talos/viewer_plots",
+    "/riptide_acoustics",
+    "/talos/controller_overseer"
+   ],
+   "subscribers": [
+    "/talos/autonomy",
+    "/talos/transform_listener_impl_7bab0422ede0",
+    "/talos/transform_listener_impl_614365ea9f40",
+    "/talos/mpc_controller",
+    "/talos/robot_state_publisher",
+    "/talos/odom_to_world_broadcaster",
+    "/riptide_acoustics",
+    "/nereus_viewer",
+    "/talos/surface_frame_node",
+    "/talos/apriltag_36h11",
+    "/talos/apriltag/tag_container",
+    "/talos/viewer_panels",
+    "/talos/robot_state_publisher",
+    "/nereus_viewer_timing",
+    "/talos/world_to_map",
+    "/talos/transform_listener_impl_615b131aa9e0",
+    "/talos/viewer_plots",
+    "/talos/physics_simulator",
+    "/talos/transform_listener_impl_55e17ce7d0a0",
+    "/talos/ekf_localization_node"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/rosout",
+   "type": "rcl_interfaces/msg/Log",
+   "rate_hz": 0.33,
+   "rate_hz_pass2": 1.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 192,
+   "latched": true,
+   "publishers": [
+    "/talos/viewer_panels",
+    "/talos/apriltag/tag_container",
+    "/talos/calibrate_drag",
+    "/talos/depth_converter",
+    "/nereus_viewer_timing",
+    "/nereus_viewer",
+    "/talos/apriltag_36h11",
+    "/talos/surface_frame_node",
+    "/talos/mpc_controller",
+    "/talos/riptide_mapping2",
+    "/talos/viewer_plots",
+    "/riptide_acoustics",
+    "/talos/ActuatorTranslator",
+    "/talos/world_to_map",
+    "/talos/transform_listener_impl_7bab0422ede0",
+    "/talos/transform_listener_impl_615b131aa9e0",
+    "/talos/ekf_localization_node",
+    "/talos/controller_overseer",
+    "/talos/transform_listener_impl_55e17ce7d0a0",
+    "/talos/odom_to_world_broadcaster",
+    "/talos/yolo_orientation",
+    "/launch_ros_2751029",
+    "/talos/joint_state_publisher",
+    "/talos/robot_state_publisher",
+    "/talos/autonomy",
+    "/talos/physics_simulator",
+    "/talos/transform_listener_impl_614365ea9f40",
+    "/sim_supervisor"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/transient_local"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/accel/filtered",
+   "type": "geometry_msgs/msg/AccelWithCovarianceStamped",
+   "rate_hz": 18.0,
+   "rate_hz_pass2": 29.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/ekf_localization_node"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/acoustics/buffer_0_closer",
+   "type": "std_msgs/msg/Bool",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/riptide_acoustics"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/autonomy/tree_stack",
+   "type": "riptide_msgs2/msg/TreeStack",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/autonomy"
+   ],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/command/actuator/arm",
+   "type": "std_msgs/msg/Bool",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels",
+    "/talos/ActuatorTranslator"
+   ],
+   "subscribers": [
+    "/talos/physics_simulator"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/command/actuator/claw",
+   "type": "std_msgs/msg/Bool",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels",
+    "/talos/viewer_panels"
+   ],
+   "subscribers": [
+    "/talos/physics_simulator"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/command/actuator/claw_move_s",
+   "type": "std_msgs/msg/Float32",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels"
+   ],
+   "subscribers": [
+    "/talos/physics_simulator"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/command/actuator/dropper",
+   "type": "std_msgs/msg/Empty",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels",
+    "/talos/ActuatorTranslator"
+   ],
+   "subscribers": [
+    "/talos/physics_simulator"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/command/actuator/notify_reload",
+   "type": "std_msgs/msg/Empty",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels",
+    "/talos/ActuatorTranslator"
+   ],
+   "subscribers": [
+    "/talos/physics_simulator"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/command/actuator/torpedo",
+   "type": "std_msgs/msg/Empty",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels",
+    "/talos/ActuatorTranslator"
+   ],
+   "subscribers": [
+    "/talos/physics_simulator"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/command/electrical",
+   "type": "riptide_msgs2/msg/ElectricalCommand",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/command/led",
+   "type": "riptide_msgs2/msg/LedCommand",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/viewer_panels",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy"
+   ],
+   "subscribers": [
+    "/nereus_viewer",
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/command/requested_rpm",
+   "type": "riptide_msgs2/msg/DshotCommand",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/mpc_controller"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/command/software_kill",
+   "type": "riptide_msgs2/msg/KillSwitchReport",
+   "rate_hz": 20.0,
+   "rate_hz_pass2": 20.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 35,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels"
+   ],
+   "subscribers": [
+    "/talos/physics_simulator",
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/FF_body_force",
+   "type": "geometry_msgs/msg/Twist",
+   "rate_hz": 0.67,
+   "rate_hz_pass2": 1.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 52,
+   "latched": false,
+   "publishers": [
+    "/talos/controller_overseer"
+   ],
+   "subscribers": [
+    "/talos/mpc_controller"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/active_body_force",
+   "type": "geometry_msgs/msg/Twist",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/calibrate_drag"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/angular",
+   "type": "riptide_msgs2/msg/ControllerCommand",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/viewer_panels"
+   ],
+   "subscribers": [
+    "/talos/mpc_controller",
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/drag_comp/forward",
+   "type": "geometry_msgs/msg/TwistWithCovariance",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/controller_overseer"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/drag_comp/reverse",
+   "type": "geometry_msgs/msg/TwistWithCovariance",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/controller_overseer"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/identification/thrusters",
+   "type": "std_msgs/msg/Float64MultiArray",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/mpc_controller"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/linear",
+   "type": "riptide_msgs2/msg/ControllerCommand",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/viewer_panels"
+   ],
+   "subscribers": [
+    "/talos/mpc_controller",
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/motion_enabled",
+   "type": "std_msgs/msg/Bool",
+   "rate_hz": 3.33,
+   "rate_hz_pass2": 4.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 5,
+   "latched": false,
+   "publishers": [
+    "/talos/controller_overseer"
+   ],
+   "subscribers": [
+    "/talos/mpc_controller"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/mpc/disturbance",
+   "type": "geometry_msgs/msg/WrenchStamped",
+   "rate_hz": 12.67,
+   "rate_hz_pass2": 20.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 76,
+   "latched": false,
+   "publishers": [
+    "/talos/mpc_controller"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/mpc/planned_path",
+   "type": "nav_msgs/msg/Path",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": true,
+   "publishers": [
+    "/talos/mpc_controller"
+   ],
+   "subscribers": [
+    "/nereus_viewer"
+   ],
+   "publisher_qos": [
+    "reliable/transient_local"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/mpc/predicted_path",
+   "type": "nav_msgs/msg/Path",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 20.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/mpc_controller"
+   ],
+   "subscribers": [
+    "/nereus_viewer"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/mpc/reference",
+   "type": "geometry_msgs/msg/PoseStamped",
+   "rate_hz": 13.67,
+   "rate_hz_pass2": 20.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 84,
+   "latched": false,
+   "publishers": [
+    "/talos/mpc_controller"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/mpc/solve_time_ms",
+   "type": "std_msgs/msg/Float64",
+   "rate_hz": 10.67,
+   "rate_hz_pass2": 19.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 12,
+   "latched": false,
+   "publishers": [
+    "/talos/mpc_controller"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/mpc/state",
+   "type": "nav_msgs/msg/Odometry",
+   "rate_hz": 13.0,
+   "rate_hz_pass2": 20.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 724,
+   "latched": false,
+   "publishers": [
+    "/talos/mpc_controller"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/re_init_accumulators",
+   "type": "std_msgs/msg/Empty",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/controller_overseer"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/running_stunt_state",
+   "type": "std_msgs/msg/UInt16",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/autonomy"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/scale/trust",
+   "type": "geometry_msgs/msg/Twist",
+   "rate_hz": 9.67,
+   "rate_hz_pass2": 20.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 52,
+   "latched": false,
+   "publishers": [
+    "/talos/mpc_controller"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/solver_weights",
+   "type": "std_msgs/msg/Int32MultiArray",
+   "rate_hz": 0.33,
+   "rate_hz_pass2": 1.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 48,
+   "latched": false,
+   "publishers": [
+    "/talos/controller_overseer"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller/stunt_state",
+   "type": "std_msgs/msg/UInt16",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/autonomy"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/controller_debug_wrench",
+   "type": "geometry_msgs/msg/Twist",
+   "rate_hz": 13.0,
+   "rate_hz_pass2": 20.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 52,
+   "latched": false,
+   "publishers": [
+    "/talos/mpc_controller"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/depth/pose",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 20.0,
+   "rate_hz_pass2": 20.0,
+   "sim_configured_hz": 20,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator",
+    "/talos/depth_converter"
+   ],
+   "subscribers": [
+    "/talos/mpc_controller",
+    "/talos/ekf_localization_node"
+   ],
+   "publisher_qos": [
+    "best_effort/volatile",
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/detected_objects",
+   "type": "vision_msgs/msg/Detection3DArray",
+   "rate_hz": 9.33,
+   "rate_hz_pass2": 11.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 56,
+   "latched": false,
+   "publishers": [
+    "/talos/yolo_orientation"
+   ],
+   "subscribers": [
+    "/talos/riptide_mapping2",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/detections",
+   "type": "apriltag_msgs/msg/AprilTagDetectionArray",
+   "rate_hz": 5.33,
+   "rate_hz_pass2": 11.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 56,
+   "latched": false,
+   "publishers": [
+    "/talos/apriltag_36h11"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/dfc/zed_node/depth/depth_registered",
+   "type": "sensor_msgs/msg/Image",
+   "rate_hz": 3.33,
+   "rate_hz_pass2": 6.67,
+   "sim_configured_hz": 15,
+   "mean_bytes": 9216080,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/dfc/zed_node/point_cloud/cloud_registered",
+   "type": "sensor_msgs/msg/PointCloud2",
+   "rate_hz": 1.67,
+   "rate_hz_pass2": 2.33,
+   "sim_configured_hz": 5,
+   "mean_bytes": 1152161,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/dfc/zed_node/rgb/camera_info",
+   "type": "sensor_msgs/msg/CameraInfo",
+   "rate_hz": 8.0,
+   "rate_hz_pass2": 15.0,
+   "sim_configured_hz": 15,
+   "mean_bytes": 389,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/dfc/zed_node/rgb/image_rect_color/compressed",
+   "type": "sensor_msgs/msg/CompressedImage",
+   "rate_hz": 14.0,
+   "rate_hz_pass2": 15.33,
+   "sim_configured_hz": 15,
+   "mean_bytes": 126433,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/nereus_viewer"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/dvl/bottom_lock",
+   "type": "std_msgs/msg/Bool",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/dvl_twist",
+   "type": "geometry_msgs/msg/TwistWithCovarianceStamped",
+   "rate_hz": 4.0,
+   "rate_hz_pass2": 8.0,
+   "sim_configured_hz": 8,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/mpc_controller",
+    "/talos/ekf_localization_node",
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/ff_auto_tune",
+   "type": "geometry_msgs/msg/Twist",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/controller_overseer"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/ffc/zed_node/depth/depth_registered",
+   "type": "sensor_msgs/msg/Image",
+   "rate_hz": 3.67,
+   "rate_hz_pass2": 11.67,
+   "sim_configured_hz": 15,
+   "mean_bytes": 9216080,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/yolo_orientation"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/ffc/zed_node/point_cloud/cloud_registered",
+   "type": "sensor_msgs/msg/PointCloud2",
+   "rate_hz": 2.0,
+   "rate_hz_pass2": 4.67,
+   "sim_configured_hz": 5,
+   "mean_bytes": 1152161,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/ffc/zed_node/rgb/camera_info",
+   "type": "sensor_msgs/msg/CameraInfo",
+   "rate_hz": 8.33,
+   "rate_hz_pass2": 14.0,
+   "sim_configured_hz": 15,
+   "mean_bytes": 389,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/yolo_orientation",
+    "/talos/apriltag_36h11"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/ffc/zed_node/rgb/image_rect_color/compressed",
+   "type": "sensor_msgs/msg/CompressedImage",
+   "rate_hz": 6.67,
+   "rate_hz_pass2": 12.0,
+   "sim_configured_hz": 15,
+   "mean_bytes": 88144,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/nereus_viewer",
+    "/talos/yolo_orientation",
+    "/talos/apriltag_36h11"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/gyro/status",
+   "type": "riptide_msgs2/msg/GyroStatus",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/gyro/twist",
+   "type": "geometry_msgs/msg/TwistWithCovarianceStamped",
+   "rate_hz": 289.33,
+   "rate_hz_pass2": 500.0,
+   "sim_configured_hz": 500,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/mpc_controller",
+    "/talos/ekf_localization_node"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/ivc/pinger/enable",
+   "type": "std_msgs/msg/Bool",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 1.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/ivc/pinger/selected_freq_amp_stream",
+   "type": "std_msgs/msg/Float32",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/viewer_panels",
+    "/riptide_acoustics"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/ivc/pinger/selected_freq_khz",
+   "type": "std_msgs/msg/Int32",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/ivc/pinger/set_freq_broker_khz",
+   "type": "std_msgs/msg/Int32",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/ivc/rx",
+   "type": "std_msgs/msg/UInt8",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/ivc/tx",
+   "type": "std_msgs/msg/UInt8",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels"
+   ],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/ivc/tx_success",
+   "type": "riptide_msgs2/msg/UInt8Stamped",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/joint_states",
+   "type": "sensor_msgs/msg/JointState",
+   "rate_hz": 5.67,
+   "rate_hz_pass2": 10.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 580,
+   "latched": false,
+   "publishers": [
+    "/talos/joint_state_publisher"
+   ],
+   "subscribers": [
+    "/talos/robot_state_publisher"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/bandage",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 12.67,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/bin",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 5.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 364,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/bin_cad_geometry",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 4.33,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/bin_target1",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 6.0,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/bin_target2",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 5.33,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/bin_vinyl1",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 12.0,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 388,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/bin_vinyl2",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 8.67,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 388,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/bin_vinyl3",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 7.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 388,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/bin_vinyl4",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 6.33,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 388,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/blood_hole_large",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 6.0,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/blood_hole_small",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 8.33,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/buoy",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 12.67,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/compass",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 6.67,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/fire_hole_large",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 7.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/fire_hole_small",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 5.67,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/fused",
+   "type": "std_msgs/msg/String",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/gate",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.33,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 364,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/gate_repair",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 8.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/gate_rescue",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 7.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/hammer_and_wrench",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 6.33,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/helmet",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 6.0,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/magnet1",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 6.67,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 388,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/magnet2",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 8.67,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 388,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/magnet_target1",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 8.33,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 388,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/magnet_target2",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 6.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 388,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/nut_and_bolt",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 5.67,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/octagon",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 7.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/pill",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 6.67,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/plug",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 14.67,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/post_bin_pose",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.0,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/post_table_pose",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.33,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 388,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/pre_bin_pose",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 364,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/pre_return_home",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 14.33,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 364,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/pre_table_pose",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 364,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/pre_torpedo_pose",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.33,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 364,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/prequal_gate",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.0,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 364,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/prequal_pole",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.0,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 364,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/slalom_back",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/slalom_front",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/slalom_middle",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 14.33,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/slalom_parent",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 14.33,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 364,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/sos",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 14.67,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 380,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/table",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.33,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 364,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/torpedo",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.33,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 364,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/mapping/warning",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": 15.0,
+   "rate_hz_pass2": 0.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 372,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/odometry/filtered",
+   "type": "nav_msgs/msg/Odometry",
+   "rate_hz": 30.0,
+   "rate_hz_pass2": 30.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 724,
+   "latched": false,
+   "publishers": [
+    "/talos/ekf_localization_node"
+   ],
+   "subscribers": [
+    "/talos/riptide_mapping2",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/physics_simulator",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/mpc_controller",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/controller_overseer",
+    "/talos/calibrate_drag"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/robot_description",
+   "type": "std_msgs/msg/String",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": true,
+   "publishers": [
+    "/talos/robot_state_publisher"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/transient_local"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/set_pose",
+   "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/ekf_localization_node"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/simulator/actual_thruster_forces",
+   "type": "std_msgs/msg/Float32MultiArray",
+   "rate_hz": 100.33,
+   "rate_hz_pass2": 100.0,
+   "sim_configured_hz": 100,
+   "mean_bytes": 48,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/nereus_viewer"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/simulator/claw_joints",
+   "type": "std_msgs/msg/Float64MultiArray",
+   "rate_hz": 50.33,
+   "rate_hz_pass2": 50.33,
+   "sim_configured_hz": 50,
+   "mean_bytes": 36,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/nereus_viewer",
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/simulator/ground_truth",
+   "type": "nav_msgs/msg/Odometry",
+   "rate_hz": 100.0,
+   "rate_hz_pass2": 100.33,
+   "sim_configured_hz": 100,
+   "mean_bytes": 740,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/simulator/load_scenario",
+   "type": "std_msgs/msg/String",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/sim_supervisor"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/simulator/magnet_lights",
+   "type": "visualization_msgs/msg/MarkerArray",
+   "rate_hz": 50.0,
+   "rate_hz_pass2": 50.33,
+   "sim_configured_hz": 50,
+   "mean_bytes": 485,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/nereus_viewer",
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/simulator/projectiles",
+   "type": "visualization_msgs/msg/MarkerArray",
+   "rate_hz": 50.0,
+   "rate_hz_pass2": 50.0,
+   "sim_configured_hz": 50,
+   "mean_bytes": 1633,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/nereus_viewer"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/simulator/reset_tasks",
+   "type": "std_msgs/msg/Empty",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels"
+   ],
+   "subscribers": [
+    "/talos/physics_simulator"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/simulator/run_command",
+   "type": "std_msgs/msg/String",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/viewer_panels"
+   ],
+   "subscribers": [
+    "/talos/physics_simulator"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/simulator/run_score",
+   "type": "std_msgs/msg/String",
+   "rate_hz": 50.0,
+   "rate_hz_pass2": 50.0,
+   "sim_configured_hz": 50,
+   "mean_bytes": 2925,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/simulator/scenario",
+   "type": "std_msgs/msg/String",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": 0,
+   "mean_bytes": null,
+   "latched": true,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/nereus_viewer"
+   ],
+   "publisher_qos": [
+    "reliable/transient_local"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/simulator/supervisor",
+   "type": "std_msgs/msg/String",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": true,
+   "publishers": [
+    "/sim_supervisor"
+   ],
+   "subscribers": [
+    "/nereus_viewer"
+   ],
+   "publisher_qos": [
+    "reliable/transient_local"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/simulator/task_events",
+   "type": "std_msgs/msg/String",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": 0,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/simulator/task_objects",
+   "type": "visualization_msgs/msg/MarkerArray",
+   "rate_hz": 50.0,
+   "rate_hz_pass2": 50.0,
+   "sim_configured_hz": 50,
+   "mean_bytes": 1397,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/nereus_viewer"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/simulator/task_score",
+   "type": "std_msgs/msg/String",
+   "rate_hz": 49.67,
+   "rate_hz_pass2": 50.0,
+   "sim_configured_hz": 50,
+   "mean_bytes": 60,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/state/actuator/busy",
+   "type": "std_msgs/msg/Bool",
+   "rate_hz": 50.0,
+   "rate_hz_pass2": 44.0,
+   "sim_configured_hz": 50,
+   "mean_bytes": 8,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/state/actuator/cmd_status",
+   "type": "std_msgs/msg/Bool",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": 0,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/ActuatorTranslator"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/state/actuator/status",
+   "type": "riptide_msgs2/msg/ActuatorStatus",
+   "rate_hz": 50.33,
+   "rate_hz_pass2": 46.67,
+   "sim_configured_hz": 50,
+   "mean_bytes": 12,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/state/battery",
+   "type": "riptide_msgs2/msg/BatteryStatus",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/viewer_panels",
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/state/depth/raw",
+   "type": "riptide_msgs2/msg/Depth",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/depth_converter"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/state/kill",
+   "type": "std_msgs/msg/Bool",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 19.67,
+   "sim_configured_hz": 0,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/autonomy",
+    "/talos/autonomy",
+    "/talos/mpc_controller",
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/state/mapping",
+   "type": "riptide_msgs2/msg/MappingTargetInfo",
+   "rate_hz": 15.0,
+   "rate_hz_pass2": 0.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 10,
+   "latched": false,
+   "publishers": [
+    "/talos/riptide_mapping2"
+   ],
+   "subscribers": [
+    "/talos/viewer_panels"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/state/thrusters/telemetry",
+   "type": "riptide_msgs2/msg/DshotPartialTelemetry",
+   "rate_hz": 4.0,
+   "rate_hz_pass2": 4.0,
+   "sim_configured_hz": 2,
+   "mean_bytes": 130,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator",
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/controller_overseer"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/thrusterSolver/thrusterState",
+   "type": "std_msgs/msg/Int16",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/controller_overseer"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/thruster_forces",
+   "type": "std_msgs/msg/Float32MultiArray",
+   "rate_hz": 20.33,
+   "rate_hz_pass2": 20.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 48,
+   "latched": false,
+   "publishers": [
+    "/talos/mpc_controller"
+   ],
+   "subscribers": [
+    "/talos/physics_simulator"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/trigger",
+   "type": "std_msgs/msg/Empty",
+   "rate_hz": null,
+   "rate_hz_pass2": null,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [],
+   "subscribers": [
+    "/talos/calibrate_drag"
+   ],
+   "publisher_qos": [],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/vectornav/imu",
+   "type": "sensor_msgs/msg/Imu",
+   "rate_hz": 400.33,
+   "rate_hz_pass2": 401.33,
+   "sim_configured_hz": 400,
+   "mean_bytes": 332,
+   "latched": false,
+   "publishers": [
+    "/talos/physics_simulator"
+   ],
+   "subscribers": [
+    "/talos/mpc_controller",
+    "/talos/ekf_localization_node"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": true
+  },
+  {
+   "topic": "/talos/yolo_orientation/annotated/compressed",
+   "type": "sensor_msgs/msg/CompressedImage",
+   "rate_hz": 15.33,
+   "rate_hz_pass2": 11.33,
+   "sim_configured_hz": null,
+   "mean_bytes": 104706,
+   "latched": false,
+   "publishers": [
+    "/talos/yolo_orientation"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/yolo_orientation/point_cloud",
+   "type": "sensor_msgs/msg/PointCloud2",
+   "rate_hz": 0.0,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": null,
+   "latched": false,
+   "publishers": [
+    "/talos/yolo_orientation"
+   ],
+   "subscribers": [],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/talos/yolo_orientation/visualization_marker_array",
+   "type": "visualization_msgs/msg/MarkerArray",
+   "rate_hz": 15.0,
+   "rate_hz_pass2": 10.67,
+   "sim_configured_hz": null,
+   "mean_bytes": 229,
+   "latched": false,
+   "publishers": [
+    "/talos/yolo_orientation"
+   ],
+   "subscribers": [
+    "/nereus_viewer"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/tf",
+   "type": "tf2_msgs/msg/TFMessage",
+   "rate_hz": 170.67,
+   "rate_hz_pass2": 172.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 610,
+   "latched": false,
+   "publishers": [
+    "/talos/ekf_localization_node",
+    "/talos/robot_state_publisher",
+    "/talos/viewer_panels",
+    "/talos/riptide_mapping2",
+    "/talos/physics_simulator",
+    "/talos/apriltag_36h11"
+   ],
+   "subscribers": [
+    "/talos/transform_listener_impl_614365ea9f40",
+    "/talos/transform_listener_impl_55e17ce7d0a0",
+    "/talos/physics_simulator",
+    "/talos/yolo_orientation",
+    "/talos/controller_overseer",
+    "/talos/riptide_mapping2",
+    "/talos/transform_listener_impl_615b131aa9e0",
+    "/nereus_viewer_timing",
+    "/talos/transform_listener_impl_7bab0422ede0",
+    "/talos/viewer_panels",
+    "/talos/depth_converter"
+   ],
+   "publisher_qos": [
+    "reliable/volatile"
+   ],
+   "sim_only": false
+  },
+  {
+   "topic": "/tf_static",
+   "type": "tf2_msgs/msg/TFMessage",
+   "rate_hz": 0.33,
+   "rate_hz_pass2": 0.0,
+   "sim_configured_hz": null,
+   "mean_bytes": 92,
+   "latched": true,
+   "publishers": [
+    "/talos/robot_state_publisher",
+    "/talos/odom_to_world_broadcaster",
+    "/talos/physics_simulator",
+    "/talos/world_to_map",
+    "/talos/surface_frame_node"
+   ],
+   "subscribers": [
+    "/talos/transform_listener_impl_614365ea9f40",
+    "/talos/riptide_mapping2",
+    "/talos/yolo_orientation",
+    "/talos/transform_listener_impl_55e17ce7d0a0",
+    "/talos/physics_simulator",
+    "/talos/controller_overseer",
+    "/talos/transform_listener_impl_615b131aa9e0",
+    "/nereus_viewer_timing",
+    "/talos/transform_listener_impl_7bab0422ede0",
+    "/talos/viewer_panels",
+    "/talos/depth_converter"
+   ],
+   "publisher_qos": [
+    "reliable/transient_local"
+   ],
+   "sim_only": false
+  }
+ ]
+}

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<root main_tree_to_execute="BehaviorTree">
+    <BehaviorTree ID="BehaviorTree">
+        <Sequence>
+            <SetBlackboard name="Give up if Talos rises above this z (m)" output_key="ceiling" value="-0.5"/>
+            <Action ID="GetOdometry" op="" or="" oy="" x="" y="" z="start_z"/>
+            <Action ID="Info" message="At z = {start_z}; holding 10 s while deeper than {ceiling} m"/>
+            <ReactiveSequence name="wait, unless Talos rises">
+                <Condition ID="DeeperThan" max_age_secs="" z="{ceiling}"/>
+                <Action ID="Wait" seconds="10"/>
+            </ReactiveSequence>
+            <Action ID="Info" message="Stayed deep the whole time"/>
+        </Sequence>
+    </BehaviorTree>
+    <TreeNodesModel>
+        <Condition ID="DeeperThan">
+            <input_port name="max_age_secs" required="false">Fail if the newest odometry is older than this (default 0.5)</input_port>
+            <input_port name="z" required="true">Succeed while odometry z is below this (m, negative underwater)</input_port>
+        </Condition>
+    </TreeNodesModel>
+</root>

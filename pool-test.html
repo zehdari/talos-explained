@@ -4,32 +4,382 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pool test day · How Talos works</title>
-<meta name="description" content="One or two sentences on what this chapter explains.">
+<meta name="description" content="A Talos pool test from start to finish: freezing the code in riptide_release, the pretest_checks bench stages and thruster test, batteries and packing, setting up on deck, kill switch rules, buoyancy and sensor checks, mapping the course, running trees, identification runs, recording, and tagging the release afterwards. With a checklist to tick through.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Running Talos</div>
+    <div class="kicker">Running Talos · Chapter 4</div>
     <h1>Pool test day</h1>
-    <p class="lede">One or two sentences: what this is and why a new member should care.</p>
+    <p class="lede">Pool time is short and booked. Whatever can be found on a bench is found there the day before, so the water is only for what needs water. This is the whole day, from bumping submodules to tagging the release, with a checklist you can tick through on your phone.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Three to five bullets a reader can stop after.</li>
+      <li>Do the bench checks the day before at the latest. The team's pre-test document allows 1.5 to 6 hours and says, in capitals, not to do them on the day.</li>
+      <li>Freeze the code. One <code>riptide_release</code> commit pins every repo, a clean deploy puts exactly that on the Orin, and <code>pretest</code> checks that it did.</li>
+      <li>At the pool, the Nereus viewer on op-top is the operator UI. It kills Talos from the moment it opens until someone presses Enable.</li>
+      <li>The physical kill switch is the only kill that works without the tether. One person holds it, and that is their only job.</li>
+      <li>Afterwards, copy the data off the Orin, commit what changed, and tag the release with the date.</li>
     </ul></aside>
+
     <div class="prose">
-      <p>Opening paragraph.</p>
-      <h2 id="first-section">First section</h2>
-      <p>Coming soon.</p>
+      <h2 id="shape">A test in three parts</h2>
+      <dl class="spec">
+        <dt>Before</dt><dd>Bench-test the new code on the robot, freeze it in release, deploy, run the checks, seal and pressure-test the hull. The day before at the latest.</dd>
+        <dt>At the pool</dt><dd>Set up on deck, check Talos in the water, then fly: small moves, the course, trees, identification. Record everything.</dd>
+        <dt>After</dt><dd>Copy the data, commit fixes made at the pool, tag the release, write it up.</dd>
+      </dl>
+      <p>The procedure comes from the team's <b>PRE_TEST_CHECKS</b> document and the <a href="https://github.com/osu-uwrt/riptide_release/blob/master/README.md">release README</a>. Most of the bench part is now automated by <code>pretest_checks</code> (<a href="#pretest">below</a>).</p>
+      <p>Every test leaves a trace in <code>riptide_release</code>: a commit that pins the code before it, like <i>Pre RPAC test 10-12-26</i>. RPAC is Ohio State's Recreation and Physical Activity Center; the <a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2025/07/Robosub_2025.pdf">2025 TDR</a> describes bi-weekly testing in its dive well as "competition run" practice.</p>
     </div>
     <figure class="fig">
-      <div class="panel" id="some-figure"></div>
-      <figcaption><b>Bold lead-in.</b> What to look at. Tap or hover … (if interactive).</figcaption>
+      <div class="panel">
+        <div class="controls rel-controls">
+          <button class="btn" id="rel-prev" type="button" aria-label="Previous test">‹ Prev</button>
+          <button class="btn" id="rel-next" type="button" aria-label="Next test">Next ›</button>
+          <span class="rel-counts" id="rel-counts"></span>
+        </div>
+        <div id="rel-timeline" class="rel-timeline"></div>
+        <div class="graph-note" id="rel-note" aria-live="polite"></div>
+      </div>
+      <figcaption><b>The pool-test diary.</b> Every commit on release <code>master</code> since December 2022, sorted by what its message says (a guess from the wording): before a test, after one, a lake test, RoboSub week. The bottom row is the tags. Tap or hover a mark, or step through the tests with the arrows. Generated from <code>git log</code> by <code>tools/pool-test/extract.py</code>.</figcaption>
     </figure>
     <div class="prose">
-      <h2 id="second-section">Second section</h2>
-      <p>Coming soon.</p>
+      <p>Two things stand out. The team tests roughly weekly in term time, so each test has a short runway. And the README's last step, a tag named for the date after each test, stopped in June 2024. Since then the "Pre" commits are the only record of what ran. <a href="#after">After the test</a> brings the tags back.</p>
+
+      <h2 id="freeze">Before: freeze the code</h2>
+      <p>The rule behind everything else: <strong>the code that goes in the water is one release commit, and the Orin runs exactly it.</strong> Then a problem at the pool can be reproduced at home, and a good state can be returned to.</p>
+      <ul>
+        <li><strong>Bench-test on the robot.</strong> New code is tried on the Orin with the real sensors, not just on a laptop. The document: "Integration is hell." This takes most of the evening.</li>
+        <li><strong>Update days ahead.</strong> <code>apt upgrade</code> or new drivers go in days early, because what they break is "often times inexplicable and confusing".</li>
+        <li><strong>Pin and push.</strong> Each changed submodule is committed and pushed on its branch, then release records the new pins. A pin that exists only on your laptop can't be checked out by anyone else.</li>
+        <li><strong>Build and deploy clean.</strong> colcon never deletes a removed package from <code>install/</code>, and stale caches cause compile errors that look like code bugs.</li>
+      </ul>
+<pre class="cmd" data-where="op-top"><code>cd ~/osu-uwrt/release
+git submodule status          <span class="c"># '+': away from its pin</span>
+git add src/riptide_control   <span class="c"># each one you changed</span>
+git commit -m "Pre RPAC test 10-30-26" &amp;&amp; git push
+
+rm -rf build install log &amp;&amp; colcon build      <span class="c"># clean build</span>
+source ~/osu-uwrt/riptide_setup/install/setup.bash
+ssh ros@orin2 'rm -rf ~/colcon_deploy'        <span class="c"># clean on the Orin</span>
+colcon deploy orin2 --clean</code></pre>
+      <div class="callout"><span class="label">No git at the pool</span>
+        <p>"NEVER plan on making git changes (like a revert) at a pool test." A revert means rebuilding on the Orin, and the packages depend on each other so tightly that a poolside revert usually breaks something else. If code is wrong, fix it on the bench. At the pool you change configs and parameters, deploy single packages, and commit them afterwards.</p>
+      </div>
+      <p>How submodules, pins and <code>colcon deploy</code> work is in <a href="setup.html#workspaces">Setting up your machine</a>.</p>
+
+      <h2 id="pretest" data-short="pretest_checks">pretest_checks: the bench, checked by a script</h2>
+      <p><code>pretest_checks</code> turns the document into checks that print PASS, WARN or FAIL, with the fix for a person to apply. It was written in October 2026 and lives on op-top in <code>~/osu-uwrt/release/pretest_checks</code>; it isn't in a GitHub repo yet. Everything robot-specific (hosts, topics, boards, thresholds) is in one profile, <code>robots/talos/robot.yaml</code>, so another robot only needs a new profile.</p>
+      <table class="params">
+        <thead><tr><th>Stage</th><th>Where, when</th><th>What</th></tr></thead>
+        <tbody>
+          <tr><td><code>repo</code></td><td>op-top, after the code is final</td><td>Pins, pushed, the Orin runs this code, recent updates, trees parse</td></tr>
+          <tr><td><code>bench</code></td><td>Talos on the bench, on a power supply</td><td>Read-only: boards, rails, rates, kill, ESCs, controller, drift, gyro, TF, DVL, cameras</td></tr>
+          <tr><td><code>guided</code></td><td>A person at the robot, viewer open</td><td>Localization by hand, vision, AprilTag, the thruster test, actuators, sign-offs</td></tr>
+          <tr><td><code>sim</code></td><td>op-top, Nereus</td><td>Planned: run the chosen trees with the real detector</td></tr>
+          <tr><td><code>dayof</code></td><td>At the pool</td><td>Planned: nothing changed since the last pass</td></tr>
+        </tbody>
+      </table>
+<pre class="cmd" data-where="op-top"><code>cd ~/osu-uwrt/release/pretest_checks
+./pretest                      <span class="c"># repo → bench → guided</span>
+./pretest bench --only B3,B5   <span class="c"># chosen checks</span>
+./pretest --list               <span class="c"># every check</span></code></pre>
+      <p>What it will never do matters as much as what it does:</p>
+      <ul>
+        <li><strong>It never changes code on the robot.</strong> No deploys, no builds on the Orin, no git or apt commands that modify anything. When the robot is out of date, it prints the commands for a person to run.</li>
+        <li><strong>It never starts the controller as a plain launch.</strong> An enabled robot with <code>control_system</code> running spins its thrusters. The bench stage runs the controller only while it holds a software kill and both ESC boards report <code>SAFETY_KILLED</code>.</li>
+        <li><strong>Only the thruster test moves anything</strong>, and only after a person has enabled the robot and pressed Enter.</li>
+        <li><strong>It never tares the gyro.</strong> An unlevel bench would bias every heading.</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls"><span class="seg" role="group" aria-label="Stage" id="chk-pick"></span></div>
+        <div class="chk-list" id="chk-list"></div>
+      </div>
+      <figcaption><b>Every check, and what it passes on.</b> IDs and titles are read from the tool's source; the limits come from the Talos profile. Tap a stage to filter.</figcaption>
+    </figure>
+    <figure class="fig narrow">
+      <img class="media" src="/talos-explained/img/pool-test/bench-ffc-snapshot.webp" width="1280" height="800" loading="lazy" alt="Talos's front camera on the bench: the team's lab, with a red frame of an older robot on a workbench, storage shelves, red tool chests and a wheeled cart with a case in the foreground. A dark part of Talos's frame fills the left edge.">
+      <figcaption><b>What B13 saves.</b> One front-camera frame from a bench run on 2026-10-20, kept in the report so a person can spot a fogged, covered or swapped camera. Talos's own frame is at the left edge.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h3 id="thruster-test">The thruster test</h3>
+      <p><code>thruster_test_canbus</code> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c#L176-L192"><code>send_thruster_cmd_canbus.c</code></a>) writes CAN frames straight to the two ESC boards, with no ROS and no controller in between. It runs each thruster in turn at 300 rpm for 3 s (100 frames 30 ms apart), forever, until Ctrl-C. Its Ctrl-C handler sends zeros to every thruster before exiting. One run checks three things:</p>
+      <ol>
+        <li><strong>The software kill.</strong> Start it with Talos killed in the viewer: it prints thruster numbers and nothing spins.</li>
+        <li><strong>The wiring.</strong> Enable: each thruster spins in its turn. Check it's the one in the place named. Telemetry shows which ESC turns, but only your eyes see which motor that ESC is wired to.</li>
+        <li><strong>The physical kill.</strong> After a full cycle, pull the switch: everything stops while the program is still commanding.</li>
+      </ol>
+      <p>The controller has to be stopped first. The MPC and the test would both write thruster commands to CAN; the document calls this part "strict". In <code>pretest guided</code> this is G4, which also checks the ESC telemetry for each window.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel flush tt" id="tt">
+        <div class="tt-view"><svg id="tt-svg" class="tt-svg" role="img" aria-label="Talos's eight thrusters, seen from behind"></svg></div>
+        <div class="tt-side">
+          <div class="tt-state" id="tt-state"></div>
+          <div class="tt-actions" id="tt-actions"></div>
+          <pre class="tt-term" id="tt-term" aria-live="polite"></pre>
+        </div>
+      </div>
+      <div class="graph-note" id="tt-note"></div>
+      <figcaption><b>The thruster test, step by step.</b> Talos seen from behind, thrusters at their positions in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L397">talos.yaml</a>. Press the buttons in order; time runs at real speed, 3 s per thruster, and the ESCs wait 5 s after power returns. The terminal lines are the program's own. Tap a thruster for its name.</figcaption>
+    </figure>
+    <div class="prose">
+      <div class="callout safety"><span class="label">Thrusters</span>
+        <ul>
+          <li>Before the test: Talos on its stand, propellers clear of hands, hair, cables and tools, and a second person at the kill switch.</li>
+          <li>300 rpm is the test. Under the MPC a thruster can reach its 24 N limit, about 2,450 rpm (<a href="control/thrusters.html#rpm">Thrusters and allocation</a>).</li>
+          <li>Never start <code>control_system</code> on the bench with the robot enabled. Out of the water, pulling the physical switch is the one kill that needs no software at all.</li>
+        </ul>
+      </div>
+      <p>The rest of <code>guided</code> works the same way: the tool says what to do, a person does it, the tool checks the data. Tilt Talos about 10° to starboard, nose down, then turn it about 20° left, and the right axis has to move with the right sign. A finger on the depth sensor has to read deeper. A torpedo prop held in front of the front camera has to be detected and mapped, then the torpedo and dropper are fired. Steps are hands-free, because whoever is holding the robot can't reach a keyboard.</p>
+      <h3 id="pvt">The depressurization test</h3>
+      <p>The bench ends with a leak test by hand. The hull is pumped down (by 0.05 bar, in the 2025 TDR's description) and has to hold that for at least 5 minutes. The document's steps:</p>
+      <ol>
+        <li>Only <code>hardware</code> running in the launcher. Keep its log open.</li>
+        <li>Put the pump in Talos's pressure hole.</li>
+        <li>Start the PVT, and once it says it's ready, pump. The logs say when to stop.</li>
+        <li>Pull the pump out <strong>quickly</strong> and plug the hole.</li>
+        <li>Leave Talos for at least 5 minutes.</li>
+        <li>Passed: the green subconn cover goes on. It means sealed and tested.</li>
+      </ol>
+      <div class="callout"><span class="label">Unconfirmed</span>
+        <p>The document starts the PVT from RViz's electrical panel. The viewer's Electrical panel has no PVT button (<a href="https://github.com/osu-uwrt/nereus/blob/main/docs/viewer.md#electrical">viewer docs</a>), and no launch in <code>talos_launch_mpc.yaml</code> runs the old <code>pvt_monitor.py</code>. Ask the mechanical or electrical lead how the test is started today.</p>
+      </div>
+      <p>Then the rule that protects all of it: <strong>nobody opens Talos or swaps a part until the test.</strong> Any internal change voids the localization and thruster tests. Open it, and the PVT has to be done again.</p>
+
+      <h3 id="old-doc" data-short="The old document">The old document, step by step</h3>
+      <p>New members will find <b>PRE_TEST_CHECKS</b> and its RViz-era steps. What each one became:</p>
+      <table class="params">
+        <thead><tr><th>The document says</th><th>Now</th></tr></thead>
+        <tbody>
+          <tr><td>Open RViz; kill, enable and fire actuators there</td><td>The Nereus viewer: Enable/KILL, the Actuators panel. RViz isn't used.</td></tr>
+          <tr><td>Rebuild controller models (<code>model_manager.py</code>)</td><td>Not needed. The MPC reads its model from <code>models/talos.yaml</code>.</td></tr>
+          <tr><td>HIL sim with <code>table_top</code> on, enable, watch the thrusters</td><td>Removed. B8 checks the MPC under a held kill; G4 checks each thruster with ESC telemetry.</td></tr>
+          <tr><td>"disabled flags" and "underactuated" in the log</td><td>B7 and G4 read <code>disabled_flags</code> from the ESC telemetry.</td></tr>
+          <tr><td>Drift, rotations, depth "in rviz"</td><td>B9 and G1 measure them from the data.</td></tr>
+          <tr><td>Tare the gyro</td><td>Only if B10 warns, Talos level and still.</td></tr>
+          <tr><td>DVL settings at its web page</td><td>B12 reads and compares them.</td></tr>
+          <tr><td>Test trees in the HIL sim with dummy detections</td><td>Nereus, with the real YOLO detector on rendered cameras (by hand; the <code>sim</code> stage is planned).</td></tr>
+          <tr><td>PVT start in RViz's electrical panel</td><td>Unconfirmed (above).</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="batteries">Batteries</h2>
+      <dl class="spec">
+        <dt>Packs</dt><dd>Two smart battery housings, port and starboard. Each holds a MaxAmps 8000 mAh 5S2P LiPo pack, 18.5 V nominal, about 148 Wh (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L4">gauge notes</a>), with a TI BQ40Z80 gauge and a 45 A protector fuse (<a href="electrical.html#batteries">The electrical system</a>).</dd>
+        <dt>Voltage</dt><dd>Charged to at most 4.15 V a cell (20.75 V) and discharged to no less than 3.2 V a cell (16 V). The gauge raises a swap alert at <strong>17.5 V</strong>, MaxAmps' recommended landing voltage (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L389">line 389</a>). The pre-test tool expects at least 18.5 V on the bus.</dd>
+        <dt>Sharing</dt><dd>The POAC board ORs the two packs through ideal diodes: whichever is higher supplies the bus.</dd>
+        <dt>On the housing</dt><dd>A small OLED and three LEDs, one lit for the charge band: above 60 %, 30 to 60 %, 30 % or less (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/include/bq40z80.h#L26-L27"><code>bq40z80.h</code></a>).</dd>
+        <dt>In the viewer</dt><dd><code>PORT</code> and <code>STBD</code> chips show each pack's charge: amber below 50 %, red below 20 %, gray after 10 s without a reading. Hover for voltage, current and time to empty.</dd>
+      </dl>
+      <ul>
+        <li><strong>Charge both the night before.</strong> On the bench Talos runs from a power supply, so the packs are only tested once they're in.</li>
+        <li><strong>At the pool, swap</strong> when a chip goes red or the gauge's 17.5 V alert fires, whichever comes first. Don't fly a pack down to its 16 V cutoff.</li>
+      </ul>
+      <div class="callout safety"><span class="label">LiPo</span>
+        <ul>
+          <li>Charge at no more than 5 A, and only between 0 and 50 °C (<a href="electrical.html#charging">Charging and handling</a>).</li>
+          <li>Never force-charge a pack the BMS refuses. A deeply flat LiPo is the dangerous one.</li>
+          <li>Keep the terminals covered and never short a pack. If a housing is hot, swollen or smells, stop using it and tell the electrical lead.</li>
+        </ul>
+      </div>
+
+      <h2 id="pack">Pack list</h2>
+      <p>The repos don't hold a packing list, so this one is built from what the steps on this page use.</p>
+      <ul class="pack" id="pack-list">
+        <li><strong>Talos</strong>, sealed, green subconn cover on, and its stand.</li>
+        <li><strong>Both battery housings</strong>, charged.</li>
+        <li><strong>The physical kill switch.</strong></li>
+        <li><strong>op-top</strong> and its charger: the viewer, deploys and <code>pretest</code> all run on it.</li>
+        <li><strong>The router, the opbox and the tether</strong>: the robot LAN, the internet passthrough and the time server.</li>
+        <li><strong>The AprilTag board</strong>, if you'll calibrate the map on it.</li>
+        <li><strong>The props</strong> for the trees you'll run, and a tape measure to place them in the prior map.</li>
+        <li><strong>Torpedoes and markers</strong> to reload the actuators.</li>
+        <li><strong>The <code>pretest summary</code></strong>: what was tested, and what was skipped.</li>
+      </ul>
+    </div>
+
+    <div class="prose">
+      <h2 id="deck">On deck: network, power, launcher, viewer</h2>
+      <p>Talos's Orin, the DVL and op-top share the team router's LAN, 192.168.1.0/24. On deck, the tether joins Talos to it, and the opbox gives the LAN internet and a time server (<a href="computers.html#lan">Computers and networks</a>). Check op-top can reach <code>orin2</code> and that its clock agrees before anything else: bags and plots compare timestamps across machines.</p>
+<pre class="cmd" data-where="op-top"><code>ping -c 3 orin2
+chronyc tracking     <span class="c"># offset from the opbox</span></code></pre>
+
+      <h3 id="power">Power-on order</h3>
+      <p>The code doesn't enforce an order. This one follows from how the kill system works, and it keeps the thrusters unpowered until the end:</p>
+      <ol>
+        <li><strong>Kill switch out.</strong> With it out, the POAC board cuts ESC power, whatever any software says.</li>
+        <li><strong>Power on.</strong> The POAC board starts killed and stays killed until micro-ROS connects. The Orin boots and <code>ros_launcher</code> starts by itself as a service.</li>
+        <li><strong>Launcher:</strong> open <code>http://orin2:8080</code>, load <code>talos_launch_mpc.yaml</code> and start, in the pre-test tool's order, <code>hardware</code> (real DVL this time, not <code>hardware_fake_dvl</code>), <code>navigation</code> (riptide_hardware2's, the first of the two), <code>zed</code>, <code>tensorrt</code>, <code>mapping</code> and <code>autonomy</code>. The diagnostics node is no longer used.</li>
+        <li><strong>The viewer on op-top.</strong> From its first tick it reports a kill on slot 1, so Talos stays killed even if the switch goes in.</li>
+        <li><strong>A quick health check</strong> (below).</li>
+        <li><strong><code>control_system</code> last</strong>, with Talos still killed. Killed, the MPC publishes zero thrust.</li>
+      </ol>
+<pre class="cmd" data-where="op-top"><code>source ~/osu-uwrt/release/scripts/dds_scripts/config_rmw.bash
+ros2 launch nereus robot.launch.py pool:=rpac
+
+cd ~/osu-uwrt/release/pretest_checks
+./pretest bench --only B3,B4,B5,B6,B7 --power battery</code></pre>
+      <ul>
+        <li><strong><code>config_rmw.bash</code></strong> makes the terminal a Zenoh client of <code>orin2</code> (<a href="computers.html#zenoh">ROS 2 over Zenoh</a>).</li>
+        <li><strong><code>pool:=rpac</code></strong> draws the RPAC pool around the robot (<code>robosub</code> for the competition pool); <code>robot_only:=true</code> hides the pool. Talos is drawn from the localization estimate, on wall-clock time (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/robot.launch.py">robot.launch.py</a>).</li>
+        <li><strong>The health check</strong> is five bench checks that start nothing and take under a minute. The planned <code>dayof</code> stage will compare everything with the last passing bench run.</li>
+        <li><strong>In the command bar</strong>, check the FOG and CPU temperatures and both battery chips.</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="vw" id="vw">
+        <img class="media" src="/talos-explained/img/pool-test/viewer-robot.webp" width="1480" height="940" loading="lazy" alt="The Nereus viewer in its standard layout against Talos: a dark command bar with a red KILL button and FOG, DVL, CPU, PORT and STBD chips; the Motion panel on the left with a pose table; Mapping, Vision and Autonomy tabs below it; the 3D pool view in the middle showing Talos in front of the AprilTag board; forward and downward camera cards on the right; and Course map, Recording, Bagging, Electrical and Actuators tabs at the bottom right.">
+      </div>
+      <ol class="vw-key" id="vw-key"></ol>
+      <figcaption><b>The operator's screen.</b> The viewer as <code>robot.launch.py pool:=rpac</code> opens it, fed by the bag of the untethered identification session of 2026-10-26. That bag holds no battery, FOG or CPU readings and no camera images, so those chips read <code>--</code> and the camera cards wait. Tap a number. Captured headless by <code>tools/pool-test/viewer_shot.sh</code>.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>Where every control is, and how to drive with it, is in <a href="viewer.html">The Nereus viewer</a>.</p>
+
+      <h2 id="kill">The kill switch rules</h2>
+      <p>The mechanism is in <a href="commanding.html#kill">Commanding Talos</a>. Pool rules that follow from it:</p>
+      <ul>
+        <li><strong>One kill-switch holder.</strong> Named before Talos goes in. They hold the switch, watch the robot, and pull it the moment anyone says so. No other job. The pre-test tool's first guided question asks the same: "someone at the kill switch?"</li>
+        <li><strong>Untethered, the switch is the only kill.</strong> The viewer's KILL only works while its messages reach the robot. Its enable latches (<code>needs_update</code> false) so that runs survive the tether coming off, which also means losing the link never kills.</li>
+        <li><strong>One operator.</strong> A second viewer, or anyone else publishing on slot 1, counts as a competing operator: the viewer drops its enable at once.</li>
+        <li><strong>Hands off an enabled robot.</strong> Anyone handling Talos in the water asks for the switch out first, and gets it.</li>
+        <li><strong>After any kill, the ESCs wait.</strong> When power comes back, they hold their motors for about 5 s, then the MPC flies to its last reference again, and a tree that is still running carries on. Before the switch goes back in, press KILL in the viewer and Stop the tree (<a href="#ending">Ending a run</a>).</li>
+      </ul>
+      <div class="callout safety"><span class="label">Lifting</span>
+        <p>Talos weighs about 32 kg dry and 34 kg wet (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L10-L11">scale weights</a>). Two people lift it, in and out, with the kill switch out. Nobody's hands go near a propeller while the robot can be enabled.</p>
+      </div>
+
+      <h2 id="trim">In the water: buoyancy and trim</h2>
+      <p>Talos is built to float, slightly. RoboSub requires a vehicle to be positively buoyant by at least 0.5 % of its mass with the kill switch pulled (<a href="robosub.html">RoboSub and the course</a>), so a killed robot comes up on its own. Talos's MPC model has it right around that line:</p>
+      <dl class="spec">
+        <dt>Net buoyancy</dt><dd>About +1.6 N (165 g) in the current model, <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml">models/talos.yaml</a>, and +1.7 N in the untethered identification of 2026-10-26. 0.5 % of the model's 34.3 kg is 1.7 N.</dd>
+        <dt>Rises at</dt><dd>About 4 cm/s with the thrusters off (<a href="control/identify.html#releases">identification releases</a>).</dd>
+        <dt>Centre of buoyancy</dt><dd>About 22 mm above the centre of mass, so Talos rights itself when tilted.</dd>
+      </dl>
+      <p>Two checks in the water:</p>
+      <ul>
+        <li><strong>Killed:</strong> does Talos float up slowly and sit at the surface?</li>
+        <li><strong>Enabled, holding still:</strong> plot the MPC's disturbance estimate (<code>controller/mpc/disturbance</code>; <code>plot disturbance</code> in the viewer's Ctrl+P search). The MPC learns whatever force and torque its model is missing. A few newtons or newton-metres held constant means the model's buoyancy or trim no longer matches the robot: something was added or moved, or the tether is pulling. The model's own rule: "Change the body and re-identify."</li>
+      </ul>
+      <p>First moves stay small. Type them into the viewer's search (Ctrl+P): <code>forward 0.5</code>, <code>turn 30</code>, <code>down 0.3</code>, and watch the error column in the Motion panel.</p>
+
+      <h2 id="sensors">Sensor checks in the water</h2>
+      <p>The bench can't test what needs water. Before trusting a run:</p>
+      <table class="params">
+        <thead><tr><th>Sensor</th><th>Look at</th><th>Good</th></tr></thead>
+        <tbody>
+          <tr><td>DVL</td><td>The viewer's DVL chip, <code>dvl/bottom_lock</code></td><td>Locked once submerged. Lost near the floor, a wall or bubbles. Set up for fresh water: sound speed fixed at 1480 m/s, salinity 0 (bench check B12).</td></tr>
+          <tr><td>Depth</td><td><code>depth/pose</code></td><td>About zero at the surface, deeper is more negative z, and it agrees with what you see.</td></tr>
+          <tr><td>FOG and IMU</td><td>FOG temperature chip; heading while holding still</td><td>Chip cyan (amber at 55 °C). Heading steady; a slow drift points at a bad tare.</td></tr>
+          <tr><td>Cameras</td><td>Both camera windows</td><td>No fog or bubbles on the lens; at least 8 Hz on each compressed stream.</td></tr>
+          <tr><td>Detector</td><td>Vision panel, the annotated image</td><td>Props are boxed with the right class; the annotated image at 3 Hz or more.</td></tr>
+          <tr><td>Localization</td><td>Talos in the pool view while it holds</td><td>Stays put. On the bench, drift has to be under 1 m per hour.</td></tr>
+        </tbody>
+      </table>
+      <p>How each sensor fails is in <a href="sensors.html#trouble">Navigation sensors</a>; the cameras in <a href="cameras.html">The cameras</a>.</p>
+
+      <h2 id="course">Mapping the course</h2>
+      <p>The trees navigate in the <code>map</code> frame, using a prior map: where each prop is expected, relative to a map origin, in riptide_mapping's <code>config/config.yaml</code>. At a new pool, or with the props moved, the map has to match the water.</p>
+      <ol>
+        <li><strong>Place the props, measure them.</strong> Then open <strong>Edit map</strong> in the viewer (Ctrl+M) and move each prop to where it is. The origin is either <i>AprilTag</i>, on a wall where a floor line meets it, or <i>Robot frame</i>, Talos's start pose (<a href="https://github.com/osu-uwrt/nereus/blob/main/docs/viewer.md#editing-the-prior-map-dead-reckoning-in-3d">viewer docs</a>).</li>
+        <li><strong>Save and deploy it.</strong> The editor writes the file in op-top's release source tree. Deploy just that package and restart <code>mapping</code> in the launcher so it reads the new file.</li>
+        <li><strong>Calibrate.</strong> With the tag in view, <strong>Calibrate</strong> in the Mapping panel averages the tag board's pose and sets <code>world → map</code> from it.</li>
+        <li><strong>Commit the map afterwards</strong>, in riptide_perception, so the next test starts from it.</li>
+      </ol>
+<pre class="cmd" data-where="op-top"><code>cd ~/osu-uwrt/release
+colcon deploy orin2 --packages-select riptide_mapping2</code></pre>
+      <p>How the map, the calibration and mapping targets fit together: <a href="perception/frames.html">Frames, targets and the mission tree</a> and <a href="perception/map.html">The course map</a>.</p>
+
+      <h2 id="trees">Running trees</h2>
+      <p>A tree is started from the viewer's Autonomy panel, but it doesn't move until the physical switch goes in. The mission trees begin with <code>WaitForKillSwitch</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/CompMissionTree.xml#L1893">CompMissionTree.xml</a>): wait 5 s, poll <code>state/kill</code> until it reads false, then wait 6 s more. That is how a run goes untethered:</p>
+      <ol>
+        <li>Talos at the surface, switch <strong>out</strong>.</li>
+        <li><strong>Enable</strong> in the viewer. Talos stays killed by the switch, but slot 1 is now clear, and latched.</li>
+        <li>Autonomy: pick the tree, <strong>Start</strong>. The viewer only allows it while it holds the enable. The tree logs "Waiting for kill switch insert...".</li>
+        <li><strong>Unplug the tether</strong>, if this run is untethered. Slot 1 stays clear.</li>
+        <li><strong>Insert the switch.</strong> Six seconds later the tree moves.</li>
+        <li><strong>Pulling the switch stops the thrusters, not the tree.</strong> The executor's kill check is commented out (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L235"><code>DoTask.cpp</code></a>), and only a running path goal fails, with "vehicle killed" (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1324-L1330">MPC</a>). The tree can retry or go on to its next task, and it drives Talos again the moment the switch goes back in.</li>
+      </ol>
+      <div class="callout safety"><span class="label" id="ending">Ending a run</span>
+        <ol>
+          <li>Switch <strong>out</strong>. Killed, Talos floats up on its own.</li>
+          <li>A swimmer brings Talos to the side. Plug the tether back in.</li>
+          <li>Autonomy panel: <strong>Stop</strong>, and wait until Start is free again.</li>
+          <li>Viewer: <strong>KILL</strong>. Slot 1 now holds Talos killed even with the switch in.</li>
+          <li>Only now: switch back in, hands on Talos, or the next run from step 2 above.</li>
+        </ol>
+        <p>Skip a step and the viewer's latched enable plus a live tree can move Talos as soon as the switch goes in.</p>
+      </div>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel" id="start-strip"></div>
+      <figcaption><b>The first eight seconds after the switch goes in.</b> The ESCs' power-on delay and the tree's waits, from the firmware and the tree XML. The tree's 6 s outlasts the ESCs' 5 s, so its first command meets thrusters that can turn.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>While a tree runs, the viewer blocks manual commands. Which trees exist and how they're built: <a href="mission-tree.html">The competition mission</a> and <a href="bt-workflow.html">Writing and testing trees</a>.</p>
+
+      <h2 id="ident">Identification runs</h2>
+      <p><code>pool_identify</code> flies a scripted session and fits Talos's buoyancy, drag and added mass (<a href="control/identify.html">System identification</a>). At the pool it needs space and no tether:</p>
+      <ul>
+        <li><strong>Room:</strong> 3 m of clear water ahead and to port of the start, and 2.5 m below the start depth for the heave lanes and releases. It starts at least 0.75 m deep and ends if Talos comes within 0.4 m of the surface (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/identification.yaml#L14-L34">identification.yaml</a>).</li>
+        <li><strong>Untethered:</strong> start <code>pool_identify</code> on the Orin before unplugging. With <code>wait_for_trigger:=true</code> it waits for <code>IdentificationTree</code> to start it, so run that tree like any other. The status LEDs show each block, so the session can be followed from the surface.</li>
+        <li><strong>Not tied to your SSH session.</strong> When the tether comes off, the SSH link drops, and a launch running in that shell can go with it. Start it inside <code>tmux</code>, or with <code>nohup … &amp;</code> if tmux isn't installed. How the 2026-10-26 sessions were started isn't recorded.</li>
+        <li><strong>From the committed model:</strong> start untethered fits from <code>talos.yaml</code>, never from a tethered fit.</li>
+        <li><strong>Data:</strong> each session writes a folder under <code>~/osu-uwrt/mpc_identification</code> on the Orin, with its own bag.</li>
+      </ul>
+<pre class="cmd" data-where="Orin"><code>tmux new -s ident          <span class="c"># survives the link dropping</span>
+ros2 launch riptide_mpc pool_identify.launch.py wait_for_trigger:=true max_iterations:=1
+<span class="c"># Ctrl-b d leaves it running; later: tmux attach -t ident, then Ctrl-C</span></code></pre>
+      <p>Why untethered: on 2026-10-26 the same day's two sessions were flown, first with the tether on, then off. The tether's pull went into the fit as if it were buoyancy.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel"><div class="tether" id="tether"></div></div>
+      <figcaption><b>The tether, fitted as physics.</b> Statics from two identification sessions on 2026-10-26, <code>talos_20261026_202235</code> (tethered) and <code>talos_20261026_204748</code> (untethered). Tethered, net buoyancy came out at a fifth of its value and the centre of buoyancy twice as far forward, and the fit's leftover force and torque were 14 and 18 times larger. Tap a bar for its value.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="bags">Recording</h2>
+      <p>A run that wasn't recorded can't be debugged at home. Start a bag before every run, from the viewer's <strong>Bagging</strong> panel (<a href="https://github.com/osu-uwrt/nereus/blob/main/docs/viewer.md#bagging">viewer docs</a>):</p>
+      <ul>
+        <li><strong>Record on: Robot.</strong> <code>ros2 bag record</code> runs on <code>ros@orin2</code> into <code>~/bags</code>. It keeps recording if the viewer closes or the tether comes off, and any viewer can stop it. A bag on "This computer" stops with the viewer and only gets what crosses the tether.</li>
+        <li><strong>Topics.</strong> <i>All</i>, or <i>Leave out</i> with a pattern such as <code>image|point_cloud</code> to skip the camera streams. The panel shows the robot's free disk (yellow under 5 GB).</li>
+        <li><strong>Stop</strong> sends Ctrl-C, so the recorder writes its <code>metadata.yaml</code>. A red BAG chip in the command bar shows one is running.</li>
+        <li><strong>Camera video</strong> comes from the <strong>Recording</strong> panel instead: the ZED nodes write lossless <code>.svo2</code> files on the robot, one per camera.</li>
+      </ul>
+      <p>What to do with a bag afterwards is in <a href="debugging.html">Debugging, bags and data</a>.</p>
+
+      <h2 id="after">After the test</h2>
+      <p>Kill switch out, Talos out with two people, power off. Then, before anyone goes home:</p>
+      <ol>
+        <li id="data"><strong>Copy the data off the Orin.</strong> Bags, SVOs and identification sessions exist only on the robot until copied.</li>
+        <li><strong>Commit what changed at the pool</strong> (prior map, parameters, models) in its own repo, then bump release.</li>
+        <li><strong>Tag release with the date</strong> and publish a GitHub release whose notes say what was tested and how it went. The README calls it "a backup for future pool tests, should software need to be rolled back".</li>
+        <li><strong>Write it up</strong>: what worked, what broke, and where the data is.</li>
+      </ol>
+<pre class="cmd" data-where="op-top"><code>rsync -a ros@orin2:/home/ros/bags/ ~/bags/
+rsync -a ros@orin2:/home/ros/osu-uwrt/mpc_identification/ ~/mpc_identification/
+<span class="c"># and the SVO folder you set in the Recording panel (~ there is /home/ros), e.g.</span>
+<span class="c"># rsync -a ros@orin2:/home/ros/svo/ ~/svo/</span>
+
+cd ~/osu-uwrt/release
+git tag 10-30-26-talos &amp;&amp; git push origin 10-30-26-talos
+gh release create 10-30-26-talos --title "Pool test 10-30-26" --notes-file notes.md</code></pre>
+
+      <h2 id="checklist">The checklist</h2>
+      <p>The whole day in one list. Ticks stay in this browser; <strong>New test</strong> clears them. Open a step for why it's there and the exact command. Steps marked <span class="cl-safe-key">safety</span> are where people or hardware get hurt.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel" id="pool-checklist"></div>
+    </figure>
+    <div class="prose">
+      <p>From here, <a href="debugging.html">Debugging, bags and data</a> picks up the bags you brought home.</p>
+      <p class="src">Data: riptide_release's git log, Talos's <code>talos.yaml</code>, the thruster test's source, <code>pretest_checks</code> and its Talos profile, and two identification sessions from 2026-10-26. Extracted by <code>tools/pool-test/extract.py</code>; the checklist is <code>tools/pool-test/checklist.yaml</code>.</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

@@ -1,0 +1,2797 @@
+{
+ "source": {
+  "branch": "autonomy-mapping",
+  "commit": "b636000 2026-10-29",
+  "reference": "RepairCompMpcTree.xml"
+ },
+ "workspace": {
+  "subtrees": 71,
+  "models": {
+   "Action": 32,
+   "Condition": 5,
+   "Decorator": 1
+  }
+ },
+ "files": [
+  {
+   "file": "ActuatorTrees.xml",
+   "kb": 54,
+   "main": "BehaviorTree",
+   "same": 6,
+   "differs": [
+    "AlignLink",
+    "BumpObject",
+    "BuoyTree",
+    "CollectDetsAtAngle",
+    "FireTorpedo",
+    "GateTree",
+    "KillController",
+    "MiniSearch",
+    "Move",
+    "PrimitiveMoveOrientation",
+    "PrimitiveMovePosition",
+    "Search",
+    "ShootObject",
+    "SmartMovePosition",
+    "SpinTree",
+    "SurfaceTree",
+    "TorpedoTree"
+   ],
+   "only": [
+    "DropMarker"
+   ],
+   "behind": [
+    "AlignLink",
+    "BumpObject",
+    "BuoyTree",
+    "CollectDetsAtAngle",
+    "FireTorpedo",
+    "GateTree",
+    "KillController",
+    "MiniSearch",
+    "Move",
+    "PrimitiveMoveOrientation",
+    "Search",
+    "SmartMovePosition",
+    "SpinTree",
+    "TorpedoTree"
+   ],
+   "ahead": [],
+   "models": 22
+  },
+  {
+   "file": "BinTree.xml",
+   "kb": 192,
+   "main": "BehaviorTree",
+   "same": 52,
+   "differs": [
+    "BinTree",
+    "CompMissionTree",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FlipTree",
+    "MagnetTree",
+    "NewTableTree",
+    "PassThroughSlalom",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootObject",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree"
+   ],
+   "only": [],
+   "behind": [
+    "BinTree",
+    "DownwardSearch",
+    "dropObject",
+    "FlipTree",
+    "MagnetTree",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "SpinTree",
+    "TableTree"
+   ],
+   "ahead": [
+    "DownwardTrack",
+    "PrimitiveMovePosition",
+    "ShootObject"
+   ],
+   "models": 38
+  },
+  {
+   "file": "BuoyTree.xml",
+   "kb": 64,
+   "main": "BehaviorTree",
+   "same": 8,
+   "differs": [
+    "AlignLink",
+    "BinTree",
+    "BumpObject",
+    "BuoyTree",
+    "CollectDetsAtAngle",
+    "DownwardMove",
+    "DownwardSearch",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "KillController",
+    "MiniSearch",
+    "Move",
+    "PrimitiveMovePosition",
+    "Search",
+    "ShootObject",
+    "SmartMovePosition",
+    "SpinTree",
+    "SurfaceTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "AlignLink",
+    "BinTree",
+    "BumpObject",
+    "BuoyTree",
+    "CollectDetsAtAngle",
+    "DownwardMove",
+    "DownwardSearch",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "KillController",
+    "MiniSearch",
+    "Move",
+    "Search",
+    "SmartMovePosition",
+    "SpinTree",
+    "TorpedoTree"
+   ],
+   "ahead": [],
+   "models": 27
+  },
+  {
+   "file": "CompLiteTree.xml",
+   "kb": 157,
+   "main": "BehaviorTree",
+   "same": 39,
+   "differs": [
+    "BinTree",
+    "DemoTableTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "Move",
+    "PassThroughSlalom",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "BinTree",
+    "DemoTableTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "Move",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 38
+  },
+  {
+   "file": "CompMissionTree.xml",
+   "kb": 180,
+   "main": "BehaviorTree",
+   "same": 40,
+   "differs": [
+    "ActivateMagnet",
+    "BinTree",
+    "CompMissionTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "NewTableTree",
+    "PassThroughSlalom",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "ActivateMagnet",
+    "BinTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 38
+  },
+  {
+   "file": "CompTree.xml",
+   "kb": 182,
+   "main": "BehaviorTree",
+   "same": 40,
+   "differs": [
+    "ActivateMagnet",
+    "BinTree",
+    "CompMissionTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "NewTableTree",
+    "PassThroughSlalom",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "ActivateMagnet",
+    "BinTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 38
+  },
+  {
+   "file": "DemoTableTree.xml",
+   "kb": 160,
+   "main": "BehaviorTree",
+   "same": 40,
+   "differs": [
+    "ActivateMagnet",
+    "BinTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "PassThroughSlalom",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "ActivateMagnet",
+    "BinTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 38
+  },
+  {
+   "file": "DeployTankTree.xml",
+   "kb": 142,
+   "main": "BehaviorTree",
+   "same": 32,
+   "differs": [
+    "AssertTree",
+    "BinTree",
+    "DeployTankTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "GoToObject",
+    "Move",
+    "PassThroughSlalom",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "SetActiveCamera",
+    "ShootObject",
+    "SlalomTree",
+    "SmartMovePosition",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree",
+    "WaitForController"
+   ],
+   "only": [],
+   "behind": [
+    "AssertTree",
+    "BinTree",
+    "DeployTankTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "GoToObject",
+    "Move",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "SetActiveCamera",
+    "SmartMovePosition",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree",
+    "WaitForController"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 35
+  },
+  {
+   "file": "FullTableTree.xml",
+   "kb": 197,
+   "main": "BehaviorTree",
+   "same": 66,
+   "differs": [
+    "DownwardTrack",
+    "dropObject",
+    "ShootObject",
+    "SpinTree",
+    "SurfaceTree"
+   ],
+   "only": [],
+   "behind": [
+    "dropObject",
+    "SpinTree"
+   ],
+   "ahead": [
+    "DownwardTrack",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "models": 39
+  },
+  {
+   "file": "GateSlalomTree.xml",
+   "kb": 182,
+   "main": "BehaviorTree",
+   "same": 40,
+   "differs": [
+    "ActivateMagnet",
+    "BinTree",
+    "CompMissionTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "NewTableTree",
+    "PassThroughSlalom",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "ActivateMagnet",
+    "BinTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 38
+  },
+  {
+   "file": "GateTree.xml",
+   "kb": 179,
+   "main": "BehaviorTree",
+   "same": 40,
+   "differs": [
+    "ActivateMagnet",
+    "BinTree",
+    "CompMissionTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "NewTableTree",
+    "PassThroughSlalom",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "ActivateMagnet",
+    "BinTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack",
+    "PrimitiveMovePosition",
+    "ShootObject"
+   ],
+   "models": 38
+  },
+  {
+   "file": "IdentificationTree.xml",
+   "kb": 153,
+   "main": "BehaviorTree",
+   "same": 39,
+   "differs": [
+    "BinTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "Move",
+    "PassThroughSlalom",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootObject",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "BinTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "Move",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 37
+  },
+  {
+   "file": "LiltankCompTree.xml",
+   "kb": 145,
+   "main": "BehaviorTree",
+   "same": 35,
+   "differs": [
+    "AssertTree",
+    "BinTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "Move",
+    "PassThroughSlalom",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootObject",
+    "SlalomTree",
+    "SmartMovePosition",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree",
+    "WaitForController"
+   ],
+   "only": [],
+   "behind": [
+    "AssertTree",
+    "BinTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "Move",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "SmartMovePosition",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree",
+    "WaitForController"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 35
+  },
+  {
+   "file": "NewCompLiteTree.xml",
+   "kb": 179,
+   "main": "BehaviorTree",
+   "same": 40,
+   "differs": [
+    "ActivateMagnet",
+    "BinTree",
+    "CompMissionTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "NewTableTree",
+    "PassThroughSlalom",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "ActivateMagnet",
+    "BinTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack",
+    "PrimitiveMovePosition"
+   ],
+   "models": 38
+  },
+  {
+   "file": "PreQualMpcSpinTree.xml",
+   "kb": 202,
+   "main": "BehaviorTree",
+   "same": 68,
+   "differs": [
+    "DownwardTrack",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "only": [],
+   "behind": [],
+   "ahead": [
+    "DownwardTrack",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "models": 42
+  },
+  {
+   "file": "PreQualMpcTree.xml",
+   "kb": 202,
+   "main": "BehaviorTree",
+   "same": 68,
+   "differs": [
+    "DownwardTrack",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "only": [],
+   "behind": [],
+   "ahead": [
+    "DownwardTrack",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "models": 42
+  },
+  {
+   "file": "PreQualTree.xml",
+   "kb": 80,
+   "main": "BehaviorTree",
+   "same": 9,
+   "differs": [
+    "AlignLink",
+    "BinTree",
+    "BumpObject",
+    "BuoyTree",
+    "CollectDetsAtAngle",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "KillController",
+    "MiniSearch",
+    "Move",
+    "PrimitiveMovePosition",
+    "ShootObject",
+    "SmartMovePosition",
+    "SpinTree",
+    "SurfaceTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "AlignLink",
+    "BinTree",
+    "BumpObject",
+    "BuoyTree",
+    "CollectDetsAtAngle",
+    "DownwardMove",
+    "DownwardSearch",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "KillController",
+    "MiniSearch",
+    "Move",
+    "SmartMovePosition",
+    "SpinTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 31
+  },
+  {
+   "file": "RandomPingerTree.xml",
+   "kb": 191,
+   "main": "BehaviorTree",
+   "same": 48,
+   "differs": [
+    "BinTree",
+    "CompMissionTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FlipTree",
+    "MagnetTree",
+    "NewTableTree",
+    "PassThroughSlalom",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree"
+   ],
+   "only": [],
+   "behind": [
+    "BinTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "dropObject",
+    "FlipTree",
+    "MagnetTree",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree"
+   ],
+   "ahead": [
+    "DownwardTrack",
+    "PrimitiveMovePosition",
+    "ShootObject"
+   ],
+   "models": 38
+  },
+  {
+   "file": "RepairCompLiteTree.xml",
+   "kb": 188,
+   "main": "BehaviorTree",
+   "same": 45,
+   "differs": [
+    "BinTree",
+    "CompMissionTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "MagnetTree",
+    "Move",
+    "NewTableTree",
+    "PassThroughSlalom",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree"
+   ],
+   "only": [],
+   "behind": [
+    "BinTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "MagnetTree",
+    "Move",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree"
+   ],
+   "ahead": [
+    "DownwardTrack",
+    "PrimitiveMovePosition",
+    "ShootObject"
+   ],
+   "models": 38
+  },
+  {
+   "file": "RepairCompMpcTree.xml",
+   "kb": 308,
+   "main": "BehaviorTree",
+   "same": 61,
+   "differs": [
+    "CompLiteMissionTree",
+    "CompMissionTree",
+    "DownwardTrack",
+    "NewTableTree",
+    "PrimitiveMovePosition",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "only": [
+    "ActivateMagnetMpc",
+    "BinTreeMpc",
+    "CompMissionTreeMpc",
+    "DownwardSearchMpc",
+    "dropObjectMpc",
+    "FlipTreeMpc",
+    "GateTreeMpc",
+    "MagnetTreeMpc",
+    "MiniSearchMpc",
+    "NewTableTreeMpc",
+    "pickupObjectMpc",
+    "SearchMpc",
+    "ShootBothObjectsMpc",
+    "ShootDownwardObjectMpc",
+    "SlalomPath",
+    "SlalomPathMpc",
+    "SpinTreeMpc",
+    "TorpedoTreeMpc"
+   ],
+   "behind": [],
+   "ahead": [
+    "CompLiteMissionTree",
+    "CompMissionTree",
+    "DownwardTrack",
+    "NewTableTree",
+    "PrimitiveMovePosition",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "models": 44
+  },
+  {
+   "file": "RepairCompTree.xml",
+   "kb": 197,
+   "main": "BehaviorTree",
+   "same": 66,
+   "differs": [
+    "DownwardTrack",
+    "NewTableTree",
+    "PrimitiveMovePosition",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "only": [],
+   "behind": [],
+   "ahead": [
+    "DownwardTrack",
+    "NewTableTree",
+    "PrimitiveMovePosition",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "models": 39
+  },
+  {
+   "file": "RescueCompLiteTree.xml",
+   "kb": 190,
+   "main": "BehaviorTree",
+   "same": 48,
+   "differs": [
+    "BinTree",
+    "CompMissionTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FlipTree",
+    "MagnetTree",
+    "NewTableTree",
+    "PassThroughSlalom",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree"
+   ],
+   "only": [],
+   "behind": [
+    "BinTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "dropObject",
+    "FlipTree",
+    "MagnetTree",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree"
+   ],
+   "ahead": [
+    "DownwardTrack",
+    "PrimitiveMovePosition",
+    "ShootObject"
+   ],
+   "models": 38
+  },
+  {
+   "file": "RescueCompMpcTree.xml",
+   "kb": 308,
+   "main": "BehaviorTree",
+   "same": 61,
+   "differs": [
+    "CompLiteMissionTree",
+    "CompMissionTree",
+    "DownwardTrack",
+    "NewTableTree",
+    "PrimitiveMovePosition",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "only": [
+    "ActivateMagnetMpc",
+    "BinTreeMpc",
+    "CompMissionTreeMpc",
+    "DownwardSearchMpc",
+    "dropObjectMpc",
+    "FlipTreeMpc",
+    "GateTreeMpc",
+    "MagnetTreeMpc",
+    "MiniSearchMpc",
+    "NewTableTreeMpc",
+    "pickupObjectMpc",
+    "SearchMpc",
+    "ShootBothObjectsMpc",
+    "ShootDownwardObjectMpc",
+    "SlalomPath",
+    "SlalomPathMpc",
+    "SpinTreeMpc",
+    "TorpedoTreeMpc"
+   ],
+   "behind": [],
+   "ahead": [
+    "CompLiteMissionTree",
+    "CompMissionTree",
+    "DownwardTrack",
+    "NewTableTree",
+    "PrimitiveMovePosition",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "models": 44
+  },
+  {
+   "file": "RescueCompTree.xml",
+   "kb": 197,
+   "main": "BehaviorTree",
+   "same": 66,
+   "differs": [
+    "DownwardTrack",
+    "NewTableTree",
+    "PrimitiveMovePosition",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "only": [],
+   "behind": [],
+   "ahead": [
+    "DownwardTrack",
+    "NewTableTree",
+    "PrimitiveMovePosition",
+    "ShootObject",
+    "SurfaceTree"
+   ],
+   "models": 39
+  },
+  {
+   "file": "ReturnHomeTree.xml",
+   "kb": 143,
+   "main": "BehaviorTree",
+   "same": 32,
+   "differs": [
+    "AssertTree",
+    "BinTree",
+    "DeployTankTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "GoToObject",
+    "Move",
+    "PassThroughSlalom",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "SetActiveCamera",
+    "ShootObject",
+    "SlalomTree",
+    "SmartMovePosition",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree",
+    "WaitForController"
+   ],
+   "only": [],
+   "behind": [
+    "AssertTree",
+    "BinTree",
+    "DeployTankTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "GoToObject",
+    "Move",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "SetActiveCamera",
+    "SmartMovePosition",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree",
+    "WaitForController"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 35
+  },
+  {
+   "file": "SlalomPath.xml",
+   "kb": 180,
+   "main": "BehaviorTree",
+   "same": 40,
+   "differs": [
+    "ActivateMagnet",
+    "BinTree",
+    "CompMissionTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "NewTableTree",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [
+    "SlalomPath"
+   ],
+   "behind": [
+    "ActivateMagnet",
+    "BinTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack",
+    "PrimitiveMovePosition",
+    "ShootObject"
+   ],
+   "models": 40
+  },
+  {
+   "file": "SlalomTree.xml",
+   "kb": 179,
+   "main": "BehaviorTree",
+   "same": 40,
+   "differs": [
+    "ActivateMagnet",
+    "BinTree",
+    "CompMissionTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "NewTableTree",
+    "PassThroughSlalom",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "ActivateMagnet",
+    "BinTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack",
+    "PrimitiveMovePosition",
+    "ShootObject"
+   ],
+   "models": 38
+  },
+  {
+   "file": "SlalomTreeBackup.xml",
+   "kb": 144,
+   "main": "BehaviorTree",
+   "same": 32,
+   "differs": [
+    "AssertTree",
+    "BinTree",
+    "DeployTankTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "GoToObject",
+    "Move",
+    "PassThroughSlalom",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "SetActiveCamera",
+    "ShootObject",
+    "SlalomTree",
+    "SmartMovePosition",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree",
+    "WaitForController"
+   ],
+   "only": [
+    "TankLongitudinalMove"
+   ],
+   "behind": [
+    "AssertTree",
+    "BinTree",
+    "DeployTankTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "GoToObject",
+    "Move",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "SetActiveCamera",
+    "SmartMovePosition",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree",
+    "WaitForController"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 35
+  },
+  {
+   "file": "SurfaceTree.xml",
+   "kb": 52,
+   "main": "BehaviorTree",
+   "same": 6,
+   "differs": [
+    "AlignLink",
+    "BumpObject",
+    "BuoyTree",
+    "CollectDetsAtAngle",
+    "FireTorpedo",
+    "GateTree",
+    "KillController",
+    "MiniSearch",
+    "Move",
+    "PrimitiveMoveOrientation",
+    "PrimitiveMovePosition",
+    "Search",
+    "ShootObject",
+    "SmartMovePosition",
+    "SpinTree",
+    "SurfaceTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "AlignLink",
+    "BumpObject",
+    "BuoyTree",
+    "CollectDetsAtAngle",
+    "FireTorpedo",
+    "GateTree",
+    "KillController",
+    "MiniSearch",
+    "Move",
+    "PrimitiveMoveOrientation",
+    "Search",
+    "SmartMovePosition",
+    "SpinTree",
+    "TorpedoTree"
+   ],
+   "ahead": [],
+   "models": 22
+  },
+  {
+   "file": "test_comp_tree.xml",
+   "kb": 180,
+   "main": "BehaviorTree",
+   "same": 40,
+   "differs": [
+    "ActivateMagnet",
+    "BinTree",
+    "CompMissionTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "NewTableTree",
+    "PassThroughSlalom",
+    "pickupObject",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "ShootObject",
+    "SingleSlalom",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "ActivateMagnet",
+    "BinTree",
+    "DownwardMiniSearch",
+    "DownwardMove",
+    "DownwardSearch",
+    "dropObject",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "MagnetTree",
+    "Move",
+    "pickupObject",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootDownwardObject",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 38
+  },
+  {
+   "file": "TestTorpedoTree.xml",
+   "kb": 200,
+   "main": "BehaviorTree",
+   "same": 65,
+   "differs": [
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "ShootObject",
+    "SpinTree",
+    "SurfaceTree"
+   ],
+   "only": [
+    "ShootSearchedObject",
+    "TestTorpedoTree"
+   ],
+   "behind": [
+    "DownwardSearch",
+    "dropObject",
+    "SpinTree"
+   ],
+   "ahead": [
+    "DownwardTrack",
+    "ShootObject"
+   ],
+   "models": 39
+  },
+  {
+   "file": "TestTree.xml",
+   "kb": 149,
+   "main": "BehaviorTree",
+   "same": 39,
+   "differs": [
+    "BinTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "DownwardTrack",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "Move",
+    "PassThroughSlalom",
+    "PrepForRun",
+    "PrimitiveMovePosition",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "ShootObject",
+    "SlalomTree",
+    "SpinTree",
+    "SurfaceTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "BinTree",
+    "DownwardMove",
+    "DownwardSearch",
+    "FireTorpedo",
+    "FlipTree",
+    "GateTree",
+    "Move",
+    "PrepForRun",
+    "RandomPingerTree",
+    "ReturnHomeTree",
+    "SpinTree",
+    "TableTree",
+    "TorpedoTree"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 35
+  },
+  {
+   "file": "TorpedoTree.xml",
+   "kb": 194,
+   "main": "BehaviorTree",
+   "same": 66,
+   "differs": [
+    "DownwardSearch",
+    "DownwardTrack",
+    "dropObject",
+    "SpinTree",
+    "SurfaceTree"
+   ],
+   "only": [],
+   "behind": [
+    "DownwardSearch",
+    "dropObject",
+    "SpinTree"
+   ],
+   "ahead": [
+    "DownwardTrack"
+   ],
+   "models": 39
+  },
+  {
+   "file": "ZeroTree.xml",
+   "kb": 53,
+   "main": "BehaviorTree",
+   "same": 7,
+   "differs": [
+    "AlignLink",
+    "BumpObject",
+    "BuoyTree",
+    "CollectDetsAtAngle",
+    "FireTorpedo",
+    "GateTree",
+    "KillController",
+    "MiniSearch",
+    "Move",
+    "PrimitiveMovePosition",
+    "Search",
+    "ShootObject",
+    "SmartMovePosition",
+    "SpinTree",
+    "SurfaceTree",
+    "TorpedoTree"
+   ],
+   "only": [],
+   "behind": [
+    "AlignLink",
+    "BumpObject",
+    "BuoyTree",
+    "CollectDetsAtAngle",
+    "FireTorpedo",
+    "GateTree",
+    "KillController",
+    "MiniSearch",
+    "Move",
+    "Search",
+    "SmartMovePosition",
+    "SpinTree",
+    "TorpedoTree"
+   ],
+   "ahead": [],
+   "models": 24
+  }
+ ],
+ "nodes": [
+  {
+   "name": "CallSetBoolService",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "srv_name",
+     "dir": "in"
+    },
+    {
+     "name": "data",
+     "dir": "in"
+    },
+    {
+     "name": "time_limit_secs",
+     "dir": "in"
+    }
+   ],
+   "tests": 7,
+   "in_workspace": true
+  },
+  {
+   "name": "CallSetStringService",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "srv_name",
+     "dir": "in"
+    },
+    {
+     "name": "data",
+     "dir": "in"
+    },
+    {
+     "name": "time_limit_secs",
+     "dir": "in"
+    }
+   ],
+   "tests": 1,
+   "in_workspace": true
+  },
+  {
+   "name": "CallStartBinaryClassifierService",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "srv_name",
+     "dir": "in"
+    },
+    {
+     "name": "class_name",
+     "dir": "in"
+    },
+    {
+     "name": "object1_name",
+     "dir": "in"
+    },
+    {
+     "name": "object2_name",
+     "dir": "in"
+    },
+    {
+     "name": "time_limit_secs",
+     "dir": "in"
+    }
+   ],
+   "tests": 1,
+   "in_workspace": true
+  },
+  {
+   "name": "CallTriggerService",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "srv_name",
+     "dir": "in"
+    },
+    {
+     "name": "time_limit_secs",
+     "dir": "in"
+    }
+   ],
+   "tests": 5,
+   "in_workspace": true
+  },
+  {
+   "name": "CenterDetection",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "object_name",
+     "dir": "in"
+    },
+    {
+     "name": "min_score",
+     "dir": "in"
+    },
+    {
+     "name": "max_age_secs",
+     "dir": "in"
+    },
+    {
+     "name": "timeout_secs",
+     "dir": "in"
+    },
+    {
+     "name": "yaw_tolerance",
+     "dir": "in"
+    },
+    {
+     "name": "depth_tolerance",
+     "dir": "in"
+    },
+    {
+     "name": "center_depth",
+     "dir": "in"
+    },
+    {
+     "name": "min_depth",
+     "dir": "in"
+    },
+    {
+     "name": "max_depth",
+     "dir": "in"
+    },
+    {
+     "name": "base_frame",
+     "dir": "in"
+    },
+    {
+     "name": "align_yaw",
+     "dir": "in"
+    },
+    {
+     "name": "object_frame",
+     "dir": "in"
+    },
+    {
+     "name": "standoff",
+     "dir": "in"
+    },
+    {
+     "name": "position_tolerance",
+     "dir": "in"
+    },
+    {
+     "name": "align_tolerance",
+     "dir": "in"
+    }
+   ],
+   "tests": 0,
+   "in_workspace": false
+  },
+  {
+   "name": "ComputeFrameAlignment",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "x",
+     "dir": "in"
+    },
+    {
+     "name": "y",
+     "dir": "in"
+    },
+    {
+     "name": "z",
+     "dir": "in"
+    },
+    {
+     "name": "or",
+     "dir": "in"
+    },
+    {
+     "name": "op",
+     "dir": "in"
+    },
+    {
+     "name": "oy",
+     "dir": "in"
+    },
+    {
+     "name": "reference_frame",
+     "dir": "in"
+    },
+    {
+     "name": "link_frame",
+     "dir": "in"
+    },
+    {
+     "name": "base_frame",
+     "dir": "in"
+    },
+    {
+     "name": "out_x",
+     "dir": "out"
+    },
+    {
+     "name": "out_y",
+     "dir": "out"
+    },
+    {
+     "name": "out_z",
+     "dir": "out"
+    },
+    {
+     "name": "out_or",
+     "dir": "out"
+    },
+    {
+     "name": "out_op",
+     "dir": "out"
+    },
+    {
+     "name": "out_oy",
+     "dir": "out"
+    }
+   ],
+   "tests": 10,
+   "in_workspace": true
+  },
+  {
+   "name": "ContinuousSpin",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "num_cycles",
+     "dir": "in"
+    },
+    {
+     "name": "yaw_rate",
+     "dir": "in"
+    },
+    {
+     "name": "timeout_secs",
+     "dir": "in"
+    },
+    {
+     "name": "odom_timeout_secs",
+     "dir": "in"
+    }
+   ],
+   "tests": 0,
+   "in_workspace": true
+  },
+  {
+   "name": "FollowPath",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "frame",
+     "dir": "in"
+    },
+    {
+     "name": "waypoints",
+     "dir": "in"
+    },
+    {
+     "name": "min_depth",
+     "dir": "in"
+    },
+    {
+     "name": "max_depth",
+     "dir": "in"
+    },
+    {
+     "name": "timeout",
+     "dir": "in"
+    },
+    {
+     "name": "spin_rate",
+     "dir": "in"
+    },
+    {
+     "name": "max_speed",
+     "dir": "in"
+    }
+   ],
+   "tests": 0,
+   "in_workspace": false
+  },
+  {
+   "name": "GetActuatorStatus",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "claw_state",
+     "dir": "out"
+    },
+    {
+     "name": "torpedo_state",
+     "dir": "out"
+    },
+    {
+     "name": "torpedo_available_count",
+     "dir": "out"
+    },
+    {
+     "name": "dropper_state",
+     "dir": "out"
+    },
+    {
+     "name": "dropper_available_count",
+     "dir": "out"
+    },
+    {
+     "name": "actuators_busy",
+     "dir": "out"
+    }
+   ],
+   "tests": 6,
+   "in_workspace": true
+  },
+  {
+   "name": "GetBoolTopic",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "topic",
+     "dir": "in"
+    },
+    {
+     "name": "value",
+     "dir": "out"
+    }
+   ],
+   "tests": 5,
+   "in_workspace": true
+  },
+  {
+   "name": "GetFloat64Topic",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "topic",
+     "dir": "in"
+    },
+    {
+     "name": "value",
+     "dir": "out"
+    }
+   ],
+   "tests": 5,
+   "in_workspace": true
+  },
+  {
+   "name": "GetImuOrientation",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "topic",
+     "dir": "in"
+    },
+    {
+     "name": "or",
+     "dir": "out"
+    },
+    {
+     "name": "op",
+     "dir": "out"
+    },
+    {
+     "name": "oy",
+     "dir": "out"
+    }
+   ],
+   "tests": 1,
+   "in_workspace": true
+  },
+  {
+   "name": "GetMappingState",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "map_locked",
+     "dir": "out"
+    },
+    {
+     "name": "target_name",
+     "dir": "out"
+    }
+   ],
+   "tests": 5,
+   "in_workspace": true
+  },
+  {
+   "name": "GetOdometry",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "x",
+     "dir": "out"
+    },
+    {
+     "name": "y",
+     "dir": "out"
+    },
+    {
+     "name": "z",
+     "dir": "out"
+    },
+    {
+     "name": "or",
+     "dir": "out"
+    },
+    {
+     "name": "op",
+     "dir": "out"
+    },
+    {
+     "name": "oy",
+     "dir": "out"
+    }
+   ],
+   "tests": 3,
+   "in_workspace": true
+  },
+  {
+   "name": "GetTwistTopic",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "topic",
+     "dir": "in"
+    },
+    {
+     "name": "vel_x",
+     "dir": "out"
+    },
+    {
+     "name": "vel_y",
+     "dir": "out"
+    },
+    {
+     "name": "vel_z",
+     "dir": "out"
+    },
+    {
+     "name": "vel_roll",
+     "dir": "out"
+    },
+    {
+     "name": "vel_pitch",
+     "dir": "out"
+    },
+    {
+     "name": "vel_yaw",
+     "dir": "out"
+    }
+   ],
+   "tests": 4,
+   "in_workspace": true
+  },
+  {
+   "name": "LatestDetection",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "object_name",
+     "dir": "in"
+    },
+    {
+     "name": "frame",
+     "dir": "in"
+    },
+    {
+     "name": "max_age_secs",
+     "dir": "in"
+    },
+    {
+     "name": "min_score",
+     "dir": "in"
+    },
+    {
+     "name": "out_x",
+     "dir": "out"
+    },
+    {
+     "name": "out_y",
+     "dir": "out"
+    },
+    {
+     "name": "out_z",
+     "dir": "out"
+    }
+   ],
+   "tests": 0,
+   "in_workspace": false
+  },
+  {
+   "name": "PublishEKFPose",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "x",
+     "dir": "in"
+    },
+    {
+     "name": "setX",
+     "dir": "in"
+    },
+    {
+     "name": "y",
+     "dir": "in"
+    },
+    {
+     "name": "setY",
+     "dir": "in"
+    },
+    {
+     "name": "z",
+     "dir": "in"
+    },
+    {
+     "name": "setZ",
+     "dir": "in"
+    },
+    {
+     "name": "roll",
+     "dir": "in"
+    },
+    {
+     "name": "pitch",
+     "dir": "in"
+    },
+    {
+     "name": "yaw",
+     "dir": "in"
+    },
+    {
+     "name": "setOrientation",
+     "dir": "in"
+    },
+    {
+     "name": "timeout_secs",
+     "dir": "in"
+    },
+    {
+     "name": "position_tolerance",
+     "dir": "in"
+    },
+    {
+     "name": "orientation_tolerance",
+     "dir": "in"
+    }
+   ],
+   "tests": 5,
+   "in_workspace": true
+  },
+  {
+   "name": "PublishFloat32",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "topic",
+     "dir": "in"
+    },
+    {
+     "name": "data",
+     "dir": "in"
+    }
+   ],
+   "tests": 1,
+   "in_workspace": true
+  },
+  {
+   "name": "PublishInt8",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "topic",
+     "dir": "in"
+    },
+    {
+     "name": "data",
+     "dir": "in"
+    }
+   ],
+   "tests": 1,
+   "in_workspace": true
+  },
+  {
+   "name": "PublishToController",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "isOrientation",
+     "dir": "in"
+    },
+    {
+     "name": "mode",
+     "dir": "in"
+    },
+    {
+     "name": "x",
+     "dir": "in"
+    },
+    {
+     "name": "y",
+     "dir": "in"
+    },
+    {
+     "name": "z",
+     "dir": "in"
+    }
+   ],
+   "tests": 7,
+   "in_workspace": true
+  },
+  {
+   "name": "SetControllerSafeMode",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "safe",
+     "dir": "in"
+    },
+    {
+     "name": "timeout_secs",
+     "dir": "in"
+    }
+   ],
+   "tests": 1,
+   "in_workspace": true
+  },
+  {
+   "name": "SetMappingTarget",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "target_object",
+     "dir": "in"
+    },
+    {
+     "name": "lock_map",
+     "dir": "in"
+    },
+    {
+     "name": "time_limit_secs",
+     "dir": "in"
+    }
+   ],
+   "tests": 6,
+   "in_workspace": true
+  },
+  {
+   "name": "SetStatus",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "status",
+     "dir": "in"
+    }
+   ],
+   "tests": 10,
+   "in_workspace": true
+  },
+  {
+   "name": "TransformPose",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "from_frame",
+     "dir": "in"
+    },
+    {
+     "name": "to_frame",
+     "dir": "in"
+    },
+    {
+     "name": "x",
+     "dir": "in"
+    },
+    {
+     "name": "y",
+     "dir": "in"
+    },
+    {
+     "name": "z",
+     "dir": "in"
+    },
+    {
+     "name": "or",
+     "dir": "in"
+    },
+    {
+     "name": "op",
+     "dir": "in"
+    },
+    {
+     "name": "oy",
+     "dir": "in"
+    },
+    {
+     "name": "out_x",
+     "dir": "out"
+    },
+    {
+     "name": "out_y",
+     "dir": "out"
+    },
+    {
+     "name": "out_z",
+     "dir": "out"
+    },
+    {
+     "name": "out_or",
+     "dir": "out"
+    },
+    {
+     "name": "out_op",
+     "dir": "out"
+    },
+    {
+     "name": "out_oy",
+     "dir": "out"
+    }
+   ],
+   "tests": 6,
+   "in_workspace": true
+  },
+  {
+   "name": "TriggerControllerStunt",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "targetStuntState",
+     "dir": "in"
+    }
+   ],
+   "tests": 1,
+   "in_workspace": true
+  },
+  {
+   "name": "Wait",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "seconds",
+     "dir": "in"
+    }
+   ],
+   "tests": 3,
+   "in_workspace": true
+  },
+  {
+   "name": "WaitForDetection",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "object_name",
+     "dir": "in"
+    },
+    {
+     "name": "timeout_secs",
+     "dir": "in"
+    }
+   ],
+   "tests": 1,
+   "in_workspace": true
+  },
+  {
+   "name": "getCovariance",
+   "kind": "action",
+   "base": "UWRTActionNode",
+   "ports": [
+    {
+     "name": "Target",
+     "dir": "in"
+    },
+    {
+     "name": "Covariance",
+     "dir": "out"
+    }
+   ],
+   "tests": 3,
+   "in_workspace": true
+  },
+  {
+   "name": "ApproxEqualTo",
+   "kind": "condition",
+   "base": "UWRTConditionNode",
+   "ports": [
+    {
+     "name": "a",
+     "dir": "in"
+    },
+    {
+     "name": "b",
+     "dir": "in"
+    },
+    {
+     "name": "range",
+     "dir": "in"
+    }
+   ],
+   "tests": 4,
+   "in_workspace": true
+  },
+  {
+   "name": "ApproxEqualToAngle",
+   "kind": "condition",
+   "base": "UWRTConditionNode",
+   "ports": [
+    {
+     "name": "a",
+     "dir": "in"
+    },
+    {
+     "name": "b",
+     "dir": "in"
+    },
+    {
+     "name": "range",
+     "dir": "in"
+    }
+   ],
+   "tests": 24,
+   "in_workspace": true
+  },
+  {
+   "name": "CompareNums",
+   "kind": "condition",
+   "base": "UWRTConditionNode",
+   "ports": [
+    {
+     "name": "test",
+     "dir": "in"
+    },
+    {
+     "name": "a",
+     "dir": "in"
+    },
+    {
+     "name": "b",
+     "dir": "in"
+    }
+   ],
+   "tests": 9,
+   "in_workspace": true
+  },
+  {
+   "name": "IsTrue",
+   "kind": "condition",
+   "base": "UWRTConditionNode",
+   "ports": [
+    {
+     "name": "value",
+     "dir": "in"
+    }
+   ],
+   "tests": 2,
+   "in_workspace": true
+  },
+  {
+   "name": "MapConverged",
+   "kind": "condition",
+   "base": "UWRTConditionNode",
+   "ports": [
+    {
+     "name": "object",
+     "dir": "in"
+    },
+    {
+     "name": "target_cov",
+     "dir": "in"
+    }
+   ],
+   "tests": 4,
+   "in_workspace": false
+  },
+  {
+   "name": "SeenRecently",
+   "kind": "condition",
+   "base": "UWRTConditionNode",
+   "ports": [
+    {
+     "name": "object_name",
+     "dir": "in"
+    },
+    {
+     "name": "max_age_secs",
+     "dir": "in"
+    },
+    {
+     "name": "min_score",
+     "dir": "in"
+    }
+   ],
+   "tests": 4,
+   "in_workspace": true
+  },
+  {
+   "name": "RetryUntilSuccessfulOrTimeout",
+   "kind": "decorator",
+   "base": "UWRTDecoratorNode",
+   "ports": [
+    {
+     "name": "num_seconds",
+     "dir": "in"
+    }
+   ],
+   "tests": 3,
+   "in_workspace": true
+  },
+  {
+   "name": "Info",
+   "kind": "simple",
+   "base": "UWRTSimpleActionNode",
+   "ports": [],
+   "tests": 0,
+   "in_workspace": true
+  },
+  {
+   "name": "Error",
+   "kind": "simple",
+   "base": "UWRTSimpleActionNode",
+   "ports": [],
+   "tests": 0,
+   "in_workspace": true
+  },
+  {
+   "name": "CalculateDistance",
+   "kind": "simple",
+   "base": "UWRTSimpleActionNode",
+   "ports": [],
+   "tests": 0,
+   "in_workspace": true
+  },
+  {
+   "name": "Math",
+   "kind": "simple",
+   "base": "UWRTSimpleActionNode",
+   "ports": [],
+   "tests": 0,
+   "in_workspace": true
+  },
+  {
+   "name": "Format",
+   "kind": "simple",
+   "base": "UWRTSimpleActionNode",
+   "ports": [],
+   "tests": 0,
+   "in_workspace": true
+  },
+  {
+   "name": "HeadingToPoint",
+   "kind": "simple",
+   "base": "UWRTSimpleActionNode",
+   "ports": [],
+   "tests": 0,
+   "in_workspace": true
+  },
+  {
+   "name": "AddWaypoint",
+   "kind": "simple",
+   "base": "UWRTSimpleActionNode",
+   "ports": [],
+   "tests": 14,
+   "in_workspace": false
+  },
+  {
+   "name": "AddArc",
+   "kind": "simple",
+   "base": "UWRTSimpleActionNode",
+   "ports": [],
+   "tests": 0,
+   "in_workspace": false
+  },
+  {
+   "name": "CheckBlackboardExists",
+   "kind": "simple",
+   "base": "UWRTSimpleActionNode",
+   "ports": [],
+   "tests": 0,
+   "in_workspace": true
+  }
+ ],
+ "tests": [
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestAddWaypoint.cpp",
+   "cases": 14
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestCallSetBoolService.cpp",
+   "cases": 7
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestCallSetStringService.cpp",
+   "cases": 1
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestCallStartBinaryClassifierService.cpp",
+   "cases": 1
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestCallTriggerService.cpp",
+   "cases": 5
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestComputeFrameAlignment.cpp",
+   "cases": 10
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestGetActuatorStatus.cpp",
+   "cases": 6
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestGetBoolTopic.cpp",
+   "cases": 5
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestGetFloat64Topic.cpp",
+   "cases": 5
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestGetImuOrientation.cpp",
+   "cases": 1
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestGetMappingState.cpp",
+   "cases": 5
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestGetOdometry.cpp",
+   "cases": 3
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestGetTwistTopic.cpp",
+   "cases": 4
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestPublishEKFPose.cpp",
+   "cases": 5
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestPublishFloat32.cpp",
+   "cases": 1
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestPublishInt8.cpp",
+   "cases": 1
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestPublishToController.cpp",
+   "cases": 7
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestSetControllerSafeMode.cpp",
+   "cases": 1
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestSetMappingTarget.cpp",
+   "cases": 6
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestSetStatus.cpp",
+   "cases": 10
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestTransformPose.cpp",
+   "cases": 6
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestTriggerControllerStunt.cpp",
+   "cases": 1
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestWait.cpp",
+   "cases": 3
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestWaitForDetection.cpp",
+   "cases": 1
+  },
+  {
+   "file": "test/riptide_autonomy/bt_actions/TestgetCovariance.cpp",
+   "cases": 3
+  },
+  {
+   "file": "test/riptide_autonomy/bt_conditions/TestApproxEqualTo.cpp",
+   "cases": 4
+  },
+  {
+   "file": "test/riptide_autonomy/bt_conditions/TestApproxEqualToAngle.cpp",
+   "cases": 24
+  },
+  {
+   "file": "test/riptide_autonomy/bt_conditions/TestCompareNums.cpp",
+   "cases": 9
+  },
+  {
+   "file": "test/riptide_autonomy/bt_conditions/TestIsTrue.cpp",
+   "cases": 2
+  },
+  {
+   "file": "test/riptide_autonomy/bt_conditions/TestMapConverged.cpp",
+   "cases": 4
+  },
+  {
+   "file": "test/riptide_autonomy/bt_conditions/TestSeenRecently.cpp",
+   "cases": 4
+  },
+  {
+   "file": "test/riptide_autonomy/bt_decorators/TestRetryUntilSuccessfulOrTimeout.cpp",
+   "cases": 3
+  },
+  {
+   "file": "test/riptide_autonomy/tools/TestBufferedSubscriber.cpp",
+   "cases": 4
+  },
+  {
+   "file": "test/riptide_autonomy/tools/TestDummyActionNode.cpp",
+   "cases": 7
+  },
+  {
+   "file": "test/riptide_autonomy/tools/TestTimedPublisher.cpp",
+   "cases": 4
+  },
+  {
+   "file": "test/riptide_autonomy/tools/TestTreesLoad.cpp",
+   "cases": 1
+  }
+ ]
+}

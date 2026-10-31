@@ -4,33 +4,272 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The competition mission · How Talos works</title>
-<meta name="description" content="One or two sentences on what this chapter explains.">
+<meta name="description" content="RepairCompMpcTree.xml, the behaviour tree Talos runs at RoboSub, task by task: what each task asks of mapping, how it moves, which actuators it fires, its timeouts, and what happens when something fails. With an explorer of the real XML, replayed on a Nereus run.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Autonomy</div>
+    <div class="kicker">Autonomy · Chapter 3</div>
     <h1>The competition mission</h1>
-    <p class="lede">One or two sentences: what this is and why a new member should care.</p>
+    <p class="lede">One behaviour tree runs Talos's whole RoboSub run. This chapter reads it task by task, and lets you open every node of the real file while a Nereus run replays on top of it.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Three to five bullets a reader can stop after.</li>
+      <li>One file, <code>RepairCompMpcTree.xml</code>: kill switch, dive, gate, slalom, the pinger, torpedoes and table (the pinger picks which first), bins, magnets, then home through the gate.</li>
+      <li>Every task is wrapped in <code>ForceSuccess</code>. A task that fails or times out never stops the run; Talos moves on to the next one.</li>
+      <li>Each task has the same shape: tell mapping what to look for, search until its estimate is tight, lock the map, then move and act on that frozen estimate.</li>
+      <li>Between tasks Talos flies one path through waypoints that are fixed in mapping's config.</li>
+      <li>In Nereus the run takes 8½ minutes from the kill switch, more than 3 of them at the table.</li>
     </ul></aside>
     <div class="prose">
-      <p>Opening paragraph.</p>
-      <h2 id="first-section">First section</h2>
-      <p>Coming soon.</p>
+      <p><a href="bt.html">Chapter 1</a> explained behaviour trees and <a href="bt-nodes.html">Chapter 2</a> the nodes Talos has. This is the tree that uses them: <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>trees/RepairCompMpcTree.xml</code></a> in <code>riptide_autonomy</code> (branch <code>autonomy-mapping</code>). The perception side of the same tasks (frames, targets, covariance checks) is in <a href="perception/frames.html">Frames, targets and the mission tree</a>.</p>
+
+      <h2 id="overview">The mission in one picture</h2>
     </div>
     <figure class="fig">
-      <div class="panel" id="some-figure"></div>
-      <figcaption><b>Bold lead-in.</b> What to look at. Tap or hover … (if interactive).</figcaption>
+      <div class="panel" id="flow-graph"></div>
+      <figcaption><b>The order of the tasks.</b> Under each task, the time it took in the Nereus run used throughout this chapter (with the transit to it). The pinger decides whether the torpedo or the table comes first; both orders end at the bins. Tap a task.</figcaption>
     </figure>
+
     <div class="prose">
-      <h2 id="second-section">Second section</h2>
-      <p>Coming soon.</p>
+      <h2 id="file">How the file is built</h2>
+      <ul>
+        <li><strong>A library plus a mission.</strong> The file is about 4,100 lines with 87 subtree definitions: Groot saves the team's whole subtree library into every tree file. The mission reaches 42 of them.</li>
+        <li><strong>Repair or rescue.</strong> The main tree logs <code>MISSION: REPAIR</code> and runs <code>CompMissionTreeMpc</code> with <code>repair_mission</code> = 1. <code>RescueCompMpcTree.xml</code> is the same file with 0, which picks the other gate side, the <code>blood</code> torpedo holes and bin vinyls, and other images at the table.</li>
+        <li><strong>Every subtree has its own blackboard</strong> (<code>__shared_blackboard="false"</code>). Each attribute on a <code>SubTree</code> maps one of its ports to a <em>key</em> of the caller, never a value. That is why the file is full of lines like <code>&lt;SetBlackboard output_key="1" value="1"/&gt;</code>: to pass the number 1, the caller first stores it under the key <code>"1"</code>.</li>
+        <li><strong>Who runs it.</strong> <code>doTask</code> ticks the tree every 30 ms until it returns SUCCESS or FAILURE, then disables the controller and sets the LEDs to pulsing green or red (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp"><code>DoTask.cpp</code></a>). You start it from the autonomy panel of the <a href="viewer.html">Nereus viewer</a>, in the sim and on the robot alike.</li>
+        <li><strong>One step can end the mission early</strong>: the dive. Everything after it is inside a <code>ForceSuccess</code> or can't fail.</li>
+        <li><strong>One dead block.</strong> Right after the pinger, a <code>ForceSuccess</code> sets <code>target_image</code> to <code>buoy</code> or <code>compass</code>. No subtree is passed that key, so nothing reads it; the table picks its own image.</li>
+      </ul>
+
+      <h2 id="explorer">Explore the real tree</h2>
+      <p>The explorer below is the XML itself, parsed node for node. The run is the same Nereus run as in the picture: <code>doTask</code> publishes the names of the running nodes on <code>autonomy/tree_stack</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/UWRTLogger.hpp"><code>UWRTLogger.hpp</code></a>), and that topic was recorded.</p>
     </div>
+    <figure class="fig mt-fig" id="explorer-fig">
+      <div class="panel mt-panel">
+        <div class="mt-transport">
+          <button class="btn primary" id="mt-play" aria-pressed="false">Play</button>
+          <output id="mt-time" aria-live="off">0:00</output>
+          <span class="seg" id="mt-speed" role="group" aria-label="Replay speed"><button data-v="4" aria-pressed="false">4×</button><button data-v="16" aria-pressed="true">16×</button></span>
+          <label class="mt-follow"><input type="checkbox" id="mt-follow" checked> Follow the run</label>
+        </div>
+        <input type="range" id="mt-scrub" min="0" max="563" step="0.1" value="0" aria-label="Time in the run">
+        <div class="mt-segs" id="mt-segs" role="group" aria-label="Jump to a task"></div>
+        <div class="mt-segnow" id="mt-segnow"><small>Task</small><b id="mt-task">–</b><span id="mt-taskt"></span></div>
+        <div class="mt-cols">
+          <div class="mt-left">
+            <div class="mt-search">
+              <input type="search" id="mt-q" placeholder="Search: a node, frame, service, number…" aria-label="Search the tree" autocomplete="off" spellcheck="false">
+              <button class="btn" id="mt-collapse" type="button">Collapse</button>
+            </div>
+            <div class="mt-crumbs" id="mt-crumbs"></div>
+            <div class="mt-tree" id="mt-tree" role="tree" aria-label="RepairCompMpcTree.xml"></div>
+            <div class="mt-legend" aria-hidden="true">
+              <span><i class="k-ctl">seq</i> control</span><span><i class="k-dec">retry</i> decorator</span><span><i class="k-act">act</i> action</span><span><i class="k-cnd">cond</i> condition</span><span><i class="k-sub">sub</i> subtree</span><span><i class="mt-run-key"></i> running</span>
+            </div>
+          </div>
+          <div class="mt-right">
+            <div class="mt-cam">
+              <video id="mt-video" muted playsinline preload="metadata" poster="/talos-explained/img/mission-tree/cam_poster.webp" aria-label="Talos's active camera in the Nereus run, with the detector's masks and boxes"></video>
+              <div class="mt-now">
+                <div class="wide"><small>Running</small><span id="mt-running">–</span></div>
+                <div class="wide"><small>Last log line</small><span id="mt-log">–</span></div>
+              </div>
+            </div>
+            <div class="mt-detail" id="mt-detail" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>RepairCompMpcTree.xml, every node, replayed on a Nereus run.</b> Play or drag the timeline: the orange rows are what was running at that moment, and the video is the camera Talos was using. Tap ▸ to open a node, tap a row for its ports and source line, or search for any name, frame or service. Faded rows were never seen running in this run.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <p>Two things to try: search <code>FollowPath</code> to see every move the mission makes, and search <code>0.0005</code> to see every place it waits for a 2 cm estimate. Each task section below has a link that jumps the explorer there.</p>
+
+      <h2 id="start">Before the gate</h2>
+      <p>Nothing moves until the kill switch is in, and nothing the cameras see moves the map until a task asks for it.</p>
+      <dl class="spec">
+        <dt>Kill switch</dt><dd><code>WaitForKillSwitch</code>: LEDs solid red, read <code>state/kill</code> until it says not killed, then blink blue and wait 5 s.</dd>
+        <dt>Prep</dt><dd><code>PrepForRun</code>: lock the map with no target, reload the actuators (<code>command/actuator/notify_reload</code>), disarm.</dd>
+        <dt>Dive</dt><dd>Hold the heading and ask for −0.56 m, which <code>PrimitiveMovePosition</code> pushes down to its −0.75 m minimum depth. It counts as done within 25 cm, with 60 s to get there; then level (15 s).</dd>
+        <dt>If it fails</dt><dd>The dive is the one step with no <code>ForceSuccess</code>: if Talos isn't at depth after 60 s, the whole mission ends with FAILURE.</dd>
+        <dt>In Nereus</dt><dd>Kill switch at 33.8 s on the run's clock, dive done at 41.6 s, at about −0.52 m.</dd>
+      </dl>
+      <p class="src"><a class="mt-jump" href="#explorer" data-seg="Kill switch" data-node="WaitForKillSwitch">Open in the explorer ↑</a></p>
+
+      <h2 id="gate">Gate</h2>
+      <p><code>GateTreeMpc</code> flies the gate from its prior. The map is still locked, so a detection can't move the gate; its search block starts with an <code>AlwaysFailure</code> named "Comment out following", so neither mini-search runs.</p>
+      <dl class="spec">
+        <dt>Side</dt><dd>Repair goes through <code>gate_repair</code>. Where <code>gate_rescue</code> sits in that frame decides the slalom side: positive y sets <code>sla_pass_on_left</code> = 1.</dd>
+        <dt>Moves</dt><dd>One <code>FollowPath</code>: 1 m in front of <code>gate_repair_frame</code>, then through it, 1.1 m below the frame (−1.35 m in Nereus), 60 s. After the flip, 1 m out the back (30 s).</dd>
+        <dt>Flip</dt><dd><code>FlipTree</code> is the pre-MPC flip. It first disables the controller, then fails to set <code>controller__stunt__safe_mode</code> (the MPC has no such parameter) and gives up after 10 s. <code>FlipTreeMpc</code>, the MPC version (a path, with the DVL spoofed as still), is in the file but never called, and untested in the mission.</dd>
+        <dt>In Nereus</dt><dd>41.6 to 64.8 s. During the 10 s with the thrusters off, Talos floated up from −1.35 m to −1.03 m.</dd>
+      </dl>
+      <p class="src"><a class="mt-jump" href="#explorer" data-seg="Gate" data-node="GateTreeMpc">Open in the explorer ↑</a></p>
+
+      <h2 id="slalom">Slalom</h2>
+      <p><code>SlalomPathMpc</code> looks once, locks the map, and flies the three pole sets as one path.</p>
+      <dl class="spec">
+        <dt>Detector</dt><dd><code>set_slalom_type</code> = <code>slalom_parent</code>: the name the detector publishes slalom poles under.</dd>
+        <dt>Target</dt><dd><code>slalom_parent</code>, by <code>MiniSearchMpc</code>: forward camera 2.5 m in front, wait 5 s, then check the error every second until it is under 0.3 (σ ≈ 42 cm) or 15 s pass. Then lock the map.</dd>
+        <dt>Moves</dt><dd>One <code>FollowPath</code> (180 s). For the front, middle and back sets: 0.75 m before, level with it, 0.375 m after, all 0.8 m to the side (a quarter of the 3.2 m row) on the side the gate chose. Then on to <code>pre_torpedo_pose_frame</code>, holding the slalom's heading.</dd>
+        <dt>Why one path</dt><dd>The MPC flies through waypoints without stopping and settles only on the last. Each waypoint stays in its pole set's frame, so the path moves if mapping moves the frames.</dd>
+        <dt>In Nereus</dt><dd>64.8 to 99.3 s. The first check already read 0.00018.</dd>
+      </dl>
+      <p class="src"><a class="mt-jump" href="#explorer" data-seg="Slalom" data-node="SlalomPathMpc">Open in the explorer ↑</a></p>
+
+      <h2 id="pinger">The pinger picks the order</h2>
+      <p><code>RandomPingerTree</code> listens at two spots and decides whether the torpedo or the table comes first.</p>
+      <dl class="spec">
+        <dt>Listen</dt><dd>Lock the map. Move to <code>pre_torpedo_pose_frame</code>, sample the hydrophone 10 s (<code>/talos/acoustics/start_sample</code>, <code>stop_sample</code>), move to <code>pre_table_pose_frame</code>, sample 10 s. These moves use the older point-to-point <code>Move</code> subtree, not <code>FollowPath</code>.</dd>
+        <dt>Decide</dt><dd><a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_acoustics/src/Acoustics.cpp"><code>riptide_acoustics</code></a> compares the two windows' pinger amplitude and publishes <code>buffer_0_closer</code>: true when the first stop (the torpedo's) was louder. The tree reads it as <code>pinger_is_table</code>. True: table, then torpedo. False: torpedo, then table.</dd>
+        <dt>If it fails</dt><dd>If a service call fails, the read never happens, <code>pinger_is_table</code> stays empty, and <code>CompareNums</code> reads an empty port as 0: torpedo first. If the services work but no answer is published within 3 s, <code>GetBoolTopic</code> writes false and fails: torpedo first too.</dd>
+        <dt>In Nereus</dt><dd>99.3 to 132.1 s. The sim has no pinger, so the second <code>stop_sample</code> fails ("Cannot compare, buffer 0 has 0 samples"), its two retries get "Not sampling", <code>GetBoolTopic</code> never runs, and the run goes torpedo first.</dd>
+      </dl>
+      <p class="src"><a class="mt-jump" href="#explorer" data-seg="Pinger" data-node="RandomPingerTree">Open in the explorer ↑</a></p>
+
+      <h2 id="transit">Between tasks</h2>
+      <p>Talos gets from one task to the next on a single <code>FollowPath</code> through fixed waypoints. Nothing is searched on the way (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L464"><code>CompMissionTreeMpc</code></a>).</p>
+      <dl class="spec">
+        <dt>The waypoints</dt><dd><code>pre_torpedo_pose</code>, <code>pre_table_pose</code>, <code>pre_bin_pose</code>, <code>pre_return_home</code>: spots near each task and on the way home, set before the run in <code>init_data</code> of <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/config/config.yaml#L176">mapping's config</a>. Mapping publishes each as a frame (<code>pre_torpedo_pose_frame</code> and so on). <code>post_table_pose</code> and <code>post_bin_pose</code> hang 0.5 m above their <code>pre_</code> frame.</dd>
+        <dt>Do they move?</dt><dd>No detector sees them, but like every prop they are placed relative to where mapping thinks the course sits, so they shift with it (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/map_estimator.py#L19"><code>map_estimator.py</code></a>; <a href="perception/frames.html">Frames, targets and the mission tree</a>, <a href="robosub.html#tree">RoboSub and the course</a>).</dd>
+        <dt>Depth</dt><dd>Every transit is kept between 0.75 m and 2.5 m deep (<code>min_depth</code>, <code>max_depth</code>).</dd>
+        <dt>Torpedo first</dt><dd>
+          <ol>
+            <li>Target <code>torpedo</code> (map unlocked), then to <code>pre_torpedo</code> facing <code>torpedo_frame</code>, 60 s.</li>
+            <li>After the torpedo: <code>pre_torpedo</code> → <code>pre_table</code> → <code>post_table</code>, holding <code>pre_torpedo</code>'s heading, 120 s.</li>
+            <li>After the table: <code>post_table</code> → <code>pre_table</code> → <code>pre_bin</code> → <code>post_bin</code>, holding the current heading, 120 s.</li>
+          </ol></dd>
+        <dt>Table first</dt><dd>
+          <ol>
+            <li><code>pre_table</code> → <code>post_table</code>, holding the current heading, 120 s.</li>
+            <li>After the table: target <code>torpedo</code> (map unlocked), then <code>post_table</code> → <code>pre_table</code> → <code>pre_torpedo</code>, facing <code>torpedo_frame</code> on the last leg, 120 s.</li>
+            <li>After the torpedo: <code>pre_torpedo</code> → <code>pre_bin</code> → <code>post_bin</code>, holding <code>pre_torpedo</code>'s heading, 120 s.</li>
+          </ol></dd>
+        <dt>If it fails</dt><dd>Each transit has its own <code>ForceSuccess</code>: if the path times out, the next task starts from wherever Talos stopped.</dd>
+        <dt>In Nereus</dt><dd>To the torpedo 132.1 to 144.9 s, to the table 165.9 to 182.5 s, to the bins 378.5 to 395.7 s.</dd>
+      </dl>
+      <p class="src"><a class="mt-jump" href="#explorer" data-seg="To table" data-node="Path: leave torpedo, straight to the table">Open in the explorer ↑</a></p>
+
+      <h2 id="torpedo">Torpedoes</h2>
+      <p>Map the board on the way, search until it is tight, then map both holes from a stand-off and shoot them one after the other.</p>
+      <dl class="spec">
+        <dt>On the way</dt><dd>Target <code>torpedo</code> (map unlocked), then a <code>FollowPath</code> to <code>pre_torpedo_pose_frame</code> that keeps facing <code>torpedo_frame</code> (60 s).</dd>
+        <dt>Search</dt><dd>Forward camera. <code>SearchMpc</code> until the board's error is under 0.0025 (σ ≈ 4 cm) or 100 s (<a href="#search">below</a>). Even if it times out, Talos shoots.</dd>
+        <dt>Holes</dt><dd>Arm. Stand off 1.5 m in front of the board, target <code>fire_hole_large</code> and <code>fire_hole_small</code> together, hold up to 30 s until both are under 0.0005 (σ ≈ 1.7 cm), lock the map.</dd>
+        <dt>Shot 1</dt><dd>Put <code>torpedo_0_link</code> 1.1 m, then 0.6 m from the large hole as one path, wait for the controller to settle, fire.</dd>
+        <dt>Shot 2</dt><dd>Slide <code>torpedo_1_link</code> to 0.6 m from the small hole, wait, fire. Disarm.</dd>
+        <dt>Settled means</dt><dd><code>WaitForController</code>: the MPC's <code>controller/scale/trust</code> above 0.985 on every axis, and the launcher's y offset in the hole's frame under 1 cm, within 60 s. Trust rises toward 1 while Talos sits within 2 cm and 2° of its setpoint and nearly still (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/include/riptide_mpc/settle_trust.hpp"><code>settle_trust.hpp</code></a>).</dd>
+        <dt>In Nereus</dt><dd>132.1 to 165.9 s. The board was centred 2.8 s after the search began; both holes converged 1.5 s after being targeted.</dd>
+      </dl>
+      <p class="src"><a class="mt-jump" href="#explorer" data-seg="Torpedo" data-node="TorpedoTreeMpc">Open in the explorer ↑</a></p>
+
+      <h2 id="table">Table</h2>
+      <p><code>NewTableTreeMpc</code> maps the two baskets, fits the table to them, then sorts four items into the baskets with the claw.</p>
+      <dl class="spec">
+        <dt>Setup</dt><dd>Down camera. Table pair mode off. All six table props (<code>helmet</code>, <code>warning</code>, <code>bandage</code>, <code>pill</code>, <code>nut_and_bolt</code>, <code>plug</code>) become background targets: mapped whenever seen.</dd>
+        <dt>Baskets</dt><dd><code>DownwardSearchMpc</code> for <code>helmet</code>, then <code>warning</code>: to 0.0005 each, 60 s, camera 1.5 m above. If both pass in one 1 s check, <code>center_table_on_baskets</code> moves the table onto them; otherwise it keeps its prior.</dd>
+        <dt>Four sorts</dt><dd><code>bandage</code> and <code>pill</code> into <code>helmet</code>, <code>nut_and_bolt</code> and <code>plug</code> into <code>warning</code>. Each is a pickup, a surface and a drop.</dd>
+        <dt>Pickup</dt><dd>Search the item to 0.5 (just "seen"), 180 s. Hover the camera 1.5 m above it for up to 5 s until 0.0005. Lock the map, open the claw, bring <code>claw_link</code> 2 m above, then 15 cm, then onto the item (22 mm higher for the shorter bandage and plug), waiting for the controller (trust 0.95, 1 cm) at the last two. Close, and 2 s later back up.</dd>
+        <dt>Surface</dt><dd><code>SurfaceTree</code>: over the table's centre, command z −0.3 m until above −0.35 m (15 s), then back down.</dd>
+        <dt>Drop</dt><dd>Claw 2 m above the basket, then 15 cm, wait, lock, open for 0.3 s, back up, close.</dd>
+        <dt>Finish</dt><dd>Go 1.5 m above the midpoint of the baskets, face the <code>hammer_and_wrench</code> image (rescue: <code>sos</code>), spin one full turn per item sorted, face it again and surface. Disarm, clear the background targets, forward camera.</dd>
+        <dt>Claw moves</dt><dd>The claw and surface moves use the older <code>Move</code> subtree (point-to-point setpoints), not <code>FollowPath</code>. The claw itself is <code>command/actuator/claw_move_s</code>: seconds to run it, + opens, − closes.</dd>
+        <dt>In Nereus</dt><dd>182.5 to 378.5 s, all four items. The table moved 5 cm and turned 0.6° to fit the baskets. Each sort took about 34 s.</dd>
+      </dl>
+      <p class="src"><a class="mt-jump" href="#explorer" data-seg="Table" data-node="NewTableTreeMpc">Open in the explorer ↑</a></p>
+
+      <h2 id="bins">Bins</h2>
+      <p>The bin has two identical fire vinyls. The <a href="perception/frames.html#binary">binary classifier</a> splits them into <code>bin_target1</code> and <code>bin_target2</code>; the tree drops one marker on each.</p>
+      <dl class="spec">
+        <dt>Start</dt><dd>Down camera. <code>start_binary_classifier</code> on <code>fire</code> (rescue: <code>blood</code>), 3 tries. If it won't start, the bins are skipped.</dd>
+        <dt>Target 1</dt><dd><code>DownwardSearchMpc</code> to 0.02 (σ ≈ 11 cm), 120 s, camera 2.15 m above. Arm.</dd>
+        <dt>Drop 1</dt><dd><code>ShootDownwardObjectMpc</code>: hover the camera over it up to 3 s until 0.0005, freeze the classifier's buffer, lock, put <code>droppers_link</code> 1 m above, wait (trust 0.90, 1 cm, 30 s), fire the dropper (it checks one is left first).</dd>
+        <dt>Target 2</dt><dd><code>start_binary_classifier_second</code>, then the same search and drop for <code>bin_target2</code>. Stop the classifier, disarm.</dd>
+        <dt>In Nereus</dt><dd>395.7 to 427.3 s. The second target needed the spiral: 8 s to come into view.</dd>
+      </dl>
+      <p class="src"><a class="mt-jump" href="#explorer" data-seg="Bins" data-node="BinTreeMpc">Open in the explorer ↑</a></p>
+
+      <h2 id="magnets">Magnets</h2>
+      <p><code>MagnetTreeMpc</code> runs inside <code>BinTreeMpc</code>, right after the drops, and uses them.</p>
+      <dl class="spec">
+        <dt>Fit</dt><dd><code>fit_bin_geometry</code> fits the bin's CAD model to the two classified vinyls, which places the magnets where the CAD puts them (<a href="perception/frames.html#binfit">bin fit</a>).</dd>
+        <dt>Classify</dt><dd>Start the classifier on <code>magnet</code> → <code>magnet_target1</code>, <code>magnet_target2</code>.</dd>
+        <dt>Look</dt><dd>Forward camera. Path to 1 m off magnet 1, facing it, at −0.8 m. <code>MiniSearchMpc</code> to 1.25 (a loose "seen" check), 20 s.</dd>
+        <dt>Touch</dt><dd>Freeze the buffer, lock. <code>ActivateMagnetMpc</code>: <code>magnet_link</code> to 0.7 m off the magnet frame's +x side, turned and at depth in one move, then straight in; wait (trust 0.8, 1 cm, 20 s); hold 2 s.</dd>
+        <dt>Magnet 2</dt><dd>Back out and on to magnet 2's search spot in one path, then the same. Finally back out again.</dd>
+        <dt>In Nereus</dt><dd>427.3 to 492.6 s.</dd>
+      </dl>
+      <p class="src"><a class="mt-jump" href="#explorer" data-seg="Magnets" data-node="MagnetTreeMpc">Open in the explorer ↑</a></p>
+
+      <h2 id="home">Home</h2>
+      <dl class="spec">
+        <dt>Moves</dt><dd>Log <code>WINNING TIME</code>, then one <code>FollowPath</code> (240 s): out of the bins, to <code>pre_return_home_frame</code>, then 1 m before, through and 1 m past <code>gate_frame</code>, 0.7 m below it, holding the heading. The gate is again the prior.</dd>
+        <dt>Stop</dt><dd><code>KillController</code> sends DISABLED on <code>controller/linear</code> and <code>controller/angular</code> five times. <code>doTask</code> does it once more and pulses the LEDs green.</dd>
+        <dt>In Nereus</dt><dd>492.6 to 549.9 s, then "Tree ended with status SUCCESS".</dd>
+      </dl>
+      <p class="src"><a class="mt-jump" href="#explorer" data-seg="Home" data-node="Path: leave bins, straight home through the gate">Open in the explorer ↑</a></p>
+
+      <h2 id="search">How Talos searches</h2>
+      <p>Three search subtrees do most of the looking. All of them end when mapping's error for the object drops below the threshold, or when time runs out.</p>
+      <dl class="spec">
+        <dt><code>MiniSearchMpc</code></dt><dd>Slalom, magnets. Park the forward camera in front of the object, set the target, wait 5 s, then check every second. Once the error is under 0.1 it re-centres in front of the new estimate.</dd>
+        <dt><code>SearchMpc</code></dt><dd>Torpedo board. Sweep arcs round the estimate while panning the heading. As soon as the object is seen, chase it square on (<code>CenterDetection</code>) and hold it in view up to 8 s. A sweep that saw nothing makes the next one wider.</dd>
+        <dt><code>DownwardSearchMpc</code></dt><dd>Baskets, items, bins. Skip if already converged. Fly the down camera over the estimate at full speed; once the object is in view, re-aim at its latest detection every 0.5 s (<code>DownwardTrack</code>). Otherwise spiral out at 0.2 m/s.</dd>
+      </dl>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls"><span class="seg" id="srch-pick" role="group" aria-label="Search pattern"><button data-s="0" aria-pressed="true">Torpedo: first sweep</button><button data-s="1" aria-pressed="false">Wider, farther</button><button data-s="2" aria-pressed="false">Wider, closer</button><button data-s="spiral" aria-pressed="false">Down: spiral</button></span></div>
+        <div id="srch-fig"></div>
+        <div class="graph-note" id="srch-note"></div>
+      </div>
+      <figcaption><b>The search paths, from the tree's numbers</b>, seen from above. <code>SearchMpc</code> cycles through its three sweeps round the torpedo's estimate; each grey wedge is the forward camera's view at a turn of the pan. The spiral is <code>DownwardSearchMpc</code>'s, with where each task's timeout cuts it at 0.2 m/s. Pick a pattern.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="failure">When something fails</h2>
+      <table class="params mt-fail">
+        <thead><tr><th>What goes wrong</th><th>What the tree does</th></tr></thead>
+        <tbody>
+          <tr><td>A whole task fails</td><td>Its <code>ForceSuccess</code> turns it into a success; the next task starts.</td></tr>
+          <tr><td>A search times out</td><td>Searches are wrapped too: Talos shoots, grabs or drops on the estimate it has.</td></tr>
+          <tr><td>The controller won't settle</td><td>Every <code>WaitForController</code> before a shot, grab or touch is wrapped: it acts anyway.</td></tr>
+          <tr><td>A <code>FollowPath</code> times out, or makes no progress for 10 s</td><td>The rest of that sequence is skipped. A gate approach that times out skips the flip and the exit.</td></tr>
+          <tr><td>An actuator call fails</td><td>Arming, torpedoes and droppers are all inside a <code>ForceSuccess</code> named "REMOVE ME": they can't fail the tree, so nothing retries them.</td></tr>
+          <tr><td>The table's last move fails</td><td>Its last two <code>RelativeMoveNoYaw</code> moves aren't wrapped. If one fails, the rest of the table tree is skipped: Talos stays armed, the background targets are never cleared, and the forward camera isn't switched back before the bins.</td></tr>
+          <tr><td>A camera switch fails</td><td>The sequence it starts is skipped: the torpedo search, the bins, or that one table item.</td></tr>
+          <tr><td>A classifier won't start</td><td>The bins (or the magnets) are skipped.</td></tr>
+          <tr><td>The dive doesn't reach depth</td><td>The mission ends with FAILURE after 60 s.</td></tr>
+          <tr><td>The kill switch is pulled</td><td>The thrusters stop, but <code>doTask</code> keeps ticking: its kill check is commented out. Stop the tree from the viewer.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="watch">Things to watch</h2>
+      <ul>
+        <li><strong>The gate's flip turns the controller off.</strong> For about 10 s in the middle of the gate, Talos has no control (above). <code>FlipTreeMpc</code> is the MPC version, but untested in the mission. Switching to it, or dropping the flip, removes the 10 s with no control.</li>
+        <li><strong>The pinger's meaning looks backwards.</strong> <code>pinger_is_table</code> is true when the pinger was louder at the <em>torpedo</em> stop, and true means table first. The rule rewards scoring first at the task the active pinger marks (<a href="robosub.html#tree">RoboSub and the course</a>), so a louder torpedo stop should mean torpedo first. Settle it before a competition.</li>
+        <li><strong>The pinger's default mode.</strong> The launch file runs <code>riptide_acoustics</code> in <code>max</code> mode, and <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_acoustics/src/Acoustics.cpp#L173"><code>compare_max_buffers</code></a> only sets its answer through the fallback to averages. When the two maxima differ by 1000 or more it leaves <code>buffer0Closer</code> at its old value (false at start: torpedo first).</li>
+        <li><strong>The second torpedo doesn't wait.</strong> <code>FireTorpedo</code> calls <code>WaitForActuators</code> with <code>timeout_secs="10"</code>, but never sets the key <code>"10"</code> (<code>FireDropper</code> does). The wait gives up at once ("Actuators busy!") and the second shot follows about 6 s after the first.</li>
+        <li><strong>Nereus refused both second shots.</strong> The second torpedo and the second dropper both got "Release group is busy", and the tree went on as if they had fired. The second dropper came 19 s after the first, after a wait that works, so the refusal is probably the simulator's, not the missing wait's.</li>
+        <li><strong>Drops skip their approach.</strong> <code>dropObjectMpc</code> wraps its <code>DownwardMove</code> in a <code>RetryUntilSuccessfulOrTimeout</code> with <code>num_seconds="0"</code>, which fails before running it. The claw goes straight to the basket's current estimate.</li>
+        <li><strong>Empty ports read as zero.</strong> A port mapped to a key nobody set reads as empty, and most nodes then use a default. The run's log warns about four: the pinger's <code>CompareNums</code>, the <code>FireTorpedo</code> wait, the magnet task's camera switch (<code>is_dfc="0"</code>, no key <code>"0"</code>; it still ends on the forward camera) and its <code>MiniSearchMpc</code> (<code>prox_y="0"</code>). Read "does not have a value for required port" warnings after every run.</li>
+        <li><strong>Only y is checked.</strong> <code>WaitForController</code> checks the link's sideways (y) offset in the target frame, not its height or range.</li>
+        <li><strong>Perception side.</strong> The one-second basket check, pickups that may not refine, and a bins classifier that can block the magnets are in <a href="perception/frames.html#watch">Frames, targets and the mission tree</a>.</li>
+      </ul>
+
+      <h2 id="other">The other trees</h2>
+      <p>Everything in <code>trees/</code>, one line each. "MPC era" trees move with <code>FollowPath</code>; the older ones move with <code>Move</code>/<code>SmartMovePosition</code> setpoints, were written for the controllers before riptide_mpc, and many target an older course. To change or test a tree, see <a href="bt-workflow.html">Writing and testing trees</a>.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel">
+        <div class="controls"><span class="seg" id="trees-pick" role="group" aria-label="Which trees"><button data-g="all" aria-pressed="true">All</button><button data-g="current" aria-pressed="false">MPC era</button><button data-g="test" aria-pressed="false">Tests</button><button data-g="legacy" aria-pressed="false">Older</button></span></div>
+        <ul class="mt-files" id="trees-list"></ul>
+      </div>
+      <figcaption><b>Every file in <code>trees/</code>.</b> Line count and how many subtrees each one's main tree reaches. Pick a group.</figcaption>
+    </figure>
+
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>
 </main>

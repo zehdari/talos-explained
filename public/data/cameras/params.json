@@ -1,0 +1,512 @@
+{
+ "wrapper": {
+  "rev": "f6978f5",
+  "date": "2025-06-18"
+ },
+ "layers": [
+  {
+   "id": "common",
+   "file": "common_stereo.yaml",
+   "repo": "zed-ros2-wrapper",
+   "url": "https://github.com/stereolabs/zed-ros2-wrapper/blob/master/zed_wrapper/config/common_stereo.yaml"
+  },
+  {
+   "id": "zedxm",
+   "file": "zedxm.yaml",
+   "repo": "zed-ros2-wrapper",
+   "url": "https://github.com/stereolabs/zed-ros2-wrapper/blob/master/zed_wrapper/config/zedxm.yaml"
+  },
+  {
+   "id": "cam",
+   "file": "<cam>_config.yaml",
+   "repo": "riptide_core",
+   "url": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/"
+  }
+ ],
+ "rows": [
+  {
+   "key": "general.camera_model",
+   "why": "Which ZED model the SDK expects.",
+   "ffc": {
+    "layers": [
+     null,
+     "zedxm",
+     "zedxm"
+    ],
+    "win": 2,
+    "value": "zedxm"
+   },
+   "dfc": {
+    "layers": [
+     null,
+     "zedxm",
+     "zedxm"
+    ],
+    "win": 2,
+    "value": "zedxm"
+   }
+  },
+  {
+   "key": "general.serial_number",
+   "why": "Picks the physical camera: this is how the node knows which ZED is ffc and which is dfc.",
+   "ffc": {
+    "layers": [
+     0,
+     null,
+     55348591
+    ],
+    "win": 2,
+    "value": 55348591
+   },
+   "dfc": {
+    "layers": [
+     0,
+     null,
+     51491740
+    ],
+    "win": 2,
+    "value": 51491740
+   }
+  },
+  {
+   "key": "general.camera_name",
+   "why": "Prefix of every TF frame the node names (talos/ffc_left_camera_optical_frame, ...).",
+   "ffc": {
+    "layers": [
+     null,
+     "zedxm",
+     "talos/ffc"
+    ],
+    "win": 2,
+    "value": "talos/ffc"
+   },
+   "dfc": {
+    "layers": [
+     null,
+     "zedxm",
+     "talos/dfc"
+    ],
+    "win": 2,
+    "value": "talos/dfc"
+   }
+  },
+  {
+   "key": "general.grab_resolution",
+   "why": "Sensor readout mode. HD1200 is the full 1920 \u00d7 1200 sensor.",
+   "ffc": {
+    "layers": [
+     null,
+     "HD1200",
+     "HD1200"
+    ],
+    "win": 2,
+    "value": "HD1200"
+   },
+   "dfc": {
+    "layers": [
+     null,
+     "HD1200",
+     "HD1200"
+    ],
+    "win": 2,
+    "value": "HD1200"
+   }
+  },
+  {
+   "key": "general.grab_frame_rate",
+   "why": "Frames per second grabbed from the camera.",
+   "ffc": {
+    "layers": [
+     null,
+     30,
+     15
+    ],
+    "win": 2,
+    "value": 15
+   },
+   "dfc": {
+    "layers": [
+     null,
+     30,
+     15
+    ],
+    "win": 2,
+    "value": 15
+   }
+  },
+  {
+   "key": "general.pub_resolution",
+   "why": "NATIVE publishes at the grab resolution; CUSTOM divides it by pub_downscale_factor.",
+   "ffc": {
+    "layers": [
+     "CUSTOM",
+     null,
+     "NATIVE"
+    ],
+    "win": 2,
+    "value": "NATIVE"
+   },
+   "dfc": {
+    "layers": [
+     "CUSTOM",
+     null,
+     "NATIVE"
+    ],
+    "win": 2,
+    "value": "NATIVE"
+   }
+  },
+  {
+   "key": "general.pub_downscale_factor",
+   "why": "Only used with pub_resolution CUSTOM.",
+   "ffc": {
+    "layers": [
+     2.0,
+     null,
+     2.0
+    ],
+    "win": 2,
+    "value": 2.0
+   },
+   "dfc": {
+    "layers": [
+     2.0,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": 2.0
+   }
+  },
+  {
+   "key": "general.pub_frame_rate",
+   "why": "Publishing rate for images and depth (at most the grab rate).",
+   "ffc": {
+    "layers": [
+     15.0,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": 15.0
+   },
+   "dfc": {
+    "layers": [
+     15.0,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": 15.0
+   }
+  },
+  {
+   "key": "general.self_calib",
+   "why": "Let the SDK re-tune the stereo calibration at start-up. Off: it assumes air and would undo the underwater calibration.",
+   "ffc": {
+    "layers": [
+     true,
+     null,
+     false
+    ],
+    "win": 2,
+    "value": false
+   },
+   "dfc": {
+    "layers": [
+     true,
+     null,
+     false
+    ],
+    "win": 2,
+    "value": false
+   }
+  },
+  {
+   "key": "general.optional_opencv_calibration_file",
+   "why": "The team\u2019s underwater OpenCV calibration, used instead of the factory one.",
+   "ffc": {
+    "layers": [
+     "",
+     null,
+     "tirpak_ffc_charuco_3.yaml"
+    ],
+    "win": 2,
+    "value": "tirpak_ffc_charuco_3.yaml"
+   },
+   "dfc": {
+    "layers": [
+     "",
+     null,
+     "zedxm_dfc_2026_cal.yaml"
+    ],
+    "win": 2,
+    "value": "zedxm_dfc_2026_cal.yaml"
+   }
+  },
+  {
+   "key": "depth.depth_mode",
+   "why": "Stereo matcher. NEURAL_LIGHT, NEURAL and NEURAL_PLUS are the SDK\u2019s learned matchers, fastest to most accurate.",
+   "ffc": {
+    "layers": [
+     "NEURAL_LIGHT",
+     null,
+     "NEURAL_PLUS"
+    ],
+    "win": 2,
+    "value": "NEURAL_PLUS"
+   },
+   "dfc": {
+    "layers": [
+     "NEURAL_LIGHT",
+     null,
+     null
+    ],
+    "win": 0,
+    "value": "NEURAL_LIGHT"
+   }
+  },
+  {
+   "key": "depth.min_depth",
+   "why": "Closer than this: no depth.",
+   "ffc": {
+    "layers": [
+     null,
+     0.3,
+     null
+    ],
+    "win": 1,
+    "value": 0.3
+   },
+   "dfc": {
+    "layers": [
+     null,
+     0.3,
+     null
+    ],
+    "win": 1,
+    "value": 0.3
+   }
+  },
+  {
+   "key": "depth.max_depth",
+   "why": "Farther than this: no depth.",
+   "ffc": {
+    "layers": [
+     null,
+     10.0,
+     4.0
+    ],
+    "win": 2,
+    "value": 4.0
+   },
+   "dfc": {
+    "layers": [
+     null,
+     10.0,
+     null
+    ],
+    "win": 1,
+    "value": 10.0
+   }
+  },
+  {
+   "key": "depth.depth_confidence",
+   "why": "Drop depth pixels the matcher is unsure of (100 keeps everything).",
+   "ffc": {
+    "layers": [
+     95,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": 95
+   },
+   "dfc": {
+    "layers": [
+     95,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": 95
+   }
+  },
+  {
+   "key": "depth.depth_texture_conf",
+   "why": "Drop depth on textureless areas (100 keeps everything).",
+   "ffc": {
+    "layers": [
+     100,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": 100
+   },
+   "dfc": {
+    "layers": [
+     100,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": 100
+   }
+  },
+  {
+   "key": "depth.point_cloud_freq",
+   "why": "Point cloud rate (only produced while someone subscribes).",
+   "ffc": {
+    "layers": [
+     10.0,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": 10.0
+   },
+   "dfc": {
+    "layers": [
+     10.0,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": 10.0
+   }
+  },
+  {
+   "key": "depth.point_cloud_res",
+   "why": "Point cloud resolution.",
+   "ffc": {
+    "layers": [
+     "COMPACT",
+     null,
+     null
+    ],
+    "win": 0,
+    "value": "COMPACT"
+   },
+   "dfc": {
+    "layers": [
+     "COMPACT",
+     null,
+     null
+    ],
+    "win": 0,
+    "value": "COMPACT"
+   }
+  },
+  {
+   "key": "pos_tracking.pos_tracking_enabled",
+   "why": "The SDK\u2019s own visual odometry.",
+   "ffc": {
+    "layers": [
+     true,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": true
+   },
+   "dfc": {
+    "layers": [
+     true,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": true
+   }
+  },
+  {
+   "key": "pos_tracking.publish_tf",
+   "why": "Off: the camera must not publish odom \u2192 camera TF; Talos\u2019s EKF owns odom.",
+   "ffc": {
+    "layers": [
+     true,
+     null,
+     false
+    ],
+    "win": 2,
+    "value": false
+   },
+   "dfc": {
+    "layers": [
+     true,
+     null,
+     false
+    ],
+    "win": 2,
+    "value": false
+   }
+  },
+  {
+   "key": "sensors.sensors_image_sync",
+   "why": "Publish the camera\u2019s IMU in step with the images.",
+   "ffc": {
+    "layers": [
+     false,
+     null,
+     true
+    ],
+    "win": 2,
+    "value": true
+   },
+   "dfc": {
+    "layers": [
+     false,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": false
+   }
+  },
+  {
+   "key": "video.auto_exposure_gain",
+   "why": "Automatic exposure and gain.",
+   "ffc": {
+    "layers": [
+     true,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": true
+   },
+   "dfc": {
+    "layers": [
+     true,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": true
+   }
+  },
+  {
+   "key": "video.auto_whitebalance",
+   "why": "Automatic white balance.",
+   "ffc": {
+    "layers": [
+     true,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": true
+   },
+   "dfc": {
+    "layers": [
+     true,
+     null,
+     null
+    ],
+    "win": 0,
+    "value": true
+   }
+  }
+ ]
+}

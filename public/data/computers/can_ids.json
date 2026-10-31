@@ -1,0 +1,73 @@
+{
+ "buses": {
+  "internal": {
+   "id": 1,
+   "rate": 1000000,
+   "fd": true,
+   "fd_rate": 5000000
+  },
+  "external": {
+   "id": 2,
+   "rate": 250000,
+   "fd": false,
+   "fd_rate": null
+  }
+ },
+ "clients": [
+  {
+   "bus": "internal",
+   "id": 1,
+   "name": "power_board"
+  },
+  {
+   "bus": "internal",
+   "id": 2,
+   "name": "esc_board0"
+  },
+  {
+   "bus": "internal",
+   "id": 3,
+   "name": "esc_board1"
+  },
+  {
+   "bus": "internal",
+   "id": 4,
+   "name": "camera_cage_bb"
+  },
+  {
+   "bus": "internal",
+   "id": 5,
+   "name": "actuator_board"
+  },
+  {
+   "bus": "internal",
+   "id": 6,
+   "name": "led_board"
+  },
+  {
+   "bus": "internal",
+   "id": 7,
+   "name": "sbc_board"
+  },
+  {
+   "bus": "internal",
+   "id": 8,
+   "name": "ivc_board"
+  },
+  {
+   "bus": "external",
+   "id": 1,
+   "name": "smart_batery_port"
+  },
+  {
+   "bus": "external",
+   "id": 2,
+   "name": "smart_batery_stbd"
+  },
+  {
+   "bus": "external",
+   "id": 6,
+   "name": "downwards_camera"
+  }
+ ]
+}

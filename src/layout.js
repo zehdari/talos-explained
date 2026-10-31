@@ -159,6 +159,12 @@ function buildRail() {
       let on = 0;
       heads.forEach((h, i) => { if (h.getBoundingClientRect().top < 140) on = i; });
       links.forEach((a, i) => a.classList.toggle('on', i === on && window.scrollY > 200));
+      // keep the highlighted entry visible in a long rail (desktop only; on phones the rail is a closed drawer)
+      const a = links[on];
+      if (a && a.classList.contains('on') && !rail.classList.contains('open') && rail.scrollHeight > rail.clientHeight) {
+        const r = a.getBoundingClientRect();
+        if (r.bottom > innerHeight - 24 || r.top < 24) rail.scrollTop += r.top - innerHeight / 2;
+      }
     };
     addEventListener('scroll', spy, { passive: true });
     spy();

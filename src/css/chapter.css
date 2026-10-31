@@ -44,3 +44,12 @@ dl.spec dd { margin: 0; color: var(--ink); }
 
 /* "Where this lives": repo / package / file pointers at the end of a section. */
 .src-list { font-family: var(--sans); font-size: 0.88rem; color: var(--ink-2); }
+
+/* On phones the "where" tag sits above the first line instead of on it. */
+@media (max-width: 640px) { pre.cmd[data-where] { padding-top: 1.8rem; } }
+
+/* Labels drawn over lines keep a halo of the panel colour. */
+svg text.halo { paint-order: stroke; stroke: var(--paper-2); stroke-width: 4px; stroke-linejoin: round; }
+
+/* A params table whose first column holds long code may wrap it. */
+table.params.wrap-first td:first-child { white-space: normal; }

@@ -1,0 +1,807 @@
+# Hand-written half of the code map: what each repo and package is for, its layer, status and chapters.
+# build_data.py adds the measured half (branch, pinned commit, package.xml, line counts, nodes, launch files).
+#
+# status: talos  = runs on Talos, or is how Talos's code is built and shipped
+#         new    = written for Talos but not committed or deployed yet
+#         tool   = runs on a laptop or a test rig, not on the robot
+#         legacy = replaced or unused; kept for history
+#         other  = another robot (Triton's Mercury stack)
+# layer:  a package's layer; `layers: [a, b]` lists every layer it belongs to (the first is its main one)
+# rest:   a package entry that counts every file the repo's other entries don't
+# source: release  = submodule of ~/osu-uwrt/release (path given)
+#         local    = another local checkout (path given)
+#         gh       = GitHub only (cloned into /tmp/gh/<name> to count)
+
+layers:
+  - { id: firmware, label: Firmware }
+  - { id: drivers, label: Drivers }
+  - { id: estimation, label: Estimation }
+  - { id: perception, label: Perception }
+  - { id: control, label: Control }
+  - { id: autonomy, label: Autonomy }
+  - { id: ops, label: Launch & ops }
+  - { id: sim, label: Sim & viewer }
+  - { id: shared, label: Messages & models }
+  - { id: tools, label: Tools }
+
+groups:
+  - { id: release, label: "The release workspace: what the robot runs" }
+  - { id: firmware, label: "Firmware and electrical" }
+  - { id: setup, label: "Setup, build and editing tools" }
+  - { id: rigs, label: "Test rigs" }
+  - { id: legacy, label: "Legacy and other robots" }
+
+repos:
+  - id: riptide_release
+    group: release
+    source: { kind: local, path: ~/osu-uwrt/release }
+    github: osu-uwrt/riptide_release
+    branch: master
+    status: talos
+    layers: [ops]
+    chapters: [setup.html, pool-test.html, launch.html]
+    desc: >-
+      The workspace the team deploys. It holds no ROS packages of its own: each repo below is a git submodule in
+      src/, pinned to an exact commit. Commit it before a pool test, tag it after; that pins what was in the water.
+    extra: >-
+      Also: scripts/ (Jetson setup, cross-building, Zenoh and DDS configs, service files) and zed_wrapper.repos,
+      which pins the ZED wrapper and the image-transport packages for vcs import.
+
+  - id: riptide_core
+    group: release
+    source: { kind: release, path: src/riptide_core }
+    github: osu-uwrt/riptide_core
+    branch: followpath-speed
+    status: talos
+    layers: [drivers, estimation, shared]
+    chapters: [sensors.html, localization.html, interfaces.html]
+    desc: >-
+      The packages every other repo leans on: the custom messages, the vehicle description, and the hardware
+      layer (sensor drivers, the EKF launch, the camera launch).
+    packages:
+      riptide_hardware:
+        layers: [drivers, estimation]
+        status: talos
+        chapters: [sensors.html, localization.html, cameras.html]
+        desc: >-
+          The hardware layer. hardware.launch.py starts the CAN micro-ROS agent, DVL, IMU, gyro, AprilTag and
+          acoustics; navigation.launch.py the robot_localization EKF (cfg/talos_ekf.yaml) and robot_state_publisher;
+          zed.launch.py both ZED X Minis. Plus small Python nodes (actuator interface, depth converter, monitors).
+        note: >-
+          The monitor nodes in diagnostics.launch.py are out of date and not used, though talos_launch_mpc.yaml still
+          starts them.
+      riptide_msgs:
+        layer: shared
+        status: talos
+        chapters: [interfaces.html, ros2.html]
+        desc: >-
+          Custom messages, services and actions (riptide_msgs2): thruster commands and telemetry, firmware and
+          kill-switch status, controller commands, mapping targets, the ExecuteTree action, and more.
+      riptide_descriptions:
+        layer: shared
+        status: talos
+        chapters: [mechanical.html, control/model.html, perception/frames.html]
+        desc: >-
+          The vehicle description: config/talos.yaml (mass, COM, inertia, thruster poses, sensor and camera frames)
+          and the xacro that turns it into the URDF and TF tree. riptide_mpc reads it too. Nereus defines its own Talos
+          (content/packs/robots/talos) and, for sim runs, writes a copy of this file with its plant's mass, COM and
+          thruster poses (integrations/uwrt/launch/mpc_sim_model.py), so editing it doesn't change the simulated vehicle.
+      riptide_imu:
+        layer: drivers
+        status: talos
+        chapters: [sensors.html]
+        desc: >-
+          The team's VectorNav IMU driver, built on VectorNav's own C++ library (vnproglib 1.2, vendored in the
+          package and left out of the line count). Publishes /talos/vectornav/imu.
+      riptide_gyro:
+        layer: drivers
+        status: talos
+        chapters: [sensors.html]
+        desc: >-
+          Serial driver for the fiber-optic gyro (FOG): reads raw counts at 921600 baud and publishes
+          /talos/gyro/raw, with health checks on temperature, supply voltage and light-source current.
+      riptide_acoustics:
+        layer: drivers
+        status: talos
+        chapters: [sensors.html]
+        desc: >-
+          A small node that compares pinger signal amplitude between two sampling windows ("was it louder
+          before or now?"), from the amplitude stream the IVC board publishes.
+
+  - id: riptide_control
+    group: release
+    source: { kind: release, path: src/riptide_control }
+    github: osu-uwrt/riptide_control
+    branch: mpc
+    status: talos
+    layers: [control]
+    chapters: [control/index.html, commanding.html]
+    desc: >-
+      Everything that turns "go there" into eight thruster forces: the MPC controller, the controller overseer and
+      the thruster test tools.
+    packages:
+      riptide_mpc:
+        layer: control
+        status: talos
+        chapters: [control/index.html, control/mpc.html, control/solver.html, control/identify.html]
+        desc: >-
+          The controller Talos flies with: a model predictive controller on a Fossen model of Talos, with motion
+          profiles, path following, a state estimator and pool system identification (pool_identify, identify_fit).
+      riptide_controllers:
+        layer: control
+        status: talos
+        chapters: [commanding.html, thrusters-hw.html]
+        desc: >-
+          control_system.launch.py, which starts the controller overseer and then the active controller
+          (active_control_model:=mpc picks riptide_mpc). Also the thruster test, calibration and tuning scripts, and
+          the Simulink models of the older complete_controller.
+        note: The Simulink complete_controller (sliding mode / PID hybrid) is the older controller; MPC replaced it.
+      riptide_motion_panel:
+        layer: ops
+        status: new
+        chapters: [commanding.html]
+        desc: >-
+          A web page served from the robot (port 8090) to enable, kill and drive Talos from a phone. It drives on
+          kill-switch slot 3 with needs_update, so the firmware kills shortly after the phone goes quiet.
+        note: >-
+          New: not committed, pinned or in any launch list yet. It exists only in a local checkout of the mpc branch,
+          so nothing confirms it has run on Talos.
+      riptide_teleop:
+        layer: control
+        status: legacy
+        chapters: [commanding.html]
+        desc: Keyboard and joystick teleop from the older stack. A COLCON_IGNORE file keeps it out of the build.
+
+  - id: riptide_perception
+    group: release
+    source: { kind: release, path: src/riptide_perception }
+    github: osu-uwrt/riptide_perception
+    branch: mapping-estimator
+    status: talos
+    layers: [perception]
+    chapters: [perception/index.html]
+    desc: The detector and the course map. The Perception part of this site explains both in detail.
+    packages:
+      tensor_detector:
+        layer: perception
+        status: talos
+        chapters: [perception/detector.html, perception/pose.html]
+        desc: >-
+          yolo_orientation.py: runs the YOLO segmentation model on each ZED image, then uses depth to turn masks
+          into 3D poses. Separate models for the forward (ffc) and downward (dfc) cameras live in weights/.
+      riptide_mapping:
+        layer: perception
+        status: talos
+        chapters: [perception/map.html, perception/tracking.html, perception/noise.html, perception/frames.html]
+        desc: >-
+          mapping.py and map_estimator.py: fuse detections into one estimate per prop, with the course layout as a
+          prior, and publish each as a TF frame the mission tree drives to. Also the binary classifier and the
+          oriented/dependent frame publishers.
+
+  - id: riptide_autonomy
+    group: release
+    source: { kind: release, path: src/riptide_autonomy }
+    github: osu-uwrt/riptide_autonomy
+    branch: autonomy-mapping
+    status: talos
+    layers: [autonomy]
+    chapters: [bt.html, bt-nodes.html, mission-tree.html, bt-workflow.html]
+    desc: >-
+      The mission code: BehaviorTree.cpp action/condition nodes in C++, the tree XML files in trees/, and the
+      doTask action server (/talos/autonomy/run_tree) that runs a tree.
+    packages:
+      riptide_autonomy:
+        layer: autonomy
+        status: talos
+        chapters: [bt.html, bt-nodes.html, mission-tree.html, bt-workflow.html]
+        desc: >-
+          One package (riptide_autonomy2). include/riptide_autonomy/ holds the custom nodes in bt_actions/,
+          bt_conditions/ and bt_decorators/ (FollowPath, SetMappingTarget, WaitForDetection, ...; some are
+          implemented in src/riptide_autonomy/bt_actions/), trees/ the missions (RepairCompMpcTree.xml and friends),
+          src/ doTask and the checkBT validator.
+
+  - id: riptide_launch
+    group: release
+    source: { kind: release, path: src/riptide_launch }
+    github: osu-uwrt/riptide_launch
+    branch: newsim
+    status: talos
+    layers: [ops]
+    chapters: [launch.html]
+    desc: >-
+      How the stack is started on the robot: the remote launcher service and the launch lists it loads.
+    packages:
+      remote_launch:
+        layer: ops
+        status: talos
+        chapters: [launch.html, pool-test.html]
+        desc: >-
+          The launcher that runs on the Orin as ros_launcher.service: starts the Zenoh router, serves a web page
+          with a terminal, and starts or stops the launch files listed in launches/*.yaml
+          (talos_launch_mpc.yaml is the full MPC stack; *_bench_* and *_sim_hil_* for the bench and HIL).
+      riptide_bringup:
+        layer: ops
+        status: talos
+        chapters: [launch.html]
+        desc: >-
+          bringup.launch.py, a single launch file that includes hardware, navigation, control, detector, mapping
+          and autonomy. On the robot the remote launcher's lists are used instead.
+      launch_msgs:
+        layer: shared
+        status: talos
+        chapters: [launch.html]
+        desc: Messages, services and actions the remote launcher uses (start a launch, list PIDs, start a bag).
+
+  - id: nortek_dvl
+    group: release
+    source: { kind: release, path: src/nortek_dvl }
+    github: osu-uwrt/nortek_dvl
+    branch: DvlWaterTrackFallback
+    status: talos
+    layers: [drivers]
+    chapters: [sensors.html]
+    desc: >-
+      Driver for the Nortek DVL1000 (Doppler velocity log) over TCP. The pinned commit publishes velocity, status
+      and a bottom-lock flag (dvl/bottom_lock). The newest commit on DvlWaterTrackFallback, not pinned yet, adds
+      water-track velocity on its own topic, for when bottom lock is lost.
+    packages:
+      nortek_dvl:
+        layer: drivers
+        status: talos
+        chapters: [sensors.html]
+        desc: The TCP driver node; publishes velocity and status. Its DVLConfig.txt is stale; the DVL's own web settings are the reference.
+      nortek_dvl_msgs:
+        layer: shared
+        status: talos
+        chapters: [sensors.html]
+        desc: DVL message types (DvlStatus and friends).
+
+  - id: chameleon_tf
+    group: release
+    source: { kind: release, path: src/chameleon_tf }
+    github: coalman321/chameleon_tf
+    branch: master
+    status: talos
+    layers: [estimation]
+    chapters: [perception/frames.html, localization.html]
+    desc: >-
+      A static transform that can be re-set at run time, or told to watch two frames and copy the average. Mapping
+      uses it for the world to map transform; the model_tf action aligns map to the AprilTag-estimated origin.
+    packages:
+      chameleon_tf:
+        layer: estimation
+        status: talos
+        chapters: [perception/frames.html]
+        desc: The node (mobile_tf.cpp).
+      chameleon_tf_msgs:
+        layer: shared
+        status: talos
+        chapters: [perception/frames.html]
+        desc: Its ModelFrame action and services.
+
+  - id: apriltag_ros
+    group: release
+    source: { kind: release, path: src/apriltag_ros }
+    github: osu-uwrt/apriltag_ros
+    branch: CompressedImages
+    status: talos
+    layers: [perception]
+    chapters: [localization.html, perception/frames.html]
+    desc: >-
+      The open-source AprilTag detector (christianrauch/apriltag_ros), forked to add a SetBool service that turns
+      its camera subscription on and off. The newest commit on CompressedImages, not pinned yet, lets it read the
+      ZED's compressed image. riptide_hardware's apriltag.launch.py runs it on the forward camera. Its messages come
+      from the apriltag_msgs submodule.
+    packages:
+      apriltag_ros:
+        layer: perception
+        status: talos
+        chapters: [localization.html]
+        desc: The AprilTagNode component.
+
+  - id: apriltag_msgs
+    group: release
+    source: { kind: release, path: src/apriltag_msgs }
+    github: christianrauch/apriltag_msgs
+    branch: master
+    githubBranch: master
+    status: talos
+    layers: [shared]
+    chapters: [localization.html]
+    desc: Upstream message definitions for apriltag_ros, pinned at version 2.0.1.
+
+  - id: zed-ros2-wrapper
+    group: release
+    source: { kind: local, path: ~/osu-uwrt/release/src/zed-ros2-wrapper }
+    github: stereolabs/zed-ros2-wrapper
+    branch: master
+    status: talos
+    layers: [drivers]
+    chapters: [cameras.html]
+    desc: >-
+      Stereolabs' ROS 2 driver for ZED cameras. Not a submodule: zed_wrapper.repos in the release repo pins it (and
+      ffmpeg_image_transport, image_transport_plugins and friends) for vcs import. riptide_hardware's zed.launch.py
+      starts two ZedCamera components, ffc and dfc. It needs the ZED SDK and an NVIDIA GPU.
+    pinNote: zed_wrapper.repos pins 7f42463
+
+  - id: opbox_software
+    group: release
+    source: { kind: release, path: src/opbox_software }
+    github: osu-uwrt/opbox_software
+    branch: dev
+    status: talos
+    layers: [ops]
+    chapters: [computers.html]
+    desc: >-
+      Software for the operator box (opbox), the team's Raspberry Pi field box: an HMI app for alerts and
+      notifications, a ROS client that forwards robot state to it, and a small serial library.
+    packages:
+      opbox_software:
+        layer: ops
+        status: talos
+        chapters: [computers.html]
+        desc: The opbox HMI application and its libraries (yaml-cpp vendored, not counted).
+      opbox_ros_client:
+        layer: ops
+        status: talos
+        chapters: [computers.html]
+        desc: ROS 2 client that watches diagnostics and sends notifications to the opbox.
+      serial_library:
+        layer: ops
+        status: talos
+        chapters: [computers.html]
+        desc: Keeps mapped values in sync over a serial link with custom frames. A nested submodule (BTK203/serial_library).
+
+  - id: nereus
+    group: release
+    source: { kind: release, path: nereus }
+    github: osu-uwrt/nereus
+    branch: main
+    status: talos
+    layers: [sim]
+    chapters: [nereus.html, viewer.html]
+    desc: >-
+      The simulator (nereus-sim) and the operator GUI (nereus-viewer), used for both the sim and the real robot.
+      A submodule of the release repo since 2026-10-27, but built with its own CMake (COLCON_IGNORE), not colcon.
+      All robot, pool and course data is YAML in content/packs/.
+    packages:
+      libraries/simulation:
+        layer: sim
+        status: talos
+        chapters: [nereus.html]
+        desc: 6-DOF marine dynamics of Talos with delayed thrusters.
+      libraries/sensors:
+        layer: sim
+        status: talos
+        chapters: [nereus.html]
+        desc: Simulated IMU, gyro, DVL and depth sensors.
+      libraries/session:
+        layer: sim
+        status: talos
+        chapters: [nereus.html]
+        desc: "A run: tasks, props, mechanisms (claw, launcher, dropper, magnet) and scoring."
+      libraries/rendering:
+        layer: sim
+        status: talos
+        chapters: [nereus.html]
+        desc: The OpenGL renderer for the 3D scene and the simulated cameras.
+      libraries/cameras:
+        layer: sim
+        status: talos
+        chapters: [nereus.html]
+        desc: Stereo camera models with depth and point clouds.
+      libraries/datasets:
+        layer: sim
+        status: talos
+        chapters: [perception/training.html]
+        desc: Headless rendering of labelled synthetic images for training the detector.
+      libraries/pack_scene:
+        layer: sim
+        status: talos
+        chapters: [nereus.html, viewer.html]
+        desc: Builds the 3D scene (pool, task props, robot) from a resolved scenario; shared by the viewer and the simulated cameras.
+      libraries/session_cameras:
+        layer: sim
+        status: talos
+        chapters: [nereus.html]
+        desc: Schedules and queues captures from the robot's simulated stereo cameras during a run, without ROS.
+      libraries/spatial:
+        layer: sim
+        status: talos
+        chapters: [nereus.html]
+        desc: Rigid poses and the fixed tree of named frames (sensor mounts).
+      integrations/ros2:
+        layer: sim
+        status: talos
+        chapters: [viewer.html, nereus.html]
+        desc: The ROS 2 bridge for the simulator, and nereus-viewer itself with its panels (motion, autonomy, mapping, actuators).
+      integrations/uwrt:
+        layer: ops
+        status: talos
+        chapters: [nereus.html, launch.html]
+        desc: The UWRT launch files (sim.launch.py, robot.launch.py) and acceptance scripts.
+      python:
+        layer: sim
+        status: talos
+        chapters: [nereus.html]
+        desc: Pack tools (validate and resolve packs) and dataset tools.
+      content:
+        layer: sim
+        status: talos
+        chapters: [nereus.html]
+        desc: The packs (robot, pools, RoboSub 2026 tasks, the Talos ROS bridge, datasets) and the viewer layout.
+      extensions/rules:
+        layer: sim
+        status: talos
+        chapters: [nereus.html]
+        desc: Competition scoring rules in C++.
+      other files:
+        layer: tools
+        status: tool
+        chapters: [nereus.html]
+        rest: true
+        desc: "Everything else in the repo: tests/, tools/ (checks, generators, benchmarks), the CMake build and docs."
+
+  - id: titan_firmware
+    group: firmware
+    source: { kind: local, path: ~/osu-uwrt/development/titan_firmware }
+    github: osu-uwrt/titan_firmware
+    branch: master
+    status: talos
+    layers: [firmware]
+    chapters: [firmware.html, boards.html]
+    desc: >-
+      C firmware for the RP2040 microcontrollers on every board, on the Pico SDK. micro-ROS over CAN makes each board
+      a ROS node; titan_safety runs the kill-switch logic and fault reporting; a bootloader lets the boards be
+      re-flashed over CAN without opening the hull.
+    packages:
+      talos/ESCBoard:
+        layer: firmware
+        status: talos
+        chapters: [thrusters-hw.html, firmware.html]
+        desc: Thruster ESC control (DShot) and telemetry; two of these boards drive the eight thrusters.
+      talos/PoacBoard:
+        layer: firmware
+        status: talos
+        chapters: [actuators.html, firmware.html]
+        desc: The power + actuator (POAC) board; it only arms the actuators while the robot is enabled.
+      talos/PowerBoard:
+        layer: firmware
+        status: talos
+        chapters: [electrical.html, firmware.html]
+        desc: Firmware for the Mark 2 power board (one of the boards riptide_hardware's board table lists).
+      talos/CameraCageBB:
+        layer: firmware
+        status: talos
+        chapters: [firmware.html]
+        desc: Camera cage breakout board; reads the depth sensor.
+      talos/SmartBattery:
+        layer: firmware
+        status: talos
+        chapters: [electrical.html, firmware.html]
+        desc: Smart battery housings (BQ40Z80 gas gauge).
+      talos/IVCBoard:
+        layer: firmware
+        status: talos
+        chapters: [boards.html, firmware.html]
+        desc: Inter-vehicle communication (acoustic) board.
+      talos/LEDBoard:
+        layer: firmware
+        status: talos
+        chapters: [boards.html, firmware.html]
+        desc: Status LED board.
+      talos/Actuator:
+        layer: firmware
+        status: talos
+        chapters: [actuators.html, firmware.html]
+        desc: Firmware for the Mark 2 actuator board (project actuator_mk2), last changed in 2024-11.
+      lib:
+        layer: firmware
+        status: talos
+        chapters: [firmware.html]
+        desc: Shared libraries (titan_safety, titan_bootloader, micro_ros_pico, CAN, depth and LED drivers). The Pico SDK is a submodule, not counted.
+      tools:
+        layer: tools
+        status: tool
+        chapters: [firmware.html]
+        desc: "Host tools: canmore_cli for debugging boards over CAN, upload_tool for flashing, and DeviceList.jsonc, every board's serial number."
+      other robots:
+        layer: firmware
+        status: other
+        chapters: []
+        desc: Board projects for Puddles, Lil Boat, Mercury (Triton) and the SBC board.
+
+  - id: titan_canmore
+    group: firmware
+    source: { kind: gh, path: /tmp/gh/titan_canmore }
+    github: osu-uwrt/titan_canmore
+    branch: master
+    status: talos
+    layers: [firmware]
+    chapters: [firmware.html]
+    desc: >-
+      CANmore, the team's CAN bus protocol (128-byte packets over CAN frames). A C library for firmware and a C++
+      library for Linux hosts; titan_firmware and the micro-ROS agent both include it.
+
+  - id: micro-ros-agent
+    group: firmware
+    source: { kind: gh, path: /tmp/gh/micro-ros-agent }
+    github: osu-uwrt/micro-ros-agent
+    branch: master
+    status: talos
+    layers: [firmware]
+    chapters: [firmware.html, ros2.html]
+    noCount: true
+    desc: >-
+      Builds the micro-ROS agent that bridges the boards into ROS 2: the agent (osu-uwrt/micro-ROS-Agent-impl), the
+      team's Micro-XRCE-DDS-Agent fork with CAN support, and titan_canmore. On Talos it runs as
+      micro_ros_agent can -D can0 (riptide_hardware's copro_agent.launch.py). At the pin that file also starts an
+      "external network" agent on can1; the newest riptide_core commit, not pinned yet, comments it out.
+
+  - id: nano_ros
+    group: firmware
+    source: { kind: gh, path: /tmp/gh/nano_ros }
+    github: osu-uwrt/nano_ros
+    branch: master
+    status: tool
+    layers: [firmware]
+    chapters: [firmware.html]
+    desc: >-
+      In development: a lightweight replacement for micro-ROS. A Rust codegen reads a ros.toml listing a board's
+      topics; a C library runs on the board; a host agent bridges to ROS. titan_firmware has a nano_ros branch;
+      master still uses micro-ROS.
+
+  - id: electric_boogaloo
+    group: firmware
+    source: { kind: gh, path: /tmp/gh/electric_boogaloo }
+    github: osu-uwrt/electric_boogaloo
+    branch: master
+    status: talos
+    layers: [firmware]
+    chapters: [boards.html, electrical.html]
+    altium: true
+    desc: >-
+      The electrical team's Altium Designer workspace: board projects (schematics and PCB layouts) for Talos and
+      older vehicles, the shared part library, design rules for JLCPCB 4-layer boards and a project template.
+      Not code; the explorer counts design files instead of lines.
+
+  - id: riptide_setup
+    group: setup
+    source: { kind: local, path: ~/osu-uwrt/riptide_setup }
+    github: osu-uwrt/riptide_setup
+    branch: humble
+    status: tool
+    layers: [tools]
+    chapters: [setup.html]
+    desc: >-
+      Sets up a new machine: installs ROS 2 Humble, clones the development workspaces with vcs import
+      (riptide.repos), optionally clones the release repo, and adds the bashrc sourcing. Also colcon_riptide, the
+      colcon plugin behind colcon deploy (sync sources to the robot and build there) and colcon timesync.
+
+  - id: dev-dependencies
+    name: development/dependencies
+    group: setup
+    source: { kind: local, path: ~/osu-uwrt/development/dependencies/src }
+    github: ''
+    branch: ''
+    status: tool
+    layers: [drivers]
+    chapters: [setup.html]
+    noCount: true
+    desc: >-
+      The second development workspace riptide_setup creates. Its repos are mostly also in the release repo now:
+      nortek_dvl and chameleon_tf as submodules, zed-ros2-wrapper through zed_wrapper.repos. The other two are
+      not used by Talos's launch files.
+    packages:
+      vectornav:
+        layer: drivers
+        status: legacy
+        chapters: [sensors.html]
+        github: coalman321/vectornav
+        desc: >-
+          An older open-source VectorNav driver. riptide_hardware's own imu.launch.py still refers to it, but
+          hardware.launch.py starts riptide_imu instead.
+      micro_ros_setup:
+        layer: firmware
+        status: tool
+        chapters: [firmware.html]
+        github: micro-ROS/micro_ros_setup
+        desc: The upstream micro-ROS build tool (galactic branch), cloned by riptide_setup.
+
+  - id: riptide_simulink
+    group: setup
+    source: { kind: gh, path: /tmp/gh/riptide_simulink }
+    github: osu-uwrt/riptide_simulink
+    branch: master
+    status: tool
+    layers: [tools]
+    chapters: [control/index.html]
+    desc: >-
+      Builds ROS 2 C++ packages from the team's Simulink models with MATLAB R2023a (x86 and arm64), stages them in
+      the workspaces (src/simulink_models/) and shares builds as GitHub releases, so you don't need MATLAB to run
+      them. Used for the older complete_controller. Generated packages are not committed to any repo, so the
+      release repo doesn't pin them. The riptide_navigation package that talos_launch_mpc.yaml starts ("simulink
+      nav") looks like one of them, but its source isn't in any team repo we could find (unconfirmed).
+
+  - id: btstudio
+    group: setup
+    source: { kind: gh, path: /tmp/gh/btstudio }
+    github: osu-uwrt/btstudio
+    branch: master
+    status: tool
+    layers: [autonomy]
+    chapters: [bt-workflow.html]
+    desc: >-
+      BehaviorTree Studio, the team's visual editor for BehaviorTree.cpp v4 XML (Electron + React). Works on a
+      folder of tree files with a shared subtree library.
+
+  - id: Groot
+    group: setup
+    source: { kind: gh, path: /tmp/gh/Groot }
+    github: osu-uwrt/Groot
+    branch: master
+    status: tool
+    layers: [autonomy]
+    chapters: [bt-workflow.html]
+    desc: >-
+      The team's fork of Groot, the older BehaviorTree editor. riptide_autonomy still keeps a Groot workspace
+      (trees/.groot/workspace.xml) declaring every custom node.
+
+  - id: pretest_checks
+    group: setup
+    source: { kind: local, path: ~/pretest_checks }
+    github: ''
+    branch: ''
+    status: tool
+    layers: [ops]
+    chapters: [pool-test.html]
+    desc: >-
+      New: the pre-pool-test checker (command pretest), a Python/rclpy CLI that runs on the operator laptop and
+      checks the repos, the bench and the robot before a test. Not on GitHub yet.
+
+  - id: riptide_onboarding
+    group: setup
+    source: { kind: gh, path: /tmp/gh/riptide_onboarding }
+    github: osu-uwrt/riptide_onboarding
+    branch: master
+    status: tool
+    layers: [tools]
+    chapters: [ros2.html]
+    desc: ROS 2 tutorials for new members on turtlesim (nodes, topics, parameters, services), in Python and C++.
+
+  - id: optop_software
+    group: setup
+    source: { kind: gh, path: /tmp/gh/optop_software }
+    github: osu-uwrt/optop_software
+    branch: master
+    status: tool
+    layers: [ops]
+    chapters: [computers.html]
+    desc: Software for op-top, the team's operator laptop (an HP Omen); one node that drives its LEDs from riptide_msgs2 LedCommand messages.
+
+  - id: ffmpeg_image_transport
+    group: setup
+    source: { kind: gh, path: /tmp/gh/ffmpeg_image_transport }
+    github: osu-uwrt/ffmpeg_image_transport
+    branch: master
+    status: tool
+    layers: [drivers]
+    chapters: [cameras.html]
+    desc: >-
+      The team's fork of the ffmpeg image transport (H.264/HEVC video over ROS). zed_wrapper.repos pins the
+      upstream ros-misc-utilities version; riptide_hardware/cfg/zed_compression.yaml sets it to hevc_nvenc.
+
+  - id: com_scale
+    group: rigs
+    source: { kind: gh, path: /tmp/gh/com_scale }
+    github: osu-uwrt/com_scale
+    branch: main
+    status: tool
+    layers: [tools]
+    chapters: [mechanical.html]
+    desc: >-
+      Arduino code for the centre-of-mass scale: three load cells, weigh the robot nose-down then nose-up, and it
+      prints the COM in the riptide_descriptions frame, ready to paste into config/talos.yaml.
+
+  - id: thruster_calibration_tools
+    group: rigs
+    source: { kind: gh, path: /tmp/gh/thruster_calibration_tools }
+    github: osu-uwrt/thruster_calibration_tools
+    branch: master
+    status: tool
+    layers: [tools]
+    chapters: [thrusters-hw.html]
+    desc: ROS 2 packages and a GUI for measuring T200 thrust against command in a tank with a custom force gauge.
+
+  - id: gyro_cal_rig
+    group: rigs
+    source: { kind: gh, path: /tmp/gh/gyro_cal_rig }
+    github: osu-uwrt/gyro_cal_rig
+    branch: master
+    status: tool
+    layers: [tools]
+    chapters: [sensors.html]
+    desc: >-
+      The fiber-optic gyro calibration rig: a heated enclosure on a stepper turntable, its Arduino sketch, a ROS
+      driver and GUI, and MATLAB scripts.
+
+  - id: riptide_simulator
+    group: legacy
+    source: { kind: release, path: src/riptide_simulator }
+    github: osu-uwrt/riptide_simulator
+    branch: newsim
+    status: legacy
+    layers: [sim]
+    chapters: [nereus.html]
+    desc: >-
+      The previous simulator, replaced by Nereus. Still a submodule of the release repo.
+    packages:
+      c_simulator:
+        layer: sim
+        status: legacy
+        chapters: [nereus.html]
+        desc: Fossen six-DOF plant, actuator model, simulated sensors and task scoring.
+      camera_faker:
+        layer: sim
+        status: legacy
+        chapters: [nereus.html]
+        desc: OpenGL pool viewer and simulated ZED cameras (DEPLOY_IGNORE, never sent to the robot).
+
+  - id: riptide_gui
+    group: legacy
+    source: { kind: release, path: src/riptide_gui }
+    github: osu-uwrt/riptide_gui
+    branch: newsim
+    status: legacy
+    layers: [sim]
+    chapters: [viewer.html]
+    desc: >-
+      The RViz-based operator GUI. The team no longer uses RViz; the Nereus viewer replaced it, for the sim and the
+      robot. Still a submodule of the release repo.
+    packages:
+      riptide_rviz:
+        layer: sim
+        status: legacy
+        chapters: [viewer.html]
+        desc: RViz plugins for the old operator interface (control panel, mission panel). DEPLOY_IGNORE.
+      riptide_meshes:
+        layer: sim
+        status: legacy
+        chapters: [viewer.html]
+        desc: Meshes of the props and vehicles for RViz. DEPLOY_IGNORE.
+
+  - id: riptide_kill_switch
+    group: legacy
+    source: { kind: gh, path: /tmp/gh/riptide_kill_switch }
+    github: osu-uwrt/riptide_kill_switch
+    branch: master
+    status: legacy
+    layers: [ops]
+    chapters: [commanding.html]
+    desc: An older physical kill switch with a stack light, run on a Raspberry Pi (robostop). Archived.
+
+  - id: behaviortree_vscode_extension
+    group: legacy
+    source: { kind: gh, path: /tmp/gh/behaviortree_vscode_extension }
+    github: osu-uwrt/behaviortree_vscode_extension
+    branch: master
+    status: legacy
+    layers: [autonomy]
+    chapters: []
+    noCount: true
+    desc: An archived idea for a VS Code BehaviorTree editor; the repo holds only a README.
+
+  - id: mercury
+    name: mercury_*
+    group: legacy
+    source: { kind: gh, path: /tmp/gh/mercury_release }
+    github: osu-uwrt/mercury_release
+    branch: master
+    status: other
+    layers: [drivers, control, autonomy, perception, ops, sim]
+    chapters: []
+    noCount: true
+    desc: >-
+      Not Talos. Mercury is a rewrite of the Riptide stack for Triton, the team's smaller second AUV (new for
+      RoboSub 2026). mercury_release pins its repos as submodules the same way riptide_release does. Don't mix the
+      two stacks up when searching GitHub.

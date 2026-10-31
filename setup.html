@@ -4,32 +4,331 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Setting up your machine · How Talos works</title>
-<meta name="description" content="One or two sentences on what this chapter explains.">
+<meta name="description" content="From a blank laptop to Talos's stack and the Nereus simulator: Ubuntu 22.04, ROS 2 Humble, riptide_setup, the release workspace and its submodules, colcon, what sourcing does, GPUs, VS Code, the team's git workflow and colcon deploy to the Orin.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Start here</div>
+    <div class="kicker">Start here · Chapter 4</div>
     <h1>Setting up your machine</h1>
-    <p class="lede">One or two sentences: what this is and why a new member should care.</p>
+    <p class="lede">From a blank laptop to Talos's code built and running in the simulator. What each script installs, where the code lives, what "sourcing" does, and how your changes get onto the robot.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Three to five bullets a reader can stop after.</li>
+      <li>Install Ubuntu 22.04, then run <code>riptide_setup/setup.bash</code>. It installs ROS 2 Humble, clones the code and edits your <code>~/.bashrc</code>.</li>
+      <li>The code Talos runs is one repo, <code>riptide_release</code>, in <code>~/osu-uwrt/release</code>. Every package repo inside it is a git submodule pinned to one exact commit. Build it with <code>colcon build</code>, and Nereus inside it with <code>./build.sh</code>.</li>
+      <li><code>source install/setup.bash</code> puts a workspace's packages on top of the ones already sourced. The last one sourced wins, and every new terminal starts from nothing.</li>
+      <li>A GPU helps but isn't required: the ZED SDK only runs on the robot, and the detector falls back to the CPU.</li>
+      <li>Code reaches Talos as commits: push your branch, bump its submodule in release, then <code>colcon deploy</code> copies the sources to the Orin and builds them there. The <a href="#checklist">checklist at the end</a> tracks your progress.</li>
     </ul></aside>
+
     <div class="prose">
-      <p>Opening paragraph.</p>
-      <h2 id="first-section">First section</h2>
-      <p>Coming soon.</p>
+      <h2 id="before">Before you start</h2>
+      <dl class="spec">
+        <dt>Operating system</dt><dd>Ubuntu 22.04. The setup script reads <code>lsb_release</code> and stops on any other version (<a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/setup_scripts/update_system.bash#L12-L25"><code>update_system.bash</code></a>), because ROS 2 Humble's packages are built for 22.04. Install it on the laptop itself (dual boot is fine).</dd>
+        <dt>GPU</dt><dd>Optional. Install the NVIDIA driver first if you have one: the script checks for <code>nvidia-smi</code>. See <a href="#gpu">Do you need a GPU?</a></dd>
+        <dt>Disk</dt><dd>More than you'd guess. Measured on a team member's machine:
+          <ul class="disk">
+            <li>ROS in <code>/opt/ros/humble</code>: 550 MB</li>
+            <li>release: 4.2 GB (git history 797 MB, sources 515 MB, <code>build/</code> 845 MB, <code>install/</code> 756 MB, <code>log/</code> 191 MB, Nereus 882 MB)</li>
+            <li>development, which <code>setup.bash</code> always clones and builds: about 1 GB, plus 4.3 GB for <code>titan_firmware</code>, nearly all of it the Pico SDK's nested submodules and their git history</li>
+            <li>PyTorch for the detector, with its CUDA libraries: 5.4 GB in <code>~/.local</code></li>
+          </ul>
+          That's about 15 GB, before the system libraries apt installs alongside ROS.</dd>
+        <dt>Memory</dt><dd>Nereus's <code>build.sh</code> runs one compile job per 3 GB of free memory, after keeping 4 GB for the desktop. 8 GB free gives 1 job, 16 GB free gives 4.</dd>
+        <dt>GitHub</dt><dd>The code repos are public, so cloning needs no account. Pushing needs write access to <a href="https://github.com/osu-uwrt">osu-uwrt</a> (ask a lead) and a way to log in from git: see <a href="#git">Git</a>.</dd>
+        <dt>Time</dt><dd>The script says the ROS install alone "will take about 20 min", depending on your connection.</dd>
+      </dl>
+      <p>When you're done, your home folder will look like this:</p>
+<pre class="tree"><code>~/osu-uwrt/
+├── riptide_setup/      <span class="c">setup scripts + the colcon deploy extension</span>
+├── release/            <span class="c">riptide_release: what Talos runs. Work here.</span>
+│   ├── src/            <span class="c">12 submodules, 27 ROS packages at the pins</span>
+│   ├── nereus/         <span class="c">simulator + viewer (a submodule; plain CMake, not colcon)</span>
+│   ├── scripts/        <span class="c">middleware, robot and Jetson setup scripts</span>
+│   └── build/ install/ log/   <span class="c">made by colcon build</span>
+└── development/        <span class="c">the older layout: one clone per repo</span>
+    ├── dependencies/   <span class="c">drivers: DVL, VectorNav, ZED wrapper, ...</span>
+    ├── software/       <span class="c">the riptide_* repos</span>
+    └── titan_firmware/ <span class="c">board firmware (colcon ignores it)</span></code></pre>
+
+      <h2 id="riptide-setup">riptide_setup: one script, ten steps</h2>
+      <p><a href="https://github.com/osu-uwrt/riptide_setup">riptide_setup</a> is the team's installer. Clone it to exactly this path; every script inside uses <code>~/osu-uwrt/...</code> paths.</p>
+<pre class="cmd" data-where="your laptop"><code>sudo apt install git
+mkdir -p ~/osu-uwrt &amp;&amp; cd ~/osu-uwrt
+git clone https://github.com/osu-uwrt/riptide_setup.git
+~/osu-uwrt/riptide_setup/setup.bash      <span class="c"># not with sudo: it asks when it needs to</span></code></pre>
+      <div class="callout">
+        <span class="label">Answer the prompts like this</span>
+        <ul>
+          <li><b>Enter your install (Default is desktop):</b> press Enter.</li>
+          <li><b>Install release setup? (default is no):</b> type <b>y</b>. The rest of this site assumes <code>~/osu-uwrt/release</code> exists.</li>
+          <li>After the reboot, the first terminal asks <b>Setup bashrc for Release (R) or Development (D)?</b>: type <b>R</b>. It asks once per boot.</li>
+          <li>Until you build release (<a href="#build">below</a>), every terminal then prints <code>release/install/setup.bash: No such file or directory</code>. That's expected: the script clones release but doesn't build it.</li>
+        </ul>
+      </div>
     </div>
-    <figure class="fig">
-      <div class="panel" id="some-figure"></div>
-      <figcaption><b>Bold lead-in.</b> What to look at. Tap or hover … (if interactive).</figcaption>
+    <figure class="fig narrow">
+      <div class="panel">
+        <div class="controls"><button class="btn" id="steps-toggle" type="button">Open all</button><span class="steps-legend"><span class="tag sudo">sudo</span> changes system files <span class="tag ask">asks</span> waits for you <span class="tag rc">bashrc</span> edits <code>~/.bashrc</code></span></div>
+        <ol class="steps" id="setup-steps"></ol>
+      </div>
+      <figcaption><b>What <code>setup.bash</code> does, in order.</b> Tap a step to see its commands and what it changes, with links to the exact lines.</figcaption>
     </figure>
     <div class="prose">
-      <h2 id="second-section">Second section</h2>
-      <p>Coming soon.</p>
+      <p>Four things the script does <em>not</em> do. You do them next, in <a href="#build">Building</a> and <a href="#nereus">Building Nereus</a>:</p>
+      <ul>
+        <li>Build the release workspace. <code>setup_release.bash</code> only clones it.</li>
+        <li>Install the Zenoh middleware the team uses (<code>ros-humble-rmw-zenoh-cpp</code>).</li>
+        <li>Install the detector's Python packages (Ultralytics and PyTorch). rosdep can't.</li>
+        <li>Build Nereus.</li>
+      </ul>
+      <p>Two quirks worth knowing. The "force reinstallation of ROS" question never appears: <a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/setup.bash#L19">line 19</a> quotes <code>"~/osu-uwrt/development"</code>, and bash doesn't expand <code>~</code> inside quotes. And the development workspace clones each repo's default branch from <a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/setup_scripts/dev_install/riptide.repos"><code>riptide.repos</code></a> (<code>master</code>, <code>ros2</code>), which is behind current work: riptide_control's <code>master</code> has no <code>riptide_mpc</code> at all.</p>
+
+      <h2 id="workspaces">Two workspaces: development and release</h2>
+      <p>A <span class="term">workspace</span> is a folder with a <code>src/</code> of ROS packages that colcon builds into <code>build/</code> and <code>install/</code>. The team has two layouts:</p>
+      <table class="params">
+        <thead><tr><th></th><th>development</th><th>release</th></tr></thead>
+        <tbody>
+          <tr><td>Folder</td><td><code>~/osu-uwrt/development/</code> <code>dependencies</code> + <code>software</code></td><td><code>~/osu-uwrt/release</code></td></tr>
+          <tr><td>How code arrives</td><td><code>vcs import</code>: a clone of each repo on a branch</td><td><code>git clone --recursive</code>: submodules at pinned commits</td></tr>
+          <tr><td>Workspaces</td><td>two, chained: software on top of dependencies</td><td>one</td></tr>
+          <tr><td>Used for</td><td>the original day-to-day layout</td><td>what the robot runs: deployed, tagged after tests; Nereus lives here</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Work in release.</strong> Its <a href="https://github.com/osu-uwrt/riptide_release/blob/master/README.md">README</a> says to deploy from it and to run GUI tools from it so configs match the robot. Nereus is built against it. And current work lives on branches that <code>riptide.repos</code> doesn't check out.</p>
+      <p>A <span class="term">submodule</span> is a repo inside a repo. The outer repo stores only a commit hash for it, the <span class="term">pin</span>. Cloning or <code>git submodule update</code> checks out exactly that commit, so one release commit names the whole robot's code at once. That's why the team commits "Pre RPAC test" to release before a pool test.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel" id="submodules"></div>
+      <figcaption><b>The release repo's submodules.</b> Each row is one repo: its pin on release <code>master</code>, the branch named in <code>.gitmodules</code>, and the branch this site links (where the current work is). Tap a row to see the packages inside. Generated from the repo by <code>tools/setup/workspace.py</code>.</figcaption>
+    </figure>
+    <div class="prose">
+<pre class="cmd" data-where="your laptop"><code><span class="c"># the first time (setup.bash does this if you answered y)</span>
+git clone --recursive https://github.com/osu-uwrt/riptide_release.git ~/osu-uwrt/release
+
+<span class="c"># later: bring everything to the current pins</span>
+cd ~/osu-uwrt/release
+git pull
+git submodule update --init --recursive
+
+<span class="c"># work on a branch inside a submodule</span>
+cd src/riptide_control
+git checkout mpc         <span class="c"># submodules start on a detached HEAD at the pin</span>
+git pull</code></pre>
+      <p><b>Pins or current work?</b> A fresh clone builds the pins on release <code>master</code>. This site follows newer branches, where the current work is: the last column above. <code>riptide_motion_panel</code>, for example, is on riptide_control's <code>mpc</code> branch but not at its pin. To match the site, check those branches out. They change over time, so ask a lead which are current.</p>
+<pre class="cmd" data-where="your laptop"><code><span class="c"># the branches this site follows (October 2026)</span>
+cd ~/osu-uwrt/release
+git -C src/riptide_core checkout followpath-speed
+git -C src/riptide_control checkout mpc
+git -C src/riptide_perception checkout mapping-estimator
+git -C src/riptide_autonomy checkout autonomy-mapping
+git -C src/riptide_launch checkout newsim
+git -C src/nortek_dvl checkout DvlWaterTrackFallback
+<span class="c"># apriltag_ros: CompressedImages is only on the team's fork,</span>
+<span class="c"># github.com/osu-uwrt/apriltag_ros, not upstream where the submodule clones from</span></code></pre>
+      <div class="callout">
+        <span class="label">The detached-HEAD trap</span>
+        <p><code>git submodule update</code> puts each submodule on its pinned commit, detached from any branch. Commit there and the commit belongs to no branch; switching away loses track of it. Run <code>git status</code> inside a submodule before you commit. The <code>branch =</code> lines in <code>.gitmodules</code> only matter for <code>git submodule update --remote</code>, which CI uses as a fallback when a pinned commit can't be fetched.</p>
+      </div>
+
+      <h2 id="build">Building: rosdep, then colcon</h2>
+<pre class="cmd" data-where="your laptop"><code>cd ~/osu-uwrt/release
+source /opt/ros/humble/setup.bash                    <span class="c"># nothing else sources ROS yet</span>
+source ~/osu-uwrt/riptide_setup/install/setup.bash   <span class="c"># so release's setup.bash brings in colcon deploy</span>
+rosdep install --from-paths src --ignore-src -r -y   <span class="c"># system packages every package.xml asks for</span>
+sudo apt install ros-humble-rmw-zenoh-cpp            <span class="c"># the middleware Talos uses</span>
+pip install ultralytics "numpy&lt;2"                    <span class="c"># the detector's YOLO library; pulls in PyTorch</span>
+colcon build
+source install/setup.bash</code></pre>
+      <ul>
+        <li><b>Source ROS first.</b> In release mode, the <code>~/.bashrc</code> block from <code>setup.bash</code> sources only <code>release/install/setup.bash</code>, which this build creates. riptide_setup's install was built without ROS sourced, so it doesn't bring ROS in either. Without the first line, rosdep doesn't know your ROS distribution (it fails on keys like <code>ament_cmake</code>) and colcon can't find <code>ament_cmake</code>.</li>
+        <li><b>rosdep</b> reads every <code>package.xml</code> and apt-installs what's missing. <code>-r</code> keeps going past keys it can't resolve; without it, rosdep installs nothing. Five packages have such keys (<code>rosdep check</code> shows the first per package): <code>OpenCV</code> (camera_faker), <code>riptide_SINB</code> (riptide_bringup2), <code>gpiod</code> (riptide_hardware2), <code>zed_interfaces</code> (riptide_rviz), and seven in tensor_detector: <code>OpenCV</code>, <code>CUDA</code>, <code>scipy</code>, <code>collections</code>, <code>numpy</code>, <code>ultralytics</code> and <code>cv2</code>. So the detector's Python packages come from pip.</li>
+        <li><b>Keep numpy below 2.</b> Ultralytics needs numpy 1.23 or newer and Ubuntu's is 1.21, so a plain <code>pip install ultralytics</code> pulls numpy 2.2 into <code>~/.local</code>. ROS Humble's <code>cv_bridge</code> is built against numpy 1, so it then breaks: "A module that was compiled using NumPy 1.x cannot be run in NumPy 2.2.6", and converting an image fails. With <code>"numpy&lt;2"</code>, pip picks numpy 1.26 and an OpenCV built for it, and <code>cv_bridge</code> works. (Tested October 2026.)</li>
+        <li><b>colcon</b> finds every package under <code>src/</code>, orders them by dependency and builds each into its own <code>install/&lt;package&gt;</code>. Errors go to <code>log/latest_build/&lt;package&gt;/stderr.log</code>.</li>
+      </ul>
+      <p>The flags the team actually uses:</p>
+      <table class="params">
+        <thead><tr><th>Command</th><th>What it's for</th></tr></thead>
+        <tbody>
+          <tr><td><code>colcon build --packages-select riptide_mpc</code></td><td>Only that package. Fast; what <code>colcon deploy</code> runs on the robot.</td></tr>
+          <tr><td><code>colcon build --packages-up-to riptide_mpc</code></td><td>That package and everything it depends on.</td></tr>
+          <tr><td><code>--packages-skip tensor_detector</code></td><td>CI skips the detector (<a href="https://github.com/osu-uwrt/riptide_release/blob/master/.github/workflows/ros2-ci.yml">ros2-ci.yml</a>).</td></tr>
+          <tr><td><code>--cmake-args -DCMAKE_BUILD_TYPE=Release</code></td><td>Optimized C++ (CI). <code>riptide_mpc</code> picks Release on its own when no type is set.</td></tr>
+          <tr><td><code>--symlink-install</code></td><td>Links Python, launch and config files instead of copying them, so edits apply without a rebuild. Switching between the two is safest with a clean build.</td></tr>
+          <tr><td><code>--event-handlers console_cohesion+</code></td><td>Prints each package's output in one block (CI).</td></tr>
+          <tr><td><code>rm -rf build install log &amp;&amp; colcon build</code></td><td>The clean build the pre-test checklist asks for. colcon never deletes a removed package from <code>install/</code>.</td></tr>
+          <tr><td><code>colcon test --packages-select riptide_mpc riptide_mapping2 riptide_autonomy2</code> then <code>colcon test-result --verbose</code></td><td>The unit tests the pre-test checks can run.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="sel-controls"></div>
+        <pre class="cmd sel-cmd" id="sel-cmd"></pre>
+        <div class="sel-grid" id="sel-grid"></div>
+        <div class="graph-note" id="sel-note"></div>
+      </div>
+      <figcaption><b>Which packages a selection flag builds.</b> All 28 packages on the current-work branches, in colcon's build order (dependencies first). Pick a package and a flag; the highlighted ones are what colcon would build, computed by running <code>colcon list</code> on the release workspace.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="sourcing" data-short="What source does">What "source" actually does</h2>
+      <p>A built workspace is only folders. Nothing finds it until a few environment variables point at it:</p>
+      <dl class="spec">
+        <dt><code>AMENT_PREFIX_PATH</code></dt><dd>where <code>ros2 run</code>, <code>ros2 launch</code> and <code>get_package_share_directory</code> look for packages</dd>
+        <dt><code>CMAKE_PREFIX_PATH</code></dt><dd>where CMake looks when a package says <code>find_package(riptide_msgs2)</code></dd>
+        <dt><code>PYTHONPATH</code></dt><dd>where Python imports from (generated message modules, Python nodes)</dd>
+        <dt><code>PATH</code>, <code>LD_LIBRARY_PATH</code></dt><dd>programs and shared libraries</dd>
+      </dl>
+      <p><code>source file</code> runs a script inside your current shell, so whatever it sets stays set. (<code>./setup.bash</code> would run it in a child shell that exits at once, taking its variables with it.) Each workspace's script <em>prepends</em> its folders. Lookups take the first match, so the workspace sourced last is the <span class="term">overlay</span> and wins over its <span class="term">underlays</span>.</p>
+      <p>One more thing makes the order matter: <code>install/setup.bash</code> first re-sources every workspace that was sourced <em>when you built</em>. colcon writes that list into the file. Here is release's, from a team member's machine:</p>
+<pre><code><span class="c"># ~/osu-uwrt/release/install/setup.bash (generated by colcon, trimmed)</span>
+COLCON_CURRENT_PREFIX="/opt/ros/humble"
+_colcon_prefix_chain_bash_source_script "$COLCON_CURRENT_PREFIX/local_setup.bash"
+COLCON_CURRENT_PREFIX="$HOME/osu-uwrt/riptide_setup/install"
+_colcon_prefix_chain_bash_source_script "$COLCON_CURRENT_PREFIX/local_setup.bash"
+<span class="c"># then this workspace's own local_setup.bash</span></code></pre>
+      <p>So build with the right underlays sourced. Build release in a terminal without riptide_setup sourced, and its <code>setup.bash</code> stops bringing in the <code>colcon deploy</code> command.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel ov-panel">
+        <div class="controls" id="ov-controls"></div>
+        <div class="ov" id="overlay"></div>
+      </div>
+      <figcaption><b>Sourcing, one layer at a time.</b> Tap a layer to source the chain up to it, or step with Source next; New terminal clears everything. Then pick a package to see which layer answers <code>ros2 pkg prefix</code>. Your machine's numbers were measured in a clean shell on a team member's machine (<code>tools/setup/env_layers.py</code>). The Orin's chain is the order in its environment script, <a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/uwrt_config/source/client.bash"><code>uwrt_config/source/client.bash</code></a>; it wasn't measured, so its exact paths may differ.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>You don't type this in every terminal; <code>~/.bashrc</code> does. With release installed, <a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/setup_scripts/setup_bashrc.bash#L7-L33"><code>setup_bashrc.bash</code></a> appends a block that asks Release or Development once per boot (the answer lives in <code>/tmp</code>, which a reboot clears) and sources one or the other. Never source both in one shell: two copies of the same packages, and whichever came last wins.</p>
+      <p>What to do with it: keep that block, and add the lines it lacks <em>above</em> it. In release mode it never sources ROS itself; release's <code>setup.bash</code> brings ROS in only once release has been built with ROS sourced. Then add Nereus and the middleware below it (Nereus's <code>./setup.sh</code> offers to add its line). Together, a working terminal runs these, in order:</p>
+<pre class="cmd" data-where="~/.bashrc"><code><span class="c"># you add this, above what setup.bash wrote</span>
+source /opt/ros/humble/setup.bash
+<span class="c"># setup.bash wrote these: colcon deploy, then the R/D block (with R, it runs:)</span>
+source ~/osu-uwrt/riptide_setup/install/setup.bash
+source ~/osu-uwrt/release/install/setup.bash
+<span class="c"># Nereus's ./setup.sh offers to add this</span>
+source ~/osu-uwrt/release/nereus/build/ros-viewer/ros/setup.bash
+<span class="c"># you add this</span>
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp</code></pre>
+      <ul>
+        <li><b>A new package needs a fresh source</b> after its first build: its <code>install/&lt;package&gt;</code> folder wasn't on the path when you sourced.</li>
+        <li><b>A removed or renamed package lingers</b> in <code>install/</code> until a clean build, and can still be found.</li>
+        <li><b>After changing the middleware</b>, run <code>ros2 daemon stop</code>: the <code>ros2</code> command-line daemon keeps the old one.</li>
+      </ul>
+
+      <h2 id="gpu">Do you need a GPU?</h2>
+      <p>No, but parts of the stack use one when it's there.</p>
+      <table class="params">
+        <thead><tr><th>Part</th><th>Without an NVIDIA GPU</th></tr></thead>
+        <tbody>
+          <tr><td>ZED SDK and <code>zed-ros2-wrapper</code></td><td>Not needed off the robot. The SDK needs an NVIDIA GPU with CUDA and drives the real cameras on the Orin. <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py#L95-L96"><code>navigation.launch.py</code></a> prints "zed_wrapper not found. Launching without zed TF" and carries on; in the simulator Nereus publishes the camera images itself.</td></tr>
+          <tr><td>Detector (<code>tensor_detector</code>)</td><td>Builds anyway (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/CMakeLists.txt#L20"><code>find_package(CUDA)</code></a> is optional). At run time it uses a TensorRT <code>.engine</code> only when CUDA is available, else the <code>.pt</code> model on the CPU, which is slower. With CUDA, the first start builds the engine (<code>export: true</code> in <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/config/yolo_orientation.yaml#L4"><code>yolo_orientation.yaml</code></a>), which can take minutes; later starts reuse it. If the export fails, for example with no TensorRT installed, it carries on with the <code>.pt</code> model (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/yolo_model.py#L21-L45"><code>yolo_model.py</code></a>).</td></tr>
+          <tr><td>Nereus cameras</td><td>Rendered with OpenGL (EGL off-screen). <code>cameras:=false</code> turns them off, at the cost of no detections.</td></tr>
+          <tr><td>Nereus viewer</td><td>An OpenGL window. On a laptop with two GPUs, <code>nvidia:=auto</code> (the default) moves it to the NVIDIA one with PRIME offload (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py#L82-L91"><code>sim.launch.py</code></a>).</td></tr>
+          <tr><td><code>setup.bash</code></td><td>In the development workspace, adds <code>COLCON_IGNORE</code> to every package with <code>zed</code> or <code>tensor_detector</code> in its name when <code>nvidia-smi</code> is missing.</td></tr>
+        </tbody>
+      </table>
+      <p>If your laptop has an NVIDIA GPU, install its driver <em>before</em> running <code>setup.bash</code>, and check that <code>nvidia-smi</code> works.</p>
+
+      <h2 id="nereus">Building Nereus</h2>
+      <p><a href="https://github.com/osu-uwrt/nereus">Nereus</a> is the simulator and the operator's viewer, for the pool and the real robot (<a href="nereus.html">Nereus, the simulator</a> and <a href="viewer.html">The Nereus viewer</a>). It sits in release as a submodule but isn't a colcon package: it's a plain CMake project that also builds without ROS (the headless dataset renderer), and a <code>COLCON_IGNORE</code> file keeps colcon out of it.</p>
+<pre class="cmd" data-where="your laptop"><code>cd ~/osu-uwrt/release/nereus
+./setup.sh       <span class="c"># once per machine: apt libraries, uv, the ~/.bashrc block</span>
+source /opt/ros/humble/setup.bash
+source ~/osu-uwrt/release/install/setup.bash   <span class="c"># the UWRT integration needs riptide_msgs2</span>
+./build.sh       <span class="c"># Python environment + the ros-viewer build</span></code></pre>
+      <dl class="spec">
+        <dt><a href="https://github.com/osu-uwrt/nereus/blob/main/setup.sh"><code>setup.sh</code></a></dt><dd>apt-installs the libraries (Eigen, yaml-cpp, Bullet, Assimp, GLFW, GLEW, EGL, OpenCV, ...), installs <a href="https://docs.astral.sh/uv/">uv</a> if it's missing, and offers to add a <code># &gt;&gt;&gt; nereus &gt;&gt;&gt;</code> block to <code>~/.bashrc</code> that sources <code>build/ros-viewer/ros/setup.bash</code>.</dd>
+        <dt><a href="https://github.com/osu-uwrt/nereus/blob/main/build.sh"><code>build.sh</code></a></dt><dd>Runs <code>uv sync --locked</code> (the <code>.venv</code> with the pack and dataset tools), then the CMake preset: <code>ros-viewer</code> if ROS is sourced, otherwise <code>datasets</code>. <code>./build.sh &lt;preset&gt;</code> picks another from <a href="https://github.com/osu-uwrt/nereus/blob/main/CMakePresets.json"><code>CMakePresets.json</code></a>.</dd>
+        <dt>Jobs</dt><dd>One per 3 GB of free memory after 4 GB for the desktop, at most one per core; its heaviest files need about 3 GB each to compile. <code>NEREUS_JOBS=2 ./build.sh</code> overrides it.</dd>
+        <dt>conda</dt><dd>An active conda environment is stripped from <code>PATH</code> for the build: its libraries would shadow the system ones OpenCV links against.</dd>
+        <dt>Output</dt><dd><code>build/ros-viewer/</code>: <code>nereus-viewer</code>, the simulator, the tests, and <code>ros/</code>, a one-package ROS prefix that makes <code>ros2 launch nereus ...</code> work.</dd>
+      </dl>
+      <p>Then run it. Talos's stack uses Zenoh as its ROS middleware (<a href="ros2.html">ROS 2, the Talos way</a>): it needs a router running, and every terminal needs <code>RMW_IMPLEMENTATION=rmw_zenoh_cpp</code>. The launch file's comment gives the reason: under full load with camera traffic, the default FastDDS stalled the simulator's <code>/tf</code> for 0.4 to 0.9 s; Zenoh didn't. For the sim you run your own router (terminal 1). On the real robot the Orin runs the router and your laptop joins it as a client: see <a href="computers.html#join">Joining from your own laptop</a>.</p>
+<pre class="cmd" data-where="terminal 1"><code>ros2 run rmw_zenoh_cpp rmw_zenohd</code></pre>
+<pre class="cmd" data-where="terminal 2"><code>ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim</code></pre>
+      <p>That starts the simulator, Talos's whole stack and the viewer. On a machine with CUDA, the first start can take minutes while the detector builds its TensorRT engine (<a href="#gpu">above</a>). <a href="launch.html">Launching the stack</a> and <a href="perception/workflow.html">Working on it yourself</a> go from here.</p>
+    </div>
+    <figure class="fig">
+      <img class="media" data-src="img/setup/nereus-viewer.webp" width="1728" height="1080" loading="lazy" alt="The Nereus viewer: a 3D pool with the RoboSub 2026 course, the forward and downward camera images on the right, motion and autonomy panels on the left.">
+      <figcaption><b>The viewer, before the simulator connects.</b> The RoboSub 2026 course in scene preview ("Preview / controls disconnected"): the pool and props in the middle, both cameras on the right, motion and autonomy panels on the left. Once the sim is up, the panels fill with Talos's live pose and the cameras show the simulator's images. Screenshot from the Nereus repo.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="vscode">VS Code</h2>
+      <p>Any editor works. If you use VS Code:</p>
+      <ul>
+        <li><b>Start it from a sourced terminal:</b> <code>cd ~/osu-uwrt/release &amp;&amp; code .</code>. It inherits that environment, so its terminals, tasks and debugger see ROS and your workspace.</li>
+        <li><b>C++ navigation</b> needs <code>compile_commands.json</code>. Nereus's presets already write <code>build/ros-viewer/compile_commands.json</code>. For colcon packages, add <code>--cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON</code> and point the C/C++ extension or clangd at <code>build/&lt;package&gt;/compile_commands.json</code>.</li>
+        <li><b>Ignore committed <code>.vscode</code> folders.</b> riptide_control's <code>c_cpp_properties.json</code> lists include paths under one member's home folder. <code>colcon deploy</code> skips <code>.vscode</code>.</li>
+        <li><b>Format C++ the project's way.</b> Nereus has <code>.clang-format</code> and <code>.clang-tidy</code> at its root.</li>
+        <li><b>Behaviour trees</b> have their own editor, the team's Groot fork (riptide_setup's <code>optional_installs/install_groot.bash</code> builds it); see <a href="bt-workflow.html">Writing and testing trees</a>.</li>
+      </ul>
+      <p>A VS Code dev container was tried in <a href="https://github.com/osu-uwrt/riptide_dev">riptide_dev</a> (a <code>ros:humble</code> image; last commit September 2025, empty README). riptide_setup doesn't use it.</p>
+
+      <h2 id="git">Git: branches, pull requests and release</h2>
+      <p>Each repo works the same way: a branch per change, a pull request to merge it. Before competition, <code>dev</code> merges into <code>master</code>. Some long-running branches (<code>mpc</code>, <code>newsim</code>, <code>mapping-estimator</code>) carry work far ahead of <code>master</code>, and feature branches merge into them. The release repo then pins the commits that go in the water.</p>
+      <p>Before your first push, tell git who you are and how to log in. Everything was cloned over https, so the simplest login is the GitHub CLI (<code>sudo apt install gh</code>); an SSH key works too if you switch the remotes to <code>git@github.com:</code> URLs.</p>
+<pre class="cmd" data-where="your laptop"><code>git config --global user.name "Your Name"
+git config --global user.email you@example.com   <span class="c"># your GitHub email</span>
+gh auth login                                    <span class="c"># HTTPS, then yes to "Authenticate Git"</span></code></pre>
+    </div>
+    <figure class="fig">
+      <div class="panel" id="git-graph"></div>
+      <figcaption><b>How a change travels.</b> From a branch in one repo to the robot and back into history. Tap or hover a step for a real example from the team's repos.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>The release <a href="https://github.com/osu-uwrt/riptide_release/blob/master/README.md">README</a> sets the routine: before a pool test, bump the submodules to the versions to test and commit to <code>master</code>; after it, commit any fixes, bump again, and tag the date. The log reads like a test diary ("Pre RPAC test 10-12-26", "Post sean test"), and the tags mark events (<code>6-1-24-talos</code>, <code>robosub2026</code>). Bumping a pin:</p>
+<pre class="cmd" data-where="your laptop"><code>cd ~/osu-uwrt/release/src/riptide_control
+git status                  <span class="c"># on your branch, nothing uncommitted</span>
+git push                    <span class="c"># a pin must be a commit others can fetch</span>
+cd ~/osu-uwrt/release
+git add src/riptide_control <span class="c"># records the submodule's current commit</span>
+git commit -m "Pre RPAC test 10-30-26"
+git push</code></pre>
+      <p>Before a pool test the checks require every pin committed and pushed, and the robot's code to match release exactly (<a href="pool-test.html">Pool test day</a>). A commit that exists only on your laptop can't be checked out by anyone else.</p>
+
+      <h2 id="deploy" data-short="colcon deploy">Getting code onto Talos: colcon deploy</h2>
+      <p>The team's code isn't cross-compiled. <a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/colcon_riptide/colcon_riptide/verb/deploy.py"><code>colcon deploy</code></a>, a colcon verb from riptide_setup's <code>colcon_riptide</code> extension, copies package sources to the Orin and builds them there, in <code>~/colcon_deploy</code>. Run it from <code>~/osu-uwrt/release</code>:</p>
+      <ul>
+        <li><b>You need</b> <code>source ~/osu-uwrt/riptide_setup/install/setup.bash</code> (it provides the verb), the Python packages <code>fabric</code> and <code>scantree</code> (<code>setup_release.bash</code> installs both), a passwordless SSH key for <code>ros@</code> the Orin, and the Orin's name in <code>/etc/hosts</code>. The current Orin is <code>orin2</code> (192.168.1.24 on the robot's network at the time of writing); <code>setup.bash</code> only adds an older <code>orin</code> entry.</li>
+        <li><b>On the robot, <code>src/</code> is flat:</b> one folder per package, no git. A package deleted on your side stays there until someone removes it.</li>
+        <li><b>Packages with a <code>DEPLOY_IGNORE</code> file are never sent:</b> riptide_meshes, riptide_rviz and camera_faker (desktop and simulator tools).</li>
+        <li><b>The robot builds with <code>-DBUILD_DEPLOY=ON</code></b>, which packages can test for. riptide_autonomy uses it to skip building the <code>checkBT</code> tree checker (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/CMakeLists.txt#L186">CMakeLists.txt</a>).</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="dep-controls"></div>
+        <pre class="cmd sel-cmd" id="dep-cmd" data-where="your laptop"></pre>
+        <ol class="dep-steps" id="dep-steps"></ol>
+      </div>
+      <figcaption><b>What a deploy will do.</b> Choose packages and flags; the steps below are what <code>deploy.py</code> runs for that command, with the real rsync and build lines.</figcaption>
+    </figure>
+    <div class="prose">
+      <div class="callout safety">
+        <span class="label">A deploy changes the robot</span>
+        <p>The Orin runs whatever is in <code>~/colcon_deploy</code> the next time the stack launches. Deploy only committed, pushed code before a test, so release says exactly what ran. If code changes during a test session, the bench checks have to be redone. The team's pre-test sequence is a clean build on the laptop, deleting <code>~/colcon_deploy</code> on the Orin, and <code>colcon deploy orin2 --clean</code>; a person runs it by hand.</p>
+      </div>
+      <p>The same extension adds <code>colcon timesync orin2</code>, the older manual tool: it sets the Orin's clock (and its hardware clock) to your laptop's over SSH, in one jump. The Orin now takes its time from the opbox's time server, which never steps the clock under a running stack (<a href="computers.html#time">Computers and networks</a>). Use timesync only when that server isn't available, and never while the stack is running: a backward jump of more than 10 s makes Nereus drop TF.</p>
+
+      <h2 id="jetson">Setting up a Jetson from scratch</h2>
+      <p>Rarely needed, and never on your first day. These scripts in release's <a href="https://github.com/osu-uwrt/riptide_release/tree/master/scripts"><code>scripts/</code></a> build ROS 2 itself for a Jetson, and set the Jetson up:</p>
+      <dl class="spec">
+        <dt><a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/cross_build/README.md"><code>cross_build.py</code></a></dt><dd>Builds a ROS 2 distribution for arm64 inside a Docker container (an <code>osrf/ubuntu_arm64</code> or <code>debian_arm64</code> image), from a profile in <code>scripts/meta_files</code>: <code>humble_robot_jetson</code> is 264 repos, <code>humble_core_jetson</code> 117. It exists for Jetsons whose Ubuntu has no ROS 2 Humble packages. The result is <code>~/osu-uwrt/&lt;profile&gt;_built.tar.gz</code>.</dd>
+        <dt><code>docker_arm64_qemu.bash</code></dt><dd>Lets an x86 machine run the arm64 container through QEMU, about 8 times slower (the README's figure).</dd>
+        <dt><a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/remote_install.py"><code>remote_install.py</code></a></dt><dd>Picks the target from <code>/etc/hosts</code> and the tarball from <code>~/Downloads</code>, sets up SSH keys and passwordless sudo, syncs the clock, checks the target is aarch64, installs dependencies and PyTorch, unpacks ROS, edits <code>.bashrc</code>, and configures JetPack (fan profile, no desktop, CAN modules). Enabling <code>can0</code>/<code>can1</code> in <code>jetson-io</code> is left to you.</dd>
+      </dl>
+
+      <h2 id="checklist">First-day checklist</h2>
+      <p>Tick as you go; ticks stay in this browser.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel" id="first-day"></div>
+    </figure>
+    <div class="prose">
+      <p>Done? Do the team's ROS 2 tutorials in <a href="https://github.com/osu-uwrt/riptide_onboarding">riptide_onboarding</a> (turtlesim, Python or C++), then read <a href="code-map.html">A map of the code</a> with the workspace open beside it.</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

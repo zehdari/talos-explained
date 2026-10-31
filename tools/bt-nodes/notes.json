@@ -1,0 +1,311 @@
+{
+ "groups": [
+  {"id": "movement", "label": "Moving", "blurb": "Paths and setpoints for the MPC controller."},
+  {"id": "perception", "label": "Perception and mapping", "blurb": "Detections, mapping targets and covariances."},
+  {"id": "state", "label": "Frames and state", "blurb": "TF lookups, odometry and the EKF."},
+  {"id": "ros", "label": "Actuators and ROS calls", "blurb": "Generic topic and service nodes; the trees fire the actuators with these."},
+  {"id": "utility", "label": "Timing and flow", "blurb": "Waiting, retrying, checking the blackboard."},
+  {"id": "math", "label": "Blackboard maths", "blurb": "Arithmetic, comparisons and strings on blackboard values."},
+  {"id": "logging", "label": "Logging and status", "blurb": "Log lines and the LED status."}
+ ],
+ "nodes": {
+  "FollowPath": {
+   "group": "movement", "tags": ["controller", "tf"],
+   "summary": "Flies a list of waypoints with the MPC's follow_path action: through each one without stopping, settling only on the last.",
+   "what": [
+    "Parses <code>waypoints</code> when it starts: <code>\"x,y,z,yaw; frame: x,y,z,yaw | option=value; ...\"</code> (6 numbers adds roll and pitch). <code>{key}</code> entries are filled from the blackboard first.",
+    "Waits up to 3 s for every waypoint's frame in TF, then sends one goal. Each point stays in its own frame, so a path through mapping's object frames moves when they move.",
+    "Depth is clamped in world to [<code>max_depth</code>, <code>min_depth</code>]. SUCCESS when the goal succeeds; FAILURE if it is rejected, aborted or takes longer than <code>timeout</code> (the goal is then cancelled, as it is when the node is halted)."
+   ],
+   "watch": ["Any message on <code>controller/linear</code> or <code>controller/angular</code> ends a running path: the MPC treats it as a new setpoint (<code>finishPath</code> in <code>mpc_controller_node.cpp</code>)."],
+   "ports": {"frame": {"defaultText": "world"}}
+  },
+  "AddWaypoint": {
+   "group": "movement", "tags": ["controller"],
+   "summary": "Appends one waypoint, with its heading options, to a FollowPath waypoint string.",
+   "what": [
+    "Writes <code>path</code> + <code>\"frame: x,y,z,yaw | options;\"</code> to <code>out</code>. Leave <code>path</code> empty to start a new path.",
+    "A non-zero roll or pitch writes six numbers. Options are written only when set: <code>heading</code>, <code>look_at</code>, <code>yaw_offset</code>, <code>spin</code>, <code>spin_rate</code>, <code>yaw_frame</code>.",
+    "FAILURE if <code>heading</code> is not waypoint, path or look_at, or if <code>look_frame</code> is given with a heading other than look_at."
+   ],
+   "ports": {"heading": {"defaultText": "waypoint (look_at if look_frame is set)"}, "look_x": {"defaultText": "0"}, "look_y": {"defaultText": "0"}, "look_z": {"defaultText": "0"}, "path": {"defaultText": "empty: a new path"}, "frame": {"defaultText": "empty: FollowPath's frame"}}
+  },
+  "AddArc": {
+   "group": "movement", "tags": ["controller"],
+   "summary": "Appends an arc (a straight line to its start, then round a centre) to a FollowPath waypoint string.",
+   "what": [
+    "Starts <code>radius</code> from (<code>cx</code>, <code>cy</code>) at <code>start_angle</code>, turns <code>sweep</code> rad (+ = counterclockwise seen from above) and ends at <code>end_radius</code>: a spiral if the two differ.",
+    "<code>approach=false</code> drops the straight line, so the arc starts from the previous point.",
+    "With <code>pan</code> the arc is cut into an even number of pieces of at most <code>pan_step</code> rad, and the heading swings +pan, −pan, +pan… along it: a camera sweep."
+   ],
+   "ports": {"heading": {"defaultText": "waypoint (look_at if look_frame is set)"}, "look_x": {"defaultText": "the centre (0 with look_frame)"}, "look_y": {"defaultText": "the centre (0 with look_frame)"}, "look_z": {"defaultText": "z (0 with look_frame)"}, "end_radius": {"defaultText": "radius"}, "approach": {"defaultText": "true"}, "path": {"defaultText": "empty: a new path"}, "frame": {"defaultText": "empty: FollowPath's frame"}}
+  },
+  "PublishToController": {
+   "group": "movement", "tags": ["controller"],
+   "summary": "Sends one ControllerCommand: a position (or velocity) setpoint on controller/linear, or an attitude on controller/angular.",
+   "what": [
+    "<code>isOrientation</code> picks the topic. In POSITION mode (<code>mode</code> 3) an orientation's x, y, z are roll, pitch, yaw, sent as a quaternion.",
+    "SUCCESS at once: it does not wait for Talos to get there. The older move subtrees (<code>PrimitiveMovePosition</code>) poll <code>GetOdometry</code> to see when it has."
+   ],
+   "watch": ["It also ends any FollowPath that is running."],
+   "ports": {"mode": {"defaultText": "3 (POSITION)"}}
+  },
+  "ContinuousSpin": {
+   "group": "movement", "tags": ["controller", "odometry"],
+   "summary": "Spins whole counterclockwise turns in place, counting the real, unwrapped yaw from odometry.",
+   "what": [
+    "Holds the position of the first odometry message and ramps a level yaw target. Without <code>yaw_rate</code> the target stays at most 0.6 rad ahead of the measured yaw, so it turns as fast as the controller follows.",
+    "SUCCESS within 0.05 rad of the full rotation, with yaw rate under 0.05 rad/s and roll and pitch under 0.1 rad.",
+    "FAILURE after <code>timeout_secs</code> or a gap in odometry longer than <code>odom_timeout_secs</code>; it then holds the current heading."
+   ],
+   "ports": {"yaw_rate": {"defaultText": "unset: as fast as the controller follows"}, "num_cycles": {"defaultText": "none (−1 fails)"}}
+  },
+  "SetControllerSafeMode": {
+   "group": "movement", "tags": ["controller"], "legacy": true,
+   "summary": "Sets the controller parameter controller__stunt__safe_mode through a parameter client.",
+   "what": [
+    "At load it looks for a node named like <code>/complete_controller</code>, else one ending in <code>/mpc_controller</code>.",
+    "RUNNING until the parameter is set; FAILURE after <code>timeout_secs</code>."
+   ],
+   "watch": ["The MPC does not declare this parameter, so it always fails on Talos today: the Nereus run in this chapter logged <i>\"parameter 'controller__stunt__safe_mode' cannot be set because it was not declared\"</i> and timed out 10 s later. In the competition tree it runs in <code>FlipTree</code> at the gate, just after a DISABLED setpoint, so the controller is off for those 10 s. Its failure ends the flip, which a ForceSuccess wraps."]
+  },
+  "TriggerControllerStunt": {
+   "group": "movement", "tags": ["controller"], "legacy": true,
+   "summary": "Publishes a stunt state on controller/stunt_state (a UInt16), for the old controller's flip.",
+   "what": [
+    "Publishes <code>targetStuntState</code> once and returns SUCCESS straight away.",
+    "Its retry loop (republish every 2 s, fail after 5 tries, watching <code>controller/running_stunt_state</code>) is in <code>onRunning</code>, which never runs because <code>onStart</code> already succeeded."
+   ],
+   "watch": ["Nothing in the current workspace or in Nereus subscribes to <code>controller/stunt_state</code>; it belonged to the old controller. In the competition tree's <code>FlipTree</code> it never runs: <code>SetControllerSafeMode</code> fails before it."]
+  },
+  "SetMappingTarget": {
+   "group": "perception", "tags": ["mapping"],
+   "summary": "Tells mapping which objects to fuse (the target) and whether to lock the map.",
+   "what": [
+    "Calls the <code>mapping_target</code> service with <code>target_object</code> (one name or a comma list; empty for none) and <code>lock_map</code>.",
+    "FAILURE if the service isn't there within 1 s or doesn't answer within <code>time_limit_secs</code>; otherwise SUCCESS (the response is empty)."
+   ],
+   "ports": {"target_object": {"defaultText": "empty: no target"}}
+  },
+  "GetMappingState": {
+   "group": "perception", "tags": ["mapping"],
+   "summary": "Reads mapping's current target and lock from state/mapping.",
+   "what": ["Waits for the next <code>state/mapping</code> message after it starts and writes <code>map_locked</code> and <code>target_name</code>. FAILURE after 3 s (outputs false and empty)."]
+  },
+  "getCovariance": {
+   "group": "perception", "tags": ["mapping"],
+   "summary": "Waits for the next estimate of one object and outputs its error, a single number for how well it is known.",
+   "what": [
+    "Subscribes to <code>mapping/&lt;Target&gt;</code> when it starts and waits for one message (FAILURE after 5 s).",
+    "<code>Covariance</code> is not a distance: the square root of the summed squared variances, the three angular ones divided by 2π (see <a href=\"perception/frames.html#published\">How Talos sees, Chapter 9</a>)."
+   ]
+  },
+  "MapConverged": {
+   "group": "perception", "tags": ["mapping"],
+   "summary": "A condition: SUCCESS once every object in a comma list has an error below target_cov.",
+   "what": [
+    "Answers at once, so it can sit in a ReactiveSequence and stop a running search the moment the estimate is good enough.",
+    "Only trusts estimates received since it started being ticked (a gap of more than 1 s, or a new object list, starts a new check), so an estimate from before a SetMappingTarget reset can't pass it.",
+    "Subscribes to each <code>mapping/&lt;object&gt;</code> the first time it is ticked with that name."
+   ]
+  },
+  "SeenRecently": {
+   "group": "perception", "tags": ["detector", "mapping"],
+   "summary": "A condition: SUCCESS if the detector saw the object within the last max_age_secs.",
+   "what": [
+    "Counts any detection at or above <code>min_score</code> on <code>detected_objects</code>, and any object mapping reports on <code>mapping/fused</code> (so <code>bin_target1</code>, which the detector never names, counts too).",
+    "Answers at once: in a ReactiveSequence it interrupts a running move as soon as the object comes into view."
+   ]
+  },
+  "WaitForDetection": {
+   "group": "perception", "tags": ["detector"],
+   "summary": "Waits until the detector reports object_name, or fails after timeout_secs.",
+   "what": ["Checks only each detection's first result (<code>results[0]</code>) and ignores the score. The competition tree uses SeenRecently instead."]
+  },
+  "LatestDetection": {
+   "group": "perception", "tags": ["detector", "tf"],
+   "summary": "Where the detector last saw an object, in a chosen frame (default world).",
+   "what": [
+    "Keeps the strongest detection of each class from every <code>detected_objects</code> message, and transforms it through TF at the detection's own timestamp, so a turning vehicle doesn't smear it.",
+    "SUCCESS with <code>out_x/y/z</code> if that detection is at most <code>max_age_secs</code> old and scores at least <code>min_score</code>; otherwise FAILURE.",
+    "Lets the down-camera search aim at what it actually sees, before mapping has moved the object's frame."
+   ]
+  },
+  "CenterDetection": {
+   "group": "perception", "tags": ["detector", "controller", "odometry", "tf"],
+   "summary": "Chases a detection with the forward camera: yaws to keep it centred and moves square on in front of the object.",
+   "what": [
+    "Yaws so the detection sits on the camera's axis (allowing for the camera's offset from the centre of Talos) and changes depth until the camera is level with the object.",
+    "With <code>align_yaw</code> it also moves onto the object's front (the +x side of <code>object_frame</code>) at <code>standoff</code>, facing it square on.",
+    "Detection positions are smoothed (each new one moves the estimate 30 % of the way). SUCCESS once centred, level and in place; FAILURE if the object is lost for <code>max_age_secs</code> or after <code>timeout_secs</code>, when it stops where it is."
+   ],
+   "ports": {"object_frame": {"defaultText": "<object_name>_frame"}, "standoff": {"defaultText": "the range it was seen from"}, "center_depth": {"defaultText": "true"}, "align_yaw": {"defaultText": "true"}, "base_frame": {"defaultText": "talos/base_link"}}
+  },
+  "CallStartBinaryClassifierService": {
+   "group": "perception", "tags": ["mapping", "service"],
+   "summary": "Starts mapping's binary classifier, which splits one detector class into two numbered objects.",
+   "what": ["Calls a <code>riptide_msgs2/StartBinaryClassifier</code> service with <code>class_name</code>, <code>object1_name</code> and <code>object2_name</code>. SUCCESS if the response says success. Same timing rules as CallTriggerService."]
+  },
+  "TransformPose": {
+   "group": "state", "tags": ["tf"],
+   "summary": "Re-expresses a pose (x, y, z, roll, pitch, yaw) given in from_frame in to_frame.",
+   "what": ["Uses the latest transform in TF. Retries every tick and fails if the transform isn't there within 3 s."],
+   "ports": {"from_frame": {"defaultText": "none"}, "to_frame": {"defaultText": "none"}}
+  },
+  "ComputeFrameAlignment": {
+   "group": "state", "tags": ["tf"],
+   "summary": "Where talos/base_link must go so that a tool frame (a camera, the claw, a torpedo tube) sits at a given pose relative to a target frame.",
+   "what": [
+    "Looks up base → link and reference → world in TF and computes the base pose in world (formula in the chapter).",
+    "Outputs <code>out_x … out_oy</code> in world; FAILURE if the frames aren't in TF within 5 s."
+   ]
+  },
+  "GetOdometry": {
+   "group": "state", "tags": ["odometry"],
+   "summary": "Writes the vehicle's current pose from odometry/filtered to the blackboard.",
+   "what": ["Waits for a fresh message after it starts (FAILURE after 3 s) and writes x, y, z and roll, pitch, yaw (rad)."],
+   "watch": ["Its subscription is made when the tree is loaded, so every one of its {n} instances in the competition tree receives every odometry message for the whole run."]
+  },
+  "GetImuOrientation": {
+   "group": "state", "tags": ["topic"],
+   "summary": "Reads roll, pitch and yaw from a sensor_msgs/Imu topic.",
+   "what": ["Subscribes to <code>topic</code> when it starts and waits up to 3 s for one message."]
+  },
+  "GetTwistTopic": {
+   "group": "state", "tags": ["topic", "controller"],
+   "summary": "Reads one geometry_msgs/Twist message into six outputs.",
+   "what": ["Subscribes to <code>topic</code> when it starts; FAILURE after 3 s. The competition tree reads the MPC's settle trust, <code>controller/scale/trust</code>, with it."]
+  },
+  "PublishEKFPose": {
+   "group": "state", "tags": ["odometry", "service"],
+   "summary": "Resets the EKF's pose with robot_localization's set_pose service, then waits until odometry shows it.",
+   "what": [
+    "Fields not chosen with <code>setX</code>, <code>setY</code>, <code>setZ</code>, <code>setOrientation</code> are copied from the latest odometry.",
+    "After the service answers, waits for an odometry message newer than the request that lies within <code>position_tolerance</code> and <code>orientation_tolerance</code>. FAILURE after <code>timeout_secs</code>."
+   ]
+  },
+  "CallTriggerService": {
+   "group": "ros", "tags": ["service", "actuators", "mapping"],
+   "summary": "Calls any std_srvs/Trigger service; SUCCESS if it answers success.",
+   "what": [
+    "FAILURE if the service isn't there within 1 s, answers success = false, or takes longer than <code>time_limit_secs</code>.",
+    "The competition tree fires the torpedo and dropper with it (<code>command/actuator/torpedo</code>, <code>command/actuator/dropper</code>, served by <code>actuator_service_translator.py</code>) and calls mapping's classifier and table services."
+   ]
+  },
+  "CallSetBoolService": {
+   "group": "ros", "tags": ["service", "actuators", "detector"],
+   "summary": "Calls any std_srvs/SetBool service with data; SUCCESS if it answers success.",
+   "what": [
+    "Same timing as CallTriggerService. Logs the response's message as a warning.",
+    "The competition tree arms the actuators (<code>command/actuator/arm</code>) and switches the detector between cameras (<code>set_camera_is_dfc</code>: true = down camera) with it."
+   ]
+  },
+  "CallSetStringService": {
+   "group": "ros", "tags": ["service", "mapping"],
+   "summary": "Calls any riptide_msgs2/SetString service with data; SUCCESS if it answers success.",
+   "what": ["Same timing as CallTriggerService. Used for mapping's background targets, the bin geometry fit and the slalom type."]
+  },
+  "PublishFloat32": {
+   "group": "ros", "tags": ["topic", "actuators"],
+   "summary": "Publishes one std_msgs/Float32 on any topic.",
+   "what": ["Creates the publisher when it starts and publishes once; SUCCESS. The competition tree publishes claw moves with it on <code>command/actuator/claw_move_s</code>, which Nereus's claw answers. No firmware in <code>titan_firmware</code> listens to that topic (the actuator board takes <code>command/actuator/claw</code>), so check it before relying on it in the pool."],
+   "ports": {"data": {"defaultText": "0"}}
+  },
+  "PublishInt8": {
+   "group": "ros", "tags": ["topic"],
+   "summary": "Publishes one integer on any topic. Despite the name, the message is a std_msgs/UInt16.",
+   "what": ["Creates the publisher when it starts and publishes once; SUCCESS. Only used for <code>controller/stunt_state</code>."]
+  },
+  "GetBoolTopic": {
+   "group": "ros", "tags": ["topic"],
+   "summary": "Reads one std_msgs/Bool from any topic into the blackboard.",
+   "what": ["Subscribes when it starts and waits for the next message; after 3 s it writes false and fails. The competition tree reads the kill switch (<code>state/kill</code>) with it while waiting to start."]
+  },
+  "GetFloat64Topic": {
+   "group": "ros", "tags": ["topic"],
+   "summary": "Reads one std_msgs/Float64 from any topic into the blackboard.",
+   "what": ["Subscribes when it starts and waits for the next message; after 3 s it writes 0 and fails."],
+   "ports": {"value": {"typeText": "double"}}
+  },
+  "GetActuatorStatus": {
+   "group": "ros", "tags": ["actuators"],
+   "summary": "Reads the actuator board's state: claw, torpedoes, droppers and whether it is busy.",
+   "what": ["Needs one message on both <code>state/actuator/status</code> and <code>state/actuator/busy</code> after it starts; FAILURE after 3 s. States are the numbers in <code>riptide_msgs2/ActuatorStatus</code> (torpedo 3 = charged, dropper 2 = ready…)."]
+  },
+  "Wait": {
+   "group": "utility", "tags": [],
+   "summary": "RUNNING for the given number of seconds, then SUCCESS.",
+   "what": ["Uses the ROS clock, so in Nereus it waits in simulated time."]
+  },
+  "RetryUntilSuccessfulOrTimeout": {
+   "group": "utility", "tags": [],
+   "summary": "A decorator: ticks its child again and again until it succeeds, or fails once num_seconds have passed.",
+   "what": [
+    "A failed child is retried on the next tick (every 30 ms), not straight away, and the decorator reports RUNNING meanwhile.",
+    "FAILURE (with an error in the log) when the time is up."],
+   "watch": ["When it times out it does not halt a child that is still RUNNING (read from the code; not yet tested in Nereus). A <code>FollowPath</code> inside skips its <code>onHalted</code>, so the MPC keeps flying that path until the next setpoint or path."
+   ]
+  },
+  "CheckBlackboardExists": {
+   "group": "utility", "tags": [],
+   "summary": "SUCCESS if its input is non-empty: a quick \"has this blackboard key been set?\"",
+   "what": ["An unset key reads as empty, so <code>input=\"{key}\"</code> fails until something writes the key."]
+  },
+  "Math": {
+   "group": "math", "tags": [],
+   "summary": "out = a operator b, for + − * /.",
+   "what": ["Always SUCCESS. An unknown operator gives 0; dividing by 0 is not caught."]
+  },
+  "CalculateDistance": {
+   "group": "math", "tags": [],
+   "summary": "Straight-line 3D distance between (x1, y1, z1) and (x2, y2, z2).",
+   "what": ["Always SUCCESS."]
+  },
+  "HeadingToPoint": {
+   "group": "math", "tags": [],
+   "summary": "The yaw (rad) that faces from (currX, currY) to (targX, targY): atan2(Δy, Δx).",
+   "what": ["Always SUCCESS."]
+  },
+  "Format": {
+   "group": "math", "tags": [],
+   "summary": "Fills {key} entries in a string from the blackboard: \"{object_name}_frame\" becomes \"torpedo_frame\".",
+   "what": ["A <code>{key}</code> that isn't on the blackboard is left as it is. Always SUCCESS."]
+  },
+  "CompareNums": {
+   "group": "math", "tags": [],
+   "summary": "A condition: a > b, a < b or a == b, chosen by test.",
+   "what": ["Any other <code>test</code> logs an error and fails."]
+  },
+  "ApproxEqualTo": {
+   "group": "math", "tags": [],
+   "summary": "A condition: |a − b| < range.",
+   "what": ["Answers at once. Only one tree file uses it, outside the competition tree."]
+  },
+  "ApproxEqualToAngle": {
+   "group": "math", "tags": [],
+   "summary": "A condition: angles a and b (rad) within range of each other.",
+   "what": ["Wraps a − b before comparing, so a = 3.1, b = −3.1 counts as close; swapped, it doesn't (see Watch)."],
+   "watch": ["Only differences above +π are wrapped. One below −π is not: a = −3.1, b = 3.1 fails a 0.25 rad check although the angles are 0.08 rad apart. The competition tree uses it once per attitude check in <code>PrimitiveMoveOrientation</code> (range 0.25)."]
+  },
+  "IsTrue": {
+   "group": "math", "tags": [],
+   "summary": "A condition: SUCCESS if value reads as true.",
+   "what": ["The value goes through BT.CPP's string-to-bool conversion, so \"1\" and \"true\" both work."]
+  },
+  "Info": {
+   "group": "logging", "tags": [],
+   "summary": "Logs a message at INFO level, with {key} entries filled from the blackboard.",
+   "what": ["Always SUCCESS. Lines appear in doTask's log, under the node name <code>autonomy</code>."]
+  },
+  "Error": {
+   "group": "logging", "tags": [],
+   "summary": "Logs a message at ERROR level, with {key} entries filled from the blackboard.",
+   "what": ["Always SUCCESS: logging an error does not fail the tree. To fail, wrap a log line in ForceFailure, as <code>AssertTree</code> does."]
+  },
+  "SetStatus": {
+   "group": "logging", "tags": ["leds"],
+   "summary": "Sets the LED strips to a named status pattern on command/led.",
+   "what": ["Publishes one <code>LedCommand</code> to all strips and returns SUCCESS. An unknown name logs a warning and shows <i>undefined</i> (solid white)."]
+  }
+ }
+}

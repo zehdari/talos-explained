@@ -1,0 +1,11 @@
+{
+ "node": "/talos/autonomy",
+ "source": "ros2 param dump /talos/autonomy while the Nereus full stack ran (sim.launch.py active_control_model:=mpc mpc_model:=sim); values are what the node actually loaded in sim",
+ "parameters": {
+  "enable_zmq": false,
+  "ext_plugin_list": [],
+  "ext_tree_dirs": [],
+  "log_file_dir": "~/btlogs",
+  "use_sim_time": true
+ }
+}

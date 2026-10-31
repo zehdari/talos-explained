@@ -1,0 +1,2430 @@
+{
+ "generated": "2026-10-30",
+ "release": {
+  "commits": [
+   {
+    "h": "8a53f2e",
+    "d": "2022-12-15",
+    "s": "Initial commit",
+    "k": "other"
+   },
+   {
+    "h": "28fcfcd",
+    "d": "2022-12-16",
+    "s": "add jetson scripts to release repo",
+    "k": "other"
+   },
+   {
+    "h": "5ba947c",
+    "d": "2022-12-16",
+    "s": "update gitignore to ros2",
+    "k": "other"
+   },
+   {
+    "h": "cebdc8a",
+    "d": "2023-01-03",
+    "s": "cross build is close, but very slow....",
+    "k": "other"
+   },
+   {
+    "h": "8150e13",
+    "d": "2023-01-03",
+    "s": "make sure ros version and distro set",
+    "k": "other"
+   },
+   {
+    "h": "933d6a4",
+    "d": "2023-01-03",
+    "s": "add some instructions, and escalate docker failure to fatal",
+    "k": "other"
+   },
+   {
+    "h": "d068df5",
+    "d": "2023-01-04",
+    "s": "tweak the meta files and handle micro-ros",
+    "k": "other"
+   },
+   {
+    "h": "23a68ec",
+    "d": "2023-02-10",
+    "s": "fix up the build to archive properly and finish setup scripts",
+    "k": "other"
+   },
+   {
+    "h": "2d95a72",
+    "d": "2023-02-10",
+    "s": "remove a bad bit of code and add the robot installation",
+    "k": "other"
+   },
+   {
+    "h": "e1cb0df",
+    "d": "2023-02-11",
+    "s": "pat way through new config version",
+    "k": "other"
+   },
+   {
+    "h": "ac79978",
+    "d": "2023-02-11",
+    "s": "add the aggregator and finish install",
+    "k": "other"
+   },
+   {
+    "h": "21849cc",
+    "d": "2023-02-11",
+    "s": "make deps install disableable via a cli arg",
+    "k": "other"
+   },
+   {
+    "h": "6bd2bd3",
+    "d": "2023-02-11",
+    "s": "add humble robot generation command",
+    "k": "other"
+   },
+   {
+    "h": "ac630a0",
+    "d": "2023-02-27",
+    "s": "after some back and forth it flashed two orins okay",
+    "k": "other"
+   },
+   {
+    "h": "733654e",
+    "d": "2023-02-27",
+    "s": "Add automatic network configuration for CAN",
+    "k": "other"
+   },
+   {
+    "h": "1687f97",
+    "d": "2023-02-27",
+    "s": "fix bashrc",
+    "k": "other"
+   },
+   {
+    "h": "9092916",
+    "d": "2023-02-27",
+    "s": "actually use IP",
+    "k": "other"
+   },
+   {
+    "h": "244f363",
+    "d": "2023-02-28",
+    "s": "proper namespacing",
+    "k": "other"
+   },
+   {
+    "h": "f061b66",
+    "d": "2023-02-28",
+    "s": "update service generation",
+    "k": "other"
+   },
+   {
+    "h": "a176b7c",
+    "d": "2023-03-01",
+    "s": "add system wide setup script + configure hosts and groups",
+    "k": "other"
+   },
+   {
+    "h": "d6995f1",
+    "d": "2023-03-01",
+    "s": "update the readme info a bit",
+    "k": "other"
+   },
+   {
+    "h": "6eb36f1",
+    "d": "2023-03-01",
+    "s": "bump to pool tested versions",
+    "k": "other"
+   },
+   {
+    "h": "034e5d8",
+    "d": "2023-03-01",
+    "s": "Merge branch 'master' of https://github.com/osu-uwrt/riptide_release",
+    "k": "other"
+   },
+   {
+    "h": "da924d8",
+    "d": "2023-03-01",
+    "s": "little bit more reame stuff",
+    "k": "other"
+   },
+   {
+    "h": "32fdd86",
+    "d": "2023-03-02",
+    "s": "actually move the new one in",
+    "k": "other"
+   },
+   {
+    "h": "d3c53a2",
+    "d": "2023-03-03",
+    "s": "add apriltag repos to core build and to release",
+    "k": "other"
+   },
+   {
+    "h": "7ca7d6e",
+    "d": "2023-03-03",
+    "s": "add opencv to packages",
+    "k": "other"
+   },
+   {
+    "h": "684c889",
+    "d": "2023-03-03",
+    "s": "oh, oops, need to apt update occasionally too",
+    "k": "other"
+   },
+   {
+    "h": "5eb9126",
+    "d": "2023-03-11",
+    "s": "add onnx runtime and zed deps",
+    "k": "other"
+   },
+   {
+    "h": "80c244e",
+    "d": "2023-03-15",
+    "s": "post puddles pool test release",
+    "k": "post"
+   },
+   {
+    "h": "1467d10",
+    "d": "2023-03-19",
+    "s": "upgrade nortek dvl version support the proper lookup error",
+    "k": "other"
+   },
+   {
+    "h": "b5b7f9d",
+    "d": "2023-03-19",
+    "s": "Merge pull request #1 from osu-uwrt/puddles_test",
+    "k": "other"
+   },
+   {
+    "h": "d9ff873",
+    "d": "2023-03-20",
+    "s": "switch dvl to master",
+    "k": "other"
+   },
+   {
+    "h": "98b7bfa",
+    "d": "2023-04-10",
+    "s": "initial updates for 4/11/23 talos test",
+    "k": "other"
+   },
+   {
+    "h": "fd47912",
+    "d": "2023-04-11",
+    "s": "include conditional bt build from autonomy",
+    "k": "other"
+   },
+   {
+    "h": "d1eec3a",
+    "d": "2023-04-11",
+    "s": "integrate changes for zed",
+    "k": "other"
+   },
+   {
+    "h": "1ca48e1",
+    "d": "2023-04-12",
+    "s": "post-4-11-23 pool test changes",
+    "k": "post"
+   },
+   {
+    "h": "dc2e4df",
+    "d": "2023-04-12",
+    "s": "flip the script",
+    "k": "other"
+   },
+   {
+    "h": "65d17f8",
+    "d": "2023-04-12",
+    "s": "Merge branch 'master' of https://github.com/osu-uwrt/riptide_release",
+    "k": "other"
+   },
+   {
+    "h": "21a3a10",
+    "d": "2023-04-12",
+    "s": ">:( <-- me when enu <--> ned commit (it broke ekf) this commit reverts vectornav back to 2-28-23 state",
+    "k": "other"
+   },
+   {
+    "h": "1d0de59",
+    "d": "2023-04-13",
+    "s": "update core for 4-14 pool test. ekf works on both bots",
+    "k": "other"
+   },
+   {
+    "h": "90781c3",
+    "d": "2023-04-15",
+    "s": "add the extra build options for cross compile",
+    "k": "other"
+   },
+   {
+    "h": "8280a9c",
+    "d": "2023-04-15",
+    "s": "update repos from puddles pool test",
+    "k": "other"
+   },
+   {
+    "h": "e1c3baa",
+    "d": "2023-04-15",
+    "s": "support talos partial start controler",
+    "k": "other"
+   },
+   {
+    "h": "142a02e",
+    "d": "2023-04-15",
+    "s": "add deploy ignores for riptide_gui",
+    "k": "other"
+   },
+   {
+    "h": "d17da9a",
+    "d": "2023-04-16",
+    "s": "talos P-value calibration",
+    "k": "other"
+   },
+   {
+    "h": "9b7ed03",
+    "d": "2023-04-17",
+    "s": "gui can hot-load now",
+    "k": "other"
+   },
+   {
+    "h": "3f224fc",
+    "d": "2023-04-19",
+    "s": "build shallow",
+    "k": "other"
+   },
+   {
+    "h": "af1119f",
+    "d": "2023-04-24",
+    "s": "Add SD card automount",
+    "k": "other"
+   },
+   {
+    "h": "b915687",
+    "d": "2023-04-24",
+    "s": "update ros distro for compression support",
+    "k": "other"
+   },
+   {
+    "h": "f1f19b2",
+    "d": "2023-04-24",
+    "s": "Merge branch 'master' of https://github.com/osu-uwrt/riptide_release",
+    "k": "other"
+   },
+   {
+    "h": "1c0108b",
+    "d": "2023-05-14",
+    "s": "add vnc server and no-cache docker option",
+    "k": "other"
+   },
+   {
+    "h": "fcae1b6",
+    "d": "2023-05-14",
+    "s": "have a desktop release for stackboi",
+    "k": "other"
+   },
+   {
+    "h": "74f74ea",
+    "d": "2023-05-14",
+    "s": "fix vnc setup script",
+    "k": "other"
+   },
+   {
+    "h": "99d34f9",
+    "d": "2023-05-14",
+    "s": "add tf_transformations to the next desktop build just in case",
+    "k": "other"
+   },
+   {
+    "h": "9756a70",
+    "d": "2023-05-14",
+    "s": "non-interactive apt",
+    "k": "other"
+   },
+   {
+    "h": "6988418",
+    "d": "2023-05-14",
+    "s": "add bag gui and bag service",
+    "k": "other"
+   },
+   {
+    "h": "7dc8371",
+    "d": "2023-05-14",
+    "s": "update core too",
+    "k": "other"
+   },
+   {
+    "h": "a1cd19d",
+    "d": "2023-05-14",
+    "s": "update launch for patch",
+    "k": "other"
+   },
+   {
+    "h": "9aedf9b",
+    "d": "2023-05-14",
+    "s": "that was odd, needed header on launch",
+    "k": "other"
+   },
+   {
+    "h": "914b991",
+    "d": "2023-05-14",
+    "s": "move frontend interactive call",
+    "k": "other"
+   },
+   {
+    "h": "58c17aa",
+    "d": "2023-05-14",
+    "s": "bad comment",
+    "k": "other"
+   },
+   {
+    "h": "2725472",
+    "d": "2023-05-14",
+    "s": "update gui so we have correct topics for hardware",
+    "k": "other"
+   },
+   {
+    "h": "785dec2",
+    "d": "2023-05-14",
+    "s": "Merge branch 'master' of https://github.com/osu-uwrt/riptide_release",
+    "k": "other"
+   },
+   {
+    "h": "5649680",
+    "d": "2023-05-15",
+    "s": "add some extra bits",
+    "k": "other"
+   },
+   {
+    "h": "1495e26",
+    "d": "2023-05-17",
+    "s": "bump imu and gui",
+    "k": "other"
+   },
+   {
+    "h": "424519e",
+    "d": "2023-05-19",
+    "s": "dont overwrite bashrc :)",
+    "k": "other"
+   },
+   {
+    "h": "9df257e",
+    "d": "2023-05-19",
+    "s": "updates pre-pool test",
+    "k": "pre"
+   },
+   {
+    "h": "c5f9f0a",
+    "d": "2023-05-19",
+    "s": "Merge branch 'master' of https://github.com/osu-uwrt/riptide_release",
+    "k": "other"
+   },
+   {
+    "h": "1f82ed7",
+    "d": "2023-05-19",
+    "s": "bump launch",
+    "k": "other"
+   },
+   {
+    "h": "0a0bd80",
+    "d": "2023-05-19",
+    "s": "okay a bit better",
+    "k": "other"
+   },
+   {
+    "h": "61092fd",
+    "d": "2023-05-24",
+    "s": "bump core and gui",
+    "k": "other"
+   },
+   {
+    "h": "1b22a16",
+    "d": "2023-05-24",
+    "s": "bump gui to master to fix the button bug",
+    "k": "other"
+   },
+   {
+    "h": "87b5e0b",
+    "d": "2023-05-25",
+    "s": "updates pre pool test",
+    "k": "pre"
+   },
+   {
+    "h": "3feff66",
+    "d": "2023-05-25",
+    "s": "update last pre-test commit for gui deconflicting",
+    "k": "pre"
+   },
+   {
+    "h": "55a0937",
+    "d": "2023-05-25",
+    "s": "add helpful commands",
+    "k": "other"
+   },
+   {
+    "h": "58d5e8e",
+    "d": "2023-05-25",
+    "s": "chnages from pool test, pre-qual works, controller not great",
+    "k": "pre"
+   },
+   {
+    "h": "d5494c1",
+    "d": "2023-06-18",
+    "s": "Successfully completed prequalification!",
+    "k": "other"
+   },
+   {
+    "h": "d5fa4d2",
+    "d": "2023-06-21",
+    "s": "Prepool Test",
+    "k": "other"
+   },
+   {
+    "h": "917e14e",
+    "d": "2023-07-02",
+    "s": "somehow a bag snuck in",
+    "k": "other"
+   },
+   {
+    "h": "8de20c1",
+    "d": "2023-07-02",
+    "s": "updates from 7-1 and 7-2 pool test",
+    "k": "other"
+   },
+   {
+    "h": "8bc2b35",
+    "d": "2023-07-12",
+    "s": "update autonomy and perception for 7/13 pt",
+    "k": "other"
+   },
+   {
+    "h": "9fa24bf",
+    "d": "2023-07-25",
+    "s": "upgrade gui pre sub",
+    "k": "pre"
+   },
+   {
+    "h": "89f1f4f",
+    "d": "2023-07-27",
+    "s": "aaa",
+    "k": "other"
+   },
+   {
+    "h": "ab1014d",
+    "d": "2023-07-27",
+    "s": "change upstream repo for zed",
+    "k": "other"
+   },
+   {
+    "h": "3b9495e",
+    "d": "2023-07-27",
+    "s": "kick zed into submission",
+    "k": "other"
+   },
+   {
+    "h": "5e34d74",
+    "d": "2023-07-29",
+    "s": "Add IMU cal insructions and new GUI info",
+    "k": "other"
+   },
+   {
+    "h": "e8860b0",
+    "d": "2023-08-04",
+    "s": "vectornavvvvv",
+    "k": "other"
+   },
+   {
+    "h": "7606058",
+    "d": "2023-08-04",
+    "s": "vectornav go brrr",
+    "k": "other"
+   },
+   {
+    "h": "ec92f2a",
+    "d": "2023-08-04",
+    "s": "upgrade launch, core and gui",
+    "k": "other"
+   },
+   {
+    "h": "e2df7c9",
+    "d": "2023-08-05",
+    "s": "updates from overnight testing",
+    "k": "other"
+   },
+   {
+    "h": "0c845d8",
+    "d": "2023-08-07",
+    "s": "last commit form robosub 2023",
+    "k": "comp"
+   },
+   {
+    "h": "ac92da1",
+    "d": "2023-10-12",
+    "s": "configure release for 10/12 pool test",
+    "k": "pre"
+   },
+   {
+    "h": "519114d",
+    "d": "2023-10-18",
+    "s": "working code from feedforward pool tests",
+    "k": "post"
+   },
+   {
+    "h": "151a5ee",
+    "d": "2023-10-27",
+    "s": "pre-pool test 10/27/23",
+    "k": "pre"
+   },
+   {
+    "h": "56c9ee2",
+    "d": "2023-11-03",
+    "s": "add new packages to humble robot, fix cross build caching issue",
+    "k": "other"
+   },
+   {
+    "h": "93620d7",
+    "d": "2023-11-09",
+    "s": "changes after integration pool test",
+    "k": "post"
+   },
+   {
+    "h": "cde4ccc",
+    "d": "2023-11-16",
+    "s": "software stack before drag cal pool test",
+    "k": "pre"
+   },
+   {
+    "h": "b924e70",
+    "d": "2023-11-17",
+    "s": "post pool test 11-17-23",
+    "k": "post"
+   },
+   {
+    "h": "9ca6309",
+    "d": "2023-11-21",
+    "s": "pre pool test 11-21",
+    "k": "pre"
+   },
+   {
+    "h": "7861d67",
+    "d": "2023-11-21",
+    "s": "post pool test 11-21-23",
+    "k": "post"
+   },
+   {
+    "h": "0b3bba5",
+    "d": "2023-12-01",
+    "s": "pre pool test 12-2-23",
+    "k": "pre"
+   },
+   {
+    "h": "007ef7f",
+    "d": "2023-12-02",
+    "s": "pre pool test 12-3-23",
+    "k": "pre"
+   },
+   {
+    "h": "e9c8769",
+    "d": "2023-12-04",
+    "s": "post pool test 12-3-23",
+    "k": "post"
+   },
+   {
+    "h": "9c2c4f1",
+    "d": "2023-12-21",
+    "s": "prep for dec 21 test",
+    "k": "pre"
+   },
+   {
+    "h": "6ddf3a2",
+    "d": "2024-01-19",
+    "s": "Merge pull request #2 from osu-uwrt/update-crossbuild",
+    "k": "other"
+   },
+   {
+    "h": "0c6aa37",
+    "d": "2024-01-19",
+    "s": "run configure jetpack script as root",
+    "k": "other"
+   },
+   {
+    "h": "736b5a6",
+    "d": "2024-01-24",
+    "s": "remove vectornav, checkout new branches",
+    "k": "other"
+   },
+   {
+    "h": "38bfbcc",
+    "d": "2024-01-24",
+    "s": "remove vectornav fr?",
+    "k": "other"
+   },
+   {
+    "h": "a840cd6",
+    "d": "2024-01-24",
+    "s": "add simulator",
+    "k": "other"
+   },
+   {
+    "h": "3803440",
+    "d": "2024-01-24",
+    "s": "remove zed wrapper, update repos after cleanup",
+    "k": "other"
+   },
+   {
+    "h": "e6fd4a0",
+    "d": "2024-01-26",
+    "s": "pre pool test 1-27-24",
+    "k": "pre"
+   },
+   {
+    "h": "106a670",
+    "d": "2024-01-28",
+    "s": "post pool test 1-27-24",
+    "k": "post"
+   },
+   {
+    "h": "5bda805",
+    "d": "2024-02-04",
+    "s": "pre pool test 2/4/24",
+    "k": "pre"
+   },
+   {
+    "h": "0f82496",
+    "d": "2024-02-06",
+    "s": "post pool test 2-4-24",
+    "k": "post"
+   },
+   {
+    "h": "b4b69f0",
+    "d": "2024-02-19",
+    "s": "pre pool test 2-19-24",
+    "k": "pre"
+   },
+   {
+    "h": "31b3723",
+    "d": "2024-02-19",
+    "s": "updated actuator status msg in core",
+    "k": "other"
+   },
+   {
+    "h": "20f8872",
+    "d": "2024-02-25",
+    "s": "pre-pool-test 2-25-24",
+    "k": "pre"
+   },
+   {
+    "h": "2b33545",
+    "d": "2024-02-26",
+    "s": "post-pool test 2-25-24",
+    "k": "post"
+   },
+   {
+    "h": "c081b57",
+    "d": "2024-03-22",
+    "s": "almost pre-pt 3-23-24",
+    "k": "pre"
+   },
+   {
+    "h": "eb3f9d2",
+    "d": "2024-03-23",
+    "s": "pre pool test 3-23-24",
+    "k": "pre"
+   },
+   {
+    "h": "25b1f09",
+    "d": "2024-03-24",
+    "s": "Switch xrce dds agent to new repo url",
+    "k": "other"
+   },
+   {
+    "h": "aee3326",
+    "d": "2024-03-24",
+    "s": "Add titan canmore so we can build the new uros agent",
+    "k": "other"
+   },
+   {
+    "h": "5012181",
+    "d": "2024-03-24",
+    "s": "post pt 3-23-24 (last seasons torpedo behavior works!)",
+    "k": "post"
+   },
+   {
+    "h": "fff00f9",
+    "d": "2024-03-24",
+    "s": "Merge branch 'master' of https://github.com/osu-uwrt/riptide_release",
+    "k": "other"
+   },
+   {
+    "h": "ac494f6",
+    "d": "2024-03-24",
+    "s": "post pt 3-23-24 (last seasons torpedo behavior works!)",
+    "k": "post"
+   },
+   {
+    "h": "e6a4360",
+    "d": "2024-03-24",
+    "s": "Merge branch 'master' of https://github.com/osu-uwrt/riptide_release",
+    "k": "other"
+   },
+   {
+    "h": "43bd7f9",
+    "d": "2024-03-24",
+    "s": "manually add roberts stuff back after breaking git",
+    "k": "other"
+   },
+   {
+    "h": "afcf47e",
+    "d": "2024-03-27",
+    "s": "post sim pool test",
+    "k": "post"
+   },
+   {
+    "h": "e6b231c",
+    "d": "2024-03-29",
+    "s": "added some new packages to robot jetson build",
+    "k": "other"
+   },
+   {
+    "h": "e135624",
+    "d": "2024-03-29",
+    "s": "Merge branch 'master' of https://github.com/osu-uwrt/riptide_release",
+    "k": "other"
+   },
+   {
+    "h": "1994791",
+    "d": "2024-03-31",
+    "s": "pre test 3-31-24",
+    "k": "pre"
+   },
+   {
+    "h": "851ee83",
+    "d": "2024-03-31",
+    "s": "post test 3-31-24",
+    "k": "post"
+   },
+   {
+    "h": "5035e78",
+    "d": "2024-04-05",
+    "s": "pre demo 4-5-24",
+    "k": "pre"
+   },
+   {
+    "h": "865512f",
+    "d": "2024-04-06",
+    "s": "post demo 4-5-24",
+    "k": "post"
+   },
+   {
+    "h": "4f0016e",
+    "d": "2024-04-07",
+    "s": "pre-pool test 4-7-24",
+    "k": "pre"
+   },
+   {
+    "h": "1a82454",
+    "d": "2024-04-09",
+    "s": "post pool test 4-7-24",
+    "k": "post"
+   },
+   {
+    "h": "6f7d6e7",
+    "d": "2024-04-11",
+    "s": "added fastrtps tools and statistics to install",
+    "k": "other"
+   },
+   {
+    "h": "58d8a51",
+    "d": "2024-04-11",
+    "s": "Merge branch 'master' of https://github.com/osu-uwrt/riptide_release",
+    "k": "other"
+   },
+   {
+    "h": "3071fda",
+    "d": "2024-04-12",
+    "s": "post pool test 4-7-24",
+    "k": "post"
+   },
+   {
+    "h": "ab7f9b0",
+    "d": "2024-04-13",
+    "s": "Discovery server scripts",
+    "k": "other"
+   },
+   {
+    "h": "df3e7ad",
+    "d": "2024-04-13",
+    "s": "pre pool test 4-13-24",
+    "k": "pre"
+   },
+   {
+    "h": "57d948d",
+    "d": "2024-04-13",
+    "s": "Merge remote-tracking branch 'origin/discovery-scripts' into release_with_cool_robert_server",
+    "k": "other"
+   },
+   {
+    "h": "efc6649",
+    "d": "2024-04-13",
+    "s": "Improved superclient behavior and docs",
+    "k": "other"
+   },
+   {
+    "h": "315cfbe",
+    "d": "2024-04-20",
+    "s": "Merge branch 'discovery-scripts'",
+    "k": "other"
+   },
+   {
+    "h": "1b447a7",
+    "d": "2024-04-27",
+    "s": "pre pool test 4-27-24",
+    "k": "pre"
+   },
+   {
+    "h": "ebd94e8",
+    "d": "2024-04-27",
+    "s": "post pool test 4-27-24",
+    "k": "post"
+   },
+   {
+    "h": "e9f4f56",
+    "d": "2024-05-11",
+    "s": "pre pool test 5-11-24",
+    "k": "pre"
+   },
+   {
+    "h": "47859ff",
+    "d": "2024-05-22",
+    "s": "pre pool test 5-22-24",
+    "k": "pre"
+   },
+   {
+    "h": "8f622f0",
+    "d": "2024-06-01",
+    "s": "pre pool test 6-1-24",
+    "k": "pre"
+   },
+   {
+    "h": "d11eb28",
+    "d": "2024-06-05",
+    "s": "post pool test 6-1-24",
+    "k": "post"
+   },
+   {
+    "h": "0888a78",
+    "d": "2024-06-29",
+    "s": "pre pool test 6-29-24",
+    "k": "pre"
+   },
+   {
+    "h": "c8177b7",
+    "d": "2024-07-06",
+    "s": "pre-test 7-6-24",
+    "k": "pre"
+   },
+   {
+    "h": "d5f28a1",
+    "d": "2024-07-06",
+    "s": "controller updates",
+    "k": "other"
+   },
+   {
+    "h": "00fd865",
+    "d": "2024-07-06",
+    "s": "controller status update",
+    "k": "other"
+   },
+   {
+    "h": "f855ac5",
+    "d": "2024-07-06",
+    "s": "controller status gui",
+    "k": "other"
+   },
+   {
+    "h": "e93e3c2",
+    "d": "2024-08-03",
+    "s": "half update repos for pre robosub perception is resisting update",
+    "k": "comp"
+   },
+   {
+    "h": "049825a",
+    "d": "2024-08-03",
+    "s": "pre RS24",
+    "k": "comp"
+   },
+   {
+    "h": "b578265",
+    "d": "2024-08-07",
+    "s": "updated controller",
+    "k": "other"
+   },
+   {
+    "h": "7abc4ef",
+    "d": "2024-08-08",
+    "s": "controller dev",
+    "k": "other"
+   },
+   {
+    "h": "68e4a4e",
+    "d": "2024-08-09",
+    "s": "pre semifinals 1",
+    "k": "pre"
+   },
+   {
+    "h": "803c81e",
+    "d": "2024-08-12",
+    "s": "Post-RoboSub '24 (2nd place!)",
+    "k": "comp"
+   },
+   {
+    "h": "eb652ed",
+    "d": "2024-10-22",
+    "s": "Post pool test 10-21-24",
+    "k": "post"
+   },
+   {
+    "h": "b59422f",
+    "d": "2024-10-22",
+    "s": "Lower torps tree covariances for next pool test",
+    "k": "other"
+   },
+   {
+    "h": "3d84c66",
+    "d": "2024-11-03",
+    "s": "Post pool test 11-4-24",
+    "k": "post"
+   },
+   {
+    "h": "b793d8e",
+    "d": "2024-11-05",
+    "s": "post pool test 11/4/24",
+    "k": "post"
+   },
+   {
+    "h": "7065a86",
+    "d": "2024-11-11",
+    "s": "pre lake test 11/11/24",
+    "k": "lake"
+   },
+   {
+    "h": "a663c73",
+    "d": "2024-11-17",
+    "s": "pre pool test 11/18/24",
+    "k": "pre"
+   },
+   {
+    "h": "8d7e82e",
+    "d": "2024-12-02",
+    "s": "pre pool test 12/2/24",
+    "k": "pre"
+   },
+   {
+    "h": "8eea958",
+    "d": "2025-01-12",
+    "s": "ready for hil before pool test 1/12/25",
+    "k": "pre"
+   },
+   {
+    "h": "c55804a",
+    "d": "2025-01-26",
+    "s": "pre pool test 1/27/25",
+    "k": "pre"
+   },
+   {
+    "h": "79f5d89",
+    "d": "2025-02-09",
+    "s": "pre pool test 2/10/25",
+    "k": "pre"
+   },
+   {
+    "h": "411c037",
+    "d": "2025-02-23",
+    "s": "pre pool test 2/24/25",
+    "k": "pre"
+   },
+   {
+    "h": "8b3057d",
+    "d": "2025-03-13",
+    "s": "pre-lake test 3/13/25",
+    "k": "lake"
+   },
+   {
+    "h": "cfbcfae",
+    "d": "2025-03-13",
+    "s": "post lake test 3/13/25",
+    "k": "lake"
+   },
+   {
+    "h": "f006ebc",
+    "d": "2025-03-16",
+    "s": "pre pool test 3/17/25",
+    "k": "pre"
+   },
+   {
+    "h": "c353470",
+    "d": "2025-03-21",
+    "s": "Pre lake test 03/21/25",
+    "k": "lake"
+   },
+   {
+    "h": "f081f6e",
+    "d": "2025-03-21",
+    "s": "Pre lake test 03/21/25 (2)",
+    "k": "lake"
+   },
+   {
+    "h": "2da9a21",
+    "d": "2025-03-30",
+    "s": "pre pool test 3/31",
+    "k": "pre"
+   },
+   {
+    "h": "4d8ca43",
+    "d": "2025-03-31",
+    "s": "real pre pool test 3/31",
+    "k": "pre"
+   },
+   {
+    "h": "2c5d07d",
+    "d": "2025-04-04",
+    "s": "Pre pool test 04/04/25",
+    "k": "pre"
+   },
+   {
+    "h": "1d365fe",
+    "d": "2025-04-04",
+    "s": "Post pool test 4/4/25",
+    "k": "post"
+   },
+   {
+    "h": "0ef78e3",
+    "d": "2025-04-13",
+    "s": "pre pool test 4/14/25",
+    "k": "pre"
+   },
+   {
+    "h": "34a2755",
+    "d": "2025-05-03",
+    "s": "moved fastdds discovery stuff, added initial zenoh config",
+    "k": "other"
+   },
+   {
+    "h": "b7ae62b",
+    "d": "2025-05-03",
+    "s": "actually add zenoh config",
+    "k": "other"
+   },
+   {
+    "h": "ebb3a09",
+    "d": "2025-05-03",
+    "s": "oops I want fast dds scripts to be named something else now",
+    "k": "other"
+   },
+   {
+    "h": "40b1edb",
+    "d": "2025-05-04",
+    "s": "rmw scripts",
+    "k": "other"
+   },
+   {
+    "h": "6eefad3",
+    "d": "2025-05-05",
+    "s": "pre pool test 5/6/25",
+    "k": "pre"
+   },
+   {
+    "h": "243b40a",
+    "d": "2025-05-13",
+    "s": "Pre pool test 05/14/25",
+    "k": "pre"
+   },
+   {
+    "h": "dd40cc7",
+    "d": "2025-05-20",
+    "s": "zenoh configs not working right atm, investigating",
+    "k": "other"
+   },
+   {
+    "h": "df1f14f",
+    "d": "2025-05-20",
+    "s": "idk why this bag is here",
+    "k": "other"
+   },
+   {
+    "h": "f506084",
+    "d": "2025-05-20",
+    "s": "Merge branch 'master' of https://github.com/osu-uwrt/riptide_release",
+    "k": "other"
+   },
+   {
+    "h": "3896f8e",
+    "d": "2025-06-05",
+    "s": "Pre pool test 06-08-25 (no controller)",
+    "k": "pre"
+   },
+   {
+    "h": "063cc8b",
+    "d": "2025-06-14",
+    "s": "Pre pool test 06-14-25",
+    "k": "pre"
+   },
+   {
+    "h": "2eea723",
+    "d": "2025-06-21",
+    "s": "zenoh works on the tank",
+    "k": "other"
+   },
+   {
+    "h": "462c94f",
+    "d": "2025-06-22",
+    "s": "working zenoh",
+    "k": "other"
+   },
+   {
+    "h": "3765bbc",
+    "d": "2025-06-27",
+    "s": "Merge branch 'master' into zenoh",
+    "k": "other"
+   },
+   {
+    "h": "5117875",
+    "d": "2025-06-27",
+    "s": "Merge pull request #3 from osu-uwrt/zenoh",
+    "k": "other"
+   },
+   {
+    "h": "8b6bb6c",
+    "d": "2025-06-28",
+    "s": "Pre pool test 06-28-25",
+    "k": "pre"
+   },
+   {
+    "h": "5a69088",
+    "d": "2025-07-05",
+    "s": "Talos sprint day 1",
+    "k": "other"
+   },
+   {
+    "h": "0e26557",
+    "d": "2025-07-13",
+    "s": "Post-Hudson 1 Test",
+    "k": "post"
+   },
+   {
+    "h": "9085295",
+    "d": "2025-07-18",
+    "s": "Pre hudson test 2 07-19-25",
+    "k": "pre"
+   },
+   {
+    "h": "1b1de45",
+    "d": "2025-07-26",
+    "s": "Pre test 07-26-25",
+    "k": "pre"
+   },
+   {
+    "h": "91c4f74",
+    "d": "2025-08-11",
+    "s": "rs25 8-11 morning backup",
+    "k": "comp"
+   },
+   {
+    "h": "cd272f1",
+    "d": "2025-08-18",
+    "s": "RoboSub 2025",
+    "k": "comp"
+   },
+   {
+    "h": "a872f46",
+    "d": "2025-09-28",
+    "s": "Pre RPAC test 09/30/25",
+    "k": "pre"
+   },
+   {
+    "h": "8ebd3b6",
+    "d": "2025-10-13",
+    "s": "Pre RPAC test 10-14-25",
+    "k": "pre"
+   },
+   {
+    "h": "1d36466",
+    "d": "2025-10-25",
+    "s": "Post-robosub zenoh configs",
+    "k": "comp"
+   },
+   {
+    "h": "16005ed",
+    "d": "2025-10-25",
+    "s": "Better SVO processing",
+    "k": "other"
+   },
+   {
+    "h": "9f787ff",
+    "d": "2025-10-31",
+    "s": "Pre-Sean Test 11-01-25",
+    "k": "pre"
+   },
+   {
+    "h": "d3b6e03",
+    "d": "2025-11-06",
+    "s": "Pre RPAC test 11-10-25",
+    "k": "pre"
+   },
+   {
+    "h": "077facd",
+    "d": "2025-11-21",
+    "s": "Pre Sean Test 11-22-25",
+    "k": "pre"
+   },
+   {
+    "h": "4b60b47",
+    "d": "2025-12-05",
+    "s": "Update zenoh config for operators",
+    "k": "other"
+   },
+   {
+    "h": "5606dae",
+    "d": "2025-12-05",
+    "s": "Pre Sean Test 12-06-25",
+    "k": "pre"
+   },
+   {
+    "h": "e52031b",
+    "d": "2025-12-06",
+    "s": "3 for 3 torpedos at Sean's",
+    "k": "post"
+   },
+   {
+    "h": "a8d58b1",
+    "d": "2026-01-11",
+    "s": "Pre RPAC test 11-12-26",
+    "k": "pre"
+   },
+   {
+    "h": "f95fef5",
+    "d": "2026-01-16",
+    "s": "Pre Sean test 01-17-26",
+    "k": "pre"
+   },
+   {
+    "h": "7e350bd",
+    "d": "2026-01-20",
+    "s": "Post RPAC test 1/19",
+    "k": "post"
+   },
+   {
+    "h": "2b6eba0",
+    "d": "2026-02-08",
+    "s": "Pre RPAC test 02-09-26",
+    "k": "pre"
+   },
+   {
+    "h": "3a49404",
+    "d": "2026-02-15",
+    "s": "Pre RPAC test 02-16-26",
+    "k": "pre"
+   },
+   {
+    "h": "b0e9542",
+    "d": "2026-02-22",
+    "s": "Pre RPAC test 02-23-26",
+    "k": "pre"
+   },
+   {
+    "h": "c47d1c7",
+    "d": "2026-03-01",
+    "s": "Pre RPAC test 03-02-26",
+    "k": "pre"
+   },
+   {
+    "h": "10fa223",
+    "d": "2026-03-05",
+    "s": "m",
+    "k": "other"
+   },
+   {
+    "h": "d7d5d46",
+    "d": "2026-03-05",
+    "s": "m",
+    "k": "other"
+   },
+   {
+    "h": "38cefb8",
+    "d": "2026-03-05",
+    "s": "m",
+    "k": "other"
+   },
+   {
+    "h": "c8750cf",
+    "d": "2026-03-08",
+    "s": "Pre RPAC test 03-09-26",
+    "k": "pre"
+   },
+   {
+    "h": "318fd8b",
+    "d": "2026-03-10",
+    "s": "ci: remove section divider comments from ros2-ci workflow",
+    "k": "other"
+   },
+   {
+    "h": "323f210",
+    "d": "2026-03-23",
+    "s": "Stop ROS daemon on Zenoh source",
+    "k": "other"
+   },
+   {
+    "h": "4c4c128",
+    "d": "2026-03-23",
+    "s": "Pre RPAC terst 03-23-26",
+    "k": "pre"
+   },
+   {
+    "h": "6d848e4",
+    "d": "2026-03-30",
+    "s": "Pre RPAC test 03-30-26",
+    "k": "pre"
+   },
+   {
+    "h": "eae5fc6",
+    "d": "2026-04-13",
+    "s": "Pre RPAC test 04-13-2026",
+    "k": "pre"
+   },
+   {
+    "h": "610ac0b",
+    "d": "2026-04-15",
+    "s": "Merge pull request #4 from 25kgozon/ci/cleanup-workflow-comments",
+    "k": "other"
+   },
+   {
+    "h": "7c26106",
+    "d": "2026-04-20",
+    "s": "Pre RPAC test 04-20-26",
+    "k": "pre"
+   },
+   {
+    "h": "4af34ae",
+    "d": "2026-04-20",
+    "s": "Merge branch 'master' of ssh://github.com/osu-uwrt/riptide_release",
+    "k": "other"
+   },
+   {
+    "h": "8f0e310",
+    "d": "2026-04-26",
+    "s": "Pre RPAC test 04-27-26",
+    "k": "pre"
+   },
+   {
+    "h": "e7b0376",
+    "d": "2026-04-27",
+    "s": "Pre RPAC comp tree test",
+    "k": "pre"
+   },
+   {
+    "h": "faf3897",
+    "d": "2026-05-30",
+    "s": "Pre Tirpak test 05-30-26",
+    "k": "pre"
+   },
+   {
+    "h": "eae6e60",
+    "d": "2026-06-10",
+    "s": "Binary Classifier bin testing",
+    "k": "other"
+   },
+   {
+    "h": "78505ab",
+    "d": "2026-06-27",
+    "s": "Pre Tirpak test 3",
+    "k": "pre"
+   },
+   {
+    "h": "fdbac89",
+    "d": "2026-06-28",
+    "s": "Post Tirpak test 3",
+    "k": "post"
+   },
+   {
+    "h": "a5c539d",
+    "d": "2026-07-17",
+    "s": "RoboSub 2026",
+    "k": "comp"
+   },
+   {
+    "h": "8090d8e",
+    "d": "2026-09-14",
+    "s": "Pre RPAC test 09-14-26",
+    "k": "pre"
+   },
+   {
+    "h": "dbbf7e4",
+    "d": "2026-10-10",
+    "s": "Post sean test",
+    "k": "post"
+   },
+   {
+    "h": "574b181",
+    "d": "2026-10-12",
+    "s": "Pre RPAC test 10-12-26",
+    "k": "pre"
+   },
+   {
+    "h": "8c6f5f2",
+    "d": "2026-10-27",
+    "s": "Add nereus as a submodule",
+    "k": "other"
+   }
+  ],
+  "tags": [
+   {
+    "name": "2-28-23",
+    "d": "2023-03-01",
+    "h": "034e5d8"
+   },
+   {
+    "name": "3-12-22-puddles",
+    "d": "2023-03-15",
+    "h": "80c244e"
+   },
+   {
+    "name": "5-25-23_talos",
+    "d": "2023-05-25",
+    "h": "58d5e8e"
+   },
+   {
+    "name": "6-7-23_talos",
+    "d": "2023-06-18",
+    "h": "d5494c1"
+   },
+   {
+    "name": "robosub2023",
+    "d": "2023-08-07",
+    "h": "0c845d8"
+   },
+   {
+    "name": "5-11-24-talos",
+    "d": "2024-05-11",
+    "h": "e9f4f56"
+   },
+   {
+    "name": "5-22-24-talos",
+    "d": "2024-05-22",
+    "h": "47859ff"
+   },
+   {
+    "name": "6-1-24-talos",
+    "d": "2024-06-05",
+    "h": "d11eb28"
+   },
+   {
+    "name": "6-29-24_talos",
+    "d": "2024-06-29",
+    "h": "0888a78"
+   },
+   {
+    "name": "robosub2024",
+    "d": "2024-08-12",
+    "h": "803c81e"
+   },
+   {
+    "name": "robosub2026",
+    "d": "2026-07-17",
+    "h": "a5c539d"
+   }
+  ]
+ },
+ "thrusters": [
+  {
+   "i": 0,
+   "name": "VUS",
+   "pos": [
+    -0.134,
+    -0.369,
+    0.242
+   ],
+   "axis": [
+    1.0,
+    0.0,
+    -0.0
+   ]
+  },
+  {
+   "i": 1,
+   "name": "VUP",
+   "pos": [
+    -0.134,
+    0.438,
+    0.242
+   ],
+   "axis": [
+    1.0,
+    0.0,
+    -0.0
+   ]
+  },
+  {
+   "i": 2,
+   "name": "HUS",
+   "pos": [
+    -0.14,
+    -0.26,
+    0.141
+   ],
+   "axis": [
+    -0.0,
+    0.707,
+    0.707
+   ]
+  },
+  {
+   "i": 3,
+   "name": "HUP",
+   "pos": [
+    -0.14,
+    0.328,
+    0.141
+   ],
+   "axis": [
+    -0.0,
+    -0.707,
+    0.707
+   ]
+  },
+  {
+   "i": 4,
+   "name": "HLS",
+   "pos": [
+    -0.14,
+    -0.26,
+    -0.141
+   ],
+   "axis": [
+    -0.0,
+    0.707,
+    -0.707
+   ]
+  },
+  {
+   "i": 5,
+   "name": "HLP",
+   "pos": [
+    -0.14,
+    0.328,
+    -0.141
+   ],
+   "axis": [
+    -0.0,
+    -0.707,
+    -0.707
+   ]
+  },
+  {
+   "i": 6,
+   "name": "VLS",
+   "pos": [
+    -0.134,
+    -0.372,
+    -0.244
+   ],
+   "axis": [
+    1.0,
+    0.0,
+    -0.0
+   ]
+  },
+  {
+   "i": 7,
+   "name": "VLP",
+   "pos": [
+    -0.134,
+    0.44,
+    -0.244
+   ],
+   "axis": [
+    1.0,
+    0.0,
+    -0.0
+   ]
+  }
+ ],
+ "thruster_test": {
+  "rpm": 300,
+  "window_s": 3.0,
+  "frame_ms": 30,
+  "line": 176,
+  "lines": {
+   "init": "Initializing CAN socket",
+   "testing": "Testing Thruster ",
+   "stop": "- INTERRUPT! Stopping Thrusters"
+  }
+ },
+ "launcher": [
+  {
+   "package": "riptide_hardware2",
+   "file": "hardware.launch.py"
+  },
+  {
+   "package": "riptide_hardware2",
+   "file": "navigation.launch.py"
+  },
+  {
+   "package": "riptide_navigation",
+   "file": "navigation.launch.py"
+  },
+  {
+   "package": "riptide_controllers2",
+   "file": "control_system.launch.py"
+  },
+  {
+   "package": "riptide_hardware2",
+   "file": "zed.launch.py"
+  },
+  {
+   "package": "tensor_detector",
+   "file": "tensorrt.launch.py"
+  },
+  {
+   "package": "riptide_mapping2",
+   "file": "mapping.launch.py"
+  },
+  {
+   "package": "riptide_autonomy2",
+   "file": "autonomy.launch.py"
+  },
+  {
+   "package": "riptide_hardware2",
+   "file": "diagnostics.launch.py"
+  }
+ ],
+ "pretest": {
+  "checks": [
+   {
+    "stage": "bench",
+    "id": "B0",
+    "title": "O-ring sign-off",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B1",
+    "title": "reachability",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B2",
+    "title": "bench launches running",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B3",
+    "title": "CAN boards",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B4",
+    "title": "power rails",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B5",
+    "title": "topic rates",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B6",
+    "title": "kill state",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B7",
+    "title": "thruster ESC telemetry",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B8",
+    "title": "controller (under a held kill)",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B9",
+    "title": "stationary drift",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B10",
+    "title": "gyro bias (never tares)",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B11",
+    "title": "TF frames",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B12",
+    "title": "DVL settings",
+    "built": true
+   },
+   {
+    "stage": "bench",
+    "id": "B13",
+    "title": "camera snapshots",
+    "built": true
+   },
+   {
+    "stage": "guided",
+    "id": "G0",
+    "title": "safety and setup",
+    "built": true
+   },
+   {
+    "stage": "guided",
+    "id": "G1",
+    "title": "localization by hand",
+    "built": true
+   },
+   {
+    "stage": "guided",
+    "id": "G2",
+    "title": "vision and mapping",
+    "built": true
+   },
+   {
+    "stage": "guided",
+    "id": "G3",
+    "title": "AprilTag + calibrate",
+    "built": true
+   },
+   {
+    "stage": "guided",
+    "id": "G4",
+    "title": "thruster test + physical kill",
+    "built": true
+   },
+   {
+    "stage": "guided",
+    "id": "G5",
+    "title": "actuators",
+    "built": true
+   },
+   {
+    "stage": "guided",
+    "id": "G6",
+    "title": "sign-offs",
+    "built": true
+   },
+   {
+    "stage": "guided",
+    "id": "G7",
+    "title": "code unchanged since G0",
+    "built": true
+   },
+   {
+    "stage": "repo",
+    "id": "R1",
+    "title": "release pins",
+    "built": true
+   },
+   {
+    "stage": "repo",
+    "id": "R2",
+    "title": "everything pushed",
+    "built": true
+   },
+   {
+    "stage": "repo",
+    "id": "R3",
+    "title": "robot runs this code",
+    "built": true
+   },
+   {
+    "stage": "repo",
+    "id": "R4",
+    "title": "recent system updates",
+    "built": true
+   },
+   {
+    "stage": "repo",
+    "id": "R5",
+    "title": "behavior trees parse",
+    "built": true
+   },
+   {
+    "stage": "repo",
+    "id": "R6",
+    "title": "unit tests",
+    "built": true
+   },
+   {
+    "stage": "sim",
+    "id": "S0",
+    "title": "isolation",
+    "built": false
+   },
+   {
+    "stage": "sim",
+    "id": "S1",
+    "title": "start Nereus",
+    "built": false
+   },
+   {
+    "stage": "sim",
+    "id": "S2",
+    "title": "sim ready",
+    "built": false
+   },
+   {
+    "stage": "sim",
+    "id": "S3",
+    "title": "perception up",
+    "built": false
+   },
+   {
+    "stage": "sim",
+    "id": "S4",
+    "title": "controller hold",
+    "built": false
+   },
+   {
+    "stage": "sim",
+    "id": "S5",
+    "title": "behavior trees",
+    "built": false
+   },
+   {
+    "stage": "dayof",
+    "id": "D1",
+    "title": "deployed code unchanged",
+    "built": false
+   },
+   {
+    "stage": "dayof",
+    "id": "D2",
+    "title": "boards + sensors unchanged",
+    "built": false
+   },
+   {
+    "stage": "dayof",
+    "id": "D3",
+    "title": "controller basics",
+    "built": false
+   }
+  ],
+  "rates": {
+   "vectornav/imu": 100,
+   "gyro/twist": 300,
+   "state/depth/raw": 5,
+   "odometry/filtered": 20,
+   "ffc/zed_node/rgb/image_rect_color/compressed": 8,
+   "dfc/zed_node/rgb/image_rect_color/compressed": 8,
+   "yolo_orientation/annotated/compressed": 3
+  },
+  "drift": {
+   "odom_topic": "odometry/filtered",
+   "window_s": 60,
+   "max_linear_m_per_hr": 1.0,
+   "max_yaw_deg_per_min": 0.5
+  },
+  "gyro_warn_deg_s": 0.01,
+  "poweron_delay_s": 6,
+  "battery_min_v": 18.5,
+  "dvl": {
+   "dvlSpeedOfSound": "1480.0",
+   "dvlSalinity": "0.0",
+   "dvlCalculateSoundSpeed": "fixed"
+  }
+ },
+ "tether": {
+  "tethered": {
+   "session": "talos_20261026_202235",
+   "net_buoyancy_N": 0.35,
+   "cob_x_mm": 15.3,
+   "cob_y_mm": -4.1,
+   "cob_z_mm": 31.0,
+   "res_force_N": 11.81,
+   "res_torque_Nm": 5.06,
+   "mass": 34.307
+  },
+  "untethered": {
+   "session": "talos_20261026_204748",
+   "net_buoyancy_N": 1.68,
+   "cob_x_mm": 7.5,
+   "cob_y_mm": -1.9,
+   "cob_z_mm": 21.8,
+   "res_force_N": 0.85,
+   "res_torque_Nm": 0.28,
+   "mass": 34.307
+  }
+ },
+ "checklist": [
+  {
+   "id": "days",
+   "title": "Days before",
+   "steps": [
+    {
+     "id": "updates",
+     "t": "Do any apt upgrades or driver updates now, not this week",
+     "checks": "R4",
+     "why": "The team's pre-test document: updates \"MUST be done DAYS in advance\", because what they break is often inexplicable. <code>pretest repo</code> warns when either machine changed packages in the last 3 days.",
+     "cmd": "./pretest repo --only R4",
+     "where": "op-top",
+     "refs": [
+      [
+       "#freeze",
+       "Freeze the code"
+      ]
+     ]
+    },
+    {
+     "id": "charge",
+     "t": "Charge both battery housings",
+     "why": "Talos runs on two smart battery housings, port and starboard, ORed onto one bus. Each is five Li-ion cells in series. Full is about 20.7 V; the viewer turns a pack amber below 50 % and red below 20 %.",
+     "refs": [
+      [
+       "#batteries",
+       "Batteries"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "bench",
+   "title": "The day before, on the bench",
+   "steps": [
+    {
+     "id": "orings",
+     "t": "Inspect and clean the O-ring sealing surfaces (inside both lids)",
+     "checks": "B0",
+     "why": "Dirt on a sealing surface is how water gets in. Check every time the hull is sealed."
+    },
+    {
+     "id": "benchnew",
+     "t": "Bench-test every new or changed piece of software on the robot itself",
+     "why": "\"Integration is hell\": a new YOLO model is tested on the ZED and the Orin, not only on a laptop. This is the part of the day that takes hours."
+    },
+    {
+     "id": "pin",
+     "t": "Commit and push every submodule, then commit release with the new pins",
+     "checks": "R1, R2",
+     "why": "One release commit names the exact code that goes in the water. A pin that isn't pushed can't be checked out by anyone else, and can't be rolled back to.",
+     "cmd": "cd ~/osu-uwrt/release\ngit submodule status            # '+' = checked out away from its pin\ngit add src/riptide_control     # each submodule you changed\ngit commit -m \"Pre RPAC test 10-30-26\"\ngit push",
+     "where": "op-top",
+     "refs": [
+      [
+       "#freeze",
+       "Freeze the code"
+      ],
+      [
+       "setup.html#git",
+       "Git and release"
+      ]
+     ]
+    },
+    {
+     "id": "build",
+     "t": "Clean build on op-top",
+     "why": "colcon never removes a deleted package from <code>install/</code>, and stale build caches cause the \"dumb compile errors\" the document warns about.",
+     "cmd": "cd ~/osu-uwrt/release\nrm -rf build install log && colcon build",
+     "where": "op-top"
+    },
+    {
+     "id": "deploy",
+     "t": "Delete the Orin's workspace and deploy clean",
+     "checks": "R3",
+     "why": "Forces a clean build on the Orin. Afterwards <code>pretest repo</code> compares every deployed file with release (an rsync dry run) and checks the build is newer than the sources.",
+     "cmd": "source ~/osu-uwrt/riptide_setup/install/setup.bash\nssh ros@orin2 'rm -rf ~/colcon_deploy'\ncd ~/osu-uwrt/release && colcon deploy orin2 --clean",
+     "where": "op-top",
+     "refs": [
+      [
+       "setup.html#deploy",
+       "colcon deploy"
+      ]
+     ]
+    },
+    {
+     "id": "repo",
+     "t": "pretest repo: pins, pushed, robot runs this code, trees parse",
+     "checks": "R1\u2013R5",
+     "why": "All PASS before you go on. R5 runs <code>checkBT</code> on every tree (it rewrites the files, so the tool restores them afterwards).",
+     "cmd": "cd ~/osu-uwrt/release/pretest_checks\n./pretest repo --with-tests",
+     "where": "op-top",
+     "refs": [
+      [
+       "#pretest",
+       "pretest_checks"
+      ]
+     ]
+    },
+    {
+     "id": "sim",
+     "t": "Run the trees you'll run at the pool in Nereus, with the real detector",
+     "why": "Nereus renders the cameras and the stack's own YOLO detector runs on them, so a tree is tested end to end before it costs pool time. The tool's <code>sim</code> stage is planned, not built: run it by hand.",
+     "cmd": "ros2 run rmw_zenoh_cpp rmw_zenohd                 # terminal 1\nros2 launch nereus sim.launch.py pool:=rpac active_control_model:=mpc   # terminal 2",
+     "where": "op-top",
+     "refs": [
+      [
+       "bt-workflow.html",
+       "Writing and testing trees"
+      ],
+      [
+       "nereus.html",
+       "Nereus"
+      ]
+     ]
+    },
+    {
+     "id": "benchrun",
+     "t": "pretest bench: boards, rates, kill, ESCs, controller, drift, TF, DVL, cameras",
+     "checks": "B1\u2013B13",
+     "why": "Read-only, about five minutes, robot on the bench on a power supply. It starts the stopped bench launches (sensors and perception only) and runs the controller only under a held software kill.",
+     "cmd": "./pretest bench",
+     "where": "op-top",
+     "refs": [
+      [
+       "#pretest",
+       "What each check does"
+      ]
+     ]
+    },
+    {
+     "id": "tare",
+     "t": "Tare the gyro only if B10 warns, with Talos level and still",
+     "checks": "B10",
+     "why": "A tare taken tilted or moving bakes an error into every heading. The tool reports the bias but never tares on its own.",
+     "cmd": "ros2 action send_goal /talos/gyro/tare riptide_msgs2/action/TareGyro \"{num_samples: 100000, timeout_seconds: 20}\"",
+     "where": "op-top",
+     "refs": [
+      [
+       "sensors.html#fog-tare",
+       "FOG tare"
+      ]
+     ]
+    },
+    {
+     "id": "guided",
+     "t": "pretest guided: localization by hand, vision, AprilTag, thruster test, actuators",
+     "safety": true,
+     "checks": "G0\u2013G7",
+     "why": "A person at the robot, a second person at the kill switch, the Nereus viewer open. The thruster test (G4) is the only step that spins anything.",
+     "cmd": "./pretest guided --apriltag --actuators torpedo,dropper",
+     "where": "op-top",
+     "refs": [
+      [
+       "#thruster-test",
+       "The thruster test"
+      ]
+     ]
+    },
+    {
+     "id": "dryrun",
+     "t": "Dry-run every procedure you plan for the pool (identification, a tune, a tree)",
+     "checks": "G6",
+     "why": "\"You should be 100% confident in your ability to perform all planned operations.\" Pool time spent learning a procedure is wasted."
+    },
+    {
+     "id": "recommit",
+     "t": "Changed anything? Commit, bump release, redeploy, rerun repo and bench",
+     "checks": "G7",
+     "why": "G7 fails if the release checkout or the deployed code changed since G0. Never plan on git at the pool: fix it now."
+    },
+    {
+     "id": "pvt",
+     "t": "Depressurization test (PVT), then the green subconn cover on",
+     "safety": true,
+     "checks": "G6",
+     "why": "The hull is pumped down by hand (0.05 bar in the 2025 design report) and watched for at least 5 minutes. The green cover says Talos is sealed and tested. Open it again and the test has to be repeated."
+    },
+    {
+     "id": "handsoff",
+     "t": "Tell the team nobody opens Talos or swaps parts until the test",
+     "why": "Any internal mechanical or electrical change voids the localization and thruster tests you just did."
+    }
+   ]
+  },
+  {
+   "id": "pack",
+   "title": "Pack and leave",
+   "steps": [
+    {
+     "id": "packlist",
+     "t": "Pack everything on the pack list",
+     "refs": [
+      [
+       "#pack",
+       "Pack list"
+      ]
+     ]
+    },
+    {
+     "id": "summary",
+     "t": "Check the summary of the latest runs",
+     "why": "One line per stage with its latest result, so everyone can see what was tested and what was skipped.",
+     "cmd": "./pretest summary",
+     "where": "op-top"
+    },
+    {
+     "id": "leave",
+     "t": "Leave on time",
+     "why": "The release README's third pre-test step: \"Leave for the pool on time. (no, really, try to leave on time)\"."
+    }
+   ]
+  },
+  {
+   "id": "setup",
+   "title": "At the pool, on deck",
+   "steps": [
+    {
+     "id": "network",
+     "t": "Router, opbox and tether up; op-top on the robot LAN",
+     "why": "Everything talks over the team router (192.168.1.0/24). The tether joins Talos to it; the opbox gives the LAN internet and the time server.",
+     "cmd": "ping -c 3 orin2\nchronyc tracking        # op-top's clock against the opbox",
+     "where": "op-top",
+     "refs": [
+      [
+       "computers.html#lan",
+       "The robot LAN and the tether"
+      ],
+      [
+       "computers.html#time",
+       "Time"
+      ]
+     ]
+    },
+    {
+     "id": "power",
+     "t": "Kill switch OUT, then power Talos on",
+     "safety": true,
+     "why": "With the switch out the thrusters have no power, whatever any software does. Talos boots killed, and the launcher service starts on its own.",
+     "refs": [
+      [
+       "#power",
+       "Power-on order"
+      ]
+     ]
+    },
+    {
+     "id": "launcher",
+     "t": "Launcher: load talos_launch_mpc.yaml, start the sensors, perception and autonomy",
+     "why": "Start hardware, navigation (riptide_hardware2's, the first of the two), zed, tensorrt, mapping and autonomy. Leave control_system for later. The diagnostics node is no longer used.",
+     "cmd": "http://orin2:8080",
+     "where": "browser",
+     "refs": [
+      [
+       "computers.html#launcher",
+       "ros_launcher"
+      ]
+     ]
+    },
+    {
+     "id": "viewer",
+     "t": "Start the Nereus viewer against the robot",
+     "why": "The viewer is the operator UI. It kills Talos on slot 1 from the moment it opens, until someone presses Enable.",
+     "cmd": "source ~/osu-uwrt/release/scripts/dds_scripts/config_rmw.bash   # Zenoh client of orin2\nros2 launch nereus robot.launch.py pool:=rpac",
+     "where": "op-top",
+     "refs": [
+      [
+       "viewer.html",
+       "The Nereus viewer"
+      ]
+     ]
+    },
+    {
+     "id": "health",
+     "t": "Quick health check: boards, rails and battery bus, rates, kill, ESCs",
+     "checks": "B3\u2013B7",
+     "why": "Catches what the drive over changed. <code>pretest dayof</code> is planned for this; until then, run the bench checks that don't start anything. In the viewer: FOG and CPU temperatures, PORT and STBD charge.",
+     "cmd": "./pretest bench --only B3,B4,B5,B6,B7 --power battery",
+     "where": "op-top"
+    },
+    {
+     "id": "controller",
+     "t": "Start control_system last, with Talos killed",
+     "safety": true,
+     "why": "An enabled robot with the controller running spins its thrusters. Killed, the MPC publishes zero thrust.",
+     "refs": [
+      [
+       "commanding.html#stops",
+       "What stops the thrusters"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "water",
+   "title": "In the water",
+   "steps": [
+    {
+     "id": "killholder",
+     "t": "Name the kill-switch holder; switch out; two people lift Talos in",
+     "safety": true,
+     "why": "Talos is about 32 kg dry. One person's only job is the switch: they hold it, and they pull it when anyone says so.",
+     "refs": [
+      [
+       "#kill",
+       "Kill switch rules"
+      ]
+     ]
+    },
+    {
+     "id": "buoyancy",
+     "t": "Killed, Talos floats: rises slowly and settles at the surface",
+     "why": "The MPC model has Talos about 1.7 N positive, close to RoboSub's minimum of 0.5 % of its mass. A robot that sinks or rises fast has changed since it was weighed.",
+     "refs": [
+      [
+       "#trim",
+       "Buoyancy and trim"
+      ]
+     ]
+    },
+    {
+     "id": "enable",
+     "t": "Switch in, Enable in the viewer, wait for the ESCs, Dive in place",
+     "safety": true,
+     "why": "The ESC boards hold their motors for about 5 s after power comes back. Dive in place targets the current x, y and heading, level, at the configured depth.",
+     "refs": [
+      [
+       "viewer.html",
+       "Driving from the viewer"
+      ]
+     ]
+    },
+    {
+     "id": "firstmoves",
+     "t": "Small moves first: forward 0.5, turn 30, then hold and watch",
+     "why": "Type moves into the viewer's search (Ctrl+P). While it holds, plot the MPC's disturbance estimate: a large constant torque means the model's buoyancy or trim is off.",
+     "cmd": "plot disturbance        # Ctrl+P in the viewer: /talos/controller/mpc/disturbance",
+     "where": "viewer",
+     "refs": [
+      [
+       "#trim",
+       "Buoyancy and trim"
+      ]
+     ]
+    },
+    {
+     "id": "sensors",
+     "t": "Sensor sanity: DVL lock, depth, both cameras, detections, still pose",
+     "why": "Each fails in its own way in water: no bottom lock near the floor or a wall, depth offset, a fogged lens. Check them before blaming a tree.",
+     "refs": [
+      [
+       "#sensors",
+       "Sensor checks"
+      ]
+     ]
+    },
+    {
+     "id": "map",
+     "t": "Put the course in the prior map, then calibrate on the AprilTag",
+     "why": "The trees navigate in the map frame. Edit the prior map in the viewer (Ctrl+M), deploy riptide_mapping2, then Calibrate in the Mapping panel with the tag in view.",
+     "cmd": "cd ~/osu-uwrt/release && colcon deploy orin2 --packages-select riptide_mapping2\n# then restart mapping in the launcher; Calibrate in the viewer's Mapping panel",
+     "where": "op-top",
+     "refs": [
+      [
+       "#course",
+       "Mapping the course"
+      ]
+     ]
+    },
+    {
+     "id": "bag",
+     "t": "Start a bag before every run",
+     "why": "A run you didn't record can't be debugged at home. Record on the robot, so the bag survives the tether.",
+     "refs": [
+      [
+       "#bags",
+       "Recording"
+      ]
+     ]
+    },
+    {
+     "id": "trees",
+     "t": "Run trees: Enable, Start, unplug, insert the switch",
+     "safety": true,
+     "why": "A tree waits for <code>state/kill</code> to go false, then 6 s more. Untethered, the physical switch is the only kill.",
+     "refs": [
+      [
+       "#trees",
+       "Running trees"
+      ]
+     ]
+    },
+    {
+     "id": "ident",
+     "t": "Identification runs, untethered, from the committed model",
+     "why": "A tethered run fits the tether's pull as buoyancy. Leave 3 m clear ahead and to port, and 2.5 m below.",
+     "cmd": "ros2 launch riptide_mpc pool_identify.launch.py wait_for_trigger:=true max_iterations:=1",
+     "where": "Orin",
+     "refs": [
+      [
+       "#ident",
+       "Identification"
+      ],
+      [
+       "control/identify.html",
+       "System identification"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "after",
+   "title": "After",
+   "steps": [
+    {
+     "id": "out",
+     "t": "Kill switch out, Talos out with two people, power off",
+     "safety": true,
+     "why": "Out first: nobody's hands go near the thrusters while the robot can be enabled."
+    },
+    {
+     "id": "copy",
+     "t": "Copy bags, SVOs and identification sessions off the Orin",
+     "why": "They live only on the robot until copied, and the next clean deploy or full disk is not a backup.",
+     "cmd": "rsync -a ros@orin2:/home/ros/bags/ ~/bags/\nrsync -a ros@orin2:/home/ros/osu-uwrt/mpc_identification/ ~/mpc_identification/",
+     "where": "op-top",
+     "refs": [
+      [
+       "#data",
+       "Data"
+      ]
+     ]
+    },
+    {
+     "id": "fixes",
+     "t": "Commit what changed at the pool, bump release",
+     "why": "Prior-map edits, tuned parameters and models are files on op-top or the Orin. Commit them in their submodules, then commit release with the new pins, so the next test starts from them."
+    },
+    {
+     "id": "tag",
+     "t": "Tag release with the date and publish a GitHub release",
+     "why": "The README: tag with the date of the test and release it, with notes on what was tested, as a backup to roll back to.",
+     "cmd": "cd ~/osu-uwrt/release\ngit tag 10-30-26-talos && git push origin 10-30-26-talos\ngh release create 10-30-26-talos --title \"Pool test 10-30-26\" --notes-file notes.md",
+     "where": "op-top",
+     "refs": [
+      [
+       "#after",
+       "After the test"
+      ]
+     ]
+    },
+    {
+     "id": "writeup",
+     "t": "Write it up: what was tested, what broke, where the data is",
+     "why": "The release notes are the team's record of the day. Bag and session paths make the data findable."
+    }
+   ]
+  }
+ ]
+}

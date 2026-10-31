@@ -1,0 +1,1180 @@
+{
+ "source": "riptide_launch/remote_launch/launches (branch newsim)",
+ "files": [
+  {
+   "file": "talos_launch_mpc.yaml",
+   "entries": [
+    {
+     "package": "riptide_hardware2",
+     "file": "hardware.launch.py",
+     "args": [
+      "robot:=talos",
+      "imu_port:=/dev/ttyTHS1",
+      "imu_frame_id:=talos/imu_link",
+      "gyro_port:=/dev/ttyTHS2"
+     ],
+     "topics": [
+      {
+       "name": "/talos/dvl/status",
+       "type": "nortek_dvl_msgs/msg/DvlStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/vectornav/imu",
+       "type": "sensor_msgs/msg/Imu",
+       "sensor": false
+      },
+      {
+       "name": "/talos/gyro/raw",
+       "type": "riptide_msgs2/msg/Int32Stamped",
+       "sensor": false
+      },
+      {
+       "name": "/talos/state/firmware",
+       "type": "riptide_msgs2/msg/FirmwareStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/state/depth/raw",
+       "type": "riptide_msgs2/msg/Depth",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_navigation",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos",
+      "mode:=replacement"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      },
+      {
+       "name": "/a",
+       "type": "std_msgs/msg/Float64",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_controllers2",
+     "file": "control_system.launch.py",
+     "args": [
+      "robot:=talos",
+      "active_control_model:=mpc"
+     ],
+     "topics": [
+      {
+       "name": "/talos/thruster_forces",
+       "type": "std_msgs/msg/Float32MultiArray",
+       "sensor": false
+      },
+      {
+       "name": "/talos/command/requested_rpm",
+       "type": "riptide_msgs2/msg/DshotCommand",
+       "sensor": false
+      },
+      {
+       "name": "/talos/controller/FF_body_force",
+       "type": "geometry_msgs/msg/Twist",
+       "sensor": false
+      },
+      {
+       "name": "/talos/controller/mpc/solve_time_ms",
+       "type": "std_msgs/msg/Float64",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "zed.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/ffc/zed_node/rgb/camera_info",
+       "type": "sensor_msgs/msg/CameraInfo",
+       "sensor": false
+      },
+      {
+       "name": "/talos/dfc/zed_node/rgb/camera_info",
+       "type": "sensor_msgs/msg/CameraInfo",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "tensor_detector",
+     "file": "tensorrt.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/yolo_orientation/annotated/compressed",
+       "type": "sensor_msgs/msg/CompressedImage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_mapping2",
+     "file": "mapping.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_autonomy2",
+     "file": "autonomy.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "diagnostics.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    }
+   ]
+  },
+  {
+   "file": "talos_launch_bench_mpc.yaml",
+   "entries": [
+    {
+     "package": "riptide_hardware2",
+     "file": "hardware_fake_dvl.launch.py",
+     "args": [
+      "robot:=talos",
+      "imu_port:=/dev/ttyTHS1",
+      "imu_frame_id:=talos/imu_link",
+      "gyro_port:=/dev/ttyTHS2"
+     ],
+     "topics": [
+      {
+       "name": "/talos/state/firmware",
+       "type": "riptide_msgs2/msg/FirmwareStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/dvl/status",
+       "type": "nortek_dvl_msgs/msg/DvlStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/vectornav/imu",
+       "type": "sensor_msgs/msg/Imu",
+       "sensor": false
+      },
+      {
+       "name": "/talos/state/depth/raw",
+       "type": "riptide_msgs2/msg/Depth",
+       "sensor": false
+      },
+      {
+       "name": "/talos/gyro/raw",
+       "type": "riptide_msgs2/msg/Int32Stamped",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_navigation",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos",
+      "mode:=replacement"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      },
+      {
+       "name": "/a",
+       "type": "std_msgs/msg/Float64",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_controllers2",
+     "file": "control_system.launch.py",
+     "args": [
+      "robot:=talos",
+      "active_control_model:=mpc"
+     ],
+     "topics": [
+      {
+       "name": "/talos/thruster_forces",
+       "type": "std_msgs/msg/Float32MultiArray",
+       "sensor": false
+      },
+      {
+       "name": "/talos/command/requested_rpm",
+       "type": "riptide_msgs2/msg/DshotCommand",
+       "sensor": false
+      },
+      {
+       "name": "/talos/controller/FF_body_force",
+       "type": "geometry_msgs/msg/Twist",
+       "sensor": false
+      },
+      {
+       "name": "/talos/controller/mpc/solve_time_ms",
+       "type": "std_msgs/msg/Float64",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "zed.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/ffc/zed_node/rgb/camera_info",
+       "type": "sensor_msgs/msg/CameraInfo",
+       "sensor": false
+      },
+      {
+       "name": "/talos/dfc/zed_node/rgb/camera_info",
+       "type": "sensor_msgs/msg/CameraInfo",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "tensor_detector",
+     "file": "tensorrt.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/yolo_orientation/annotated/compressed",
+       "type": "sensor_msgs/msg/CompressedImage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_mapping2",
+     "file": "mapping.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_autonomy2",
+     "file": "autonomy.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "diagnostics.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    }
+   ]
+  },
+  {
+   "file": "talos_launch_sim_hil_mpc.yaml",
+   "entries": [
+    {
+     "package": "riptide_hardware2",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_navigation",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos",
+      "mode:=replacement"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      },
+      {
+       "name": "/a",
+       "type": "std_msgs/msg/Float64",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_controllers2",
+     "file": "control_system.launch.py",
+     "args": [
+      "robot:=talos",
+      "active_control_model:=mpc"
+     ],
+     "topics": [
+      {
+       "name": "/talos/thruster_forces",
+       "type": "std_msgs/msg/Float32MultiArray",
+       "sensor": false
+      },
+      {
+       "name": "/talos/command/requested_rpm",
+       "type": "riptide_msgs2/msg/DshotCommand",
+       "sensor": false
+      },
+      {
+       "name": "/talos/controller/FF_body_force",
+       "type": "geometry_msgs/msg/Twist",
+       "sensor": false
+      },
+      {
+       "name": "/talos/controller/mpc/solve_time_ms",
+       "type": "std_msgs/msg/Float64",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "tensor_detector",
+     "file": "tensorrt.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/yolo_orientation/annotated/compressed",
+       "type": "sensor_msgs/msg/CompressedImage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_mapping2",
+     "file": "mapping.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_autonomy2",
+     "file": "autonomy.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    }
+   ]
+  },
+  {
+   "file": "talos_launch.yaml",
+   "entries": [
+    {
+     "package": "riptide_hardware2",
+     "file": "hardware.launch.py",
+     "args": [
+      "robot:=talos",
+      "imu_port:=/dev/ttyTHS1",
+      "imu_frame_id:=talos/imu_link",
+      "gyro_port:=/dev/ttyTHS2"
+     ],
+     "topics": [
+      {
+       "name": "/talos/dvl/status",
+       "type": "nortek_dvl_msgs/msg/DvlStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/vectornav/imu",
+       "type": "sensor_msgs/msg/Imu",
+       "sensor": false
+      },
+      {
+       "name": "/talos/gyro/raw",
+       "type": "riptide_msgs2/msg/Int32Stamped",
+       "sensor": false
+      },
+      {
+       "name": "/talos/state/firmware",
+       "type": "riptide_msgs2/msg/FirmwareStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/state/depth/raw",
+       "type": "riptide_msgs2/msg/Depth",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_navigation",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos",
+      "mode:=replacement"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      },
+      {
+       "name": "/a",
+       "type": "std_msgs/msg/Float64",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_controllers2",
+     "file": "control_system.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/thruster_forces",
+       "type": "std_msgs/msg/Float32MultiArray",
+       "sensor": false
+      },
+      {
+       "name": "/talos/command/requested_rpm",
+       "type": "riptide_msgs2/msg/DshotCommand",
+       "sensor": false
+      },
+      {
+       "name": "/talos/controller/FF_body_force",
+       "type": "geometry_msgs/msg/Twist",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "zed.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/ffc/zed_node/rgb/camera_info",
+       "type": "sensor_msgs/msg/CameraInfo",
+       "sensor": false
+      },
+      {
+       "name": "/talos/dfc/zed_node/rgb/camera_info",
+       "type": "sensor_msgs/msg/CameraInfo",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "tensor_detector",
+     "file": "tensorrt.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/yolo_orientation/annotated/compressed",
+       "type": "sensor_msgs/msg/CompressedImage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_mapping2",
+     "file": "mapping.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_autonomy2",
+     "file": "autonomy.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "diagnostics.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    }
+   ]
+  },
+  {
+   "file": "talos_launch_bench.yaml",
+   "entries": [
+    {
+     "package": "riptide_hardware2",
+     "file": "hardware_fake_dvl.launch.py",
+     "args": [
+      "robot:=talos",
+      "imu_port:=/dev/ttyTHS1",
+      "imu_frame_id:=talos/imu_link",
+      "gyro_port:=/dev/ttyTHS2"
+     ],
+     "topics": [
+      {
+       "name": "/talos/state/firmware",
+       "type": "riptide_msgs2/msg/FirmwareStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/dvl/status",
+       "type": "nortek_dvl_msgs/msg/DvlStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/vectornav/imu",
+       "type": "sensor_msgs/msg/Imu",
+       "sensor": false
+      },
+      {
+       "name": "/talos/state/depth/raw",
+       "type": "riptide_msgs2/msg/Depth",
+       "sensor": false
+      },
+      {
+       "name": "/talos/gyro/raw",
+       "type": "riptide_msgs2/msg/Int32Stamped",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_navigation",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos",
+      "mode:=replacement"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      },
+      {
+       "name": "/a",
+       "type": "std_msgs/msg/Float64",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_controllers2",
+     "file": "control_system.launch.py",
+     "args": [
+      "robot:=talos",
+      "active_control_model:=complete"
+     ],
+     "topics": [
+      {
+       "name": "/talos/thruster_forces",
+       "type": "std_msgs/msg/Float32MultiArray",
+       "sensor": false
+      },
+      {
+       "name": "/talos/command/requested_rpm",
+       "type": "riptide_msgs2/msg/DshotCommand",
+       "sensor": false
+      },
+      {
+       "name": "/talos/controller/FF_body_force",
+       "type": "geometry_msgs/msg/Twist",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "zed.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/ffc/zed_node/rgb/camera_info",
+       "type": "sensor_msgs/msg/CameraInfo",
+       "sensor": false
+      },
+      {
+       "name": "/talos/dfc/zed_node/rgb/camera_info",
+       "type": "sensor_msgs/msg/CameraInfo",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "tensor_detector",
+     "file": "tensorrt.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/yolo_orientation/annotated/compressed",
+       "type": "sensor_msgs/msg/CompressedImage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_mapping2",
+     "file": "mapping.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_autonomy2",
+     "file": "autonomy.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "diagnostics.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    }
+   ]
+  },
+  {
+   "file": "talos_launch_debug.yaml",
+   "entries": [
+    {
+     "package": "riptide_hardware2",
+     "file": "hardware.launch.py",
+     "args": [
+      "robot:=talos",
+      "imu_port:=/dev/ttyTHS1",
+      "gyro_port:=/dev/ttyTHS2"
+     ],
+     "topics": [
+      {
+       "name": "/talos/state/firmware",
+       "type": "riptide_msgs2/msg/FirmwareStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/dvl/status",
+       "type": "nortek_dvl_msgs/msg/DvlStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/vectornav/imu",
+       "type": "sensor_msgs/msg/Imu",
+       "sensor": false
+      },
+      {
+       "name": "/talos/state/depth/raw",
+       "type": "riptide_msgs2/msg/Depth",
+       "sensor": false
+      },
+      {
+       "name": "/talos/gyro/raw",
+       "type": "riptide_msgs2/msg/Int32Stamped",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "hardware.launch.py",
+     "args": [
+      "robot:=talos",
+      "imu_port:=/dev/ttyTHS1",
+      "gyro_port:=/dev/ttyTHS2"
+     ],
+     "topics": [
+      {
+       "name": "/talos/state/firmware",
+       "type": "riptide_msgs2/msg/FirmwareStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/dvl/status",
+       "type": "nortek_dvl_msgs/msg/DvlStatus",
+       "sensor": false
+      },
+      {
+       "name": "/talos/vectornav/imu",
+       "type": "sensor_msgs/msg/Imu",
+       "sensor": false
+      },
+      {
+       "name": "/talos/state/depth/raw",
+       "type": "riptide_msgs2/msg/Depth",
+       "sensor": false
+      },
+      {
+       "name": "/talos/gyro/raw",
+       "type": "riptide_msgs2/msg/Int32Stamped",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_controllers2",
+     "file": "control_system.launch.py",
+     "args": [
+      "robot:=talos",
+      "active_control_model:=complete"
+     ],
+     "topics": [
+      {
+       "name": "/talos/thruster_forces",
+       "type": "std_msgs/msg/Float32MultiArray",
+       "sensor": false
+      },
+      {
+       "name": "/talos/command/requested_rpm",
+       "type": "riptide_msgs2/msg/DshotCommand",
+       "sensor": false
+      },
+      {
+       "name": "/talos/controller/FF_body_force",
+       "type": "geometry_msgs/msg/Twist",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_hardware2",
+     "file": "zed.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/ffc/zed_node/rgb/camera_info",
+       "type": "sensor_msgs/msg/CameraInfo",
+       "sensor": false
+      },
+      {
+       "name": "/talos/dfc/zed_node/rgb/camera_info",
+       "type": "sensor_msgs/msg/CameraInfo",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "tensor_detector",
+     "file": "tensorrt.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/yolo",
+       "type": "sensor_msgs/msg/Image",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_mapping2",
+     "file": "mapping.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_autonomy2",
+     "file": "autonomy.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    }
+   ]
+  },
+  {
+   "file": "talos_launch_sim_hil.yaml",
+   "entries": [
+    {
+     "package": "riptide_hardware2",
+     "file": "navigation.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/joint_states",
+       "type": "sensor_msgs/msg/JointState",
+       "sensor": false
+      },
+      {
+       "name": "/talos/odometry/filtered",
+       "type": "nav_msgs/msg/Odometry",
+       "sensor": false
+      },
+      {
+       "name": "/talos/depth/pose",
+       "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+       "sensor": false
+      },
+      {
+       "name": "/tf",
+       "type": "tf2_msgs/msg/TFMessage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_controllers2",
+     "file": "control_system.launch.py",
+     "args": [
+      "robot:=talos",
+      "active_control_model:=hybrid"
+     ],
+     "topics": [
+      {
+       "name": "/talos/thruster_forces",
+       "type": "std_msgs/msg/Float32MultiArray",
+       "sensor": false
+      },
+      {
+       "name": "/talos/command/requested_rpm",
+       "type": "riptide_msgs2/msg/DshotCommand",
+       "sensor": false
+      },
+      {
+       "name": "/talos/controller/FF_body_force",
+       "type": "geometry_msgs/msg/Twist",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "tensor_detector",
+     "file": "tensorrt.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": [
+      {
+       "name": "/talos/yolo_orientation/annotated/compressed",
+       "type": "sensor_msgs/msg/CompressedImage",
+       "sensor": false
+      }
+     ]
+    },
+    {
+     "package": "riptide_mapping2",
+     "file": "mapping.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_autonomy2",
+     "file": "autonomy.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "riptide_rviz",
+     "file": "rviz_start.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    },
+    {
+     "package": "c_simulator",
+     "file": "physics_simulator.launch.py",
+     "args": [
+      "robot:=talos"
+     ],
+     "topics": []
+    }
+   ]
+  }
+ ]
+}

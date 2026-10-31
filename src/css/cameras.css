@@ -1,0 +1,57 @@
+/* The cameras chapter. */
+
+/* Image you can tap to flip (stereo eyes, Nereus colour/depth). */
+.cam-eye { position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cam-eye img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; border-radius: 6px; background: #0f2633; }
+.cam-eye-tag { position: absolute; left: 0.6rem; top: 0.6rem; font-family: var(--sans); font-size: 0.78rem; font-weight: 650; color: var(--ink); background: rgba(243, 247, 247, 0.9); padding: 0.18rem 0.55rem; border-radius: 999px; pointer-events: none; }
+.cam-depth-key { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; font-family: var(--sans); font-size: 0.8rem; color: var(--ink-2); margin-top: 0.55rem; }
+.cam-depth-key[hidden] { display: none; }
+.cam-depth-key .ramp { display: inline-block; width: 9rem; height: 10px; border-radius: 3px; background: linear-gradient(90deg, #fde725, #5ec962, #21918c, #3b528b, #440154); }
+.cam-depth-key .none { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.6rem; }
+.cam-depth-key .none i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; background: #1e2228; }
+
+/* Parameter layers. */
+.cam-params { font-family: var(--sans); font-size: 0.88rem; border-top: 1px solid var(--rule); }
+.cam-params details { border-bottom: 1px solid var(--rule); }
+.cam-params summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 7.6rem; gap: 0.3rem 0.8rem; align-items: baseline; padding: 0.5rem 0.2rem; -webkit-tap-highlight-color: transparent; }
+.cam-params summary::-webkit-details-marker { display: none; }
+.cam-params summary:hover { background: var(--paper-3); }
+.cam-params .k { background: none; padding: 0; font-size: 0.8rem; color: var(--ink); overflow-wrap: anywhere; }
+.cam-params .v { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.cam-params .src { font-size: 0.72rem; font-weight: 650; letter-spacing: 0.02em; padding: 0.12rem 0.5rem; border-radius: 999px; white-space: nowrap; justify-self: end; }
+.cam-params .src-0 { background: var(--paper); color: var(--ink-2); border: 1px solid var(--rule); }
+.cam-params .src-1 { background: var(--paper); color: var(--ink-2); border: 1px dashed var(--ink-2); }
+.cam-params .src-2 { background: var(--accent); color: #fff; }
+.cam-params .more { padding: 0 0.2rem 0.7rem; color: var(--ink-2); }
+.cam-params .more p { margin: 0.1rem 0 0.4rem; }
+.cam-params .layers { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
+.cam-params .layers li { display: flex; flex-wrap: wrap; gap: 0 0.6rem; }
+.cam-params .layers li span { color: var(--muted); min-width: 9.5rem; }
+.cam-params .layers li code { overflow-wrap: anywhere; }
+.cam-params .layers li.win code { font-weight: 700; color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
+.cam-params .layers li.lost code { text-decoration: line-through; color: var(--muted); }
+.cam-params .layers li.none code { color: var(--muted); }
+.cam-params .full { font-size: 0.78rem; color: var(--muted); }
+@media (max-width: 520px) {
+  .cam-params summary { grid-template-columns: minmax(0, 1fr) 7.2rem; }
+  .cam-params .v { grid-column: 1; grid-row: 2; font-size: 0.84rem; }
+  .cam-params .src { grid-row: 1 / span 2; align-self: center; }
+}
+
+/* Field of view. */
+svg.cam-fov { display: block; width: 100%; height: auto; max-height: 34rem; font-family: var(--sans); touch-action: pan-y; }
+svg.cam-fov text { fill: var(--ink); }
+svg.cam-fov text.halo { paint-order: stroke; stroke: var(--paper-2); stroke-width: 4px; stroke-linejoin: round; }
+.cam-readout { font-family: var(--sans); font-size: 0.86rem; line-height: 1.45; color: var(--ink-2); margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
+.cam-readout p { margin: 0.25rem 0; }
+.cam-readout b { color: var(--ink); }
+
+/* Camera chips in the trees table. */
+.cam-chip { display: inline-block; font-family: var(--sans); font-size: 0.76rem; font-weight: 650; padding: 0.1rem 0.5rem; border-radius: 999px; color: #fff; }
+.cam-chip.cam-ffc { background: var(--state); }
+.cam-chip.cam-dfc { background: var(--prediction); color: var(--ink); }
+table.cam-trees td:first-child { white-space: normal; }
+
+/* Bandwidth bars: values keep a paper halo where they cross the reference lines. */
+svg.chart text.bw-val { font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; fill: var(--ink); paint-order: stroke; stroke: var(--paper-2); stroke-width: 4px; stroke-linejoin: round; }
+svg.chart text.bw-val.in { fill: #fff; stroke: none; }

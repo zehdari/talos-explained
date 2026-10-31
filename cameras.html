@@ -4,32 +4,244 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The cameras · How Talos works</title>
-<meta name="description" content="One or two sentences on what this chapter explains.">
+<meta name="description" content="Talos's two Stereolabs ZED X Mini stereo cameras: GMSL2 to the Orin, the ZED SDK and zed-ros2-wrapper, zed.launch.py and its parameter files, resolution, frame rate and depth mode, what each camera sees, topics and frames, JPEG compression and tether bandwidth, set_camera_is_dfc, and how Nereus renders the same topics.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">The vehicle</div>
+    <div class="kicker">The vehicle · Chapter 8</div>
     <h1>The cameras</h1>
-    <p class="lede">One or two sentences: what this is and why a new member should care.</p>
+    <p class="lede">Two stereo cameras, one looking ahead and one looking down, are Talos's main way to find the props. This chapter follows their pixels from the glass to a ROS topic, the detector and your laptop.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Three to five bullets a reader can stop after.</li>
+      <li>Two <span class="term">Stereolabs ZED X Mini</span> stereo cameras, <code>ffc</code> (forward) and <code>dfc</code> (down), on <span class="term">GMSL2</span> to the Jetson Orin.</li>
+      <li>The ZED SDK grabs 1920 × 1200 at 15 Hz, rectifies with the underwater calibration and computes depth on the GPU. <code>zed.launch.py</code> runs one ZED node per camera.</li>
+      <li>The detector reads one camera at a time; behaviour trees switch it with <code>set_camera_is_dfc</code>.</li>
+      <li>A raw frame is 9.2 MB, 1.1 Gbit/s at 15 Hz. Only JPEGs should cross the tether.</li>
+      <li>Nereus publishes the topics the stack uses, with the same names and frames, so the detector, mapping and trees run unchanged.</li>
     </ul></aside>
+
     <div class="prose">
-      <p>Opening paragraph.</p>
-      <h2 id="first-section">First section</h2>
-      <p>Coming soon.</p>
+      <h2 id="two-cameras">Two ZED X Minis</h2>
+      <p>Each ZED X Mini (<code>camera_model: zedxm</code> in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/ffc_config.yaml"><code>ffc_config.yaml</code></a> and <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/dfc_config.yaml"><code>dfc_config.yaml</code></a>) has two global-shutter sensors behind one window, so one camera tells the software what a prop is <em>and</em> how far away it is.</p>
+      <dl class="spec">
+        <dt>Model</dt><dd>Stereolabs ZED X Mini, ×2 (<a href="https://www.stereolabs.com/en-ca/store/products/zed-x-mini-stereo-camera">product page</a>)</dd>
+        <dt>Link</dt><dd>GMSL2 to a capture card in the camera cage (<a href="mechanical.html">Hull, frame and layout</a>)</dd>
+        <dt>Baseline</dt><dd>50 mm nominal; 49.76 mm (ffc) and 50.05 mm (dfc) after calibration</dd>
+        <dt>Lens</dt><dd>4 mm, inferred from the calibration: 59° × 39° underwater ≈ 81° × 52° in air through the flat window, the 4 mm lens's 80° × 52°</dd>
+        <dt>Mode</dt><dd>HD1200 (1920 × 1200) at 15 Hz on both; the sensor also does 30 and 60 Hz, or SVGA up to 120 Hz (<a href="https://github.com/stereolabs/zed-ros2-wrapper/blob/f6978f5/zed_wrapper/config/zedxm.yaml"><code>zedxm.yaml</code></a>)</dd>
+        <dt>Forward (ffc)</dt><dd>11 cm ahead of <code>base_link</code>, 12 cm to starboard, 10 cm up, pitched 2.9° down</dd>
+        <dt>Down (dfc)</dt><dd>Level with <code>base_link</code> fore and aft, 12 cm to starboard, looking straight down; turned, so the bow is on the left of its image and port at the bottom</dd>
+      </dl>
+      <p>Poses are from <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L369-L390"><code>talos.yaml</code></a> (CAD positions, measured tilt). History, for old names in the code: the forward camera was a ZED 2i, then a ZED X, and a ZED X Mini since November 2025 (<a href="https://github.com/osu-uwrt/riptide_core/commit/b709a6f">b709a6f</a>); the down camera was off from November 2025 (<a href="https://github.com/osu-uwrt/riptide_core/commit/1e55bff">1e55bff</a>) until the March 2026 rewrite (<a href="https://github.com/osu-uwrt/riptide_core/commit/b905e3e">b905e3e</a>).</p>
+    </div>
+    <figure class="fig narrow">
+      <img class="media" data-src="ffc_bench.webp" width="1280" height="800" loading="lazy" alt="A forward-camera frame of the team's lab: shelves, a workbench with a small robot, a cart and red tool chests.">
+      <figcaption><b>What the forward camera publishes.</b> A real frame from <code>rgb/image_rect_color/compressed</code>, the JPEG the robot sends, on the lab bench (2026-10-20). In air, so the underwater calibration doesn't quite fit it.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="stereo">Two eyes, one depth image</h2>
+      <p>A near point lands at quite different columns in the left and right images, a far one at almost the same column. That shift, the <strong>disparity</strong> <span class="m">d</span>, gives depth <span class="m">z = fB/d</span>: a prop 2 m away shifts about 46 px, one 4 m away only 23 px, so matching errors cost more depth far away. <a href="perception/calibration.html#stereo">Two lenses make depth</a> has the maths.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel">
+        <div class="controls" id="eye-controls"></div>
+        <div class="cam-eye" id="eye-stage">
+          <img class="media" id="eye-img" data-src="pool_left.webp" width="1280" height="800" alt="Underwater pool view: a red slalom pole close to the camera, a checkerboard on the floor and the far pool wall.">
+          <span class="cam-eye-tag" id="eye-tag">Left eye</span>
+        </div>
+        <div class="graph-note" id="eye-note"></div>
+      </div>
+      <figcaption><b>A real stereo pair, underwater.</b> A raw frame from a July 2025 pool recording by the ZED X that was then the forward camera (120 mm baseline, 2.4× the ZED X Mini's, so shifts are larger). Tap the image or <em>Flicker</em> to switch eyes: at full 1920 px resolution the near pole jumps about 250 px, the floor checkerboard about 45 px, the far wall 10–25 px.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="pipeline">From the lens to a ROS topic</h2>
+      <p>After the capture card it is all software on the Orin.</p>
     </div>
     <figure class="fig">
-      <div class="panel" id="some-figure"></div>
-      <figcaption><b>Bold lead-in.</b> What to look at. Tap or hover … (if interactive).</figcaption>
+      <div class="panel" id="pipe-graph"></div>
+      <div class="graph-note" id="pipe-note">Tap or hover a box.</div>
+      <figcaption><b>Where camera data goes.</b> Solid lines are the real robot; the dashed line is the simulator standing in for the cameras. Tap or hover a box for what it does and which file sets it up.</figcaption>
     </figure>
     <div class="prose">
-      <h2 id="second-section">Second section</h2>
-      <p>Coming soon.</p>
+      <ul>
+        <li><strong>The ZED SDK</strong> (Stereolabs' closed-source library, version 5) grabs, rectifies and computes depth. <strong><code>zed-ros2-wrapper</code></strong> wraps it as a ROS 2 component; <a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/setup_scripts/dev_install/riptide.repos">riptide.repos</a> pulls its <code>master</code> branch, not a submodule.</li>
+        <li><strong>The wrapper only makes what someone subscribes to.</strong> A forgotten image subscription on your laptop costs Orin time <em>and</em> tether bandwidth.</li>
+      </ul>
+
+      <h2 id="launch" data-short="zed.launch.py">zed.launch.py and its parameter files</h2>
+      <ul>
+        <li><a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/zed.launch.py"><code>zed.launch.py</code></a> starts <strong>one process</strong>, <code>zed_container</code>, with two <code>ZedCamera</code> components named <code>zed_node</code> in namespaces <code>ffc</code> and <code>dfc</code>: topics <code>/talos/ffc/zed_node/…</code> and <code>/talos/dfc/zed_node/…</code>. Plus <code>picture_taker.py</code> for <a href="perception/calibration.html#procedure">calibration pairs</a>.</li>
+        <li><strong><code>respawn=False</code>:</strong> one crash takes both cameras down until the launch is restarted. The <a href="launch.html">remote launcher</a> starts it from <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml#L72-L82"><code>talos_launch_mpc.yaml</code></a> and waits for both <code>rgb/camera_info</code> topics.</li>
+        <li><strong>Three parameter files per camera, later ones win:</strong> the wrapper's <code>common_stereo.yaml</code> and <code>zedxm.yaml</code>, then Talos's <code>ffc_config.yaml</code> or <code>dfc_config.yaml</code>. Anything Talos doesn't set follows the wrapper version installed on the Orin.</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="param-controls"></div>
+        <div class="cam-params" id="param-list"></div>
+      </div>
+      <figcaption><b>The settings each ZED node ends up with.</b> The tag shows which file won; tap a row for every layer's value and what the setting does. Wrapper values are from <code>zed-ros2-wrapper</code> master <span id="param-rev"></span>, the branch riptide_setup installs.</figcaption>
+    </figure>
+    <div class="prose">
+      <p><strong>Not loaded</strong>, though they look like camera settings (<a href="https://github.com/osu-uwrt/riptide_core/tree/followpath-speed/riptide_hardware/cfg"><code>riptide_hardware/cfg</code></a>):</p>
+      <ul>
+        <li><a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/zed_compression.yaml"><code>zed_compression.yaml</code></a> mostly restricts every ZED image topic to raw transport (<a href="https://github.com/osu-uwrt/riptide_core/commit/d0e61d7">d0e61d7</a>, "removed compressed topics"), plus ffmpeg encoder settings. Loaded as it is, it would remove the <code>/compressed</code> topic the detector reads. Its last user, a liltank block, went in <a href="https://github.com/osu-uwrt/riptide_core/commit/b905e3e">b905e3e</a>.</li>
+        <li><code>zed_common.yaml</code> (an old copy of <code>common_stereo.yaml</code>), <code>tank_ffc_config.yaml</code> (liltank), the USB-camera files and two old down-camera calibrations.</li>
+      </ul>
+      <div class="callout"><span class="label">The calibration path is absolute</span>
+        <p><code>optional_opencv_calibration_file</code> points at <code>/home/ros/colcon_deploy/src/riptide_hardware/cfg/…</code> on the Orin, so a new calibration needs a deploy and a restart of <code>zed.launch.py</code>.</p>
+      </div>
+
+      <h2 id="settings">Resolution, frame rate and depth</h2>
+      <table class="params">
+        <thead><tr><th>Setting</th><th>Talos</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>grab_resolution</code></td><td>HD1200</td><td>The full sensor: the most pixels on a small, far prop.</td></tr>
+          <tr><td><code>pub_resolution</code></td><td>NATIVE</td><td>Publish at full size (the wrapper default halves it).</td></tr>
+          <tr><td><code>grab_frame_rate</code></td><td>15 Hz</td><td>Was 30 until June 2026 (<a href="https://github.com/osu-uwrt/riptide_core/commit/9a249b2">9a249b2</a>, no reason given). Depth shares the GPU with the detector.</td></tr>
+          <tr><td><code>depth_mode</code> (ffc)</td><td>NEURAL_PLUS</td><td>Slowest, most accurate, <a href="https://docs.stereolabs.com/docs/depth-sensing/depth-modes">for small or distant objects</a> (<a href="https://github.com/osu-uwrt/riptide_core/commit/09d5c55">09d5c55</a>, July 2026).</td></tr>
+          <tr><td><code>depth_mode</code> (dfc)</td><td>wrapper default</td><td>NEURAL_LIGHT, the fastest, in the wrapper checked here.</td></tr>
+          <tr><td><code>max_depth</code> (ffc)</td><td>4.0 m</td><td>Stereo error grows with distance squared. Down keeps 10 m.</td></tr>
+          <tr><td><code>min_depth</code></td><td>0.3 m</td><td>Wrapper default. Nothing closer gets depth.</td></tr>
+          <tr><td><code>self_calib</code></td><td>false</td><td>Forward since July 2025 (<a href="https://github.com/osu-uwrt/riptide_core/commit/131b61c">131b61c</a>), down since June 2026 (<a href="https://github.com/osu-uwrt/riptide_core/commit/9a249b2">9a249b2</a>). Start-up self-calibration can override the underwater calibration file.</td></tr>
+          <tr><td><code>pos_tracking.publish_tf</code></td><td>false</td><td>The EKF owns <code>odom → base_link</code>.</td></tr>
+        </tbody>
+      </table>
+      <p>Positional tracking itself stays on (wrapper default); only its TF is off.</p>
+
+      <h2 id="fov">What each camera sees</h2>
+      <p>Rectifying crops a little, so the detector's view is 54.5° × 35.7° forward and 54.9° × 36.0° down, against about 59° × 39° raw.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="fov-controls"></div>
+        <svg class="cam-fov" id="fov-svg" role="img" aria-label="Talos with the forward and down camera fields of view and their footprints"></svg>
+        <div class="legend" id="fov-legend"></div>
+        <div class="cam-readout" id="fov-note"></div>
+      </div>
+      <figcaption><b>Field of view, to scale</b>, from the real calibration and mounting poses on the Nereus model's outline. Drag <em>Height</em> to move the pool floor and <em>Distance</em> to move a target ahead; the readout gives what fits in the frame (the 3 m gate from 2.9 m, the torpedo board's height at 0.95 m). The darker part of each view also gets depth (0.3–4 m forward); past 4 m the forward camera still sees, but the detector can't place what it sees.</figcaption>
+    </figure>
+    <div class="prose">
+      <h2 id="topics">Topics and frames</h2>
+      <p>Camera topics sit under <code>/talos/&lt;cam&gt;/zed_node/</code>. The ones the stack uses:</p>
+      <table class="params">
+        <thead><tr><th>Topic</th><th>Type, size</th><th>Used by</th></tr></thead>
+        <tbody>
+          <tr><td><code>rgb/image_rect_color/compressed</code></td><td>CompressedImage, JPEG, ~0.2–0.5 MB</td><td>The detector, the viewer's camera cards, pretest</td></tr>
+          <tr><td><code>rgb/image_rect_color</code></td><td>Image, <code>bgra8</code>, 9.2 MB</td><td>Nobody on purpose: the JPEG's source</td></tr>
+          <tr><td><code>depth/depth_registered</code></td><td>Image, <code>32FC1</code> metres, 9.2 MB</td><td>The detector; the viewer's Depth cards</td></tr>
+          <tr><td><code>rgb/camera_info</code></td><td>CameraInfo</td><td>The detector; the launcher's health check</td></tr>
+          <tr><td><code>point_cloud/cloud_registered</code></td><td>PointCloud2</td><td>The viewer's Vision panel, when on</td></tr>
+          <tr><td><code>stereo_raw/image_raw_color</code></td><td>Image, both eyes, unrectified, 18.4 MB</td><td><code>picture_taker.py</code> (calibration)</td></tr>
+          <tr><td><code>/talos/yolo_orientation/annotated/compressed</code></td><td>CompressedImage, JPEG</td><td>The detector's masks drawn on the image: what you watch at the pool</td></tr>
+        </tbody>
+      </table>
+      <p>Images are stamped in <code>talos/&lt;cam&gt;_left_camera_optical_frame</code> (left lens; <span class="m">z</span> out, <span class="m">x</span> right, <span class="m">y</span> down). Talos's URDF places the camera from <code>talos.yaml</code> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/urdf/snippets.xacro#L68-L82"><code>zed_macro</code></a>), and the ZED's own URDF hangs the lens frames under it. Both publishers come from <strong>riptide_hardware2's</strong> <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py#L86-L95"><code>navigation.launch.py</code></a> (not riptide_navigation's), not from <code>zed.launch.py</code>: without it the images arrive but nothing can be placed in the world. <a href="perception/frames.html">Frames, targets and the mission tree</a> follows a detection through them.</p>
+
+      <h2 id="bandwidth">Compression and bandwidth</h2>
+      <p><code>image_transport</code> gives every raw image topic a <code>/compressed</code> twin holding a JPEG (quality 95, the default). The bench frame above is 537 KB: about 64 Mbit/s at 15 Hz, 17 times less than raw (<a href="computers.html#frame">its trip to your laptop</a>).</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="bw-controls"></div>
+        <div id="bw-chart"></div>
+        <div class="cam-readout" id="bw-note"></div>
+      </div>
+      <figcaption><b>Bandwidth calculator.</b> Mbit/s per stream at the chosen rate, log scale. JPEG sizes come from re-encoding real 1920 × 1200 frames; the pool frame was decoded from H.265 video, which already removed sensor noise, so it compresses better than a live frame. Dashed lines: 100 Mbit/s and 1 Gbit/s Ethernet, for scale.</figcaption>
+    </figure>
+    <div class="prose">
+      <ul>
+        <li><strong>Raw images don't fit through the tether.</strong> One raw stream is 1.1 Gbit/s; <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/riptide_bringup/launch/simulation_hil.launch.py#L34-L36"><code>simulation_hil.launch.py</code></a> notes that full-resolution depth "saturates gigabit, so raw topics never arrive".</li>
+        <li><strong>Depth stays on the Orin.</strong> JPEG can't carry 32-bit floats, so the viewer's Depth card pulls raw 9.2 MB images: close it during a run. For depth on a laptop, the <code>compressedDepth</code> transport (lossless PNG) is smaller but still large; nothing in the stack uses it and it is unconfirmed on the Orin.</li>
+        <li><strong>Measure one camera topic at a time.</strong> Several subscriptions at once add load and skew the rates, so <a href="pool-test.html#pretest">pretest</a> checks each stream for 8 Hz in turn.</li>
+        <li><strong>Video codecs aren't used.</strong> H.265 would be smaller (the team forks <a href="https://github.com/osu-uwrt/ffmpeg_image_transport"><code>ffmpeg_image_transport</code></a>), but <code>zed_compression.yaml</code> picks NVIDIA's <code>hevc_nvenc</code> encoder, not confirmed to work on the Orin; both ends need the plugin; and a lost packet corrupts frames until the next keyframe.</li>
+      </ul>
+
+      <h2 id="switching">One detector, two cameras</h2>
+      <p>The <a href="perception/detector.html">detector</a>, <code>yolo_orientation</code>, listens to <strong>one camera at a time</strong>, with its own YOLO model and thresholds per camera (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/config/yolo_orientation.yaml"><code>yolo_orientation.yaml</code></a>):</p>
+      <dl class="spec">
+        <dt>ffc</dt><dd><code>rs26_ffc_finals.pt</code>: 11 classes (gate, slalom, buoy, torpedo, magnet), confidence 0.65</dd>
+        <dt>dfc</dt><dd><code>dfc_rs_26.pt</code>: 8 classes (bin and table symbols), confidence 0.8</dd>
+      </dl>
+      <p>The <code>set_camera_is_dfc</code> service (<code>std_srvs/SetBool</code>, <code>true</code> = down) swaps everything at once:</p>
+      <ol class="steps">
+        <li>It replies at once and swaps 0.1 s later (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/yolo_orientation.py#L171-L218"><code>switch_camera_callback</code></a>): success doesn't mean the new camera is live.</li>
+        <li>It loads the other model: quick with a prebuilt TensorRT <code>.engine</code>, slow if <code>export: true</code> has to build one. Pretest allows 90 s.</li>
+        <li>Under a lock, it swaps model, classes, thresholds and frame id together.</li>
+        <li>It subscribes to the new camera's three topics and detects nothing until the new <code>camera_info</code> arrives.</li>
+      </ol>
+      <p>A detection's <code>header.frame_id</code> tells you which camera it came from. In the trees, the <code>SetActiveCamera</code> subtree calls the service up to three times, 3 s each:</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel" id="tree-cams"></div>
+      <figcaption><b>Which camera each task asks for</b>, read from every <code>SetActiveCamera</code> call in the subtrees that <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a>'s main tree can reach. The table task looks down first, then forward.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="nereus">The same topics from Nereus</h2>
+      <p>In simulation the ZED nodes don't run: the <a href="nereus.html">Nereus</a> bridge (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/bridges/uwrt_talos/bridge.yaml#L319-L406"><code>bridge.yaml</code></a>) publishes images rendered from two <code>stereo_camera</code> sensors in the Talos robot pack (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L204-L244"><code>robot.yaml</code></a>).</p>
+      <ul>
+        <li><strong>Same names and frames, 15 Hz:</strong> <code>rgb/image_rect_color/compressed</code>, <code>depth/depth_registered</code>, <code>rgb/camera_info</code> and <code>point_cloud/cloud_registered</code> (5 Hz, every 8th pixel). No raw colour or <code>stereo_raw</code>.</li>
+        <li><strong>Already rectified</strong>, 1920 × 1200, zero distortion; colour only as JPEG (quality 93).</li>
+        <li><strong>Depth with ZED-like flaws:</strong> 0.15–4 m on both cameras, noise growing with <span class="m">z^2</span>, dropouts, outliers, and <code>NaN</code> where invalid.</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="sim-controls"></div>
+        <div class="cam-eye" id="sim-stage"><img class="media" id="sim-img" data-src="nereus_ffc_rgb.webp" width="960" height="600" alt="Nereus forward camera image of the torpedo board."></div>
+        <div class="cam-depth-key" id="sim-key" hidden></div>
+      </div>
+      <figcaption><b>What the stack receives from Nereus:</b> colour and depth for one forward and one down frame of a simulated mission. Tap the image to flip. Forward depth is empty in the torpedo holes and past 4 m. The strip along the down image's top edge (starboard) is part of Talos itself, 0.17–0.2 m from the lens, closer than the real camera's 0.3 m minimum depth.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>In the simulator, <a href="viewer.html">the viewer's</a> camera cards switch between <em>Truth</em> (its own render, no noise or latency) and <em>ROS</em> (what the bridge publishes). On the robot they show the ROS topics.</p>
+      <div class="callout"><span class="label">Keep Nereus's numbers in step</span>
+        <p>Nereus's down camera still uses <code>dfc_charuco_test.yaml</code> (<span class="m">f</span> = 1857.5 px, <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L225-L238"><code>robot.yaml</code></a>); the robot moved to <code>zedxm_dfc_2026_cal.yaml</code> (1846.8 px) on 2026-10-27 (<a href="https://github.com/osu-uwrt/riptide_core/commit/720bdd9">720bdd9</a>). Re-derive the robot pack's intrinsics whenever a calibration changes.</p>
+      </div>
+
+      <h2 id="try" data-short="Try it">Try it: run, check, record</h2>
+      <p>The launcher normally starts the cameras. By hand, on the Orin:</p>
+<pre class="cmd" data-where="orin"><code><span class="c"># both ZED nodes and picture_taker</span>
+ros2 launch riptide_hardware2 zed.launch.py robot:=talos
+<span class="c"># the URDFs (camera TF) and the EKF</span>
+ros2 launch riptide_hardware2 navigation.launch.py robot:=talos</code></pre>
+      <p>From a laptop on the robot's network (<a href="computers.html#join">joining from your own laptop</a>):</p>
+<pre class="cmd" data-where="laptop"><code><span class="c"># about 15 Hz (pretest: 8 or more)</span>
+ros2 topic hz /talos/ffc/zed_node/rgb/image_rect_color/compressed
+<span class="c"># switch the detector to the down camera (false = forward)</span>
+ros2 service call /talos/set_camera_is_dfc std_srvs/srv/SetBool "{data: true}"
+<span class="c"># which camera the detector is using now</span>
+ros2 topic echo --once /talos/detected_objects --field header.frame_id</code></pre>
+      <ul>
+        <li><strong>Record video:</strong> the viewer's Recording panel calls each ZED node's <code>start_svo_rec</code> / <code>stop_svo_rec</code> (commands below) and writes one <code>.svo2</code> per camera on the robot. It keeps both eyes; with <code>compression_mode</code> 0 this wrapper version records H.265. These files also become <a href="perception/training.html#collect">training data</a>.</li>
+        <li><strong>Replay</strong> by setting <code>svo.svo_path</code> (commented out in <code>ffc_config.yaml</code>): the ZED node plays the file instead of the camera.</li>
+        <li><strong>Lighter:</strong> a <a href="debugging.html#bags">bag</a> of the <code>/compressed</code> topics, JPEGs only, no depth.</li>
+      </ul>
+<pre class="cmd" data-where="laptop"><code><span class="c"># as the Recording panel does it</span>
+ros2 service call /talos/ffc/zed_node/start_svo_rec zed_msgs/srv/StartSvoRec \
+  "{svo_filename: /home/ros/svos/test_ffc.svo2}"
+ros2 service call /talos/ffc/zed_node/stop_svo_rec std_srvs/srv/Trigger</code></pre>
+
+      <h2 id="trouble">When the cameras misbehave</h2>
+      <table class="params">
+        <thead><tr><th>You see</th><th>Look at</th></tr></thead>
+        <tbody>
+          <tr><td>No camera topics at all</td><td>Is <code>zed.launch.py</code> running? One crash stops both cameras; check its log in the launcher.</td></tr>
+          <tr><td>Images, but detections misplaced or missing</td><td>Is riptide_hardware2's <code>navigation.launch.py</code> running? It publishes the camera TF.</td></tr>
+          <tr><td>Detector log: <em>Skipping image…</em> or <em>closest depth is N ms away</em></td><td>Depth or <code>camera_info</code> missing, or depth over 1.0 s (<code>max_depth_age</code>) late. Run <code>ros2 topic hz</code> on <code>depth/depth_registered</code> on the Orin.</td></tr>
+          <tr><td>Nothing after a camera switch</td><td>Give the model time to load, then check <code>header.frame_id</code> on <code>detected_objects</code>.</td></tr>
+          <tr><td>Front and down swapped</td><td><code>serial_number</code> in the config files decides which is which; pretest's B13 saves a frame from each.</td></tr>
+          <tr><td>Low rates on the laptop</td><td>Close other image subscriptions (depth cards, point clouds); measure one topic at a time.</td></tr>
+          <tr><td>Distances or angles off by a constant</td><td>Wrong calibration file or <code>self_calib</code> back on (<a href="perception/calibration.html#symptoms">symptoms</a>).</td></tr>
+        </tbody>
+      </table>
+      <p class="src-list">Where this lives: <code>riptide_core/riptide_hardware</code> (<code>launch/zed.launch.py</code>, <code>cfg/</code>), <code>riptide_core/riptide_descriptions/config/talos.yaml</code>, <code>riptide_perception/tensor_detector</code>, <code>nereus/content/packs/</code>. The figures' data is built by <code>tools/cameras/</code>.</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

@@ -1,0 +1,202 @@
+# Terminal output of: ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim close_with_viewer:=false output:=/tmp/nmedia/run/sim
+# (Nereus full stack, robosub pool, RMW_IMPLEMENTATION=rmw_zenoh_cpp with a running rmw_zenohd; first 200 lines; captured 2026-10-30 on a loaded desktop, so the 'falling behind wall time' and 'MPC solve exceeds the control period' warnings reflect this machine; home directory shortened to ~)
+[INFO] [launch]: All log files can be found below ~/.ros/log/2026-10-30-21-02-16-952283-Cam-PC-2681005
+[INFO] [launch]: Default logging verbosity is set to INFO
+MPC model: this run's plant (/tmp/nmedia/run/sim.mpc)
+Launching with NO hardware
+I'm running on a development laptop
+MPC controller model: /tmp/nmedia/run/sim.mpc/vehicle.yaml + /tmp/nmedia/run/sim.mpc/hydrodynamics.yaml
+warning: Using load_yaml() directly is deprecated. Use xacro.load_yaml() instead.
+zed_wrapper not found. Launching without zed TF
+[INFO] [simulator-1]: process started with pid [2681666]
+[INFO] [run_acoustics-2]: process started with pid [2681668]
+[INFO] [controller_overseer.py-3]: process started with pid [2681670]
+[INFO] [calibrate_drag.py-4]: process started with pid [2681673]
+[INFO] [mpc_controller-5]: process started with pid [2681676]
+[INFO] [static_transform_publisher-6]: process started with pid [2681678]
+[INFO] [depth_converter.py-7]: process started with pid [2681680]
+[INFO] [ekf_node-8]: process started with pid [2681682]
+[INFO] [robot_state_publisher-9]: process started with pid [2681684]
+[INFO] [joint_state_publisher-10]: process started with pid [2681686]
+[INFO] [yolo_orientation.py-11]: process started with pid [2681688]
+[INFO] [mapping.py-12]: process started with pid [2681690]
+[INFO] [chameleon_tf-13]: process started with pid [2681692]
+[INFO] [doTask-14]: process started with pid [2681694]
+[INFO] [actuator_service_translator.py-15]: process started with pid [2681696]
+[INFO] [component_container-16]: process started with pid [2681698]
+[INFO] [static_transform_publisher-17]: process started with pid [2681701]
+[INFO] [pool_viewer-18]: process started with pid [2681717]
+[static_transform_publisher-17] [WARN] [1793408540.514885850] []: Old-style arguments are deprecated; see --help for new-style arguments
+[static_transform_publisher-6] [WARN] [1793408540.519785358] []: Old-style arguments are deprecated; see --help for new-style arguments
+[chameleon_tf-13] [INFO] [1793408540.527511543] [talos.world_to_map]: Initial translation: (0, 0, 0)
+[chameleon_tf-13] [INFO] [1793408540.527638946] [talos.world_to_map]: Initial rotation: (0, 0, 0, 1)
+[chameleon_tf-13] [INFO] [1793408540.527654398] [talos.world_to_map]: Transforming from world -> map
+[mpc_controller-5] [INFO] [1793408540.529463268] [talos.mpc_controller]: MPC model: vehicle /tmp/nmedia/run/sim.mpc/vehicle.yaml, hydrodynamics /tmp/nmedia/run/sim.mpc/hydrodynamics.yaml
+[static_transform_publisher-6] [INFO] [1793408540.532836835] [talos.odom_to_world_broadcaster]: Spinning until stopped - publishing transform
+[static_transform_publisher-6] translation: ('0.000000', '0.000000', '0.000000')
+[static_transform_publisher-6] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-6] from 'world' to 'odom'
+[static_transform_publisher-17] [INFO] [1793408540.535156673] [talos.surface_frame_node]: Spinning until stopped - publishing transform
+[static_transform_publisher-17] translation: ('0.000000', '0.457200', '0.000000')
+[static_transform_publisher-17] rotation: ('-0.500000', '-0.500000', '-0.499952', '0.500048')
+[static_transform_publisher-17] from 'tag36h11:0' to 'estimated_origin_frame'
+[mpc_controller-5] [INFO] [1793408540.537172686] [talos.mpc_controller]: MPC body from the vehicle config: mass 34.084 kg, COM [-0.150, 0.041, -0.016]
+[mpc_controller-5] [INFO] [1793408540.537685754] [talos.mpc_controller]: Spin bias pattern [-1.00 1.00 0.99 0.99 0.99 0.99 0.99 -0.99], bias 0.0 N
+[mpc_controller-5] [INFO] [1793408540.541001860] [talos.mpc_controller]: State feedback: sensors (IMU, FOG, DVL, depth; EKF anchors x/y + heading)
+[mpc_controller-5] [INFO] [1793408540.541060509] [talos.mpc_controller]: MPC ready: 8 thrusters, 0.050 s x 30 stages, actuator delay 0.030 s
+[mpc_controller-5] [INFO] [1793408540.550084150] [talos.mpc_controller]: Hardware output disabled (the model has no hardware section); publishing thruster_forces only
+[doTask-14] [INFO] [1793408540.568726666] [talos.autonomy]: Getting parameter data
+[doTask-14] [INFO] [1793408540.578714902] [talos.autonomy]: Registering autonomy core plugin
+[component_container-16] [INFO] [1793408540.731945170] [talos.apriltag.tag_container]: Load Library: ~/osu-uwrt/release/install/apriltag_ros/lib/libAprilTagNode.so
+[doTask-14] [INFO] [1793408540.802818408] [talos.autonomy]: Using tree directory at ~/osu-uwrt/release/src/riptide_autonomy/trees
+[simulator-1] [INFO] [1793408540.835537739] [sim_supervisor]: running: robosub_2026
+[calibrate_drag.py-4] [INFO] [1793408540.930680652] [talos.calibrate_drag]: Proposed csv path ~/osu-uwrt/dragCal.csv does not exist; falling back to home directory
+[component_container-16] [INFO] [1793408541.058838521] [talos.apriltag.tag_container]: Found class: rclcpp_components::NodeFactoryTemplate<AprilTagNode>
+[component_container-16] [INFO] [1793408541.058902052] [talos.apriltag.tag_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<AprilTagNode>
+[controller_overseer.py-3] [INFO] [1793408541.078698600] [talos.controller_overseer]: Discovered source directory, overriding descriptions to use '~/osu-uwrt/release/src/riptide_core/riptide_descriptions/config/talos.yaml'
+[controller_overseer.py-3] [INFO] [1793408541.079541350] [talos.controller_overseer]: I think I am running on not the orin!
+[component_container-16] [INFO] [1793408541.099948407] [talos.apriltag_36h11]: Camera subscription created (compressed: /talos/ffc/zed_node/rgb/image_rect_color/compressed)
+[INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/talos/apriltag_36h11' in container '/talos/apriltag/tag_container'
+[controller_overseer.py-3] [ERROR] [1793408541.143542027] [talos.controller_overseer]: Missing Autoff Keys!
+[mpc_controller-5] [WARN] [1793408542.428072572] [talos.mpc_controller]: No fresh odometry; thrusters off
+[controller_overseer.py-3] [WARN] [1793408542.429785909] [talos.controller_overseer]: Not recieving thruster telemetry!
+[mpc_controller-5] [INFO] [1793408542.498194534] [talos.mpc_controller]: State estimate (re)initialized from odometry/filtered
+[mpc_controller-5] [WARN] [1793408542.498363516] [talos.mpc_controller]: Stale sensors, using EKF instead: dvl
+[mpc_controller-5] [INFO] [1793408542.562738084] [talos.mpc_controller]: talos/imu_link mount matches TF
+[mpc_controller-5] [INFO] [1793408542.562794296] [talos.mpc_controller]: talos/dvl_link mount matches TF
+[component_container-16] [WARN] [1793408542.885074964] [talos.apriltag_36h11]: Waiting for camera info
+[yolo_orientation.py-11] Creating new Ultralytics Settings v0.0.8 file ✅ 
+[yolo_orientation.py-11] View Ultralytics Settings with 'yolo settings' or at '/tmp/nmedia/cfg/Ultralytics/settings.json'
+[yolo_orientation.py-11] Update Settings with 'yolo settings key=value', i.e. 'yolo settings runs_dir=path/to/dir'. For help see https://docs.ultralytics.com/usage/settings.
+[yolo_orientation.py-11] [INFO] [1793408543.606765221] [talos.yolo_orientation]: Camera switch service created. Call to toggle between ffc and dfc cameras
+[yolo_orientation.py-11] [INFO] [1793408543.611353718] [talos.yolo_orientation]: Slalom switch service created. Call to change name of pubbed slalom det
+[yolo_orientation.py-11] [INFO] [1793408543.612196750] [talos.yolo_orientation]: Table pair service created. True=warning+helmet->table, False=individual
+[yolo_orientation.py-11] [INFO] [1793408543.612541837] [talos.yolo_orientation]: Active camera: ffc
+[yolo_orientation.py-11] [INFO] [1793408543.612918224] [talos.yolo_orientation]: Yolo Model: rs26_ffc_finals.pt
+[yolo_orientation.py-11] [INFO] [1793408543.613217308] [talos.yolo_orientation]: Class id map str: { 0: 'blood', 1: 'buoy', 2: 'compass', 3: 'circle', 4: 'fire', 5: 'hammer_and_wrench', 6: 'slalom', 7: 'sos', 8: 'ambulance', 9: 'fire_engine', 10: 'magnet' }
+[yolo_orientation.py-11] [INFO] [1793408543.613542720] [talos.yolo_orientation]: Confidence Threshold: 0.65
+[yolo_orientation.py-11] [INFO] [1793408543.613852329] [talos.yolo_orientation]: IOU: 0.7
+[yolo_orientation.py-11] [INFO] [1793408543.615074365] [talos.yolo_orientation]: Class id map: {0: 'blood', 1: 'buoy', 2: 'compass', 3: 'circle', 4: 'fire', 5: 'hammer_and_wrench', 6: 'slalom', 7: 'sos', 8: 'ambulance', 9: 'fire_engine', 10: 'magnet'}
+[yolo_orientation.py-11] [INFO] [1793408543.615990442] [talos.yolo_orientation]: Loading model path: ~/osu-uwrt/release/install/tensor_detector/share/tensor_detector/weights/rs26_ffc_finals.pt
+[yolo_orientation.py-11] [WARN] [1793408543.649759896] [talos.yolo_orientation]: Skipping image because either no depth image or camera info is available.
+[yolo_orientation.py-11] Loading ~/osu-uwrt/release/install/tensor_detector/share/tensor_detector/weights/rs26_ffc_finals.engine for TensorRT inference...
+[yolo_orientation.py-11] [10/30/2026-21:02:24] [TRT] [I] Loaded engine size: 13 MiB
+[yolo_orientation.py-11] [10/30/2026-21:02:24] [TRT] [W] Using an engine plan file across different models of devices is not recommended and is likely to affect performance or even cause errors.
+[yolo_orientation.py-11] [10/30/2026-21:02:24] [TRT] [I] [MemUsageChange] Init cuDNN: CPU +35, GPU +50, now: CPU 368, GPU 12625 (MiB)
+[yolo_orientation.py-11] [10/30/2026-21:02:24] [TRT] [I] [MemUsageChange] TensorRT-managed allocation in engine deserialization: CPU +0, GPU +10, now: CPU 0, GPU 10 (MiB)
+[yolo_orientation.py-11] [10/30/2026-21:02:24] [TRT] [I] [MemUsageChange] Init cuDNN: CPU +0, GPU +52, now: CPU 338, GPU 12643 (MiB)
+[yolo_orientation.py-11] [10/30/2026-21:02:24] [TRT] [I] [MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +0, GPU +143, now: CPU 0, GPU 153 (MiB)
+[simulator-1] [WARN] [1793408563.438323624] [talos.physics_simulator]: falling behind wall time; dropping 0.0089 s backlog
+[simulator-1] [WARN] [1793408565.790723028] [talos.physics_simulator]: falling behind wall time; dropping 0.0030 s backlog
+[simulator-1] [WARN] [1793408585.800511778] [talos.physics_simulator]: falling behind wall time; dropping 0.0062 s backlog
+[simulator-1] [WARN] [1793408588.487456674] [talos.physics_simulator]: falling behind wall time; dropping 0.0080 s backlog
+[simulator-1] [WARN] [1793408681.950905146] [talos.physics_simulator]: falling behind wall time; dropping 0.0160 s backlog
+[mpc_controller-5] [WARN] [1793408682.590916931] [talos.mpc_controller]: MPC solve 71.9 ms exceeds the control period
+[simulator-1] [WARN] [1793408683.961845225] [talos.physics_simulator]: falling behind wall time; dropping 0.0427 s backlog
+[simulator-1] [WARN] [1793408686.023776672] [talos.physics_simulator]: falling behind wall time; dropping 0.0130 s backlog
+[simulator-1] [WARN] [1793408688.059870935] [talos.physics_simulator]: falling behind wall time; dropping 0.0499 s backlog
+[mpc_controller-5] [WARN] [1793408689.243473557] [talos.mpc_controller]: MPC solve 56.4 ms exceeds the control period
+[mpc_controller-5] [WARN] [1793408692.967780451] [talos.mpc_controller]: MPC solve 53.2 ms exceeds the control period
+[simulator-1] [WARN] [1793408698.746336546] [talos.physics_simulator]: falling behind wall time; dropping 0.0065 s backlog
+[mapping.py-12] [INFO] [1793408701.331350431] [talos.riptide_mapping2]: slalom_front 20 detections agree, 3.5 m from where the map had it: taking them over the prior
+[simulator-1] [WARN] [1793408710.093873583] [talos.physics_simulator]: falling behind wall time; dropping 0.0061 s backlog
+[simulator-1] [WARN] [1793408713.879532292] [talos.physics_simulator]: falling behind wall time; dropping 0.0057 s backlog
+[simulator-1] [WARN] [1793408716.199520838] [talos.physics_simulator]: falling behind wall time; dropping 0.0028 s backlog
+[mpc_controller-5] [WARN] [1793408716.561719513] [talos.mpc_controller]: MPC solve 62.0 ms exceeds the control period
+[simulator-1] [WARN] [1793408718.200278058] [talos.physics_simulator]: falling behind wall time; dropping 0.0422 s backlog
+[simulator-1] [WARN] [1793408723.707984437] [talos.physics_simulator]: falling behind wall time; dropping 0.0070 s backlog
+[simulator-1] [WARN] [1793408726.960866034] [talos.physics_simulator]: falling behind wall time; dropping 0.0164 s backlog
+[simulator-1] [WARN] [1793408729.747770069] [talos.physics_simulator]: falling behind wall time; dropping 0.0037 s backlog
+[simulator-1] [WARN] [1793408731.801978136] [talos.physics_simulator]: falling behind wall time; dropping 0.0145 s backlog
+[mpc_controller-5] [WARN] [1793408732.515148811] [talos.mpc_controller]: MPC solve 50.9 ms exceeds the control period
+[simulator-1] [WARN] [1793408734.143773755] [talos.physics_simulator]: falling behind wall time; dropping 0.0135 s backlog
+[simulator-1] [WARN] [1793408736.372446188] [talos.physics_simulator]: falling behind wall time; dropping 0.0135 s backlog
+[simulator-1] [WARN] [1793408738.493495006] [talos.physics_simulator]: falling behind wall time; dropping 0.0078 s backlog
+[simulator-1] [WARN] [1793408740.728867136] [talos.physics_simulator]: falling behind wall time; dropping 0.0031 s backlog
+[simulator-1] [WARN] [1793408743.971068263] [talos.physics_simulator]: falling behind wall time; dropping 0.0135 s backlog
+[mpc_controller-5] [WARN] [1793408746.321785422] [talos.mpc_controller]: MPC solve 59.4 ms exceeds the control period
+[simulator-1] [WARN] [1793408746.965070281] [talos.physics_simulator]: falling behind wall time; dropping 0.0056 s backlog
+[simulator-1] [WARN] [1793408749.276375099] [talos.physics_simulator]: falling behind wall time; dropping 0.0030 s backlog
+[simulator-1] [WARN] [1793408751.385774999] [talos.physics_simulator]: falling behind wall time; dropping 0.0049 s backlog
+[simulator-1] [WARN] [1793408755.044424889] [talos.physics_simulator]: falling behind wall time; dropping 0.0067 s backlog
+[simulator-1] [WARN] [1793408764.040227034] [talos.physics_simulator]: falling behind wall time; dropping 0.0024 s backlog
+[simulator-1] [WARN] [1793408769.734420428] [talos.physics_simulator]: falling behind wall time; dropping 0.0023 s backlog
+[simulator-1] [WARN] [1793408771.900892596] [talos.physics_simulator]: falling behind wall time; dropping 0.0020 s backlog
+[simulator-1] [WARN] [1793408774.101535063] [talos.physics_simulator]: falling behind wall time; dropping 0.0110 s backlog
+[simulator-1] [WARN] [1793408778.086877058] [talos.physics_simulator]: falling behind wall time; dropping 0.0146 s backlog
+[simulator-1] [WARN] [1793408780.093052956] [talos.physics_simulator]: falling behind wall time; dropping 0.0080 s backlog
+[simulator-1] [WARN] [1793408782.099996579] [talos.physics_simulator]: falling behind wall time; dropping 0.0245 s backlog
+[simulator-1] [WARN] [1793408784.619668476] [talos.physics_simulator]: falling behind wall time; dropping 0.0233 s backlog
+[simulator-1] [WARN] [1793408787.454772689] [talos.physics_simulator]: falling behind wall time; dropping 0.0211 s backlog
+[mpc_controller-5] [WARN] [1793408787.455679920] [talos.mpc_controller]: MPC solve 53.5 ms exceeds the control period
+[simulator-1] [WARN] [1793408789.539531725] [talos.physics_simulator]: falling behind wall time; dropping 0.0128 s backlog
+[simulator-1] [WARN] [1793408791.590533784] [talos.physics_simulator]: falling behind wall time; dropping 0.0179 s backlog
+[mpc_controller-5] [WARN] [1793408793.257696230] [talos.mpc_controller]: MPC solve 56.9 ms exceeds the control period
+[simulator-1] [WARN] [1793408793.591030752] [talos.physics_simulator]: falling behind wall time; dropping 0.0381 s backlog
+[simulator-1] [WARN] [1793408795.604660109] [talos.physics_simulator]: falling behind wall time; dropping 0.0387 s backlog
+[mpc_controller-5] [WARN] [1793408796.667551015] [talos.mpc_controller]: MPC solve 58.0 ms exceeds the control period
+[simulator-1] [WARN] [1793408797.722576124] [talos.physics_simulator]: falling behind wall time; dropping 0.0338 s backlog
+[simulator-1] [WARN] [1793408799.759102986] [talos.physics_simulator]: falling behind wall time; dropping 0.0367 s backlog
+[mpc_controller-5] [WARN] [1793408800.259332377] [talos.mpc_controller]: MPC solve 58.1 ms exceeds the control period
+[simulator-1] [WARN] [1793408801.761876947] [talos.physics_simulator]: falling behind wall time; dropping 0.0053 s backlog
+[simulator-1] [WARN] [1793408803.936916860] [talos.physics_simulator]: falling behind wall time; dropping 0.0088 s backlog
+[simulator-1] [WARN] [1793408805.951542541] [talos.physics_simulator]: falling behind wall time; dropping 0.0048 s backlog
+[mpc_controller-5] [WARN] [1793408806.738318588] [talos.mpc_controller]: MPC solve 55.6 ms exceeds the control period
+[simulator-1] [WARN] [1793408807.978313301] [talos.physics_simulator]: falling behind wall time; dropping 0.0156 s backlog
+[mapping.py-12] [INFO] [1793408809.580701950] [talos.riptide_mapping2]: gate_repair 4 detections agree
+[simulator-1] [WARN] [1793408810.015440973] [talos.physics_simulator]: falling behind wall time; dropping 0.0135 s backlog
+[mpc_controller-5] [WARN] [1793408810.080539759] [talos.mpc_controller]: MPC solve 54.2 ms exceeds the control period
+[simulator-1] [WARN] [1793408812.088402149] [talos.physics_simulator]: falling behind wall time; dropping 0.0338 s backlog
+[mpc_controller-5] [WARN] [1793408813.454387194] [talos.mpc_controller]: MPC solve 68.4 ms exceeds the control period
+[simulator-1] [WARN] [1793408814.105045742] [talos.physics_simulator]: falling behind wall time; dropping 0.0118 s backlog
+[mapping.py-12] [INFO] [1793408815.538224070] [talos.riptide_mapping2]: compass 21 detections agree, 19.2 m from where the map had it: taking them over the prior
+[simulator-1] [WARN] [1793408816.282273927] [talos.physics_simulator]: falling behind wall time; dropping 0.0213 s backlog
+[mpc_controller-5] [WARN] [1793408816.380142320] [talos.mpc_controller]: MPC solve 69.4 ms exceeds the control period
+[simulator-1] [WARN] [1793408818.362968828] [talos.physics_simulator]: falling behind wall time; dropping 0.0047 s backlog
+[simulator-1] [WARN] [1793408820.458078264] [talos.physics_simulator]: falling behind wall time; dropping 0.0076 s backlog
+[mpc_controller-5] [WARN] [1793408821.503594837] [talos.mpc_controller]: MPC solve 118.5 ms exceeds the control period
+[simulator-1] [WARN] [1793408822.894453193] [talos.physics_simulator]: falling behind wall time; dropping 0.0320 s backlog
+[mpc_controller-5] [WARN] [1793408823.858193758] [talos.mpc_controller]: MPC solve 53.6 ms exceeds the control period
+[simulator-1] [WARN] [1793408824.937879608] [talos.physics_simulator]: falling behind wall time; dropping 0.0032 s backlog
+[simulator-1] [WARN] [1793408826.965804650] [talos.physics_simulator]: falling behind wall time; dropping 0.0072 s backlog
+[simulator-1] [WARN] [1793408829.383183391] [talos.physics_simulator]: falling behind wall time; dropping 0.0198 s backlog
+[mpc_controller-5] [WARN] [1793408829.566921576] [talos.mpc_controller]: MPC solve 89.7 ms exceeds the control period
+[simulator-1] [WARN] [1793408831.420722776] [talos.physics_simulator]: falling behind wall time; dropping 0.0132 s backlog
+[simulator-1] [WARN] [1793408833.442912828] [talos.physics_simulator]: falling behind wall time; dropping 0.0130 s backlog
+[mpc_controller-5] [WARN] [1793408834.263596707] [talos.mpc_controller]: MPC solve 52.4 ms exceeds the control period
+[simulator-1] [WARN] [1793408835.712037145] [talos.physics_simulator]: falling behind wall time; dropping 0.0195 s backlog
+[simulator-1] [WARN] [1793408837.771887049] [talos.physics_simulator]: falling behind wall time; dropping 0.0052 s backlog
+[simulator-1] [WARN] [1793408839.883523390] [talos.physics_simulator]: falling behind wall time; dropping 0.0093 s backlog
+[mpc_controller-5] [WARN] [1793408840.219030270] [talos.mpc_controller]: MPC solve 51.2 ms exceeds the control period
+[simulator-1] [WARN] [1793408841.919099773] [talos.physics_simulator]: falling behind wall time; dropping 0.0154 s backlog
+[mpc_controller-5] [WARN] [1793408843.454037795] [talos.mpc_controller]: MPC solve 51.8 ms exceeds the control period
+[simulator-1] [WARN] [1793408844.013415669] [talos.physics_simulator]: falling behind wall time; dropping 0.0094 s backlog
+[simulator-1] [WARN] [1793408846.028981640] [talos.physics_simulator]: falling behind wall time; dropping 0.0401 s backlog
+[simulator-1] [WARN] [1793408848.071080939] [talos.physics_simulator]: falling behind wall time; dropping 0.0154 s backlog
+[mpc_controller-5] [WARN] [1793408848.246945095] [talos.mpc_controller]: MPC solve 61.9 ms exceeds the control period
+[simulator-1] [WARN] [1793408850.145608280] [talos.physics_simulator]: falling behind wall time; dropping 0.0085 s backlog
+[simulator-1] [WARN] [1793408852.166464679] [talos.physics_simulator]: falling behind wall time; dropping 0.0053 s backlog
+[simulator-1] [WARN] [1793408854.224902926] [talos.physics_simulator]: falling behind wall time; dropping 0.0208 s backlog
+[simulator-1] [WARN] [1793408856.354008424] [talos.physics_simulator]: falling behind wall time; dropping 0.0032 s backlog
+[simulator-1] [WARN] [1793408858.875425689] [talos.physics_simulator]: falling behind wall time; dropping 0.0051 s backlog
+[simulator-1] [WARN] [1793408860.906195152] [talos.physics_simulator]: falling behind wall time; dropping 0.0134 s backlog
+[simulator-1] [WARN] [1793408863.447760770] [talos.physics_simulator]: falling behind wall time; dropping 0.0061 s backlog
+[simulator-1] [WARN] [1793408865.544717377] [talos.physics_simulator]: falling behind wall time; dropping 0.0023 s backlog
+[simulator-1] [WARN] [1793408868.758007947] [talos.physics_simulator]: falling behind wall time; dropping 0.0064 s backlog
+[simulator-1] [WARN] [1793408870.976787276] [talos.physics_simulator]: falling behind wall time; dropping 0.0041 s backlog
+[simulator-1] [WARN] [1793408875.250931341] [talos.physics_simulator]: falling behind wall time; dropping 0.0031 s backlog
+[simulator-1] [WARN] [1793408878.078439653] [talos.physics_simulator]: falling behind wall time; dropping 0.0253 s backlog
+[simulator-1] [WARN] [1793408880.845509775] [talos.physics_simulator]: falling behind wall time; dropping 0.0047 s backlog
+[simulator-1] [WARN] [1793408883.274499800] [talos.physics_simulator]: falling behind wall time; dropping 0.0043 s backlog
+[simulator-1] [WARN] [1793408886.234702882] [talos.physics_simulator]: falling behind wall time; dropping 0.0049 s backlog
+[simulator-1] [WARN] [1793408889.400695439] [talos.physics_simulator]: falling behind wall time; dropping 0.0073 s backlog
+[simulator-1] [WARN] [1793408891.930177458] [talos.physics_simulator]: falling behind wall time; dropping 0.0143 s backlog
+[simulator-1] [WARN] [1793408894.208120123] [talos.physics_simulator]: falling behind wall time; dropping 0.0069 s backlog
+[mapping.py-12] [WARN] [1793408897.524517556] [talos.riptide_mapping2]: slalom_front: 30 rejections in a row (last 92.0 sigma), reacquiring
+[mapping.py-12] [INFO] [1793408899.824203357] [talos.riptide_mapping2]: slalom_front 12 detections agree, 1 that didn't dropped, 5.8 m from where the map had it: taking them over the prior
+[simulator-1] [WARN] [1793408902.974908499] [talos.physics_simulator]: falling behind wall time; dropping 0.0030 s backlog
+[simulator-1] [WARN] [1793408907.902393225] [talos.physics_simulator]: falling behind wall time; dropping 0.0149 s backlog
+[simulator-1] [WARN] [1793408910.223634909] [talos.physics_simulator]: falling behind wall time; dropping 0.0208 s backlog
+[mapping.py-12] [INFO] [1793408910.736202937] [talos.riptide_mapping2]: fire_hole_large 4 detections agree
+[simulator-1] [WARN] [1793408913.057407545] [talos.physics_simulator]: falling behind wall time; dropping 0.0057 s backlog
+[simulator-1] [WARN] [1793408915.349321735] [talos.physics_simulator]: falling behind wall time; dropping 0.0129 s backlog

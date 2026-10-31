@@ -1,0 +1,10 @@
+# id	pdf (electric_boogaloo release asset)	page	ref_dpi	x0	y0	x1	y1	note
+poac-sch-kill-switch	Combined_Power_Actuator.PDF	7	60	30	45	876	342	Kill switch circuit
+poac-sch-battery-or	Combined_Power_Actuator.PDF	5	60	45	200	446	372	Port battery "balancer" (ideal-diode OR)
+poac-sch-regulators	Combined_Power_Actuator.PDF	5	60	484	15	884	356	15 V and 5 V TDK-Lambda regulators
+poac-sch-power-page	Combined_Power_Actuator.PDF	5	60	40	12	886	560	Whole power page
+esc-sch-blocks	MK2_ESC_Board.pdf	2	50	22	15	748	413	ESC board block-level sheet
+esc-sch-reverse-protection	MK2_ESC_Board.pdf	2	50	22	258	213	413	ESC reverse-voltage protection
+rp2040-can-block	MK2_Camera_Cage_Breakout_Board.pdf	3	40	28	38	572	330	Shared RP2040 + CAN device sheet (from CCBB)
+ivc-sch-top	IVC.pdf	3	30	8	30	318	232	IVC top-level block sheet
+ivc-sch-transmit	IVC.pdf	4	30	8	30	318	232	IVC transmit chain

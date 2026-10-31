@@ -1,0 +1,1900 @@
+{
+ "captured": "2026-10-30 21:30:14",
+ "note": "Captured from the Nereus full stack (sim.launch.py active_control_model:=mpc mpc_model:=sim, robosub pool, rmw_zenoh_cpp) on a desktop under heavy load (other jobs running): rates are what this machine delivered, not robot specs. Each topic was measured alone for 3s with a best-effort subscription (rate_hz: pass 1, robot holding still before the tree run; rate_hz_pass2: pass 2, holding still after it); 0 = no message in that window, null = no publisher. sim_configured_hz is the rate the Nereus bridge is configured to publish at (0 = published on events, not on a timer; /clock is published every 2 ms physics step). On the real robot the topics the simulator publishes come from the sensor drivers and the firmware (micro-ROS) instead.",
+ "groups": [
+  "acoustics",
+  "autonomy",
+  "control",
+  "internal",
+  "navigation",
+  "operator",
+  "perception",
+  "simulator"
+ ],
+ "nodes": [
+  {
+   "node": "/launch_ros_2751029",
+   "group": "internal",
+   "runs": "-",
+   "package": "launch_ros",
+   "launch": null,
+   "role": "The ros2 launch process itself (loads composable nodes).",
+   "publishers": [],
+   "subscribers": [],
+   "services": [],
+   "clients": [
+    {
+     "name": "/talos/apriltag/tag_container/_container/load_node",
+     "type": "composition_interfaces/srv/LoadNode"
+    }
+   ],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/nereus_viewer",
+   "group": "operator",
+   "runs": "sim and real robot (operator laptop)",
+   "package": "nereus: nereus-viewer",
+   "launch": "https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py",
+   "role": "Pool viewer: 3D scene, camera cards, scorecard, prior map editor.",
+   "publishers": [],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/command/led",
+     "type": "riptide_msgs2/msg/LedCommand"
+    },
+    {
+     "name": "/talos/controller/mpc/planned_path",
+     "type": "nav_msgs/msg/Path"
+    },
+    {
+     "name": "/talos/controller/mpc/predicted_path",
+     "type": "nav_msgs/msg/Path"
+    },
+    {
+     "name": "/talos/dfc/zed_node/rgb/image_rect_color/compressed",
+     "type": "sensor_msgs/msg/CompressedImage"
+    },
+    {
+     "name": "/talos/ffc/zed_node/rgb/image_rect_color/compressed",
+     "type": "sensor_msgs/msg/CompressedImage"
+    },
+    {
+     "name": "/talos/simulator/actual_thruster_forces",
+     "type": "std_msgs/msg/Float32MultiArray"
+    },
+    {
+     "name": "/talos/simulator/claw_joints",
+     "type": "std_msgs/msg/Float64MultiArray"
+    },
+    {
+     "name": "/talos/simulator/magnet_lights",
+     "type": "visualization_msgs/msg/MarkerArray"
+    },
+    {
+     "name": "/talos/simulator/projectiles",
+     "type": "visualization_msgs/msg/MarkerArray"
+    },
+    {
+     "name": "/talos/simulator/scenario",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/simulator/supervisor",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/simulator/task_objects",
+     "type": "visualization_msgs/msg/MarkerArray"
+    },
+    {
+     "name": "/talos/yolo_orientation/visualization_marker_array",
+     "type": "visualization_msgs/msg/MarkerArray"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/nereus_viewer_timing",
+   "group": "operator",
+   "runs": "sim and real robot (operator laptop)",
+   "package": "nereus: nereus-viewer",
+   "launch": "https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py",
+   "role": "Viewer helper node (clock / timing).",
+   "publishers": [],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/riptide_acoustics",
+   "group": "acoustics",
+   "runs": "robot",
+   "package": "riptide_acoustics",
+   "launch": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_acoustics/launch/acoustics.launch.py",
+   "role": "Acoustics (pinger) node. Nereus does not simulate acoustics.",
+   "publishers": [
+    {
+     "name": "/talos/acoustics/buffer_0_closer",
+     "type": "std_msgs/msg/Bool"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/ivc/pinger/selected_freq_amp_stream",
+     "type": "std_msgs/msg/Float32"
+    }
+   ],
+   "services": [
+    {
+     "name": "/talos/acoustics/start_sample",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/acoustics/stop_sample",
+     "type": "std_srvs/srv/Trigger"
+    }
+   ],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/sim_supervisor",
+   "group": "simulator",
+   "runs": "sim only",
+   "package": "nereus: sim_supervisor.py",
+   "launch": "https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim_supervisor.py",
+   "role": "Starts nereus-sim and restarts it in another pool when the viewer asks.",
+   "publishers": [
+    {
+     "name": "/talos/simulator/supervisor",
+     "type": "std_msgs/msg/String"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/talos/simulator/load_scenario",
+     "type": "std_msgs/msg/String"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/ActuatorTranslator",
+   "group": "autonomy",
+   "runs": "robot",
+   "package": "riptide_autonomy2: actuator_service_translator.py",
+   "launch": "https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/launch/autonomy.launch.py",
+   "role": "Translates actuator services from the trees into actuator command topics.",
+   "publishers": [
+    {
+     "name": "/talos/command/actuator/arm",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/command/actuator/dropper",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "name": "/talos/command/actuator/notify_reload",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "name": "/talos/command/actuator/torpedo",
+     "type": "std_msgs/msg/Empty"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/state/actuator/cmd_status",
+     "type": "std_msgs/msg/Bool"
+    }
+   ],
+   "services": [
+    {
+     "name": "/talos/command/actuator/arm",
+     "type": "std_srvs/srv/SetBool"
+    },
+    {
+     "name": "/talos/command/actuator/dropper",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/command/actuator/notify_reload",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/command/actuator/torpedo",
+     "type": "std_srvs/srv/Trigger"
+    }
+   ],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/apriltag/tag_container",
+   "group": "perception",
+   "runs": "robot",
+   "package": "rclcpp_components: component_container",
+   "launch": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/apriltag.launch.py",
+   "role": "Container for the AprilTag detector (on the robot started by hardware.launch.py; in sim added by Nereus mission_stack.launch.py).",
+   "publishers": [],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    }
+   ],
+   "services": [
+    {
+     "name": "/talos/apriltag/tag_container/_container/list_nodes",
+     "type": "composition_interfaces/srv/ListNodes"
+    },
+    {
+     "name": "/talos/apriltag/tag_container/_container/load_node",
+     "type": "composition_interfaces/srv/LoadNode"
+    },
+    {
+     "name": "/talos/apriltag/tag_container/_container/unload_node",
+     "type": "composition_interfaces/srv/UnloadNode"
+    }
+   ],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/apriltag_36h11",
+   "group": "perception",
+   "runs": "robot",
+   "package": "apriltag_ros: AprilTagNode",
+   "launch": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/apriltag.launch.py",
+   "role": "AprilTag (36h11) detector on the front camera, for tag calibration of the map.",
+   "publishers": [
+    {
+     "name": "/talos/detections",
+     "type": "apriltag_msgs/msg/AprilTagDetectionArray"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/ffc/zed_node/rgb/camera_info",
+     "type": "sensor_msgs/msg/CameraInfo"
+    },
+    {
+     "name": "/talos/ffc/zed_node/rgb/image_rect_color/compressed",
+     "type": "sensor_msgs/msg/CompressedImage"
+    }
+   ],
+   "services": [
+    {
+     "name": "/talos/toggle_subscription",
+     "type": "std_srvs/srv/SetBool"
+    }
+   ],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/autonomy",
+   "group": "autonomy",
+   "runs": "robot",
+   "package": "riptide_autonomy2: doTask",
+   "launch": "https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/launch/autonomy.launch.py",
+   "role": "Behavior-tree executor: autonomy/run_tree action, publishes the running stack.",
+   "publishers": [
+    {
+     "name": "/Cam_PC/autonomy/bag_trigger",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/autonomy/tree_stack",
+     "type": "riptide_msgs2/msg/TreeStack"
+    },
+    {
+     "name": "/talos/command/led",
+     "type": "riptide_msgs2/msg/LedCommand"
+    },
+    {
+     "name": "/talos/controller/angular",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    },
+    {
+     "name": "/talos/controller/linear",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    },
+    {
+     "name": "/talos/controller/stunt_state",
+     "type": "std_msgs/msg/UInt16"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/controller/running_stunt_state",
+     "type": "std_msgs/msg/UInt16"
+    },
+    {
+     "name": "/talos/detected_objects",
+     "type": "vision_msgs/msg/Detection3DArray"
+    },
+    {
+     "name": "/talos/mapping/fused",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/odometry/filtered",
+     "type": "nav_msgs/msg/Odometry"
+    },
+    {
+     "name": "/talos/state/actuator/busy",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/state/actuator/status",
+     "type": "riptide_msgs2/msg/ActuatorStatus"
+    },
+    {
+     "name": "/talos/state/kill",
+     "type": "std_msgs/msg/Bool"
+    }
+   ],
+   "services": [
+    {
+     "name": "/talos/autonomy/list_trees",
+     "type": "riptide_msgs2/srv/ListTrees"
+    }
+   ],
+   "clients": [
+    {
+     "name": "/talos/command/actuator/arm",
+     "type": "std_srvs/srv/SetBool"
+    },
+    {
+     "name": "/talos/command/actuator/notify_reload",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/mapping_target",
+     "type": "riptide_msgs2/srv/MappingTarget"
+    },
+    {
+     "name": "/talos/mpc_controller/describe_parameters",
+     "type": "rcl_interfaces/srv/DescribeParameters"
+    },
+    {
+     "name": "/talos/mpc_controller/get_parameter_types",
+     "type": "rcl_interfaces/srv/GetParameterTypes"
+    },
+    {
+     "name": "/talos/mpc_controller/get_parameters",
+     "type": "rcl_interfaces/srv/GetParameters"
+    },
+    {
+     "name": "/talos/mpc_controller/list_parameters",
+     "type": "rcl_interfaces/srv/ListParameters"
+    },
+    {
+     "name": "/talos/mpc_controller/set_parameters",
+     "type": "rcl_interfaces/srv/SetParameters"
+    },
+    {
+     "name": "/talos/mpc_controller/set_parameters_atomically",
+     "type": "rcl_interfaces/srv/SetParametersAtomically"
+    },
+    {
+     "name": "/talos/set_pose",
+     "type": "robot_localization/srv/SetPose"
+    },
+    {
+     "name": "/talos/set_slalom_type",
+     "type": "riptide_msgs2/srv/SetString"
+    }
+   ],
+   "action_servers": [
+    {
+     "name": "/talos/autonomy/run_tree",
+     "type": "riptide_msgs2/action/ExecuteTree"
+    }
+   ],
+   "action_clients": [
+    {
+     "name": "/talos/follow_path",
+     "type": "riptide_msgs2/action/FollowPath"
+    }
+   ]
+  },
+  {
+   "node": "/talos/calibrate_drag",
+   "group": "control",
+   "runs": "robot",
+   "package": "riptide_controllers2: calibrate_drag.py",
+   "launch": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/launch/control_system.launch.py",
+   "role": "Drag calibration action server (calibrate_drag_new).",
+   "publishers": [
+    {
+     "name": "/talos/controller/active_body_force",
+     "type": "geometry_msgs/msg/Twist"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/odometry/filtered",
+     "type": "nav_msgs/msg/Odometry"
+    },
+    {
+     "name": "/talos/trigger",
+     "type": "std_msgs/msg/Empty"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [
+    {
+     "name": "/talos/calibrate_drag_new",
+     "type": "riptide_msgs2/action/CalibrateDragNew"
+    }
+   ],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/controller_overseer",
+   "group": "control",
+   "runs": "robot",
+   "package": "riptide_controllers2: controller_overseer.py",
+   "launch": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/launch/control_system.launch.py",
+   "role": "Controller supervisor: publishes controller/motion_enabled and the feed-forward body force, hosts parameter-update services for the older controllers, warns when thruster telemetry stops.",
+   "publishers": [
+    {
+     "name": "/talos/controller/FF_body_force",
+     "type": "geometry_msgs/msg/Twist"
+    },
+    {
+     "name": "/talos/controller/motion_enabled",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/controller/re_init_accumulators",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "name": "/talos/controller/solver_weights",
+     "type": "std_msgs/msg/Int32MultiArray"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/controller/drag_comp/forward",
+     "type": "geometry_msgs/msg/TwistWithCovariance"
+    },
+    {
+     "name": "/talos/controller/drag_comp/reverse",
+     "type": "geometry_msgs/msg/TwistWithCovariance"
+    },
+    {
+     "name": "/talos/ff_auto_tune",
+     "type": "geometry_msgs/msg/Twist"
+    },
+    {
+     "name": "/talos/odometry/filtered",
+     "type": "nav_msgs/msg/Odometry"
+    },
+    {
+     "name": "/talos/state/thrusters/telemetry",
+     "type": "riptide_msgs2/msg/DshotPartialTelemetry"
+    },
+    {
+     "name": "/talos/thrusterSolver/thrusterState",
+     "type": "std_msgs/msg/Int16"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "services": [
+    {
+     "name": "/talos/controller_overseer/update_complete_controller_params",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/controller_overseer/update_pid_params",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/controller_overseer/update_smc_params",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/controller_overseer/update_thruster_solver_params",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/setTeleop",
+     "type": "std_srvs/srv/SetBool"
+    }
+   ],
+   "clients": [
+    {
+     "name": "/set_parameters",
+     "type": "rcl_interfaces/srv/SetParameters"
+    }
+   ],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/depth_converter",
+   "group": "navigation",
+   "runs": "robot",
+   "package": "riptide_hardware2: depth_converter.py",
+   "launch": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py",
+   "role": "Turns the raw pressure depth into a pose for the EKF.",
+   "publishers": [
+    {
+     "name": "/talos/depth/pose",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/state/depth/raw",
+     "type": "riptide_msgs2/msg/Depth"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/ekf_localization_node",
+   "group": "navigation",
+   "runs": "robot",
+   "package": "robot_localization: ekf_node",
+   "launch": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py",
+   "role": "EKF: fuses IMU, FOG, DVL and depth into odometry/filtered and the odom->base_link transform.",
+   "publishers": [
+    {
+     "name": "/diagnostics",
+     "type": "diagnostic_msgs/msg/DiagnosticArray"
+    },
+    {
+     "name": "/talos/accel/filtered",
+     "type": "geometry_msgs/msg/AccelWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/odometry/filtered",
+     "type": "nav_msgs/msg/Odometry"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/depth/pose",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/dvl_twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/gyro/twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/set_pose",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/vectornav/imu",
+     "type": "sensor_msgs/msg/Imu"
+    }
+   ],
+   "services": [
+    {
+     "name": "/talos/enable",
+     "type": "std_srvs/srv/Empty"
+    },
+    {
+     "name": "/talos/set_pose",
+     "type": "robot_localization/srv/SetPose"
+    },
+    {
+     "name": "/talos/toggle",
+     "type": "robot_localization/srv/ToggleFilterProcessing"
+    }
+   ],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/joint_state_publisher",
+   "group": "navigation",
+   "runs": "robot",
+   "package": "joint_state_publisher",
+   "launch": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py",
+   "role": "Joint states for the robot description.",
+   "publishers": [
+    {
+     "name": "/talos/joint_states",
+     "type": "sensor_msgs/msg/JointState"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/mpc_controller",
+   "group": "control",
+   "runs": "robot",
+   "package": "riptide_mpc: mpc_controller",
+   "launch": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/launch/control_system.launch.py",
+   "role": "Model predictive controller: pose/velocity targets in, eight thruster forces out.",
+   "publishers": [
+    {
+     "name": "/talos/command/requested_rpm",
+     "type": "riptide_msgs2/msg/DshotCommand"
+    },
+    {
+     "name": "/talos/controller/mpc/disturbance",
+     "type": "geometry_msgs/msg/WrenchStamped"
+    },
+    {
+     "name": "/talos/controller/mpc/planned_path",
+     "type": "nav_msgs/msg/Path"
+    },
+    {
+     "name": "/talos/controller/mpc/predicted_path",
+     "type": "nav_msgs/msg/Path"
+    },
+    {
+     "name": "/talos/controller/mpc/reference",
+     "type": "geometry_msgs/msg/PoseStamped"
+    },
+    {
+     "name": "/talos/controller/mpc/solve_time_ms",
+     "type": "std_msgs/msg/Float64"
+    },
+    {
+     "name": "/talos/controller/mpc/state",
+     "type": "nav_msgs/msg/Odometry"
+    },
+    {
+     "name": "/talos/controller/scale/trust",
+     "type": "geometry_msgs/msg/Twist"
+    },
+    {
+     "name": "/talos/controller_debug_wrench",
+     "type": "geometry_msgs/msg/Twist"
+    },
+    {
+     "name": "/talos/thruster_forces",
+     "type": "std_msgs/msg/Float32MultiArray"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/controller/FF_body_force",
+     "type": "geometry_msgs/msg/Twist"
+    },
+    {
+     "name": "/talos/controller/angular",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    },
+    {
+     "name": "/talos/controller/identification/thrusters",
+     "type": "std_msgs/msg/Float64MultiArray"
+    },
+    {
+     "name": "/talos/controller/linear",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    },
+    {
+     "name": "/talos/controller/motion_enabled",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/depth/pose",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/dvl_twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/gyro/twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/odometry/filtered",
+     "type": "nav_msgs/msg/Odometry"
+    },
+    {
+     "name": "/talos/state/kill",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/vectornav/imu",
+     "type": "sensor_msgs/msg/Imu"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [
+    {
+     "name": "/talos/follow_path",
+     "type": "riptide_msgs2/action/FollowPath"
+    }
+   ],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/odom_to_world_broadcaster",
+   "group": "navigation",
+   "runs": "robot",
+   "package": "tf2_ros: static_transform_publisher",
+   "launch": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py",
+   "role": "Static world->odom transform.",
+   "publishers": [
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/physics_simulator",
+   "group": "simulator",
+   "runs": "sim only",
+   "package": "nereus: nereus-sim",
+   "launch": "https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py",
+   "role": "Nereus simulator: 6-DOF physics, sensors (IMU, FOG, DVL, depth), both ZED cameras, actuators, task scoring. Stands in for the firmware boards and sensor drivers.",
+   "publishers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/depth/pose",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/dfc/zed_node/depth/depth_registered",
+     "type": "sensor_msgs/msg/Image"
+    },
+    {
+     "name": "/talos/dfc/zed_node/point_cloud/cloud_registered",
+     "type": "sensor_msgs/msg/PointCloud2"
+    },
+    {
+     "name": "/talos/dfc/zed_node/rgb/camera_info",
+     "type": "sensor_msgs/msg/CameraInfo"
+    },
+    {
+     "name": "/talos/dfc/zed_node/rgb/image_rect_color/compressed",
+     "type": "sensor_msgs/msg/CompressedImage"
+    },
+    {
+     "name": "/talos/dvl_twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/ffc/zed_node/depth/depth_registered",
+     "type": "sensor_msgs/msg/Image"
+    },
+    {
+     "name": "/talos/ffc/zed_node/point_cloud/cloud_registered",
+     "type": "sensor_msgs/msg/PointCloud2"
+    },
+    {
+     "name": "/talos/ffc/zed_node/rgb/camera_info",
+     "type": "sensor_msgs/msg/CameraInfo"
+    },
+    {
+     "name": "/talos/ffc/zed_node/rgb/image_rect_color/compressed",
+     "type": "sensor_msgs/msg/CompressedImage"
+    },
+    {
+     "name": "/talos/gyro/twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/simulator/actual_thruster_forces",
+     "type": "std_msgs/msg/Float32MultiArray"
+    },
+    {
+     "name": "/talos/simulator/claw_joints",
+     "type": "std_msgs/msg/Float64MultiArray"
+    },
+    {
+     "name": "/talos/simulator/ground_truth",
+     "type": "nav_msgs/msg/Odometry"
+    },
+    {
+     "name": "/talos/simulator/magnet_lights",
+     "type": "visualization_msgs/msg/MarkerArray"
+    },
+    {
+     "name": "/talos/simulator/projectiles",
+     "type": "visualization_msgs/msg/MarkerArray"
+    },
+    {
+     "name": "/talos/simulator/run_score",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/simulator/scenario",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/simulator/task_events",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/simulator/task_objects",
+     "type": "visualization_msgs/msg/MarkerArray"
+    },
+    {
+     "name": "/talos/simulator/task_score",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/state/actuator/busy",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/state/actuator/cmd_status",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/state/actuator/status",
+     "type": "riptide_msgs2/msg/ActuatorStatus"
+    },
+    {
+     "name": "/talos/state/kill",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/state/thrusters/telemetry",
+     "type": "riptide_msgs2/msg/DshotPartialTelemetry"
+    },
+    {
+     "name": "/talos/vectornav/imu",
+     "type": "sensor_msgs/msg/Imu"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/talos/command/actuator/arm",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/command/actuator/claw",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/command/actuator/claw_move_s",
+     "type": "std_msgs/msg/Float32"
+    },
+    {
+     "name": "/talos/command/actuator/dropper",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "name": "/talos/command/actuator/notify_reload",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "name": "/talos/command/actuator/torpedo",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "name": "/talos/command/software_kill",
+     "type": "riptide_msgs2/msg/KillSwitchReport"
+    },
+    {
+     "name": "/talos/odometry/filtered",
+     "type": "nav_msgs/msg/Odometry"
+    },
+    {
+     "name": "/talos/simulator/reset_tasks",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "name": "/talos/simulator/run_command",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/thruster_forces",
+     "type": "std_msgs/msg/Float32MultiArray"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "services": [
+    {
+     "name": "/talos/command/actuator/arm",
+     "type": "std_srvs/srv/SetBool"
+    },
+    {
+     "name": "/talos/command/actuator/claw",
+     "type": "std_srvs/srv/SetBool"
+    },
+    {
+     "name": "/talos/command/actuator/dropper",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/command/actuator/notify_reload",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/command/actuator/torpedo",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/reset_sim_to_start",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/set_sim_pose",
+     "type": "robot_localization/srv/SetPose"
+    },
+    {
+     "name": "/talos/simulator/reset_scenario",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/simulator/reset_tasks",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/sync_sim_to_estimate",
+     "type": "std_srvs/srv/Trigger"
+    }
+   ],
+   "clients": [
+    {
+     "name": "/talos/set_pose",
+     "type": "robot_localization/srv/SetPose"
+    }
+   ],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/riptide_mapping2",
+   "group": "perception",
+   "runs": "robot",
+   "package": "riptide_mapping2: mapping.py",
+   "launch": "https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/launch/mapping.launch.py",
+   "role": "Mapping: fuses detections into one pose estimate per course object (mapping/<object>, TF frames).",
+   "publishers": [
+    {
+     "name": "/talos/command/led",
+     "type": "riptide_msgs2/msg/LedCommand"
+    },
+    {
+     "name": "/talos/mapping/bandage",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/bin",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/bin_cad_geometry",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/bin_target1",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/bin_target2",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/bin_vinyl1",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/bin_vinyl2",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/bin_vinyl3",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/bin_vinyl4",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/blood_hole_large",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/blood_hole_small",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/buoy",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/compass",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/fire_hole_large",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/fire_hole_small",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/fused",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/mapping/gate",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/gate_repair",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/gate_rescue",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/hammer_and_wrench",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/helmet",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/magnet1",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/magnet2",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/magnet_target1",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/magnet_target2",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/nut_and_bolt",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/octagon",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/pill",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/plug",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/post_bin_pose",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/post_table_pose",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/pre_bin_pose",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/pre_return_home",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/pre_table_pose",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/pre_torpedo_pose",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/prequal_gate",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/prequal_pole",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/slalom_back",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/slalom_front",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/slalom_middle",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/slalom_parent",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/sos",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/table",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/torpedo",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/mapping/warning",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/state/mapping",
+     "type": "riptide_msgs2/msg/MappingTargetInfo"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/detected_objects",
+     "type": "vision_msgs/msg/Detection3DArray"
+    },
+    {
+     "name": "/talos/odometry/filtered",
+     "type": "nav_msgs/msg/Odometry"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "services": [
+    {
+     "name": "/talos/mapping/center_table_on_baskets",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/mapping/fit_bin_geometry",
+     "type": "riptide_msgs2/srv/SetString"
+    },
+    {
+     "name": "/talos/mapping/freeze_binary_classifier_buffer",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/mapping/reset_mapping",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/mapping/set_background_targets",
+     "type": "riptide_msgs2/srv/SetString"
+    },
+    {
+     "name": "/talos/mapping/start_binary_classifier",
+     "type": "riptide_msgs2/srv/StartBinaryClassifier"
+    },
+    {
+     "name": "/talos/mapping/start_binary_classifier_second",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/mapping/stop_binary_classifier",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/mapping_target",
+     "type": "riptide_msgs2/srv/MappingTarget"
+    },
+    {
+     "name": "/talos/tf2_frames",
+     "type": "tf2_msgs/srv/FrameGraph"
+    }
+   ],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/robot_state_publisher",
+   "group": "navigation",
+   "runs": "robot",
+   "package": "robot_state_publisher",
+   "launch": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py",
+   "role": "Publishes the robot description and the sensor/thruster frames on Talos.",
+   "publishers": [
+    {
+     "name": "/talos/robot_description",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/talos/joint_states",
+     "type": "sensor_msgs/msg/JointState"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/surface_frame_node",
+   "group": "perception",
+   "runs": "robot",
+   "package": "tf2_ros: static_transform_publisher",
+   "launch": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/apriltag.launch.py",
+   "role": "Static tag36h11:0 -> estimated_origin_frame transform.",
+   "publishers": [
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/transform_listener_impl_55e17ce7d0a0",
+   "group": "internal",
+   "runs": "-",
+   "package": "tf2_ros",
+   "launch": null,
+   "role": "Hidden helper node created by a tf2 TransformListener inside another node.",
+   "publishers": [],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/transform_listener_impl_614365ea9f40",
+   "group": "internal",
+   "runs": "-",
+   "package": "tf2_ros",
+   "launch": null,
+   "role": "Hidden helper node created by a tf2 TransformListener inside another node.",
+   "publishers": [],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/transform_listener_impl_615b131aa9e0",
+   "group": "internal",
+   "runs": "-",
+   "package": "tf2_ros",
+   "launch": null,
+   "role": "Hidden helper node created by a tf2 TransformListener inside another node.",
+   "publishers": [],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/transform_listener_impl_7bab0422ede0",
+   "group": "internal",
+   "runs": "-",
+   "package": "tf2_ros",
+   "launch": null,
+   "role": "Hidden helper node created by a tf2 TransformListener inside another node.",
+   "publishers": [],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/viewer_panels",
+   "group": "operator",
+   "runs": "sim and real robot (operator laptop)",
+   "package": "nereus: nereus-viewer",
+   "launch": "https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py",
+   "role": "Viewer operator panels: Enable/KILL (software kill slot 1), Motion, Autonomy, Mapping, Actuators, Electrical, Recording, Bagging.",
+   "publishers": [
+    {
+     "name": "/talos/command/actuator/arm",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/command/actuator/claw",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/command/actuator/claw_move_s",
+     "type": "std_msgs/msg/Float32"
+    },
+    {
+     "name": "/talos/command/actuator/dropper",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "name": "/talos/command/actuator/notify_reload",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "name": "/talos/command/actuator/torpedo",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "name": "/talos/command/electrical",
+     "type": "riptide_msgs2/msg/ElectricalCommand"
+    },
+    {
+     "name": "/talos/command/led",
+     "type": "riptide_msgs2/msg/LedCommand"
+    },
+    {
+     "name": "/talos/command/software_kill",
+     "type": "riptide_msgs2/msg/KillSwitchReport"
+    },
+    {
+     "name": "/talos/controller/angular",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    },
+    {
+     "name": "/talos/controller/linear",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    },
+    {
+     "name": "/talos/ivc/pinger/enable",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/ivc/pinger/set_freq_broker_khz",
+     "type": "std_msgs/msg/Int32"
+    },
+    {
+     "name": "/talos/ivc/tx",
+     "type": "std_msgs/msg/UInt8"
+    },
+    {
+     "name": "/talos/simulator/reset_tasks",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "name": "/talos/simulator/run_command",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    },
+    {
+     "name": "/diagnostics_agg",
+     "type": "diagnostic_msgs/msg/DiagnosticArray"
+    },
+    {
+     "name": "/talos/autonomy/tree_stack",
+     "type": "riptide_msgs2/msg/TreeStack"
+    },
+    {
+     "name": "/talos/command/led",
+     "type": "riptide_msgs2/msg/LedCommand"
+    },
+    {
+     "name": "/talos/command/software_kill",
+     "type": "riptide_msgs2/msg/KillSwitchReport"
+    },
+    {
+     "name": "/talos/controller/angular",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    },
+    {
+     "name": "/talos/controller/linear",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    },
+    {
+     "name": "/talos/dvl/bottom_lock",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/dvl_twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "name": "/talos/gyro/status",
+     "type": "riptide_msgs2/msg/GyroStatus"
+    },
+    {
+     "name": "/talos/ivc/pinger/selected_freq_amp_stream",
+     "type": "std_msgs/msg/Float32"
+    },
+    {
+     "name": "/talos/ivc/pinger/selected_freq_khz",
+     "type": "std_msgs/msg/Int32"
+    },
+    {
+     "name": "/talos/ivc/rx",
+     "type": "std_msgs/msg/UInt8"
+    },
+    {
+     "name": "/talos/ivc/tx",
+     "type": "std_msgs/msg/UInt8"
+    },
+    {
+     "name": "/talos/ivc/tx_success",
+     "type": "riptide_msgs2/msg/UInt8Stamped"
+    },
+    {
+     "name": "/talos/simulator/claw_joints",
+     "type": "std_msgs/msg/Float64MultiArray"
+    },
+    {
+     "name": "/talos/simulator/magnet_lights",
+     "type": "visualization_msgs/msg/MarkerArray"
+    },
+    {
+     "name": "/talos/simulator/run_score",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/simulator/task_events",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/simulator/task_score",
+     "type": "std_msgs/msg/String"
+    },
+    {
+     "name": "/talos/state/actuator/status",
+     "type": "riptide_msgs2/msg/ActuatorStatus"
+    },
+    {
+     "name": "/talos/state/battery",
+     "type": "riptide_msgs2/msg/BatteryStatus"
+    },
+    {
+     "name": "/talos/state/kill",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "name": "/talos/state/mapping",
+     "type": "riptide_msgs2/msg/MappingTargetInfo"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "services": [],
+   "clients": [
+    {
+     "name": "/talos/autonomy/list_trees",
+     "type": "riptide_msgs2/srv/ListTrees"
+    },
+    {
+     "name": "/talos/capture_image",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/dfc/zed_node/start_svo_rec",
+     "type": "zed_msgs/srv/StartSvoRec"
+    },
+    {
+     "name": "/talos/dfc/zed_node/stop_svo_rec",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/ffc/zed_node/start_svo_rec",
+     "type": "zed_msgs/srv/StartSvoRec"
+    },
+    {
+     "name": "/talos/ffc/zed_node/stop_svo_rec",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/mapping/reset_mapping",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/mapping_target",
+     "type": "riptide_msgs2/srv/MappingTarget"
+    },
+    {
+     "name": "/talos/physics_simulator/get_parameters",
+     "type": "rcl_interfaces/srv/GetParameters"
+    },
+    {
+     "name": "/talos/physics_simulator/set_parameters",
+     "type": "rcl_interfaces/srv/SetParameters"
+    },
+    {
+     "name": "/talos/reset_sim_to_start",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/setTeleop",
+     "type": "std_srvs/srv/SetBool"
+    },
+    {
+     "name": "/talos/sync_sim_to_estimate",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "name": "/talos/vectornav/config",
+     "type": "riptide_msgs2/srv/QueryImuSerial"
+    }
+   ],
+   "action_servers": [],
+   "action_clients": [
+    {
+     "name": "/talos/autonomy/run_tree",
+     "type": "riptide_msgs2/action/ExecuteTree"
+    },
+    {
+     "name": "/talos/gyro/tare",
+     "type": "riptide_msgs2/action/TareGyro"
+    },
+    {
+     "name": "/talos/map/model_tf",
+     "type": "chameleon_tf_msgs/action/ModelFrame"
+    },
+    {
+     "name": "/talos/vectornav/mag_cal",
+     "type": "riptide_msgs2/action/MagCal"
+    }
+   ]
+  },
+  {
+   "node": "/talos/viewer_plots",
+   "group": "operator",
+   "runs": "sim and real robot (operator laptop)",
+   "package": "nereus: nereus-viewer",
+   "launch": "https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py",
+   "role": "Viewer plot windows (subscribes only to plotted topics).",
+   "publishers": [],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    }
+   ],
+   "services": [],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/world_to_map",
+   "group": "perception",
+   "runs": "robot",
+   "package": "chameleon_tf",
+   "launch": "https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/launch/mapping.launch.py",
+   "role": "Publishes world->map on /tf_static; the map/set_transform service and map/model_tf action move it (AprilTag calibration).",
+   "publishers": [
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/clock",
+     "type": "rosgraph_msgs/msg/Clock"
+    }
+   ],
+   "services": [
+    {
+     "name": "/talos/map/set_transform",
+     "type": "chameleon_tf_msgs/srv/SetTransform"
+    }
+   ],
+   "clients": [],
+   "action_servers": [
+    {
+     "name": "/talos/map/model_tf",
+     "type": "chameleon_tf_msgs/action/ModelFrame"
+    }
+   ],
+   "action_clients": []
+  },
+  {
+   "node": "/talos/yolo_orientation",
+   "group": "perception",
+   "runs": "robot",
+   "package": "tensor_detector: yolo_orientation.py",
+   "launch": "https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/launch/tensorrt.launch.py",
+   "role": "YOLO detector on the active camera (ffc or dfc): detections with 3D poses from depth.",
+   "publishers": [
+    {
+     "name": "/talos/detected_objects",
+     "type": "vision_msgs/msg/Detection3DArray"
+    },
+    {
+     "name": "/talos/yolo_orientation/annotated/compressed",
+     "type": "sensor_msgs/msg/CompressedImage"
+    },
+    {
+     "name": "/talos/yolo_orientation/point_cloud",
+     "type": "sensor_msgs/msg/PointCloud2"
+    },
+    {
+     "name": "/talos/yolo_orientation/visualization_marker_array",
+     "type": "visualization_msgs/msg/MarkerArray"
+    }
+   ],
+   "subscribers": [
+    {
+     "name": "/talos/ffc/zed_node/depth/depth_registered",
+     "type": "sensor_msgs/msg/Image"
+    },
+    {
+     "name": "/talos/ffc/zed_node/rgb/camera_info",
+     "type": "sensor_msgs/msg/CameraInfo"
+    },
+    {
+     "name": "/talos/ffc/zed_node/rgb/image_rect_color/compressed",
+     "type": "sensor_msgs/msg/CompressedImage"
+    },
+    {
+     "name": "/tf",
+     "type": "tf2_msgs/msg/TFMessage"
+    },
+    {
+     "name": "/tf_static",
+     "type": "tf2_msgs/msg/TFMessage"
+    }
+   ],
+   "services": [
+    {
+     "name": "/talos/set_camera_is_dfc",
+     "type": "std_srvs/srv/SetBool"
+    },
+    {
+     "name": "/talos/set_slalom_type",
+     "type": "riptide_msgs2/srv/SetString"
+    },
+    {
+     "name": "/talos/set_table_pair_enabled",
+     "type": "std_srvs/srv/SetBool"
+    }
+   ],
+   "clients": [],
+   "action_servers": [],
+   "action_clients": []
+  }
+ ]
+}

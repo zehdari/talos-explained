@@ -1,8 +1,9 @@
-// Usage: node tools/shot.mjs <url> <out.png> [width] [height] [waitMs] [fullPage]
-import { chromium } from 'playwright';
+// Usage: node tools/shot.mjs <full url> <out.png> [width] [height] [waitMs] [full]
+// (shared dev server: http://127.0.0.1:5300/talos-explained/<page>). For very long pages prefer tools/figs.mjs per figure.
+import { launch, newPage } from './browser.mjs';
 const [url, out, w = 1400, h = 900, wait = 4000, full = ''] = process.argv.slice(2);
-const browser = await chromium.launch({ executablePath: process.env.HOME + '/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-const page = await browser.newPage({ viewport: { width: +w, height: +h }, deviceScaleFactor: 1 });
+const browser = await launch();
+const page = await newPage(browser, { width: +w, height: +h });
 const errors = [];
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push('PAGEERROR ' + e.message));

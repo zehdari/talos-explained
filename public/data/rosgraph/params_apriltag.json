@@ -1,0 +1,25 @@
+{
+ "node": "/talos/apriltag_36h11",
+ "source": "ros2 param dump /talos/apriltag_36h11 while the Nereus full stack ran (sim.launch.py active_control_model:=mpc mpc_model:=sim); values are what the node actually loaded in sim",
+ "parameters": {
+  "detector": {
+   "blur": 0.0,
+   "debug": false,
+   "decimate": 2.0,
+   "refine": true,
+   "sharpening": 0.25,
+   "threads": 1
+  },
+  "family": "36h11",
+  "image_transport": "compressed",
+  "max_hamming": 0,
+  "profile": false,
+  "size": 0.508,
+  "tag": {
+   "frames": [],
+   "ids": [],
+   "sizes": []
+  },
+  "use_sim_time": true
+ }
+}

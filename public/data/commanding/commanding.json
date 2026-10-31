@@ -1,0 +1,260 @@
+{
+ "generated": "2026-10-30",
+ "msgs": {
+  "ControllerCommand": {
+   "text": "uint8 POSITION = 3\nuint8 VELOCITY = 2\nuint8 FEEDFORWARD = 1\nuint8 DISABLED = 0\n\nuint8 mode\ngeometry_msgs/Vector3 setpoint_vect\ngeometry_msgs/Quaternion setpoint_quat\n",
+   "url": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_msgs/msg/ControllerCommand.msg",
+   "path": "riptide_msgs/msg/ControllerCommand.msg"
+  },
+  "FollowPath": {
+   "text": "#goal definition\ngeometry_msgs/PoseStamped[] path_points\n# How to reach each path point (index-aligned with path_points). Empty: straight\n# lines, with the yaw blended from point to point.\nriptide_msgs2/PathSegment[] segments\n# Cruise speed cap for this path (m/s; 0: the controller's own limit). A slow search path, say, while the\n# controller's other moves stay fast.\nfloat64 max_speed\n---\n#result definition\nuint8 error_code\nstring error_msg\n\nuint8 NO_ERROR=0\nuint8 BAD_WYPTS=1\nuint8 MISSING_FRAME_ID=2\nuint8 PROGRESS_FAIL=3\n\n---\n#feedback\nbool has_generated\nfloat32 current_prog\nfloat32 expected_prog\n",
+   "url": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_msgs/action/FollowPath.action",
+   "path": "riptide_msgs/action/FollowPath.action"
+  },
+  "PathSegment": {
+   "text": "# How a FollowPath goal reaches one of its path points from the point before it\n# (the first from where the vehicle is). Points are in the path point's header frame.\n\nuint8 LINE=0\nuint8 ARC=1\nuint8 shape\n\n# ARC: turns `sweep` radians about `center` (+ = counterclockwise seen from above,\n# about the frame's +z; more than 2*pi goes round more than once). Only the\n# horizontal part of center is used. The path point sets where the arc ends:\n# its distance from center (the radius changes linearly with the angle, so a\n# different end radius makes a spiral) and its depth (a helix); the arc ends at\n# that radius and depth, `sweep` from where it started.\ngeometry_msgs/Point center\nfloat64 sweep\n\n# Heading (yaw) while following this segment; roll and pitch always blend from\n# the previous point's orientation to this one's.\nuint8 HEADING_WAYPOINT=0 # blend the yaw from the previous point's to this one's\nuint8 HEADING_PATH=1     # face the direction of travel\nuint8 HEADING_LOOK_AT=2  # face look_at\nuint8 heading\ngeometry_msgs/Point look_at\n# HEADING_LOOK_AT: if set, look_at is in this TF frame instead and follows it\n# live while on this segment (the frame may move; the path follows its points' own frames, not this one).\nstring look_at_frame\nfloat64 yaw_offset # added to the HEADING_PATH / HEADING_LOOK_AT yaw; pi/2 travels sideways\nfloat64 spin       # extra yaw over the segment (+ = counterclockwise), spread by progress; 2*pi = one turn\n# Steady spin: extra yaw per metre travelled (+ = counterclockwise), carried on\n# across segments as one continuous spin; the path's total is rounded to whole\n# turns so it still ends on its planned heading. About rad/s / cruise speed.\nfloat64 spin_rate\n",
+   "url": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_msgs/msg/PathSegment.msg",
+   "path": "riptide_msgs/msg/PathSegment.msg"
+  },
+  "KillSwitchReport": {
+   "text": "# ========================================\n# Constants\n# ========================================\n\n# The number of kill switches defined below\nuint8 NUM_KILL_SWITCHES=4\n\n# ========================================\n# Kill Switch IDs\n# ========================================\n\n# Note: Do not publish as physical kill switch\nuint8 KILL_SWITCH_PHYSICAL=0\n\n# RQT Kill switch is for use in the controllers rqt plugin\nuint8 KILL_SWITCH_RQT_CONTROLLER=1\n\n# The kill switch from the physical topside kill switch button\nuint8 KILL_SWITCH_TOPSIDE_BUTTON=2\n\n# Debug kill switch should be used when publishing from command line or rqt manual publishing\n# It is not recommended, but to avoid confusion this is implemented to allow manual publishing without conflicting\nuint8 KILL_SWITCH_DEBUG=3\n\n# ========================================\n# Message Definition\n# ========================================\n\n# The sender_id should uniquely identify the code running. This could be the node name because they should be unique\n# This prevents from accidental re-enabling on kill from another node publishing as the same switch ID \nstring sender_id\n\n# A switch ID defined above\nuint8 kill_switch_id\n\n# If the switch is in a kill state, stopping all active operations\nbool switch_asserting_kill\n\n# If the switch needs to periodically update in order to keep out of kill state\nbool switch_needs_update\n",
+   "url": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_msgs/msg/KillSwitchReport.msg",
+   "path": "riptide_msgs/msg/KillSwitchReport.msg"
+  },
+  "DshotCommand": {
+   "text": "int16[8] values\n\nint16 DSHOT_MIN = -999\nint16 DSHOT_MAX = 999\n",
+   "url": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_msgs/msg/DshotCommand.msg",
+   "path": "riptide_msgs/msg/DshotCommand.msg"
+  }
+ },
+ "slots": {
+  "count": 4,
+  "list": [
+   {
+    "id": 0,
+    "const": "KILL_SWITCH_PHYSICAL",
+    "comment": "Note: Do not publish as physical kill switch"
+   },
+   {
+    "id": 1,
+    "const": "KILL_SWITCH_RQT_CONTROLLER",
+    "comment": "RQT Kill switch is for use in the controllers rqt plugin"
+   },
+   {
+    "id": 2,
+    "const": "KILL_SWITCH_TOPSIDE_BUTTON",
+    "comment": "The kill switch from the physical topside kill switch button"
+   },
+   {
+    "id": 3,
+    "const": "KILL_SWITCH_DEBUG",
+    "comment": "Debug kill switch should be used when publishing from command line or rqt manual publishing"
+   }
+  ]
+ },
+ "firmware": {
+  "switch_timeout_ms": {
+   "value": 500,
+   "url": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/include/titan/safety.h#L39"
+  },
+  "poac_kill_publish_ms": {
+   "value": 150,
+   "url": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/main.c#L34"
+  },
+  "esc_rpm_timeout_ms": {
+   "value": 500,
+   "url": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/include/dshot.h#L22"
+  },
+  "esc_rpm_penalty_ms": {
+   "value": 1000,
+   "url": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/include/dshot.h#L26"
+  },
+  "esc_poweron_delay_ms": {
+   "value": 5000,
+   "url": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/include/dshot.h#L29"
+  },
+  "esc_power_threshold_mv": {
+   "value": 9000,
+   "url": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/include/dshot.h#L39"
+  },
+  "dshot_rate_khz": {
+   "value": 600,
+   "url": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/include/dshot.h#L32"
+  },
+  "esc_telemetry_ms": {
+   "value": 500,
+   "url": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/main.c#L23"
+  },
+  "esc_flags": [
+   {
+    "bit": 0,
+    "name": "SAFETY_KILLED"
+   },
+   {
+    "bit": 1,
+    "name": "ESC_BOARD_OFF"
+   },
+   {
+    "bit": 2,
+    "name": "ESC_POWERON_DELAY"
+   },
+   {
+    "bit": 3,
+    "name": "TGT_RPM_STALE"
+   },
+   {
+    "bit": 4,
+    "name": "TGT_RPM_STALE_PENALTY"
+   },
+   {
+    "bit": 5,
+    "name": "CONTROLLER_UNCONFIGURED"
+   }
+  ],
+  "links": {
+   "refresh": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/kill_switch.c#L25",
+   "no_switch": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/kill_switch.c#L42",
+   "start_killed": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/kill_switch.c#L10",
+   "software_kill_cb": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L77",
+   "lock_check": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L99",
+   "physical": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L24",
+   "soft_pin": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L91",
+   "publish_kill": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L180",
+   "poac_loop": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/main.c#L317",
+   "esc_kill_sub": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/ros.c#L85",
+   "esc_flags": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/core1.c#L227",
+   "esc_can_cb": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/main.c#L131",
+   "kill_c": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/kill_switch.c"
+  }
+ },
+ "can": {
+  "esc0": {
+   "client": 2,
+   "id": 176
+  },
+  "esc1": {
+   "client": 3,
+   "id": 240
+  },
+  "poac_client": 1,
+  "layout": {
+   "noc": [
+    0,
+    4
+   ],
+   "direction": [
+    4,
+    1
+   ],
+   "type": [
+    5,
+    1
+   ],
+   "client": [
+    6,
+    5
+   ]
+  },
+  "rate": 1000000,
+  "fd_rate": 5000000,
+  "sender_url": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c#L121",
+  "client_ids_url": "https://github.com/osu-uwrt/titan_canmore/blob/f6273e2c25f0202788be01e41338a6bbd6320006/canmore/include/canmore/client_ids.h#L15"
+ },
+ "overseer": {
+  "stop_tolerance": {
+   "value": 2.0,
+   "url": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/src/riptide_controllers/controller_overseer.py#L32"
+  },
+  "power_timeout_s": {
+   "value": 2.0,
+   "url": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/src/riptide_controllers/controller_overseer.py#L33"
+  },
+  "links": {
+   "telemetry_cb": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/src/riptide_controllers/controller_overseer.py#L588",
+   "set_teleop": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/src/riptide_controllers/controller_overseer.py#L766",
+   "ff": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/src/riptide_controllers/controller_overseer.py#L841",
+   "file": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/src/riptide_controllers/controller_overseer.py"
+  }
+ },
+ "viewer": {
+  "slot": 1,
+  "kill_topic": "command/software_kill",
+  "linear_topic": "controller/linear",
+  "angular_topic": "controller/angular",
+  "mode_service": "setTeleop",
+  "heartbeat_s": 0.05,
+  "ui_timeout_s": 0.75,
+  "links": {
+   "config": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml#L20",
+   "report": "https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/uwrt_motion.cpp#L102",
+   "competing": "https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/uwrt_motion.cpp#L35",
+   "enable": "https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/ros_runtime.cpp#L138",
+   "release": "https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/ros_runtime.cpp#L171",
+   "tick": "https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/ros_runtime.cpp#L253",
+   "send": "https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/uwrt_motion.cpp#L83"
+  }
+ },
+ "mpc": {
+  "control_period_s": 0.05,
+  "odom_timeout_s": 0.5,
+  "respect_motion_enabled": true,
+  "success_trust": 0.8,
+  "progress_timeout_s": 10.0,
+  "linear_speed": 0.6,
+  "finish": {
+   "position": 0.1,
+   "angle": 0.1,
+   "speed": 0.1,
+   "rate": 0.15
+  },
+  "links": {
+   "header": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1",
+   "subs": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L510",
+   "kill_sub": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L519",
+   "action": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L548",
+   "start_path": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L886",
+   "update_path": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1082",
+   "linear_cmd": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1186",
+   "tick": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1298",
+   "gate": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1324",
+   "send_rpm": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L761",
+   "hw_output": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L684",
+   "destructor": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1424",
+   "config": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/mpc.yaml#L80",
+   "modes": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc.cpp#L353"
+  }
+ },
+ "hardware": {
+  "kt_forward": [
+   0.3964,
+   1.48e-05
+  ],
+  "kt_reverse": [
+   0.3114,
+   1.25e-05
+  ],
+  "diameter": 0.076,
+  "rho": 998.2,
+  "total_thrust_limit": 73.0,
+  "url": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml#L60",
+  "inverse_url": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/fossen_model.cpp#L207"
+ },
+ "thrusters": {
+  "names": [
+   "VUS",
+   "VUP",
+   "HUS",
+   "HUP",
+   "HLS",
+   "HLP",
+   "VLS",
+   "VLP"
+  ],
+  "url": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L399"
+ },
+ "launch": {
+  "default_model": "hybrid",
+  "url": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/launch/control_system.launch.py#L32",
+  "mpc_yaml": "https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml"
+ }
+}
