@@ -108,8 +108,15 @@ CTX = [
 ORANGE = '0.851,0.282,0.059'
 GREY = '0.80,0.82,0.84'
 
-if phase == 'iso':
-    for stem, only, hide, views in ISO:
+# re-shoots after review (2026-10-31): bare frame without the thruster guards, acoustics without the far-off transducer
+FIX = [
+    ('sub-frame', ['Dorito', 'Taco', 'Holy L Bar', 'Battery Mounting Rail', 'Side Cable', 'Top Cable', 'Bottom Cable', 'Turnbuckle'],
+     ['T200', 'Thruster Cable', 'Foam', 'Thruster Protector'], ['iso', 'front', 'port', 'top']),
+    ('sub-acoustics', ['Acoustics Pods', 'Acoustic_Mount'], [], ['below', 'iso']),
+    ('sub-transducer', ['^Transducer-2'], [], ['iso']),
+]
+if phase in ('iso', 'fix'):
+    for stem, only, hide, views in (ISO if phase == 'iso' else FIX):
         out.append('only|' + ','.join(only))
         if hide:
             out.append('hidesub|' + ','.join(hide + ALWAYS_HIDE))

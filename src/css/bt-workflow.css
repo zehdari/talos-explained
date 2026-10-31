@@ -47,7 +47,7 @@
 .drift-row.on .name { font-weight: 650; box-shadow: inset -2px 0 0 var(--accent); padding-right: 0.35rem; }
 .drift-row:focus-visible .name { outline: 2px solid var(--accent); }
 .seg-same { background: var(--prediction); opacity: 0.55; }
-.seg-behind { background: var(--reference); opacity: 0.4; }
+.seg-behind { background: var(--s5); }
 .seg-diff { background: var(--reference); }
 .seg-only { background: var(--state); }
 .drift-note { grid-column: 1 / -1; font-family: var(--sans); font-size: 0.84rem; color: var(--ink-2); line-height: 1.45; background: var(--paper); border-radius: 6px; padding: 0.55rem 0.75rem; margin: 0.15rem 0 0.45rem; box-shadow: inset 2px 0 0 var(--accent); }
@@ -116,8 +116,17 @@ article pre, .pp .xml, .mk-list code { font-variant-ligatures: none; }
 table.params.tools td:first-child { white-space: normal; width: 42%; }
 table.params.tools td:first-child code { overflow-wrap: anywhere; }
 
-/* The viewer panel crops are 400 px wide: show them at their own size, not blown up. */
-.fig .media-grid.shots { grid-template-columns: repeat(auto-fit, minmax(14rem, 400px)); justify-content: center; align-items: start; }
+/* The viewer panel crops are captured at 2x UI scale (840 px): show them at 420 CSS px, the panel's real size. */
+.fig .media-grid.shots { grid-template-columns: repeat(auto-fit, minmax(14rem, 420px)); justify-content: center; align-items: start; }
 .fig .media-grid.shots .media { background: #fff; box-shadow: 0 0 0 1px var(--rule); }
 /* Keep the "where" tag clear of the first command line on narrow screens. */
 article pre.cmd[data-where] { padding-top: 1.75rem; }
+
+/* Editors and assistant tables: long code cells wrap instead of widening the table on a phone */
+table.params.assistant td:first-child { white-space: normal; width: 40%; }
+table.params.assistant td:last-child code, table.params.editors td code { overflow-wrap: anywhere; }
+table.params.assistant code.nowrap { white-space: nowrap; }
+table.params.editors td:first-child { white-space: nowrap; }
+@media (max-width: 640px) {
+  table.params.editors td:first-child { white-space: normal; }
+}

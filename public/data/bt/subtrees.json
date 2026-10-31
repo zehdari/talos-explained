@@ -10,6 +10,7 @@
    "child": "CompMissionTreeMpc",
    "line": 95,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "repair_mission",
@@ -24,6 +25,7 @@
    "child": "WaitForKillSwitch",
    "line": 445,
    "shared": false,
+   "shared_attr": null,
    "ports": [],
    "unmapped": []
   },
@@ -32,6 +34,7 @@
    "child": "PrepForRun",
    "line": 446,
    "shared": false,
+   "shared_attr": null,
    "ports": [],
    "unmapped": []
   },
@@ -40,6 +43,7 @@
    "child": "Dive",
    "line": 447,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "depth",
@@ -54,6 +58,7 @@
    "child": "GateTreeMpc",
    "line": 449,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "repair_mission",
@@ -73,6 +78,7 @@
    "child": "SlalomPathMpc",
    "line": 452,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "exit_frame",
@@ -92,6 +98,7 @@
    "child": "RandomPingerTree",
    "line": 455,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "is_table",
@@ -106,6 +113,7 @@
    "child": "NewTableTreeMpc",
    "line": 478,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "repair_mission",
@@ -120,6 +128,7 @@
    "child": "TorpedoTreeMpc",
    "line": 491,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "repair_mission",
@@ -134,6 +143,7 @@
    "child": "TorpedoTreeMpc",
    "line": 512,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "repair_mission",
@@ -148,6 +158,7 @@
    "child": "NewTableTreeMpc",
    "line": 524,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "repair_mission",
@@ -162,6 +173,7 @@
    "child": "BinTreeMpc",
    "line": 539,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "repair_mission",
@@ -176,6 +188,7 @@
    "child": "KillController",
    "line": 554,
    "shared": false,
+   "shared_attr": null,
    "ports": [],
    "unmapped": []
   },
@@ -184,6 +197,7 @@
    "child": "ReloadActuators",
    "line": 1810,
    "shared": false,
+   "shared_attr": null,
    "ports": [],
    "unmapped": []
   },
@@ -192,6 +206,7 @@
    "child": "SetActuatorsArmed",
    "line": 1813,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "armed",
@@ -206,6 +221,7 @@
    "child": "PrimitiveMovePosition",
    "line": 764,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout",
@@ -235,6 +251,7 @@
    "child": "PrimitiveMoveOrientation",
    "line": 765,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "p",
@@ -264,6 +281,7 @@
    "child": "SetActiveCamera",
    "line": 1176,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "is_dfc",
@@ -278,6 +296,7 @@
    "child": "MiniSearchMpc",
    "line": 1179,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "object_name",
@@ -322,6 +341,7 @@
    "child": "MiniSearchMpc",
    "line": 1183,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "object_name",
@@ -366,6 +386,7 @@
    "child": "FlipTree",
    "line": 1210,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "undergate_depth",
@@ -380,6 +401,7 @@
    "child": "MiniSearchMpc",
    "line": 2492,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "object_name",
@@ -424,6 +446,7 @@
    "child": "Move",
    "line": 1887,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "op",
@@ -463,6 +486,7 @@
    "child": "Move",
    "line": 1898,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "op",
@@ -502,6 +526,7 @@
    "child": "SetActiveCamera",
    "line": 1676,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "is_dfc",
@@ -516,6 +541,7 @@
    "child": "DownwardSearchMpc",
    "line": 1693,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "min_dist",
@@ -545,6 +571,7 @@
    "child": "DownwardSearchMpc",
    "line": 1696,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "min_dist",
@@ -574,6 +601,7 @@
    "child": "SetActuatorsArmed",
    "line": 1726,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "armed",
@@ -588,6 +616,7 @@
    "child": "pickupObjectMpc",
    "line": 1732,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "claw_close_s",
@@ -687,6 +716,7 @@
    "child": "SurfaceTree",
    "line": 1733,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "target_image",
@@ -701,6 +731,7 @@
    "child": "dropObjectMpc",
    "line": 1734,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "claw_close_s",
@@ -785,6 +816,7 @@
    "child": "RelativeMoveNoYaw",
    "line": 1765,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "frame_name",
@@ -814,6 +846,7 @@
    "child": "SpinTreeMpc",
    "line": 1767,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "num_cycles",
@@ -833,6 +866,7 @@
    "child": "RelativeMoveNoYaw",
    "line": 1769,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "frame_name",
@@ -862,6 +896,7 @@
    "child": "SetActuatorsArmed",
    "line": 1771,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "armed",
@@ -876,6 +911,7 @@
    "child": "SetActiveCamera",
    "line": 1776,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "is_dfc",
@@ -890,6 +926,7 @@
    "child": "SetActiveCamera",
    "line": 2996,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "is_dfc",
@@ -904,6 +941,7 @@
    "child": "SearchMpc",
    "line": 2997,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "max_dist",
@@ -938,6 +976,7 @@
    "child": "SetActuatorsArmed",
    "line": 3015,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "armed",
@@ -952,6 +991,7 @@
    "child": "ShootBothObjectsMpc",
    "line": 3016,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "link_1",
@@ -986,6 +1026,7 @@
    "child": "SetActuatorsArmed",
    "line": 3021,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "armed",
@@ -1000,6 +1041,7 @@
    "child": "SetActuatorsArmed",
    "line": 3027,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "armed",
@@ -1014,6 +1056,7 @@
    "child": "SetActiveCamera",
    "line": 178,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "is_dfc",
@@ -1028,6 +1071,7 @@
    "child": "DownwardSearchMpc",
    "line": 184,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "min_dist",
@@ -1057,6 +1101,7 @@
    "child": "SetActuatorsArmed",
    "line": 186,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "armed",
@@ -1071,6 +1116,7 @@
    "child": "ShootDownwardObjectMpc",
    "line": 188,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "dropper_link_name",
@@ -1095,6 +1141,7 @@
    "child": "DownwardSearchMpc",
    "line": 195,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "min_dist",
@@ -1124,6 +1171,7 @@
    "child": "ShootDownwardObjectMpc",
    "line": 196,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "dropper_link_name",
@@ -1148,6 +1196,7 @@
    "child": "SetActuatorsArmed",
    "line": 202,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "armed",
@@ -1162,6 +1211,7 @@
    "child": "MagnetTreeMpc",
    "line": 205,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "bin_object_vision_class",
@@ -1176,6 +1226,7 @@
    "child": "PrimitiveMovePosition",
    "line": 1474,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout",
@@ -1205,6 +1256,7 @@
    "child": "PrimitiveMoveOrientation",
    "line": 1475,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "p",
@@ -1234,6 +1286,7 @@
    "child": "Move",
    "line": 1033,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "op",
@@ -1273,6 +1326,7 @@
    "child": "PrimitiveMovePosition",
    "line": 1504,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout",
@@ -1302,6 +1356,7 @@
    "child": "SmartMovePosition",
    "line": 1505,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "x",
@@ -1326,6 +1381,7 @@
    "child": "PrimitiveMoveOrientation",
    "line": 1506,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "p",
@@ -1355,6 +1411,7 @@
    "child": "DownwardTrack",
    "line": 919,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "frame",
@@ -1384,6 +1441,7 @@
    "child": "DownwardTrack",
    "line": 953,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "frame",
@@ -1413,6 +1471,7 @@
    "child": "SetActiveCamera",
    "line": 3227,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "is_dfc",
@@ -1427,6 +1486,7 @@
    "child": "DownwardSearchMpc",
    "line": 3229,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "min_dist",
@@ -1456,6 +1516,7 @@
    "child": "Move",
    "line": 3259,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "op",
@@ -1495,6 +1556,7 @@
    "child": "Move",
    "line": 3261,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "op",
@@ -1534,6 +1596,7 @@
    "child": "WaitForController",
    "line": 3263,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "dist",
@@ -1568,6 +1631,7 @@
    "child": "Move",
    "line": 3266,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "op",
@@ -1607,6 +1671,7 @@
    "child": "WaitForController",
    "line": 3268,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "dist",
@@ -1641,6 +1706,7 @@
    "child": "Move",
    "line": 3274,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "op",
@@ -1680,6 +1746,7 @@
    "child": "Move",
    "line": 2702,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "op",
@@ -1719,6 +1786,7 @@
    "child": "RotateToFrame",
    "line": 2708,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "relative_yaw",
@@ -1738,6 +1806,7 @@
    "child": "Move",
    "line": 2725,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "op",
@@ -1777,6 +1846,7 @@
    "child": "SetActiveCamera",
    "line": 3154,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "is_dfc",
@@ -1791,6 +1861,7 @@
    "child": "DownwardMove",
    "line": 3157,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "frame",
@@ -1835,6 +1906,7 @@
    "child": "AlignLinkPositionOnly",
    "line": 3162,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "frame_name",
@@ -1869,6 +1941,7 @@
    "child": "AlignLinkPositionOnly",
    "line": 3163,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "frame_name",
@@ -1903,6 +1976,7 @@
    "child": "AlignLinkPositionOnly",
    "line": 3164,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "frame_name",
@@ -1937,6 +2011,7 @@
    "child": "WaitForController",
    "line": 3166,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "dist",
@@ -1971,6 +2046,7 @@
    "child": "AlignLinkPositionOnly",
    "line": 3173,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "frame_name",
@@ -2005,6 +2081,7 @@
    "child": "Move",
    "line": 1943,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "op",
@@ -2044,6 +2121,7 @@
    "child": "RotateToFrame",
    "line": 2675,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "relative_yaw",
@@ -2063,6 +2141,7 @@
    "child": "RotateToFrame",
    "line": 2680,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "relative_yaw",
@@ -2082,6 +2161,7 @@
    "child": "SurfaceTree",
    "line": 2682,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "target_image",
@@ -2096,6 +2176,7 @@
    "child": "WaitForController",
    "line": 2398,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "dist",
@@ -2130,6 +2211,7 @@
    "child": "FireTorpedo",
    "line": 2405,
    "shared": false,
+   "shared_attr": null,
    "ports": [],
    "unmapped": []
   },
@@ -2138,6 +2220,7 @@
    "child": "WaitForController",
    "line": 2414,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "dist",
@@ -2172,6 +2255,7 @@
    "child": "FireTorpedo",
    "line": 2421,
    "shared": false,
+   "shared_attr": null,
    "ports": [],
    "unmapped": []
   },
@@ -2180,6 +2264,7 @@
    "child": "AlignLinkPositionOnly",
    "line": 2306,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "frame_name",
@@ -2214,6 +2299,7 @@
    "child": "WaitForController",
    "line": 2307,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "dist",
@@ -2248,6 +2334,7 @@
    "child": "FireDropper",
    "line": 2313,
    "shared": false,
+   "shared_attr": null,
    "ports": [],
    "unmapped": []
   },
@@ -2256,6 +2343,7 @@
    "child": "SetActiveCamera",
    "line": 1386,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "is_dfc",
@@ -2270,6 +2358,7 @@
    "child": "MiniSearchMpc",
    "line": 1390,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "object_name",
@@ -2314,6 +2403,7 @@
    "child": "ActivateMagnetMpc",
    "line": 1399,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "magnet_frame",
@@ -2333,6 +2423,7 @@
    "child": "MiniSearchMpc",
    "line": 1410,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "object_name",
@@ -2377,6 +2468,7 @@
    "child": "ActivateMagnetMpc",
    "line": 1414,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "magnet_frame",
@@ -2396,6 +2488,7 @@
    "child": "PrimitiveMovePosition",
    "line": 2536,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout",
@@ -2425,6 +2518,7 @@
    "child": "PrimitiveMovePosition",
    "line": 2565,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout",
@@ -2454,6 +2548,7 @@
    "child": "PrimitiveMovePosition",
    "line": 2569,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout",
@@ -2483,6 +2578,7 @@
    "child": "PrimitiveMovePosition",
    "line": 2572,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout",
@@ -2512,6 +2608,7 @@
    "child": "PrimitiveMovePosition",
    "line": 2577,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout",
@@ -2541,6 +2638,7 @@
    "child": "PrimitiveMovePosition",
    "line": 3301,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout",
@@ -2570,6 +2668,7 @@
    "child": "AssertTree",
    "line": 3064,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "a",
@@ -2599,6 +2698,7 @@
    "child": "AssertTree",
    "line": 3065,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "a",
@@ -2628,6 +2728,7 @@
    "child": "AssertTree",
    "line": 3066,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "a",
@@ -2657,6 +2758,7 @@
    "child": "AssertTree",
    "line": 3067,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "a",
@@ -2686,6 +2788,7 @@
    "child": "AssertTree",
    "line": 3068,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "a",
@@ -2715,6 +2818,7 @@
    "child": "AssertTree",
    "line": 3069,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "a",
@@ -2744,6 +2848,7 @@
    "child": "AssertTree",
    "line": 3078,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "a",
@@ -2773,6 +2878,7 @@
    "child": "PrimitiveMoveOrientation",
    "line": 1990,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "p",
@@ -2802,6 +2908,7 @@
    "child": "AlignLinkPositionOnly",
    "line": 786,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "frame_name",
@@ -2836,6 +2943,7 @@
    "child": "PrimitiveMovePosition",
    "line": 79,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout",
@@ -2865,6 +2973,7 @@
    "child": "SmartMovePosition",
    "line": 80,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "x",
@@ -2889,6 +2998,7 @@
    "child": "WaitForActuators",
    "line": 1011,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout_secs",
@@ -2903,6 +3013,7 @@
    "child": "CheckActuatorStates",
    "line": 983,
    "shared": false,
+   "shared_attr": "false",
    "ports": [],
    "unmapped": []
   },
@@ -2911,6 +3022,7 @@
    "child": "WaitForActuators",
    "line": 984,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout_secs",
@@ -2925,6 +3037,7 @@
    "child": "WaitForActuators",
    "line": 994,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "timeout_secs",
@@ -2939,6 +3052,7 @@
    "child": "WaitForController",
    "line": 58,
    "shared": false,
+   "shared_attr": "false",
    "ports": [
     {
      "port": "dist",

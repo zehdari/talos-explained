@@ -98,8 +98,9 @@ repos:
         status: talos
         chapters: [sensors.html]
         desc: >-
-          Serial driver for the fiber-optic gyro (FOG): reads raw counts at 921600 baud and publishes
-          /talos/gyro/raw, with health checks on temperature, supply voltage and light-source current.
+          Serial driver for the fiber-optic gyro (FOG): reads raw counts at 921600 baud and publishes them
+          (gyro/raw), a yaw-rate twist the EKF fuses (gyro/twist) and gyro/status, with health checks on
+          temperature, supply voltage and light-source current.
       riptide_acoustics:
         layer: drivers
         status: talos
@@ -187,15 +188,16 @@ repos:
     layers: [autonomy]
     chapters: [bt.html, bt-nodes.html, mission-tree.html, bt-workflow.html]
     desc: >-
-      The mission code: BehaviorTree.cpp action/condition nodes in C++, the tree XML files in trees/, and the
-      doTask action server (/talos/autonomy/run_tree) that runs a tree.
+      The mission code: BehaviorTree.CPP v3 action/condition nodes in C++, the tree XML files in trees/, and the
+      doTask action server (/talos/autonomy/run_tree) that runs a tree. A port to BehaviorTree.CPP v4 is on the
+      bt4 branch, not merged.
     packages:
       riptide_autonomy:
         layer: autonomy
         status: talos
         chapters: [bt.html, bt-nodes.html, mission-tree.html, bt-workflow.html]
         desc: >-
-          One package (riptide_autonomy2). include/riptide_autonomy/ holds the custom nodes in bt_actions/,
+          One package (riptide_autonomy2), built on behaviortree_cpp_v3. include/riptide_autonomy/ holds the custom nodes in bt_actions/,
           bt_conditions/ and bt_decorators/ (FollowPath, SetMappingTarget, WaitForDetection, ...; some are
           implemented in src/riptide_autonomy/bt_actions/), trees/ the missions (RepairCompMpcTree.xml and friends),
           src/ doTask and the checkBT validator.
@@ -221,11 +223,11 @@ repos:
           (talos_launch_mpc.yaml is the full MPC stack; *_bench_* and *_sim_hil_* for the bench and HIL).
       riptide_bringup:
         layer: ops
-        status: talos
+        status: tool
         chapters: [launch.html]
         desc: >-
           bringup.launch.py, a single launch file that includes hardware, navigation, control, detector, mapping
-          and autonomy. On the robot the remote launcher's lists are used instead.
+          and autonomy. Not used on the robot: there the remote launcher's lists start each launch file instead.
       launch_msgs:
         layer: shared
         status: talos
@@ -323,32 +325,38 @@ repos:
       ffmpeg_image_transport, image_transport_plugins and friends) for vcs import. riptide_hardware's zed.launch.py
       starts two ZedCamera components, ffc and dfc. It needs the ZED SDK and an NVIDIA GPU.
     pinNote: zed_wrapper.repos pins 7f42463
+    ref: 7f42463
 
   - id: opbox_software
     group: release
     source: { kind: release, path: src/opbox_software }
     github: osu-uwrt/opbox_software
     branch: dev
-    status: talos
+    status: tool
     layers: [ops]
     chapters: [computers.html]
     desc: >-
       Software for the operator box (opbox), the team's Raspberry Pi field box: an HMI app for alerts and
       notifications, a ROS client that forwards robot state to it, and a small serial library.
+    extra: >-
+      Pinned in the release repo (unchanged since March 2025), but no Talos launch list starts it: the only
+      reference is a commented-out include in riptide_hardware's hardware_fake_dvl.launch.py. The ROS client
+      watches diagnostics, which the team no longer uses. The opbox Pi's jobs today are the network gateway and
+      time server (Computers and networks).
     packages:
       opbox_software:
         layer: ops
-        status: talos
+        status: tool
         chapters: [computers.html]
         desc: The opbox HMI application and its libraries (yaml-cpp vendored, not counted).
       opbox_ros_client:
         layer: ops
-        status: talos
+        status: tool
         chapters: [computers.html]
         desc: ROS 2 client that watches diagnostics and sends notifications to the opbox.
       serial_library:
         layer: ops
-        status: talos
+        status: tool
         chapters: [computers.html]
         desc: Keeps mapped values in sync over a serial link with custom frames. A nested submodule (BTK203/serial_library).
 
@@ -632,8 +640,9 @@ repos:
     layers: [autonomy]
     chapters: [bt-workflow.html]
     desc: >-
-      BehaviorTree Studio, the team's visual editor for BehaviorTree.cpp v4 XML (Electron + React). Works on a
-      folder of tree files with a shared subtree library.
+      BehaviorTree Studio, a newer editor (Electron + React) that writes BTCPP_format 4 XML and keeps shared
+      subtrees in its own subtree_library.xml. Not usable with Talos's trees yet: riptide_autonomy is still
+      BehaviorTree.CPP v3 until the bt4 branch merges, and btstudio doesn't read workspace.xml.
 
   - id: Groot
     group: setup
@@ -644,8 +653,9 @@ repos:
     layers: [autonomy]
     chapters: [bt-workflow.html]
     desc: >-
-      The team's fork of Groot, the older BehaviorTree editor. riptide_autonomy still keeps a Groot workspace
-      (trees/.groot/workspace.xml) declaring every custom node.
+      The team's fork of Groot, the editor that works with today's BehaviorTree.CPP v3 trees and the one the
+      riptide_autonomy README names. riptide_autonomy keeps its Groot workspace (trees/.groot/workspace.xml)
+      declaring every custom node. riptide_setup's install_groot.bash builds it.
 
   - id: pretest_checks
     group: setup
@@ -802,6 +812,6 @@ repos:
     chapters: []
     noCount: true
     desc: >-
-      Not Talos. Mercury is a rewrite of the Riptide stack for Triton, the team's smaller second AUV (new for
-      RoboSub 2026). mercury_release pins its repos as submodules the same way riptide_release does. Don't mix the
-      two stacks up when searching GitHub.
+      Not Talos. Mercury is a separate ROS 2 stack for Triton, the team's second vehicle (the 2025-26 rebuild of the earlier secondary AUV; titan_firmware's
+      DeviceList.jsonc lists the Triton boards with mercury/ board types). mercury_release pins its repos as submodules
+      the same way riptide_release does. Don't mix the two stacks up when searching GitHub.

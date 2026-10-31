@@ -101,20 +101,22 @@
 .pb-lines li.on { background: rgba(217, 72, 15, 0.35); color: #fff; }
 
 /* ---------- tables ---------- */
+table.bt-leds .led-mean { display: none; }
 table.bt-calls td small { color: var(--muted); font-size: 0.74rem; }
 table.bt-calls td:last-child small { display: block; margin-top: 0.2rem; }
 table.bt-calls td:first-child { line-height: 1.7; }
 table.bt-calls td:first-child, table.bt-leds td:first-child { white-space: normal; }
 table.bt-calls td:nth-child(2) code { display: inline-block; margin: 0 0.2rem 0.15rem 0; }
 .led { display: inline-block; width: 0.95rem; height: 0.95rem; border-radius: 50%; background: var(--led); vertical-align: -0.15rem; margin-right: 0.45rem; box-shadow: 0 0 0 1px rgba(15, 38, 51, 0.25), 0 0 8px var(--led); }
-.led.slow { animation: led-flash 1.2s steps(1, end) infinite; }
+.led.slow { animation: led-flash 2s steps(1, end) infinite; }
 .led.fast { animation: led-flash 0.3s steps(1, end) infinite; }
-.led.breath { animation: led-breath 2.4s ease-in-out infinite; }
+.led.breath { animation: led-breath 6s linear infinite; }
 @keyframes led-flash { 50% { opacity: 0.12; } }
-@keyframes led-breath { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
+@keyframes led-breath { 0%, 100% { opacity: 0.08; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .led.slow, .led.fast, .led.breath { animation: none; } }
 @media (max-width: 640px) {
   table.bt-leds th:nth-child(3), table.bt-leds td:nth-child(3) { display: none; }
+  table.bt-leds .led-mean { display: block; margin-top: 0.15rem; font-size: 0.78rem; color: var(--ink-2); line-height: 1.3; }
   .cat-sum { font-size: 0.78rem; }
 }
 /* the catalogue on a phone: name, then summary, then the usage line */

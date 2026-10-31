@@ -15,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'public/data/electrical/system.json'
 EB = 'https://github.com/osu-uwrt/electric_boogaloo/blob/master/'
+EB_TREE = 'https://github.com/osu-uwrt/electric_boogaloo/tree/master/'
 TF = 'https://github.com/osu-uwrt/titan_firmware/blob/master/'
 RC = 'https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/'
 TDR26 = 'https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf'
@@ -81,8 +82,8 @@ node('or', 'Ideal-diode OR', 'V+ battery bus', 'poac', 'Battery OR ("balancer")'
      [['Parts', '2 x LTC4412 controllers, 4 x SiR167DP P-channel MOSFETs'], ['Output', 'V+, the battery bus'],
       ['Reported', 'state/electrical port_powering, stbd_powering; state/batteries_balanced when both supply']],
      {'href': '#two-packs', 'text': 'Two packs, one bus'}, power['sources']['poac_power_sheet'])
-node('kill', 'Kill MOSFETs', 'V+ to MOTOR_PWR', 'poac', 'Thruster power switch',
-     'Three P-channel MOSFETs in parallel connect V+ to MOTOR_PWR, the ESC supply. They conduct only while MOTOR_EN is on: the physical switch is in AND the microcontroller holds SOFTWARE_KILL at "run".',
+node('kill', 'Kill MOSFETs', 'V+ to MOTOR_PWR', 'poac', 'Kill MOSFETs',
+     'The thruster power switch. Three P-channel MOSFETs in parallel connect V+ to MOTOR_PWR, the ESC supply. They conduct only while MOTOR_EN is on: the physical switch is in AND the microcontroller holds SOFTWARE_KILL at "run".',
      [['Parts', '3 x SiR167DP (30 V, 60 A each), 3 x TC4432 gate drivers, DG448 analog switch'],
       ['Out', conn('poac', 'J7, J8')], ['Return', conn('poac', 'J9, J10')]],
      {'href': 'commanding.html', 'text': 'Kill slots and software kill'}, power['sources']['poac_kill_sheet'])
@@ -93,12 +94,12 @@ node('mcu', 'POAC microcontroller', 'CAN id 1', 'poac', 'POAC RP2040',
      {'href': 'boards.html', 'text': 'The POAC board'}, TF + 'talos/PoacBoard/src/ros.c')
 node('reg15', '15 V module', 'PS1, 20 A', 'poac', '15 V regulator',
      'TDK-Lambda i6A4W020A033V non-isolated DC-DC module (9-53 V in, 20 A), trimmed to 15 V. Fed from Vreg, which is V+ through a Schottky diode.',
-     [['Feeds', 'camera cage board (Orin, DVL, Peltier), stack link, 12 V LDO'],
+     [['Feeds', 'camera cage board (Orin, DVL, Peltier output if fitted), stack link, 12 V LDO'],
       ['Measured', 'state/electrical twelve_volt_voltage (the name is historical); expect 14.7-16.0 V']],
      {'href': '#rails', 'text': 'Regulators and rails'}, power['sources']['poac_power_sheet'])
 node('reg5', '5 V module', 'PS2, 20 A', 'poac', '5 V regulator',
-     'The same TDK-Lambda module, trimmed to 5 V. Every board makes its own 3.3 V from this with an LM1117 LDO.',
-     [['Feeds', 'board logic (stack link, camera cage), network switch, fans, depth sensor, LED strip'],
+     'The same TDK-Lambda module, trimmed to 5 V. Each board in the stack and the camera cage makes its own 3.3 V from this with an LM1117 LDO.',
+     [['Feeds', 'board logic (POAC microcontroller, stack link, camera cage), network switch, fans, depth sensor, LED strip'],
       ['Measured', 'state/electrical five_volt_voltage; expect 4.7-5.7 V']],
      {'href': '#rails', 'text': 'Regulators and rails'}, power['sources']['poac_power_sheet'])
 node('reg12', '12 V LDO', 'servo only', 'poac', '12 V regulator',
@@ -130,7 +131,7 @@ node('thr47', 'Thrusters 4-7', '4 x T200', 'out', 'Thrusters 4-7',
 node('led', 'LED board', 'CAN id 6', 'stack', 'LED board',
      'Two ST L99LD20 buck LED drivers run straight from V+ and feed an aluminium RGBW LED module. Logic runs from 5 V.',
      [['In', conn('led', 'J2')], ['Out', conn('led', 'J1')]],
-     {'href': 'boards.html', 'text': 'The circuit boards'}, EB + 'TalosBoards/Year%20One/LED_Board')
+     {'href': 'boards.html', 'text': 'The circuit boards'}, EB_TREE + 'TalosBoards/Year%20One/LED_Board')
 node('ivc', 'IVC board', 'CAN id 8', 'stack', 'IVC board (acoustic modem)',
      'Sends and hears 17/19 kHz tones. The transmit power amplifier runs on an isolated +/-24 V converter from V+ (1.5 A fuse); the receive chain on an isolated +/-5 V converter from 5 V.',
      [['In', conn('ivc', 'J2')], ['Out', conn('ivc', 'J1')]],
@@ -140,7 +141,7 @@ node('servo', 'Actuator servo', '12 V', 'out', 'Torpedo and marker servo',
      [['From', conn('poac', 'LID_CONN1')]],
      {'href': 'actuators.html', 'text': 'Torpedoes, dropper and claw'}, TF + 'talos/PoacBoard/src/actuators/ros_torp.c')
 node('ccbb', 'Camera cage board', 'CAN id 4', 'cage', 'Camera cage breakout board',
-     'Takes 15 V, 5 V and the internal CAN bus from the POAC and hands them out inside the camera cage. Switches the Orin and Peltier (15 V) and four fans (5 V); reads the depth sensor.',
+     'Takes 15 V, 5 V and the internal CAN bus from the POAC and hands them out inside the camera cage. Switches the Orin and a Peltier output (15 V, if one is fitted) and four fans (5 V); reads the depth sensor.',
      [['In', conn('ccbb', 'J6')], ['To the Orin', conn('ccbb', 'J17')], ['CAN to the Orin', conn('ccbb', 'J10')],
       ['Also', 'RGB status strip (J9), external CAN + 15 V (J1/J5), extra power (J11)']],
      {'href': 'boards.html', 'text': 'The circuit boards'}, power['sources']['ccbb'])
@@ -150,16 +151,18 @@ node('orin', 'Jetson AGX Orin', '15 V, switched', 'cage', 'NVIDIA Jetson AGX Ori
      {'href': 'computers.html', 'text': 'Computers and networks'}, TF + 'talos/CameraCageBB/src/ros.c#L160')
 node('hat', 'Orin HAT', 'CAN + RS-232', 'cage', 'Jetson AGX breakout ("Orin HAT")',
      'Plugs onto the Orin\'s 40-pin header: two CAN transceivers (can0 internal, can1 external) and an RS-232 transceiver for the IMU, which it also powers (5 V).',
-     [['CAN', conn('agx_breakout', 'J1')], ['IMU', conn('agx_breakout', 'J2')]],
-     {'href': 'computers.html', 'text': 'Computers and networks'}, TDR26)
+     [['CAN', conn('agx_breakout', 'J1')], ['IMU', conn('agx_breakout', 'J2')],
+      ['Not confirmed', 'the 2026 report shows an "Orin HAT"; that it is this electric_boogaloo design (Jetson AGX Breakout) is inferred']],
+     {'href': 'computers.html', 'text': 'Computers and networks'}, TDR26, inferred=True)
 node('imu', 'VN-100 IMU', 'RS-232', 'cage', 'VectorNav VN-100 IMU',
      'Serial over RS-232 through the HAT, /dev/ttyTHS0 on the Orin. Powered with 5 V from the HAT.',
      [['Port', '/dev/ttyTHS0 (riptide_hardware imu.launch.py)']],
      {'href': 'sensors.html', 'text': 'Navigation sensors'}, RC + 'riptide_hardware/launch/imu.launch.py')
 node('fogb', 'FOG board', 'M.2 RS-422', 'cage', 'Jetson M.2 RS-422 card ("FOG board")',
      'An M.2 card in the Orin. It makes the gyro\'s supply (boost to 8 V, then a 5 V LDO) and converts RS-422.',
-     [['Gyro', conn('agx_m2', 'J1')], ['Port', '/dev/ttyTHS2 (riptide_gyro gyro_config.yaml)']],
-     {'href': 'sensors.html', 'text': 'Navigation sensors'}, TDR24)
+     [['Gyro', conn('agx_m2', 'J1')], ['Port', '/dev/ttyTHS2 (riptide_gyro gyro_config.yaml)'],
+      ['Not confirmed', 'the 2026 report shows a "FOG board"; that it is this M.2 RS-422 design is inferred (a 2024 commit calls it the FOG board)']],
+     {'href': 'sensors.html', 'text': 'Navigation sensors'}, TDR24, inferred=True)
 node('fog', 'Fibre-optic gyro', 'RS-422', 'cage', 'Fizoptika fibre-optic gyro',
      'Yaw rate. Power and RS-422 from the FOG board; the 2025 design report describes the pogo-pin mount that replaced its fragile pin connector.',
      [['From', 'FOG board J1']], {'href': 'sensors.html', 'text': 'Navigation sensors'}, TDR26)
@@ -219,14 +222,15 @@ edge('orin', 'hat', 'power', 'rail', '40-pin header')
 edge('hat', 'imu', 'power', 'rail', '5 V on J2')
 edge('orin', 'fogb', 'power', 'rail', 'M.2 slot; the card boosts to 8 V and regulates 5 V for the gyro')
 edge('fogb', 'fog', 'power', 'rail', '5 V')
+edge('reg5', 'mcu', 'power', 'rail', '5 V into its LM1117 3.3 V regulator')
 # data
 edge('ksw', 'kill', 'data', 'signal', 'KILL_SWITCH on POAC J1: drives MOTOR_EN directly, and is read by the RP2040 (PHYS_KILLSWITCH)')
 edge('mcu', 'kill', 'data', 'signal', 'SOFTWARE_KILL: the RP2040 can break MOTOR_EN through the DG448', 'SOFTWARE_KILL')
 edge('mcu', 'servo', 'data', 'serial', 'half-duplex UART, 115200 baud, level-shifted to 5 V')
 for a, b in [('hat', 'ccbb'), ('ccbb', 'mcu'), ('mcu', 'esc0'), ('esc0', 'esc1'), ('esc1', 'ivc'), ('ivc', 'led')]:
     edge(a, b, 'data', 'can', 'internal CAN FD bus (can0), 1 Mbit/s, 5 Mbit/s data phase', 'CAN FD' if a == 'hat' else None)
-edge('hat', 'bat_p', 'data', 'can2', 'external CAN bus (can1), classic CAN 250 kbit/s', 'CAN 250k')
-edge('hat', 'bat_s', 'data', 'can2', 'external CAN bus (can1), classic CAN 250 kbit/s')
+edge('hat', 'bat_p', 'data', 'can2', 'external CAN bus (can1), classic CAN 250 kbit/s, through the camera cage board\'s EXT. CAN jacks', 'CAN 250k')
+edge('hat', 'bat_s', 'data', 'can2', 'external CAN bus (can1), classic CAN 250 kbit/s, through the camera cage board\'s EXT. CAN jacks')
 edge('esc0', 'thr03', 'data', 'signal', 'bidirectional DShot600 to each ESC, RPM back')
 edge('esc1', 'thr47', 'data', 'signal', 'bidirectional DShot600 to each ESC, RPM back')
 edge('sw', 'orin', 'data', 'eth', 'Ethernet', 'Ethernet')
@@ -238,6 +242,16 @@ edge('orin', 'zed', 'data', 'gmsl', 'GMSL2', 'GMSL2')
 edge('ccbb', 'depth', 'data', 'i2c', 'I2C at 200 kHz')
 edge('orin', 'fogb', 'data', 'serial', 'M.2 (UART)')
 edge('orin', 'hat', 'data', 'serial', '40-pin header: CAN controllers and UART')
+
+def browsable(url):
+    """A .SchDoc is binary and GitHub can't show it: link its project folder instead."""
+    if url and url.startswith(EB) and url.endswith('.SchDoc'):
+        return EB_TREE + url[len(EB):].rsplit('/', 1)[0]
+    return url
+
+
+for n in N:
+    n['card']['source'] = browsable(n['card']['source'])
 
 out = {'about': __doc__.split('\n')[0], 'sources': {'power': 'public/data/boards/power.json', 'boards': 'public/data/boards/boards.json', 'tdr26': TDR26},
        'nodes': N, 'edges': E}

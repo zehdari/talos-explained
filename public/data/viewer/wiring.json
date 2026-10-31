@@ -19,7 +19,8 @@
      "sim_only": true,
      "robot": "POAC board firmware (talos/PoacBoard/src/ros.c)",
      "note": "KillSwitchReport on slot 1 every 50 ms",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/command/software_kill",
@@ -30,9 +31,10 @@
      "rate": 20.3,
      "sim_hz": null,
      "sim_only": false,
-     "robot": "POAC board firmware (talos/PoacBoard/src/ros.c)",
+     "robot": "Any other sender on slot 1, such as a second viewer. There should be none",
      "note": "Watches for anyone else on slot 1 (a competing operator)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/state/kill",
@@ -47,7 +49,8 @@
      "sim_only": true,
      "robot": "POAC board firmware (talos/PoacBoard/src/ros.c)",
      "note": "\"Robot: killed / enabled\" under the button",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     }
    ]
   },
@@ -69,7 +72,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Asked before Position / Feedforward control starts",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/controller/linear",
@@ -84,7 +88,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Position half of each command (map frame)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/controller/angular",
@@ -99,7 +104,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Orientation half of each command",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/controller/linear",
@@ -114,7 +120,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Also listens, so the gizmo follows a tree's setpoints",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/tf",
@@ -133,7 +140,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Broadcasts the command as the frame ghost/base_link",
-     "when": ""
+     "when": "",
+     "peers_note": "Every /tf listener gets it; ghost/base_link is there for anyone who wants the commanded pose. Nothing in the stack uses it"
     },
     {
      "name": "/tf",
@@ -152,7 +160,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Actual pose: world \u2192 talos/base_link",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     }
    ]
   },
@@ -174,7 +183,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Fills the tree picker",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/autonomy/run_tree",
@@ -189,7 +199,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Start sends a goal; Stop cancels it",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/autonomy/tree_stack",
@@ -204,7 +215,8 @@
      "sim_only": false,
      "robot": "",
      "note": "The execution stack shown under the picker",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     }
    ]
   },
@@ -226,7 +238,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Tag calibration: averages samples of world \u2192 tag",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/mapping_target",
@@ -241,7 +254,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Set mapping target / Lock map",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/mapping/reset_mapping",
@@ -256,7 +270,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Reset mapping",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/state/mapping",
@@ -271,7 +286,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Current target and lock",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     }
    ]
   },
@@ -291,9 +307,10 @@
      "rate": null,
      "sim_hz": null,
      "sim_only": true,
-     "robot": "POAC board firmware (actuators/ros_torp.c)",
+     "robot": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c); refused while killed",
      "note": "Arm actuators",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/command/actuator/torpedo",
@@ -306,9 +323,10 @@
      "rate": null,
      "sim_hz": null,
      "sim_only": true,
-     "robot": "POAC board firmware (actuators/ros_torp.c)",
+     "robot": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
      "note": "Fire torpedo (needs Arm)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/command/actuator/dropper",
@@ -321,9 +339,10 @@
      "rate": null,
      "sim_hz": null,
      "sim_only": true,
-     "robot": "POAC board firmware (actuators/ros_torp.c)",
+     "robot": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
      "note": "Drop marker (needs Arm)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/command/actuator/claw",
@@ -336,9 +355,10 @@
      "rate": null,
      "sim_hz": null,
      "sim_only": true,
-     "robot": "POAC board firmware (actuators/ros_torp.c)",
+     "robot": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
      "note": "Open claw (needs Arm)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/command/actuator/claw_move_s",
@@ -351,9 +371,10 @@
      "rate": null,
      "sim_hz": null,
      "sim_only": true,
-     "robot": "",
+     "robot": "No subscriber found in titan_firmware or the robot stack: only the simulator uses it",
      "note": "Stop claw (needs Arm)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/command/actuator/notify_reload",
@@ -366,9 +387,10 @@
      "rate": null,
      "sim_hz": null,
      "sim_only": true,
-     "robot": "",
+     "robot": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c): torpedo and dropper counts back to 2",
      "note": "Reload / disarm",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/state/actuator/status",
@@ -383,7 +405,8 @@
      "sim_only": true,
      "robot": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
      "note": "Armed state, connections, rounds left",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     }
    ]
   },
@@ -403,7 +426,8 @@
      "sim_only": false,
      "robot": "FOG driver (riptide_gyro driver.cpp)",
      "note": "FOG: warn 55 \u00b0C, error 75 \u00b0C",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/dvl/bottom_lock",
@@ -416,7 +440,8 @@
      "sim_only": false,
      "robot": "DVL driver (nortek_dvl dvl_driver.cpp)",
      "note": "DVL: bottom lock",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/diagnostics_agg",
@@ -429,7 +454,8 @@
      "sim_only": false,
      "robot": "",
      "note": "CPU: warn 70 \u00b0C, error 85 \u00b0C",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/state/battery",
@@ -442,7 +468,8 @@
      "sim_only": false,
      "robot": "SmartBattery firmware (talos/SmartBattery/src/ros.c)",
      "note": "PORT: warn below 50 %, error below 20 %",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/dvl_twist",
@@ -457,7 +484,8 @@
      "sim_only": true,
      "robot": "DVL driver (nortek_dvl dvl_driver.cpp)",
      "note": "DVL: the simulator's DVL has no lock topic, so a bottom-track velocity counts",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     }
    ]
   },
@@ -475,9 +503,10 @@
      "rate": null,
      "sim_hz": null,
      "sim_only": false,
-     "robot": "POAC board firmware (talos/PoacBoard/src/ros.c)",
+     "robot": "POAC board firmware (talos/PoacBoard/src/ros.c) and other boards",
      "note": "11 power buttons (cycle computer, kill robot power, fans, ...)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/command/led",
@@ -488,9 +517,10 @@
      "rate": null,
      "sim_hz": null,
      "sim_only": false,
-     "robot": "Camera cage board firmware (talos/CameraCageBB/src/ros.c)",
+     "robot": "LED firmware (talos/CameraCageBB/src/ros.c, talos/LEDBoard/src/ros.c)",
      "note": "LED colour, brightness and mode",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/gyro/tare",
@@ -503,7 +533,8 @@
      "sim_only": false,
      "robot": "FOG driver (riptide_gyro)",
      "note": "Tare gyro",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/vectornav/mag_cal",
@@ -516,7 +547,8 @@
      "sim_only": false,
      "robot": "VectorNav IMU driver",
      "note": "IMU magnetometer calibration",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/vectornav/config",
@@ -529,7 +561,8 @@
      "sim_only": false,
      "robot": "VectorNav IMU driver",
      "note": "Read / write IMU registers",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/ivc/pinger/enable",
@@ -542,7 +575,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Pinger enable, re-sent every 1 s",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/ivc/pinger/set_freq_broker_khz",
@@ -555,7 +589,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Pinger frequency: 25, 30, 35, 37, 40 kHz",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/ivc/tx",
@@ -568,7 +603,8 @@
      "sim_only": false,
      "robot": "",
      "note": "IVC (inter-vehicle comms) byte",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     }
    ]
   },
@@ -588,7 +624,8 @@
      "sim_only": false,
      "robot": "ZED driver (zed-ros2-wrapper)",
      "note": "FFC SVO start",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/ffc/zed_node/stop_svo_rec",
@@ -601,7 +638,8 @@
      "sim_only": false,
      "robot": "ZED driver (zed-ros2-wrapper)",
      "note": "FFC SVO stop",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/dfc/zed_node/start_svo_rec",
@@ -614,7 +652,8 @@
      "sim_only": false,
      "robot": "ZED driver (zed-ros2-wrapper)",
      "note": "DFC SVO start",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/dfc/zed_node/stop_svo_rec",
@@ -627,7 +666,8 @@
      "sim_only": false,
      "robot": "ZED driver (zed-ros2-wrapper)",
      "note": "DFC SVO stop",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/capture_image",
@@ -640,7 +680,8 @@
      "sim_only": false,
      "robot": "picture_taker.py (riptide_hardware2)",
      "note": "Capture image: saves the newest front-camera frame on the robot",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     }
    ]
   },
@@ -662,7 +703,8 @@
      "sim_only": true,
      "robot": "",
      "note": "The scene: robot, pool, course (sim). On the robot the viewer loads it itself",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/tf",
@@ -681,7 +723,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Robot pose and every frame (TF toggle)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/controller/mpc/predicted_path",
@@ -696,7 +739,8 @@
      "sim_only": false,
      "robot": "",
      "note": "MPC path toggle: the predicted path",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/controller/mpc/planned_path",
@@ -711,7 +755,8 @@
      "sim_only": false,
      "robot": "",
      "note": "MPC path toggle: a whole follow_path plan",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/thruster_forces",
@@ -726,7 +771,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Thrust toggle: red arrows, 0.05 m per newton",
-     "when": "only while Thrust is on"
+     "when": "only while Thrust is on",
+     "peers_note": ""
     },
     {
      "name": "/talos/yolo_orientation/visualization_marker_array",
@@ -741,7 +787,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Detector markers (Vision panel)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/mapping/torpedo",
@@ -756,7 +803,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Covariance toggle: one mapping/<object> topic per prop",
-     "when": "only while Covariance is on"
+     "when": "only while Covariance is on",
+     "peers_note": ""
     },
     {
      "name": "/talos/yolo_orientation/point_cloud",
@@ -771,7 +819,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Point cloud: YOLO detections",
-     "when": "only while ticked in Vision"
+     "when": "only while ticked in Vision",
+     "peers_note": ""
     },
     {
      "name": "/talos/ffc/zed_node/point_cloud/cloud_registered",
@@ -786,7 +835,8 @@
      "sim_only": true,
      "robot": "ZED driver (zed-ros2-wrapper)",
      "note": "Point cloud: Front camera",
-     "when": "only while ticked in Vision"
+     "when": "only while ticked in Vision",
+     "peers_note": ""
     },
     {
      "name": "/talos/dfc/zed_node/point_cloud/cloud_registered",
@@ -801,7 +851,8 @@
      "sim_only": true,
      "robot": "ZED driver (zed-ros2-wrapper)",
      "note": "Point cloud: Down camera",
-     "when": "only while ticked in Vision"
+     "when": "only while ticked in Vision",
+     "peers_note": ""
     },
     {
      "name": "/talos/simulator/actual_thruster_forces",
@@ -816,7 +867,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Spins the drawn propellers",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/command/led",
@@ -830,9 +882,10 @@
      "rate": null,
      "sim_hz": null,
      "sim_only": false,
-     "robot": "Camera cage board firmware (talos/CameraCageBB/src/ros.c)",
+     "robot": "Published by the trees and mapping, as in sim; the LED firmware (CameraCageBB, LEDBoard) listens",
      "note": "Colours the drawn LED bars",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/simulator/claw_joints",
@@ -847,7 +900,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Claw jaw positions",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/simulator/task_objects",
@@ -862,7 +916,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Loose props (table items, magnets)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/simulator/projectiles",
@@ -877,7 +932,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Torpedoes and markers in flight",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     }
    ]
   },
@@ -899,7 +955,8 @@
      "sim_only": true,
      "robot": "ZED driver (zed-ros2-wrapper)",
      "note": "Forward camera, ROS source",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/dfc/zed_node/rgb/image_rect_color/compressed",
@@ -914,7 +971,8 @@
      "sim_only": true,
      "robot": "ZED driver (zed-ros2-wrapper)",
      "note": "Downward camera, ROS source",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/ffc/zed_node/depth/depth_registered",
@@ -929,7 +987,8 @@
      "sim_only": true,
      "robot": "ZED driver (zed-ros2-wrapper)",
      "note": "Depth view",
-     "when": "only while Depth is chosen"
+     "when": "only while Depth is chosen",
+     "peers_note": ""
     }
    ]
   },
@@ -951,7 +1010,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Start run / Stop run / options",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/simulator/reset_tasks",
@@ -966,7 +1026,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Reset run & tasks",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/simulator/run_score",
@@ -981,7 +1042,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Clock, points and status lines",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/simulator/task_score",
@@ -996,7 +1058,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Per-task status",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/simulator/task_events",
@@ -1011,7 +1074,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Recent events (torpedo hit, dropper, magnet, ...)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     }
    ]
   },
@@ -1031,7 +1095,8 @@
      "sim_only": false,
      "robot": "",
      "note": "Speed: sets real_time_factor (up to 10x)",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/sync_sim_to_estimate",
@@ -1046,7 +1111,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Sync sim: moves the simulated robot to the EKF estimate",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     },
     {
      "name": "/talos/reset_sim_to_start",
@@ -1061,7 +1127,8 @@
      "sim_only": true,
      "robot": "",
      "note": "Reset sim: back to the start pose",
-     "when": ""
+     "when": "",
+     "peers_note": ""
     }
    ]
   }

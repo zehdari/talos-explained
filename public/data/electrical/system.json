@@ -146,7 +146,7 @@
      "href": "#two-packs",
      "text": "Two packs, one bus"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator/Poactuator_Power_Circuits.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator",
     "inferred": false
    }
   },
@@ -156,8 +156,8 @@
    "sub": "V+ to MOTOR_PWR",
    "group": "poac",
    "card": {
-    "title": "Thruster power switch",
-    "what": "Three P-channel MOSFETs in parallel connect V+ to MOTOR_PWR, the ESC supply. They conduct only while MOTOR_EN is on: the physical switch is in AND the microcontroller holds SOFTWARE_KILL at \"run\".",
+    "title": "Kill MOSFETs",
+    "what": "The thruster power switch. Three P-channel MOSFETs in parallel connect V+ to MOTOR_PWR, the ESC supply. They conduct only while MOTOR_EN is on: the physical switch is in AND the microcontroller holds SOFTWARE_KILL at \"run\".",
     "rows": [
      [
       "Parts",
@@ -176,7 +176,7 @@
      "href": "commanding.html",
      "text": "Kill slots and software kill"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator/Poactuator_KillSwitch.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator",
     "inferred": false
    }
   },
@@ -217,7 +217,7 @@
     "rows": [
      [
       "Feeds",
-      "camera cage board (Orin, DVL, Peltier), stack link, 12 V LDO"
+      "camera cage board (Orin, DVL, Peltier output if fitted), stack link, 12 V LDO"
      ],
      [
       "Measured",
@@ -228,7 +228,7 @@
      "href": "#rails",
      "text": "Regulators and rails"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator/Poactuator_Power_Circuits.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator",
     "inferred": false
    }
   },
@@ -239,11 +239,11 @@
    "group": "poac",
    "card": {
     "title": "5 V regulator",
-    "what": "The same TDK-Lambda module, trimmed to 5 V. Every board makes its own 3.3 V from this with an LM1117 LDO.",
+    "what": "The same TDK-Lambda module, trimmed to 5 V. Each board in the stack and the camera cage makes its own 3.3 V from this with an LM1117 LDO.",
     "rows": [
      [
       "Feeds",
-      "board logic (stack link, camera cage), network switch, fans, depth sensor, LED strip"
+      "board logic (POAC microcontroller, stack link, camera cage), network switch, fans, depth sensor, LED strip"
      ],
      [
       "Measured",
@@ -254,7 +254,7 @@
      "href": "#rails",
      "text": "Regulators and rails"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator/Poactuator_Power_Circuits.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator",
     "inferred": false
    }
   },
@@ -276,7 +276,7 @@
      "href": "actuators.html",
      "text": "Torpedoes, dropper and claw"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator/Poactuator_Power_Circuits.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator",
     "inferred": false
    }
   },
@@ -314,7 +314,7 @@
      "href": "thrusters-hw.html",
      "text": "Thrusters and ESCs"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TempestBoards/MK2/ESC/ESC.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TempestBoards/MK2/ESC",
     "inferred": false
    }
   },
@@ -352,7 +352,7 @@
      "href": "thrusters-hw.html",
      "text": "Thrusters and ESCs"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TempestBoards/MK2/ESC/ESC.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TempestBoards/MK2/ESC",
     "inferred": false
    }
   },
@@ -430,7 +430,7 @@
      "href": "boards.html",
      "text": "The circuit boards"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20One/LED_Board",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/LED_Board",
     "inferred": false
    }
   },
@@ -456,7 +456,7 @@
      "href": "boards.html",
      "text": "The circuit boards"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20Two/IVC/PowerAndConnections.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20Two/IVC",
     "inferred": false
    }
   },
@@ -489,7 +489,7 @@
    "group": "cage",
    "card": {
     "title": "Camera cage breakout board",
-    "what": "Takes 15 V, 5 V and the internal CAN bus from the POAC and hands them out inside the camera cage. Switches the Orin and Peltier (15 V) and four fans (5 V); reads the depth sensor.",
+    "what": "Takes 15 V, 5 V and the internal CAN bus from the POAC and hands them out inside the camera cage. Switches the Orin and a Peltier output (15 V, if one is fitted) and four fans (5 V); reads the depth sensor.",
     "rows": [
      [
       "In",
@@ -512,7 +512,7 @@
      "href": "boards.html",
      "text": "The circuit boards"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TempestBoards/MK2/CameraCageBB/CameraCageBB.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TempestBoards/MK2/CameraCageBB",
     "inferred": false
    }
   },
@@ -558,6 +558,10 @@
      [
       "IMU",
       "J2 IMU (JST XH 4-pin): 5V, RS-232 TX/RX, GND"
+     ],
+     [
+      "Not confirmed",
+      "the 2026 report shows an \"Orin HAT\"; that it is this electric_boogaloo design (Jetson AGX Breakout) is inferred"
      ]
     ],
     "link": {
@@ -565,7 +569,7 @@
      "text": "Computers and networks"
     },
     "source": "https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf",
-    "inferred": false
+    "inferred": true
    }
   },
   {
@@ -606,6 +610,10 @@
      [
       "Port",
       "/dev/ttyTHS2 (riptide_gyro gyro_config.yaml)"
+     ],
+     [
+      "Not confirmed",
+      "the 2026 report shows a \"FOG board\"; that it is this M.2 RS-422 design is inferred (a 2024 commit calls it the FOG board)"
      ]
     ],
     "link": {
@@ -613,7 +621,7 @@
      "text": "Navigation sensors"
     },
     "source": "https://org.osu.edu/osu-uwrt/files/2024/06/TDR_THEOhioStateUniversity_RS2024.pdf",
-    "inferred": false
+    "inferred": true
    }
   },
   {
@@ -682,7 +690,7 @@
      "href": "computers.html",
      "text": "Computers and networks"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TempestBoards/MK2/CameraCageBB/CameraCageBB.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TempestBoards/MK2/CameraCageBB",
     "inferred": false
    }
   },
@@ -704,7 +712,7 @@
      "href": "sensors.html",
      "text": "Navigation sensors"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TempestBoards/MK2/CameraCageBB/CameraCageBB.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TempestBoards/MK2/CameraCageBB",
     "inferred": false
    }
   },
@@ -726,7 +734,7 @@
      "href": "sensors.html",
      "text": "Navigation sensors"
     },
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TempestBoards/MK2/CameraCageBB/CameraCageBB.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TempestBoards/MK2/CameraCageBB",
     "inferred": false
    }
   },
@@ -753,7 +761,7 @@
      ]
     ],
     "link": null,
-    "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TempestBoards/MK2/CameraCageBB/CameraCageBB.SchDoc",
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TempestBoards/MK2/CameraCageBB",
     "inferred": true
    }
   },
@@ -998,6 +1006,15 @@
    "inferred": false
   },
   {
+   "from": "reg5",
+   "to": "mcu",
+   "layer": "power",
+   "kind": "rail",
+   "desc": "5 V into its LM1117 3.3 V regulator",
+   "label": null,
+   "inferred": false
+  },
+  {
    "from": "ksw",
    "to": "kill",
    "layer": "data",
@@ -1083,7 +1100,7 @@
    "to": "bat_p",
    "layer": "data",
    "kind": "can2",
-   "desc": "external CAN bus (can1), classic CAN 250 kbit/s",
+   "desc": "external CAN bus (can1), classic CAN 250 kbit/s, through the camera cage board's EXT. CAN jacks",
    "label": "CAN 250k",
    "inferred": false
   },
@@ -1092,7 +1109,7 @@
    "to": "bat_s",
    "layer": "data",
    "kind": "can2",
-   "desc": "external CAN bus (can1), classic CAN 250 kbit/s",
+   "desc": "external CAN bus (can1), classic CAN 250 kbit/s, through the camera cage board's EXT. CAN jacks",
    "label": null,
    "inferred": false
   },

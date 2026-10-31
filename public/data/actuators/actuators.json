@@ -1,0 +1,1061 @@
+{
+ "firmware": {
+  "repo": "osu-uwrt/titan_firmware",
+  "branch": "master",
+  "commit": "058df2a",
+  "torp_first_deg": 200,
+  "torp_second_deg": 240,
+  "marker_first_deg": 50,
+  "marker_second_deg": 0,
+  "torpedoes": 2,
+  "markers": 2,
+  "home_deg": 120,
+  "servo_max_dps": 300,
+  "postmove_ms": 250,
+  "max_errors": 10,
+  "servo_id": 1,
+  "range_deg": 240,
+  "range_units": 1000,
+  "status_ms": 500,
+  "uart_tick_ms": 10,
+  "ping_ms": 1000,
+  "cmd_status_ms": 100,
+  "baud": 115200,
+  "uart_timeout_ms": 50,
+  "servo_pin": 27,
+  "kill_disarms": false,
+  "messages": [
+   "All Dropped",
+   "All Torpedos Fired",
+   "Already Armed",
+   "Already Firing",
+   "Busy",
+   "Kill Switch Removed",
+   "Must be disarmed",
+   "Not Armed",
+   "Not Connected"
+  ]
+ },
+ "firmware_claw_branch": {
+  "branch": "poac-multiple-servos",
+  "claw_servo_id": 3,
+  "topic": "command/actuator/claw_move_s",
+  "torp_servo_id": 1,
+  "last_commit": "2026-06-28 Claw is ID 3"
+ },
+ "translator": {
+  "feedback_period_s": 0.2,
+  "services": [
+   [
+    "Trigger",
+    "command/actuator/torpedo"
+   ],
+   [
+    "Trigger",
+    "command/actuator/dropper"
+   ],
+   [
+    "Trigger",
+    "command/actuator/notify_reload"
+   ],
+   [
+    "SetBool",
+    "command/actuator/arm"
+   ]
+  ]
+ },
+ "status_enums": {
+  "claw": {
+   "0": "error",
+   "1": "disarmed",
+   "2": "unknown",
+   "3": "opened",
+   "4": "bottle_closed",
+   "5": "spoon_closed",
+   "6": "opening",
+   "7": "closing"
+  },
+  "rack": {
+   "0": "error",
+   "1": "disarmed",
+   "2": "unknown",
+   "3": "raised",
+   "4": "lowered",
+   "5": "raising",
+   "6": "lowering"
+  },
+  "torpedo": {
+   "0": "error",
+   "1": "disarmed",
+   "2": "charging",
+   "3": "charged",
+   "4": "firing",
+   "5": "fired"
+  },
+  "dropper": {
+   "0": "error",
+   "1": "disarmed",
+   "2": "ready",
+   "3": "dropping",
+   "4": "dropped"
+  }
+ },
+ "status_fields": [
+  [
+   "bool",
+   "actuators_armed"
+  ],
+  [
+   "uint8",
+   "claw_state"
+  ],
+  [
+   "uint8",
+   "rack_state"
+  ],
+  [
+   "uint8",
+   "torpedo_state"
+  ],
+  [
+   "uint8",
+   "torpedo_available_count"
+  ],
+  [
+   "uint8",
+   "dropper_state"
+  ],
+  [
+   "uint8",
+   "dropper_available_count"
+  ]
+ ],
+ "poses": {
+  "torpedoes": [
+   0.048,
+   0.1739,
+   -0.15426,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "droppers": [
+   -0.04337956,
+   0.17200625,
+   -0.1501,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "claw": [
+   0.19,
+   0.034,
+   -0.3712,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "magnet": [
+   -0.2946,
+   0.0475,
+   -0.391,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "poker": [
+   0.2286,
+   0.0127,
+   -0.17145,
+   0,
+   0,
+   0
+  ],
+  "torpedo_baseline": 0.035,
+  "frame": "talos/origin",
+  "base_link_in_origin": [
+   -0.14,
+   0.03,
+   -0.09
+  ]
+ },
+ "tree": {
+  "file": "RepairCompMpcTree.xml",
+  "fire_torpedo": {
+   "wait_s": 2.0,
+   "time_limit_s": 1.0,
+   "force_success": true
+  },
+  "fire_dropper": {
+   "wait_s": 1.0
+  },
+  "set_armed": {
+   "wait_s": 1.0,
+   "time_limit_s": 1.0
+  },
+  "wait_for_actuators": {
+   "poll_s": 0.25
+  },
+  "shoot": {
+   "ctrler_timeout": "60",
+   "scale_trust": "0.985",
+   "ctrler_dist": "0.01",
+   "shoot_prox": "0.6",
+   "shoot_prox_plus": "1.1",
+   "ms_prox": "1.5",
+   "ms_timeout": "30",
+   "target_cov": "0.0005"
+  },
+  "drop": {
+   "overbin": "1",
+   "ctrler_dist": "0.01",
+   "ctrler_trust": "0.90",
+   "ctrler_timeout": "30",
+   "dfc_link": "talos/dfc_base_link",
+   "hover_cov": "0.0005"
+  },
+  "table": {
+   "claw_topic": "command/actuator/claw_move_s",
+   "claw_drop_s": "0.3",
+   "claw_open_s": "2.0",
+   "claw_close_s": "-2.0",
+   "claw_link": "talos/claw_link"
+  },
+  "magnet": {
+   "magnet_activation_s": "2",
+   "magnet_pre_align_dist": "0.7",
+   "magnet_align_dist": "0.0",
+   "magnet_align_height": "0.04",
+   "magnet_link": "talos/magnet_link"
+  },
+  "status_timeout_s": 3.0
+ },
+ "nereus": {
+  "safety": {
+   "initially_killed": true,
+   "kill_stops_thrusters": true,
+   "commands_while_killed": "zero_force",
+   "kill_disarms_mechanisms": true,
+   "arming": {
+    "initially_armed": false,
+    "arm_rejected_while_killed": true,
+    "applies_to": [
+     "torpedo_launcher",
+     "dropper",
+     "claw"
+    ]
+   }
+  },
+  "mechanisms": {
+   "torpedo_launcher": {
+    "id": "torpedo_launcher",
+    "type": "launcher",
+    "frame": "torpedoes_mount",
+    "parameters": {
+     "slots": [
+      {
+       "id": "slot_0",
+       "position_m": [
+        0.01594921,
+        -0.02560642,
+        -0.0218555
+       ],
+       "orientation_wxyz": [
+        1,
+        0,
+        0,
+        0
+       ]
+      },
+      {
+       "id": "slot_1",
+       "position_m": [
+        0.01594921,
+        0.00939685,
+        -0.0218555
+       ],
+       "orientation_wxyz": [
+        1,
+        0,
+        0,
+        0
+       ]
+      }
+     ],
+     "projectile": {
+      "model": "finned_rigid_body",
+      "length_m": 0.08299993,
+      "radius_m": 0.013,
+      "mass_kg": 0.01222,
+      "displaced_volume_m3": 1.2e-05,
+      "added_mass_kg": 0.003,
+      "drag_axial": 0.015,
+      "drag_lateral": 0.35,
+      "center_of_mass_m": 0.02,
+      "center_of_buoyancy_m": -0.02,
+      "center_of_drag_m": -0.025,
+      "angular_damping_n_m_s": 0.01,
+      "neutral_buoyancy": false,
+      "max_age_s": 30
+     },
+     "launch": {
+      "spring_energy_j": 0.047
+     },
+     "cooldown_s": 0.5,
+     "cooldown_group": "payload_release",
+     "capacity": 2
+    }
+   },
+   "dropper": {
+    "id": "dropper",
+    "type": "dropper",
+    "frame": "droppers_mount",
+    "parameters": {
+     "slots": [
+      {
+       "id": "slot_0",
+       "position_m": [
+        -0.04337956,
+        -0.01560642,
+        -0.12296563
+       ],
+       "orientation_wxyz": [
+        0.7071067811865476,
+        0,
+        0.7071067811865476,
+        0
+       ]
+      },
+      {
+       "id": "slot_1",
+       "position_m": [
+        -0.04337956,
+        0.01939685,
+        -0.12296563
+       ],
+       "orientation_wxyz": [
+        0.7071067811865476,
+        0,
+        0.7071067811865476,
+        0
+       ]
+      }
+     ],
+     "projectile": {
+      "model": "fixed_axis_body",
+      "length_m": 0.08299993,
+      "radius_m": 0.013,
+      "mass_kg": 0.01488,
+      "displaced_volume_m3": 1.2e-05,
+      "added_mass_kg": 0.003,
+      "drag_axial": 0.015,
+      "drag_lateral": 0.35,
+      "neutral_buoyancy": false,
+      "max_age_s": 30
+     },
+     "launch": {
+      "spring_energy_j": 0.047
+     },
+     "cooldown_s": 0.5,
+     "cooldown_group": "payload_release",
+     "capacity": 2
+    }
+   },
+   "claw": {
+    "id": "claw",
+    "type": "claw",
+    "frame": "claw_pinch",
+    "parameters": {
+     "min_gap_m": 0.0012,
+     "max_gap_m": 0.14,
+     "jaw_speed_m_s": 0.033,
+     "completion_tolerance_m": 0.002,
+     "hold_force_n": 12.0,
+     "friction": 1.2,
+     "contact_margin_m": 0.001,
+     "grasp_dwell_s": 0.04,
+     "slip_distance_m": 0.025,
+     "pads": {
+      "left": "claw_pad_left",
+      "right": "claw_pad_right"
+     },
+     "timed_command": "signed_duration",
+     "initial_state": "closed"
+    }
+   },
+   "magnet": {
+    "id": "magnet",
+    "type": "magnet",
+    "frame": "magnet_mount",
+    "parameters": {
+     "tip_position_m": [
+      0,
+      0,
+      0.05
+     ],
+     "actuated": false
+    }
+   }
+  },
+  "frames": null,
+  "launch_speed_m_s": {
+   "torpedo_launcher": 2.485,
+   "dropper": 2.293
+  },
+  "status_map": {
+   "actuators_armed": {
+    "from": "armed"
+   },
+   "claw_state": {
+    "from": "claw.state",
+    "enum_map": {
+     "disarmed": 1,
+     "opening": 6,
+     "closing": 7,
+     "opened": 3,
+     "closed": 4
+    }
+   },
+   "rack_state": {
+    "constant": 2
+   },
+   "torpedo_state": {
+    "from": "torpedo_launcher.state",
+    "enum_map": {
+     "disarmed": 1,
+     "busy": 4,
+     "loaded": 3,
+     "empty": 5
+    }
+   },
+   "torpedo_available_count": {
+    "from": "torpedo_launcher.available"
+   },
+   "dropper_state": {
+    "from": "dropper.state",
+    "enum_map": {
+     "disarmed": 1,
+     "busy": 3,
+     "loaded": 2,
+     "empty": 4
+    }
+   },
+   "dropper_available_count": {
+    "from": "dropper.available"
+   }
+  },
+  "services": [
+   "command/actuator/arm",
+   "command/actuator/torpedo",
+   "command/actuator/dropper",
+   "command/actuator/notify_reload",
+   "command/actuator/claw"
+  ],
+  "messages": [
+   "Cannot arm while killed",
+   "Claw command accepted; grasp physics unavailable",
+   "Mechanism is disarmed or vehicle is killed",
+   "No ammunition; reload first",
+   "Payload released",
+   "Release group is busy",
+   "Reloaded and disarmed"
+  ]
+ },
+ "viewer_commands": [
+  {
+   "id": "arm",
+   "label": "Arm actuators",
+   "armed_label": "Disarm",
+   "topic": "command/actuator/arm",
+   "type": "bool",
+   "toggle_armed": true
+  },
+  {
+   "id": "torpedo",
+   "label": "Fire torpedo",
+   "topic": "command/actuator/torpedo",
+   "type": "empty",
+   "requires_armed": true
+  },
+  {
+   "id": "dropper",
+   "label": "Drop marker",
+   "topic": "command/actuator/dropper",
+   "type": "empty",
+   "requires_armed": true
+  },
+  {
+   "id": "open_claw",
+   "label": "Open claw",
+   "topic": "command/actuator/claw",
+   "type": "bool",
+   "value": true,
+   "requires_armed": true
+  },
+  {
+   "id": "close_claw",
+   "label": "Close claw",
+   "topic": "command/actuator/claw",
+   "type": "bool",
+   "value": false,
+   "requires_armed": true
+  },
+  {
+   "id": "stop_claw",
+   "label": "Stop claw",
+   "topic": "command/actuator/claw_move_s",
+   "type": "float32",
+   "value": 0,
+   "requires_armed": true
+  },
+  {
+   "id": "reload",
+   "label": "Reload / disarm",
+   "topic": "command/actuator/notify_reload",
+   "type": "empty"
+  }
+ ],
+ "cad": {
+  "launcher": {
+   "name": "Torpedoes + Markers V8",
+   "count": 1,
+   "size_mm": [
+    99.0,
+    123.0,
+    406.8
+   ],
+   "material": null,
+   "mass_kg": 0.77977
+  },
+  "spring": {
+   "name": "Spring (9435K123)",
+   "count": 4,
+   "size_mm": [
+    16.3,
+    16.3,
+    38.9
+   ],
+   "material": null,
+   "mass_kg": 0.00073
+  },
+  "launcher_servo": {
+   "name": "SER-20XX Servo",
+   "count": 1,
+   "size_mm": [
+    86.5,
+    32.0,
+    80.0
+   ],
+   "material": "6061 Alloy",
+   "mass_kg": 0.38292
+  },
+  "torpedo": {
+   "name": "Sinky Torp",
+   "count": 1,
+   "size_mm": [
+    33.9,
+    33.9,
+    83.0
+   ],
+   "material": "PBT General Purpose",
+   "mass_kg": 0.01607
+  },
+  "poker": {
+   "name": "Magnet poker assembly",
+   "count": 1,
+   "size_mm": [
+    52.8,
+    52.8,
+    184.8
+   ],
+   "material": null,
+   "mass_kg": 0.23875
+  },
+  "claw": {
+   "name": "EMERGENCYCLAWASSEMBLY",
+   "count": 1,
+   "size_mm": [
+    236.1,
+    483.3,
+    347.5
+   ],
+   "material": null,
+   "mass_kg": 0.9357
+  },
+  "claw_servo": {
+   "name": "Servo - SER-20XX.step",
+   "count": 1,
+   "size_mm": [
+    32.0,
+    117.5,
+    117.8
+   ],
+   "material": null,
+   "mass_kg": 0.14182
+  }
+ },
+ "nereus_shot": {
+  "source": "Nereus media run 2026-10-30, RepairCompMpcTree, sim seconds from the torpedo release",
+  "rows": [
+   [
+    -1.122,
+    "stack",
+    [
+     "WaitForController",
+     "Fallback",
+     "Wait for scale trust",
+     "Wait"
+    ]
+   ],
+   [
+    -0.132,
+    "stack",
+    [
+     "WaitForController",
+     "Fallback",
+     "Wait for scale trust",
+     "Wait"
+    ]
+   ],
+   [
+    -0.052,
+    "stack",
+    [
+     "WaitForController",
+     "Fallback",
+     "Wait for scale trust",
+     "Wait"
+    ]
+   ],
+   [
+    -0.052,
+    "stack",
+    [
+     "WaitForController",
+     "Fallback",
+     "Wait for scale trust",
+     "Wait"
+    ]
+   ],
+   [
+    -0.03,
+    "stack",
+    [
+     "torpedo",
+     "ShootBothObjectsMpc",
+     "Search both holes, then shoot both",
+     "SetStatus"
+    ]
+   ],
+   [
+    -0.026,
+    "stack",
+    [
+     "ShootBothObjectsMpc",
+     "Search both holes, then shoot both",
+     "RetryUntilSuccessful",
+     "FireTorpedo"
+    ]
+   ],
+   [
+    -0.004,
+    "stack",
+    [
+     "FireTorpedo",
+     "REMOVE ME",
+     "fire torpedo",
+     "CallTriggerService"
+    ]
+   ],
+   [
+    0.0,
+    "event",
+    {
+     "id": 0,
+     "kind": "torpedo",
+     "result": "released",
+     "slot": 0,
+     "target": "",
+     "time": 922.088
+    }
+   ],
+   [
+    0.046,
+    "stack",
+    [
+     "FireTorpedo",
+     "REMOVE ME",
+     "fire torpedo",
+     "Wait"
+    ]
+   ],
+   [
+    0.32,
+    "event",
+    {
+     "id": 0,
+     "kind": "torpedo",
+     "result": "success",
+     "slot": 0,
+     "target": "fire_large",
+     "time": 922.402
+    }
+   ],
+   [
+    2.052,
+    "stack",
+    [
+     "ShootBothObjectsMpc",
+     "Search both holes, then shoot both",
+     "RetryUntilSuccessful",
+     "FireTorpedo"
+    ]
+   ],
+   [
+    2.052,
+    "stack",
+    [
+     "torpedo",
+     "ShootBothObjectsMpc",
+     "Search both holes, then shoot both",
+     "SetStatus"
+    ]
+   ],
+   [
+    2.08,
+    "stack",
+    [
+     "ForceSuccess",
+     "RetryUntilSuccessful",
+     "Slide across to hole 2 at firing distance",
+     "FollowPath"
+    ]
+   ],
+   [
+    4.098,
+    "stack",
+    [
+     "WaitForController",
+     "Fallback",
+     "Wait for scale trust",
+     "Wait"
+    ]
+   ],
+   [
+    5.114,
+    "stack",
+    [
+     "WaitForController",
+     "Fallback",
+     "Wait for scale trust",
+     "Wait"
+    ]
+   ],
+   [
+    5.218,
+    "stack",
+    [
+     "Fallback",
+     "Wait for scale trust",
+     "Wait for scale trust",
+     "Wait"
+    ]
+   ],
+   [
+    5.644,
+    "event",
+    {
+     "kind": "tasks",
+     "result": "reset",
+     "target": "",
+     "time": 927.726
+    }
+   ],
+   [
+    6.368,
+    "stack",
+    [
+     "torpedo",
+     "ShootBothObjectsMpc",
+     "Search both holes, then shoot both",
+     "SetStatus"
+    ]
+   ],
+   [
+    6.368,
+    "stack",
+    [
+     "ShootBothObjectsMpc",
+     "Search both holes, then shoot both",
+     "RetryUntilSuccessful",
+     "FireTorpedo"
+    ]
+   ],
+   [
+    6.368,
+    "stack",
+    [
+     "FireTorpedo",
+     "REMOVE ME",
+     "fire torpedo",
+     "CallTriggerService"
+    ]
+   ],
+   [
+    6.39,
+    "stack",
+    [
+     "TorpedoTreeMpc",
+     "TORPEDO",
+     "handle success",
+     "SetActuatorsArmed"
+    ]
+   ],
+   [
+    6.396,
+    "stack",
+    [
+     "SetActuatorsArmed",
+     "REMOVE ME",
+     "Sequence",
+     "Wait"
+    ]
+   ],
+   [
+    7.392,
+    "stack",
+    [
+     "SetActuatorsArmed",
+     "REMOVE ME",
+     "Sequence",
+     "CallSetBoolService"
+    ]
+   ],
+   [
+    7.428,
+    "stack",
+    [
+     "TorpedoTreeMpc",
+     "TORPEDO",
+     "handle success",
+     "SetActuatorsArmed"
+    ]
+   ],
+   [
+    7.442,
+    "stack",
+    [
+     "torpedo then table",
+     "ForceSuccess",
+     "Path: leave torpedo, straight to the table",
+     "FollowPath"
+    ]
+   ]
+  ]
+ },
+ "lines": {
+  "ros_torp": {
+   "defines": [
+    76,
+    83
+   ],
+   "torpedo_fire": [
+    90,
+    171
+   ],
+   "dropper": [
+    213,
+    227
+   ],
+   "arm": [
+    259,
+    293
+   ],
+   "status": [
+    371,
+    391
+   ],
+   "reload": [
+    201,
+    211
+   ],
+   "set_home": [
+    295,
+    337
+   ],
+   "topics": [
+    33,
+    45
+   ],
+   "claw_state": 377
+  },
+  "actuator": {
+   "consts": [
+    12,
+    13
+   ],
+   "home": 20,
+   "set_armed": [
+    99,
+    114
+   ],
+   "set_deg": [
+    157,
+    181
+   ],
+   "complete": [
+    116,
+    126
+   ],
+   "then_home": [
+    258,
+    262
+   ]
+  },
+  "main": {
+   "timers": [
+    37,
+    40
+   ]
+  },
+  "safety": {
+   "todo": 61
+  },
+  "translator": {
+   "services": [
+    20,
+    23
+   ],
+   "wait": [
+    36,
+    47
+   ]
+  },
+  "talos_yaml": [
+   353,
+   367
+  ],
+  "tree": {
+   "FireTorpedo": [
+    1004,
+    1015
+   ],
+   "FireDropper": [
+    977,
+    1003
+   ],
+   "SetActuatorsArmed": [
+    2196,
+    2209
+   ],
+   "WaitForActuators": [
+    3031,
+    3048
+   ],
+   "ShootBothObjectsMpc": [
+    2355,
+    2424
+   ],
+   "ShootDownwardObjectMpc": [
+    2273,
+    2316
+   ],
+   "TorpedoTreeMpc": [
+    2983,
+    3030
+   ],
+   "ReloadActuators": [
+    1946,
+    1959
+   ],
+   "PrepForRun": [
+    1801,
+    1816
+   ],
+   "ActivateMagnetMpc": [
+    35,
+    65
+   ],
+   "NewTableTreeMpc": [
+    1640,
+    1778
+   ],
+   "CheckActuatorStates": [
+    280,
+    297
+   ]
+  },
+  "robot_yaml": {
+   "safety": [
+    147,
+    155
+   ],
+   "mechanisms": [
+    247,
+    319
+   ]
+  },
+  "bridge": {
+   "topics": [
+    120,
+    182
+   ],
+   "status": [
+    284,
+    317
+   ],
+   "services": [
+    592,
+    621
+   ]
+  },
+  "panels": [
+   35,
+   45
+  ]
+ },
+ "poses_base_link": {
+  "torpedoes": [
+   0.188,
+   0.1439,
+   -0.0643
+  ],
+  "droppers": [
+   0.0966,
+   0.142,
+   -0.0601
+  ],
+  "claw": [
+   0.33,
+   0.004,
+   -0.2812
+  ],
+  "magnet": [
+   -0.1546,
+   0.0175,
+   -0.301
+  ],
+  "poker": [
+   0.3686,
+   -0.0173,
+   -0.0814
+  ]
+ },
+ "cad_in_base_link": {
+  "cad_to_origin_offset_m": [
+   -0.1402,
+   0.0344,
+   -0.0008
+  ],
+  "poker_min": [
+   0.148,
+   -0.156,
+   -0.123
+  ],
+  "poker_max": [
+   0.333,
+   -0.115,
+   -0.082
+  ]
+ }
+}

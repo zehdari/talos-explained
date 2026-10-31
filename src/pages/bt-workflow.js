@@ -180,8 +180,8 @@ function drift(d) {
     if (!f.differs.length) s += 'Every shared subtree matches the workspace.';
     else if (f.file === REF) s += `The file the others are compared with. Differs from the workspace: ${list(f.differs)}.`;
     else {
-      if (f.behind.length) s += `Behind the workspace (it has the ${esc(REF.replace('.xml', ''))} copy): ${list(f.behind)}. `;
-      if (other.length) s += `Differs otherwise: ${list(other)}${f.ahead.length ? ` (${f.ahead.length} of them as in ${esc(REF.replace('.xml', ''))})` : ''}.`;
+      if (f.behind.length) s += `Behind (the workspace has the newer ${esc(REF.replace('.xml', ''))} copy): ${list(f.behind)}. `;
+      if (other.length) s += `Differs some other way: ${list(other)}.`;
     }
     if (f.only.length) s += ` Only here: ${list(f.only)}.`;
     return s;

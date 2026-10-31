@@ -113,37 +113,6 @@ function loadChart(cat) {
   fitBars(box, rows, { digits: 0, labelW: 190, minSeg: 5 });
 }
 
-// ---------- registration ----------
-function regGraph() {
-  const host = document.getElementById('reg-graph');
-  const note = document.createElement('div');
-  note.className = 'graph-note';
-  const hint = 'Tap a step.';
-  const build = { stroke: 'var(--accent)' };
-  const N = (id, x, y, label, sub, info, extra = {}) => ({ id, x, y, label, sub, info, ...extra });
-  const nodes = [
-    N('hdr', 95, 45, 'FollowPath.btaction.hpp', 'one header per node', '<b>The header.</b> The class, its <code>providedPorts()</code>, <code>rosInit</code> and the tick functions, all in one file under <code>include/riptide_autonomy/bt_actions/</code>. The file name, up to its first dot, must match the class.', build),
-    N('gen', 290, 45, 'generate_registrators', 'CMake configure', '<b>The generator.</b> CMake runs <code>btassistant.py generate_registrators</code> while configuring. It globs the three header folders and the <code>*.simple.cpp</code> files and fills a template. A header added later is only picked up when CMake configures again.', build),
-    N('cpp', 480, 45, 'registerActions.cpp', 'generated', '<b>The generated source.</b> One <code>factory.registerNodeType&lt;X&gt;("X")</code> per header, and <code>bulkRegisterSimpleActions(factory)</code> for the simple actions, inside <code>BT_REGISTER_NODES</code>. Conditions and decorators get their own files.', build),
-    N('so', 670, 45, 'libautonomy_actions.so', 'colcon build', '<b>The plugin.</b> Each generated file compiles into a shared library with the node classes and <code>autonomy_utils</code>. It is installed to <code>install/riptide_autonomy2/lib</code>.', build),
-    N('fac', 670, 150, "doTask's factory", 'at start-up', '<b>The factory.</b> When <code>doTask</code> starts, <code>registerPluginsForFactory</code> loads the three plugins from the package\'s lib folder, then any listed in the <code>ext_plugin_list</code> parameter.'),
-    N('xml', 290, 150, 'Tree XML', 'read per goal', '<b>The tree.</b> <code>&lt;Action ID="FollowPath" … /&gt;</code> refers to the node by its registered name. The file is read when a goal arrives, so editing it needs no rebuild.'),
-    N('inst', 480, 150, 'Node instances', 'createTreeFromFile', '<b>The instances.</b> The factory builds one object per node in the XML, every subtree again wherever it is used: 11,993 for the competition tree.'),
-    N('ros', 480, 235, 'rosInit()', 'initRosForTree', '<b>rosInit.</b> <code>initRosForTree</code> hands each node the ROS node and calls its <code>rosInit</code>, where it makes the publishers, subscriptions and clients it needs for the whole run. Before this, a node that touched ROS would crash.'),
-  ];
-  const edges = [
-    { from: 'hdr', to: 'gen' }, { from: 'gen', to: 'cpp' }, { from: 'cpp', to: 'so' }, { from: 'so', to: 'fac' },
-    { from: 'fac', to: 'inst' }, { from: 'xml', to: 'inst' }, { from: 'inst', to: 'ros' },
-  ];
-  const narrow = {
-    below: 640, width: 380, height: 470,
-    nodes: { hdr: { x: 110, y: 30 }, gen: { x: 110, y: 95 }, cpp: { x: 110, y: 160 }, so: { x: 110, y: 225 }, fac: { x: 110, y: 300 }, xml: { x: 285, y: 300 }, inst: { x: 200, y: 375 }, ros: { x: 200, y: 440 } },
-  };
-  new Graph(host, { width: 800, height: 270, nodes, edges, narrow, info: (n) => { note.innerHTML = n ? n.info : hint; } });
-  host.appendChild(note);
-  note.textContent = hint;
-}
-
 // ---------- the catalogue ----------
 function catalogue(cat) {
   const host = document.getElementById('cat-panel');
@@ -538,9 +507,9 @@ function ledTable(cat) {
     ['undefined', [255, 255, 255], 'solid', 'Unknown status name'],
   ];
   const MODE = { solid: 'solid', slow: 'slow flash', fast: 'fast flash', breath: 'breathing' };
-  const by = { success: 'doTask, when a tree succeeds', failure: 'doTask, when a tree fails', panic: 'doTask, when a tree crashes' };
+  const by = { success: '<code>doTask</code>, when a tree succeeds', failure: '<code>doTask</code>, when a tree fails or is stopped', panic: '<code>doTask</code>, when a tree crashes' };
   document.getElementById('led-table').innerHTML = `<table class="params bt-leds"><thead><tr><th>Status</th><th>Light</th><th>Meaning</th><th>Set by</th></tr></thead><tbody>
-    ${L.map(([name, rgb, mode, meaning]) => `<tr><td><code>${name}</code></td><td><span class="led ${mode}" style="--led:rgb(${rgb.join(',')})"></span>${MODE[mode]}</td><td>${meaning}</td><td>${used[name] ? `${used[name]} instance${used[name] > 1 ? 's' : ''}` : (by[name] || '–')}</td></tr>`).join('')}</tbody></table>`;
+    ${L.map(([name, rgb, mode, meaning]) => `<tr><td><code>${name}</code><span class="led-mean">${meaning}</span></td><td><span class="led ${mode}" style="--led:rgb(${rgb.join(',')})"></span>${MODE[mode]}</td><td>${meaning}</td><td>${used[name] ? `<code>SetStatus</code> ×${used[name]}` : (by[name] || '–')}</td></tr>`).join('')}</tbody></table>`;
 }
 
 // ---------- one mission's time ----------
@@ -551,10 +520,10 @@ function timeChart(cat, mt) {
   const total = mt.end - mt.start;
   const rows = custom.map((r) => ({ label: r.id, segments: [{ value: r.secs, color: GROUP_COLOR[r.group], name: `${r.id}: ${(100 * r.secs / total).toFixed(1)} % of the run, ${r.starts} times on top` }] }));
   rows.push({ label: 'built-in nodes', segments: [{ value: other, color: 'var(--muted)', name: 'Built-in control nodes on top (Sequence, Delay, ...)' }] });
-  host.innerHTML = legend(cat.groups.filter((g) => custom.some((r) => r.group === g.id)).map((g) => [GROUP_COLOR[g.id], g.label]));
+  host.innerHTML = legend([...cat.groups.filter((g) => custom.some((r) => r.group === g.id)).map((g) => [GROUP_COLOR[g.id], g.label]), ['var(--muted)', 'built-in nodes']]);
   const box = document.createElement('div');
   host.appendChild(box);
-  fitBars(box, rows, { digits: 0, unit: 's', labelW: 210 });
+  fitBars(box, rows, { digits: 1, unit: 's', labelW: 210, minSeg: 4 });
 }
 
 // ---------- doTask ----------
@@ -565,33 +534,51 @@ function doTaskGraph() {
   const hint = 'Tap a step.';
   const N = (id, x, y, label, sub, info, extra = {}) => ({ id, x, y, label, sub, info, ...extra });
   const nodes = [
-    N('goal', 80, 50, 'ExecuteTree goal', 'tree = path of an XML', '<b>The goal.</b> A client sends the full path of a tree file: the Nereus viewer\'s Autonomy panel, or <code>ros2 action send_goal</code>.'),
-    N('accept', 250, 50, 'handleGoal', 'file exists?', '<b>Accept.</b> The goal is rejected if the file doesn\'t exist. Otherwise the run starts on a new thread, so the ROS executor stays free for callbacks.'),
-    N('build', 430, 50, 'Build the tree', 'createTreeFromFile, rosInit', '<b>Build.</b> The factory parses the XML and makes every node, every subtree again where it is used. <code>initRosForTree</code> then runs each node\'s <code>rosInit</code>.'),
-    N('log', 620, 50, 'Start the loggers', '.fbl, tree_stack, ZMQ', '<b>Loggers.</b> Every status change goes to <code>~/btlogs/BTLog_&lt;date&gt;.fbl</code> and, as the stack of running nodes, to <code>autonomy/tree_stack</code>. A ZeroMQ publisher for live Groot is made too but left disabled (<code>enable_zmq</code> is false). BT.CPP allows only one per process, so a second goal while a tree runs throws here.'),
-    N('tick', 620, 160, 'tickRoot()', 'every 30 ms', '<b>The loop.</b> Tick the root, then sleep to keep a 30 ms period, for as long as the root returns RUNNING. A cancel request halts the tree: every running node\'s <code>onHalted</code>.', { stroke: 'var(--accent)' }),
+    N('goal', 75, 50, 'ExecuteTree goal', 'tree = path of an XML', '<b>The goal.</b> A client sends the full path of a tree file: the Nereus viewer\'s Autonomy panel, or <code>ros2 action send_goal</code>.'),
+    N('accept', 240, 50, 'handleGoal', 'file exists?', '<b>Accept.</b> The goal is rejected if the file doesn\'t exist. Otherwise the run starts on a new thread, so the ROS executor stays free for callbacks.'),
+    N('build', 415, 50, 'Build the tree', 'createTreeFromFile, rosInit', '<b>Build.</b> The factory parses the XML and makes every node, every subtree again where it is used. <code>initRosForTree</code> then runs each node\'s <code>rosInit</code>.'),
+    N('log', 600, 50, 'Start the loggers', '.fbl, tree_stack, ZMQ', '<b>Loggers.</b> Every status change goes to <code>~/btlogs/BTLog_&lt;date&gt;.fbl</code> and, as the stack of running nodes, to <code>autonomy/tree_stack</code>. A ZeroMQ publisher for live Groot is made too but left disabled (<code>enable_zmq</code> is false). BT.CPP allows only one per process, so a second goal while a tree runs throws here.'),
+    N('tick', 600, 160, 'tickRoot()', 'every 30 ms', '<b>The loop.</b> Tick the root, then sleep to keep a 30 ms period, for as long as the root returns RUNNING. A cancel request halts the tree: every running node\'s <code>onHalted</code>.', { stroke: 'var(--accent)' }),
     N('end', 340, 160, 'Tree ends', 'DISABLED, LEDs, result', '<b>The end.</b> Publishes DISABLED on <code>controller/linear</code> and <code>controller/angular</code> (the MPC then commands zero thrust), sets the LEDs (breathing green after SUCCESS, red otherwise) and finishes the goal: succeeded with <code>returncode</code> 2 or 3, or canceled with <code>returncode</code> 1.'),
-    N('cancel', 820, 160, 'Cancel', 'Stop in the viewer', '<b>Cancel.</b> Stopping the goal from the viewer, or <code>ros2 action</code>. Pulling the kill switch does not cancel it.'),
-    N('crash', 110, 160, 'Exception', 'red fast flash, abort', '<b>A crash.</b> Any exception while building or ticking (a node type that isn\'t registered, a port value that won\'t convert) ends the run: DISABLED to the controller, fast-flashing red LEDs, goal aborted with <code>returncode</code> −1 (4294967295 as a <code>uint32</code>).'),
+    N('cancel', 805, 160, 'Cancel', 'Stop in the viewer', '<b>Cancel.</b> Stopping the goal from the viewer, or <code>ros2 action</code>. Pulling the kill switch does not cancel it.'),
+    N('crash', 805, 50, 'Exception', 'red fast flash, abort', '<b>A crash.</b> Any exception while building the tree, starting the loggers or ticking (a node type that isn\'t registered, a port value that won\'t convert) ends the run: DISABLED to the controller, fast-flashing red LEDs, goal aborted with <code>returncode</code> −1 (4294967295 as a <code>uint32</code>).'),
   ];
   const edges = [
     { from: 'goal', to: 'accept' }, { from: 'accept', to: 'build' }, { from: 'build', to: 'log' }, { from: 'log', to: 'tick' },
-    { from: 'tick', to: 'end', label: 'SUCCESS / FAILURE' }, { from: 'cancel', to: 'tick', dash: true }, { from: 'build', to: 'crash', dash: true, label: 'throws' },
+    { from: 'tick', to: 'end', label: 'SUCCESS / FAILURE' }, { from: 'cancel', to: 'tick', dash: true }, { from: 'build', to: 'crash', dash: true, via: [605, -45] },
+    { from: 'log', to: 'crash', dash: true, label: 'throws' }, { from: 'tick', to: 'crash', dash: true },
   ];
   const narrow = {
     below: 640, width: 380, height: 470,
-    nodes: { goal: { x: 125, y: 30 }, accept: { x: 125, y: 95 }, build: { x: 125, y: 165 }, log: { x: 125, y: 240 }, tick: { x: 125, y: 320 }, end: { x: 125, y: 435 }, cancel: { x: 300, y: 320 }, crash: { x: 300, y: 95 } },
-    edges: { 'tick>end': { lx: 133, ly: 382, anchor: 'start' }, 'build>crash': { lx: 234, ly: 150, anchor: 'start' } },
+    nodes: { goal: { x: 125, y: 30 }, accept: { x: 125, y: 95 }, build: { x: 125, y: 165 }, log: { x: 125, y: 240 }, tick: { x: 125, y: 320 }, end: { x: 125, y: 435 }, cancel: { x: 300, y: 320 }, crash: { x: 300, y: 240 } },
+    edges: { 'tick>end': { lx: 133, ly: 382, anchor: 'start' }, 'build>crash': { via: [240, 185] }, 'log>crash': { lx: 300, ly: 208 }, 'tick>crash': { via: [240, 300] } },
   };
   new Graph(host, { width: 900, height: 215, nodes, edges, narrow, info: (n) => { note.innerHTML = n ? n.info : hint; } });
   host.appendChild(note);
   note.textContent = hint;
 }
 
+// ---------- the frames ComputeFrameAlignment lines up, from the competition tree's values ----------
+function linkList(cat) {
+  const TOOL = { 'talos/dfc_base_link': 'the down camera', 'talos/claw_link': 'the claw', 'talos/ffc_base_link': 'the forward camera',
+    'talos/magnet_link': 'the magnet', 'talos/droppers_link': 'the dropper', 'talos/torpedo_0_link': 'torpedo tube 0', 'talos/torpedo_1_link': 'torpedo tube 1' };
+  const vals = (cat.nodes.find((n) => n.id === 'ComputeFrameAlignment')?.use.values.link_frame || []).map(([v]) => v).filter((v) => v && !v.startsWith('('));
+  if (!vals.length) return;
+  const names = [];
+  for (const v of vals) {
+    const t = TOOL[v];
+    if (!t) names.push(`<code>${esc(v)}</code>`);
+    else if (t.startsWith('torpedo')) { if (!names.includes('both torpedo tubes')) names.push(vals.filter((x) => TOOL[x]?.startsWith('torpedo')).length > 1 ? 'both torpedo tubes' : t); }
+    else names.push(t);
+  }
+  document.getElementById('link-list').innerHTML = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0];
+}
+
 // ---------- go ----------
 lifeGraph();
-regGraph();
 doTaskGraph();
+// set from here: Vite's dev server rewrites media URLs written in the HTML
+for (const v of document.querySelectorAll('video[data-src]')) { v.poster = `${BASE}${v.dataset.src}.jpg`; v.src = `${BASE}${v.dataset.src}.mp4`; }
 pathBuilder();
 Promise.all([
   fetch(`${BASE}data/bt-nodes/catalogue.json`).then((r) => r.json()),
@@ -602,6 +589,7 @@ Promise.all([
     files: String(cat.source.treeFiles), runlen: `${Math.round(mt.end - mt.start)} s`,
   };
   document.querySelectorAll('[data-bind]').forEach((e) => { if (bind[e.dataset.bind]) e.textContent = bind[e.dataset.bind]; });
+  linkList(cat);
   loadChart(cat);
   catalogue(cat);
   callsTable(cat);

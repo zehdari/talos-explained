@@ -1,0 +1,78 @@
+[
+ {
+  "group": "frame",
+  "colour": "#7d8f99",
+  "patterns": [
+   "^Dorito-2/",
+   "^MirroredDorito-3/",
+   "^Taco-2/",
+   "^Mirrored_Taco-5/",
+   "Holy L Bar",
+   "Battery Mounting Rail",
+   "Cable",
+   "Turnbuckle"
+  ]
+ },
+ {
+  "group": "housings",
+  "colour": "#2a78d6",
+  "patterns": [
+   "^Talos Main Housing"
+  ]
+ },
+ {
+  "group": "buoyancy",
+  "colour": "#e87ba4",
+  "patterns": [
+   "Foam",
+   "Buoyancy Assembly"
+  ]
+ },
+ {
+  "group": "thrusters",
+  "colour": "#d9480f",
+  "patterns": [
+   "T200"
+  ]
+ },
+ {
+  "group": "batteries",
+  "colour": "#eda100",
+  "patterns": [
+   "Smart Battery Housing Assembly"
+  ]
+ },
+ {
+  "group": "sensors",
+  "colour": "#1baf7a",
+  "patterns": [
+   "^DVL Assembly",
+   "^ZEDX_Mini",
+   "^DFC Mount",
+   "^Acoustics Pods",
+   "^Acoustic_Mount",
+   "^Transducer-2",
+   "BAR30"
+  ]
+ },
+ {
+  "group": "actuators",
+  "colour": "#6250d6",
+  "patterns": [
+   "Torpedoes + Markers V8",
+   "^Torpservoholder",
+   "^ServoHousing",
+   "^mounting",
+   "^EMERGENCYCLAWASSEMBLY",
+   "^Magnet poker"
+  ]
+ },
+ {
+  "group": "switch",
+  "colour": "#e34948",
+  "patterns": [
+   "^Kill Switch",
+   "^Subconn Cover"
+  ]
+ }
+]

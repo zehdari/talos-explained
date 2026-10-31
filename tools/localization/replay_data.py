@@ -57,18 +57,35 @@ def load(uri):
     return {k.split('/talos/')[1]: np.array(v) for k, v in D.items() if v}
 
 
-# IMU frame -> base_link rotation from the pool bag's static TF
-r, _ = reader(f'{RUN}/bag', ['/tf_static'])
+# Sensor mounts from the pool bag's TF. imu_link is on /tf_static; dvl_link hangs off a revolute joint, so it is on
+# /tf (robot_state_publisher), not /tf_static. Both are fixed: the first sample of each is enough.
+r, _ = reader(f'{RUN}/bag', ['/tf_static', '/tf'])
 par = {}
 while r.has_next():
-    _, d, _ = r.read_next()
+    k, d, _ = r.read_next()
     for t in deserialize_message(d, TFMessage).transforms:
-        q = t.transform.rotation
-        par[t.child_frame_id] = (t.header.frame_id, R.from_quat([q.x, q.y, q.z, q.w]))
-rot, f = R.identity(), 'talos/imu_link'
-while f != 'talos/base_link':
-    p, q = par[f]; rot = q * rot; f = p
-Rimu = rot
+        if t.child_frame_id in par or t.header.frame_id == 'odom':
+            continue
+        q, p = t.transform.rotation, t.transform.translation
+        par[t.child_frame_id] = (t.header.frame_id, R.from_quat([q.x, q.y, q.z, q.w]), np.array([p.x, p.y, p.z]))
+    if 'talos/dvl_link' in par and 'talos/imu_link' in par and 'talos/origin' in par:
+        break
+
+
+def to_base(frame):
+    # Rotation and position of `frame` in talos/base_link
+    rot, pos, f = R.identity(), np.zeros(3), frame
+    while f != 'talos/base_link':
+        p, q, x = par[f]
+        pos = q.apply(pos) + x
+        rot = q * rot
+        f = p
+    return rot, pos
+
+
+Rimu, _ = to_base('talos/imu_link')
+Rdvl, r_dvl = to_base('talos/dvl_link')
+print('dvl in base_link:', np.round(r_dvl, 4), 'yaw', np.degrees(Rdvl.as_euler('xyz'))[2])
 
 # Segment times (wall clock, same as the bag's stamps)
 seg = {}
@@ -79,11 +96,13 @@ t_start = min(a[0] for a in seg.values())
 data = {k: load(f'{REPLAY}/out_pool{k}') for k in VARIANTS}
 base = data['A']
 
-# DVL -> body velocity: the same least-squares map analyze.py uses (dvl_link is not on /tf_static in this bag)
-L0 = dict(np.load(f'{HOME}/robot/mpc_ident/lag_20261026_204748.npz'))
-dd, ss = L0['dvl_twist'], L0['controller_mpc_state']
-Amap = np.linalg.lstsq(dd[:, 2:5], np.stack([np.interp(dd[:, 0], ss[:, 0], ss[:, 9 + i]) for i in range(3)], 1), rcond=None)[0]
-dvl = base['dvl_twist']; dvl_b = dvl[:, 1:4] @ Amap
+# DVL -> base_link velocity, as robot_localization does it (ros_filter.cpp, prepareTwist): rotate by the mount, then
+# remove the lever arm with the body rate, v = R v_dvl + r x w. The body rate is the IMU's, rotated into base_link.
+dvl = base['dvl_twist']
+imu_all = base['vectornav/imu']
+w_b = Rimu.apply(imu_all[:, 1:4])
+w_at = np.stack([np.interp(dvl[:, 0], imu_all[:, 0], w_b[:, i]) for i in range(3)], 1)
+dvl_b = Rdvl.apply(dvl[:, 1:4]) + np.cross(r_dvl, w_at)
 
 
 out = {'source': 'EKF replays of the 2026-10-26 pool identification bag (talos_20261026_204748), ~/robot/ekf_replay',

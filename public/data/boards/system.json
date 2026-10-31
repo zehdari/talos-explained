@@ -155,6 +155,20 @@
      "ivc/tx",
      "state/kill"
     ]
+   },
+   "branchRos": {
+    "branch": "blake/ivc",
+    "project": "talos/IVCBoard2",
+    "file": "talos/IVCBoard2/src/ros.c",
+    "publishes": [
+     "ivc/pinger/selected_freq_amp_stream",
+     "ivc/pinger/selected_freq_khz"
+    ],
+    "subscribes": [
+     "ivc/pinger/enable",
+     "ivc/pinger/set_freq_khz"
+    ],
+    "url": "https://github.com/osu-uwrt/titan_firmware/blob/blake/ivc/talos/IVCBoard2/src/ros.c#L44-L47"
    }
   },
   "sbh_mcu": {
@@ -192,104 +206,181 @@
    {
     "href": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp",
     "file": "mpc_controller_node.cpp",
-    "what": "mpc_controller holds the thrusters at zero while killed"
+    "what": "mpc_controller holds the thrusters at zero while killed",
+    "dir": "reads"
    },
    {
     "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
     "file": "talos_uwrt_panels.yaml",
-    "what": "Nereus viewer: the enable / kill state in the command bar"
+    "what": "Nereus viewer: the enable / kill state in the command bar",
+    "dir": "reads"
+   },
+   {
+    "href": "#poac",
+    "file": "POAC",
+    "label": "POAC",
+    "what": "published by the POAC",
+    "dir": "sends"
    }
   ],
   "command/software_kill": [
    {
     "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
     "file": "talos_uwrt_panels.yaml",
-    "what": "Nereus viewer: Enable and Kill (kill switch slot 1)"
+    "what": "Nereus viewer: Enable and Kill (kill switch slot 1)",
+    "dir": "sends"
    }
   ],
   "state/depth/raw": [
    {
     "href": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/depth_converter.py",
     "file": "depth_converter.py",
-    "what": "depth_converter turns it into depth/pose for the EKF"
+    "what": "depth_converter turns it into depth/pose for the EKF",
+    "dir": "reads"
+   },
+   {
+    "href": "#ccbb",
+    "file": "CCBB",
+    "label": "CCBB",
+    "what": "published by the CCBB",
+    "dir": "sends"
    }
   ],
   "command/led": [
    {
     "href": "https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/autonomy_lib.hpp",
     "file": "autonomy_lib.hpp",
-    "what": "mission tree status colours"
+    "what": "mission tree status colours",
+    "dir": "sends"
    },
    {
     "href": "https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/mapping.py",
     "file": "mapping.py",
-    "what": "mapping pulses the light on a detection"
+    "what": "mapping pulses the light on a detection",
+    "dir": "sends"
    },
    {
     "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
     "file": "talos_uwrt_panels.yaml",
-    "what": "Nereus viewer: LED colour picker"
+    "what": "Nereus viewer: LED colour picker",
+    "dir": "sends"
    }
   ],
   "command/electrical": [
    {
     "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
     "file": "talos_uwrt_panels.yaml",
-    "what": "Nereus viewer: Electrical panel (cycle computer, fans, LEDs, clear depth ...)"
+    "what": "Nereus viewer: Electrical panel (cycle computer, fans, LEDs, clear depth ...)",
+    "dir": "sends"
    }
   ],
   "command/actuator/torpedo": [
    {
     "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
     "file": "talos_uwrt_panels.yaml",
-    "what": "Nereus viewer: Actuators panel"
+    "what": "Nereus viewer: Actuators panel",
+    "dir": "sends"
    },
    {
     "href": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/actuator_service_translator.py",
     "file": "actuator_service_translator.py",
-    "what": "turns the trees' actuator services into these topics"
+    "what": "turns the trees' actuator services into these topics",
+    "dir": "sends"
    }
   ],
   "state/actuator/status": [
    {
     "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
     "file": "talos_uwrt_panels.yaml",
-    "what": "Nereus viewer: Actuators panel"
+    "what": "Nereus viewer: Actuators panel",
+    "dir": "reads"
    }
   ],
   "state/battery": [
    {
     "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
     "file": "talos_uwrt_panels.yaml",
-    "what": "Nereus viewer: PORT / STBD charge readings"
+    "what": "Nereus viewer: PORT / STBD charge readings",
+    "dir": "reads"
    }
   ],
   "ivc/tx": [
    {
     "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
     "file": "talos_uwrt_panels.yaml",
-    "what": "Nereus viewer: IVC panel"
+    "what": "Nereus viewer: IVC panel",
+    "dir": "sends"
    }
   ],
   "ivc/rx": [
    {
     "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
     "file": "talos_uwrt_panels.yaml",
-    "what": "Nereus viewer: IVC panel"
+    "what": "Nereus viewer: IVC panel",
+    "dir": "reads"
    }
   ],
   "state/thrusters/rpm": [
    {
     "href": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/pool_identify_node.cpp",
     "file": "pool_identify_node.cpp",
-    "what": "pool_identify records it during system identification"
+    "what": "pool_identify records it during system identification",
+    "dir": "reads"
    }
   ],
   "state/thrusters/telemetry": [
    {
     "href": "https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/pool_identify_node.cpp",
     "file": "pool_identify_node.cpp",
-    "what": "pool_identify records it during system identification"
+    "what": "pool_identify records it during system identification",
+    "dir": "reads"
+   }
+  ],
+  "ivc/pinger/selected_freq_amp_stream": [
+   {
+    "href": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_acoustics/src/Acoustics.cpp",
+    "file": "Acoustics.cpp",
+    "what": "riptide_acoustics compares the amplitude heard at two spots",
+    "dir": "reads"
+   },
+   {
+    "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
+    "file": "talos_uwrt_panels.yaml",
+    "what": "Nereus viewer: Pinger amplitude in the Electrical panel",
+    "dir": "reads"
+   }
+  ],
+  "ivc/pinger/selected_freq_khz": [
+   {
+    "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
+    "file": "talos_uwrt_panels.yaml",
+    "what": "Nereus viewer: the selected pinger frequency",
+    "dir": "reads"
+   }
+  ],
+  "ivc/pinger/enable": [
+   {
+    "href": "https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml",
+    "file": "talos_uwrt_panels.yaml",
+    "what": "Nereus viewer: Enable pinger, re-sent every second",
+    "dir": "sends"
+   }
+  ],
+  "ivc/pinger/set_freq_khz": [
+   {
+    "href": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/src/pinger_broker.cpp",
+    "file": "pinger_broker.cpp",
+    "what": "pinger_broker re-sends the viewer's frequency choice every second",
+    "dir": "sends"
+   }
+  ],
+  "state/physkill_notify": [
+   {
+    "href": "#kill",
+    "file": "POAC",
+    "label": "POAC",
+    "what": "published by the POAC",
+    "dir": "sends"
    }
   ]
  },

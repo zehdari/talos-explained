@@ -24,6 +24,11 @@ INFRA = {'/clock', '/rosout', '/parameter_events', '/tf', '/tf_static', '/diagno
          '/events/write_split'}
 
 
+# Corrections to rosgraph.json, checked against the launch files.
+# actuator_service_translator.py is installed by riptide_hardware2 (riptide_core); autonomy.launch.py only starts it.
+FIXES = {'/talos/ActuatorTranslator': {'package': 'riptide_hardware2: actuator_service_translator.py'}}
+
+
 def short(name):
     return name[len('/talos/'):] if name.startswith('/talos/') else name.lstrip('/')
 
@@ -53,7 +58,7 @@ def build_graph():
             return [[k, v] for k, v in Counter((x['name'], x['type']) for x in n[key]).items()]
         nodes.append({
             'id': name, 'label': name.rsplit('/', 1)[-1], 'group': n['group'], 'runs': n['runs'],
-            'package': n['package'], 'launch': n['launch'], 'role': n['role'],
+            'package': FIXES.get(name, {}).get('package', n['package']), 'launch': n['launch'], 'role': n['role'],
             'pub': [[t, c] for (t, _), c in iface('publishers')],
             'sub': [[t, c] for (t, _), c in iface('subscribers')],
             'srv': [[s, ty] for (s, ty), _ in iface('services')],
@@ -104,7 +109,11 @@ def build_graph():
     edges = [{'from': a, 'to': b, 'via': sorted(set(v))} for (a, b), v in sorted(links.items())]
     data = {'captured': g['captured'], 'note': g['note'], 'nodes': nodes, 'topics': tout, 'edges': edges,
             'infra': sorted(INFRA)}
-    (OUT / 'graph.json').write_text(json.dumps(data, separators=(',', ':')))
+    text = json.dumps(data, separators=(',', ':'))
+    # doTask names its bag trigger after the computer it runs on ("/" + hostname + ...): show it generically,
+    # not as the capture machine's name.
+    text = re.sub(r'/(?!talos/)[A-Za-z0-9_\-]+/autonomy/bag_trigger', '/<hostname>/autonomy/bag_trigger', text)
+    (OUT / 'graph.json').write_text(text)
     print(f'graph.json: {len(nodes)} nodes, {len(tout)} topics, {len(edges)} links')
 
 

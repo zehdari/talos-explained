@@ -15,6 +15,7 @@ const shots = [
   ['graph-tap', '#stack-graph', async () => { await p.locator('#stack-graph .node').nth(2).dispatchEvent('pointerdown', { pointerType: 'touch' }); }],
   ['explorer', '#explorer-fig', null],
   ['explorer-pkg', '#explorer-fig', async () => { await p.locator('.cm-pkg', { hasText: 'riptide_mpc' }).first().click(); }],
+  ['explorer-hw', '#explorer-fig', async () => { await p.locator('.cm-pkg', { hasText: 'riptide_hardware' }).first().click(); await p.locator('#cm-detail').evaluate((e) => e.scrollIntoView({ block: 'start' })); }],
   ['explorer-repo', '#explorer-fig', async () => {
     await p.locator('.cm-group-label button', { hasText: 'Firmware' }).first().click();
     await p.locator('.cm-repo-head', { hasText: 'titan_firmware' }).first().click();
@@ -22,7 +23,7 @@ const shots = [
   }],
   ['explorer-legacy', '#explorer-fig', async () => { await p.locator('#cm-status button[data-s="old"]').click(); }],
   ['explorer-search', '#explorer-fig', async () => { await p.locator('#cm-status button[data-s="all"]').click(); await p.locator('#cm-q').fill('ekf'); }],
-  ['tree', '#cm-tree', null],
+  ['tree', 'figure:has(.cm-tree)', null],
   ['pins', '#cm-pins', null],
   ['history', '#cm-history', async () => { await p.locator('#cm-hist-read [data-d="-1"]').click(); }],
   ['start', '.cm-start', null],

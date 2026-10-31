@@ -285,7 +285,7 @@
    "group": "math", "tags": [],
    "summary": "A condition: angles a and b (rad) within range of each other.",
    "what": ["Wraps a − b before comparing, so a = 3.1, b = −3.1 counts as close; swapped, it doesn't (see Watch)."],
-   "watch": ["Only differences above +π are wrapped. One below −π is not: a = −3.1, b = 3.1 fails a 0.25 rad check although the angles are 0.08 rad apart. The competition tree uses it once per attitude check in <code>PrimitiveMoveOrientation</code> (range 0.25)."]
+   "watch": ["Only differences above +π are wrapped. One below −π is not: a = −3.1, b = 3.1 fails a 0.25 rad check although the angles are 0.08 rad apart. The competition tree checks roll, pitch and yaw with it in <code>PrimitiveMoveOrientation</code> (range 0.25), current angle as <code>a</code>, goal as <code>b</code>. So with yaw at −3.1 and a goal of 3.1 the check fails and the move loops until its timeout."]
   },
   "IsTrue": {
    "group": "math", "tags": [],

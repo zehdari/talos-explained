@@ -56,8 +56,8 @@ svg.dvl-top .dvl-beam:focus-visible circle { stroke: var(--accent); stroke-width
 svg.dvl-top .dvl-val { fill: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; }
 .dvl-out { font-family: var(--sans); font-size: 0.88rem; color: var(--ink-2); }
 .dvl-out table.params { margin: 0 0 0.7rem; max-width: 18rem; }
-.dvl-out td, .dvl-out th { text-align: right; }
-.dvl-out td:first-child, .dvl-out th:first-child { text-align: left; }
+.dvl-out table.params td, .dvl-out table.params th { text-align: right; }
+.dvl-out table.params td:first-child, .dvl-out table.params th:first-child { text-align: left; }
 .dvl-verdict { margin: 0 0 0.5rem; padding: 0.5rem 0.7rem; border-radius: 6px; background: var(--paper); line-height: 1.4; }
 .dvl-verdict b { color: var(--ink); }
 .dvl-verdict.warn { background: #fde9df; }
@@ -75,3 +75,5 @@ svg.dvl-top .dvl-val { fill: var(--ink); font-variant-numeric: tabular-nums; fon
 .tr-tag { display: inline-block; font-size: 0.68rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-right: 0.5rem; }
 .tr-row { display: grid; grid-template-columns: 3.6rem minmax(0, 1fr); gap: 0.5rem; }
 .tr-row span { color: var(--muted); font-size: 0.8rem; padding-top: 0.05rem; }
+svg.tl .tl-sub { fill: var(--muted); font-size: 0.68rem; }
+.sx-label.on { z-index: 2; }

@@ -123,6 +123,9 @@ def main():
         "esc_power_threshold_mv": define("fw", esc_dshot, "ESC_POWER_THRESHOLD_MV"),
         "dshot_rate_khz": define("fw", esc_dshot, "DSHOT_RATE"),
         "esc_telemetry_ms": define("fw", esc_main, "TELEM_PUBLISH_RATE_MS"),
+        # A board decides the micro-ROS agent is gone after more than this many failed heartbeats in a row
+        "ros_heartbeat_ms": define("fw", poac_main, "HEARTBEAT_TIME_MS"),
+        "ros_max_missed_heartbeats": define("fw", poac_ros, "MAX_MISSSED_HEARTBEATS"),
         "esc_flags": flags,
         "links": {
             "refresh": url("fw", kill_c, line_of(kc, r"void safety_internal_kill_refresh_switches")),

@@ -203,8 +203,7 @@ boards.append({
         'project': EBT + enc('TalosBoards/Year One/PoActuator/Combined_Power_Actuator'),
         'schematic_pdf': REL + 'talos_boards',
         'notes': 'Project PCB is PoactuatorPCB4 (ECO logs Jan 2024; PDF in the 2023-24 board-order release, Feb 2024). '
-                 'Last commit 2026-02-18: "poactuator fix to create separate output for servo 12V". '
-                 'Project title/revision fields are still the template placeholders, so no revision number.',
+                 'A Feb 2026 commit adds a separate 12 V output for the servo.',
     },
     'size_mm': size('poac'),
     'media': media('poac', [('poac-sch-kill-switch', 'Kill switch circuit'),
@@ -270,7 +269,7 @@ boards.append({
         'project_revision': '1.1', 'design_review': '01/08/2023', 'team_lead': 'Robert Pafford',
         'schematic_pdf': REL + 'Tempest_mk_2',
         'notes': 'Designed for Tempest Mark 2 (Jan 2023) and reused on Talos. The repo has later edits '
-                 '(Oct-Dec 2025: "ESC Voltage protector", traces); unconfirmed whether the boards in Talos were rebuilt.',
+                 '(Oct-Dec 2025: a voltage protector, traces); unconfirmed whether the boards in Talos were rebuilt.',
     },
     'size_mm': size('esc'),
     'media': media('esc', [('esc-sch-blocks', 'Block-level sheet'),
@@ -378,7 +377,7 @@ boards.append({
         'design': EB + enc('TalosBoards/Year One/LED_Board/LED_Control.PcbDoc'),
         'project': EBT + enc('TalosBoards/Year One/LED_Board'),
         'schematic_pdf': REL + 'talos_boards',
-        'notes': 'Year One (2023-24) design; template placeholders for title/revision. A Year Two redesign '
+        'notes': 'Year One (2023-24) design. A Year Two redesign '
                  '(TalosBoards/Year Two/LED_Board, 5 drivers) exists in the repo.',
     },
     'size_mm': size('led'),
@@ -499,6 +498,9 @@ boards.append({
         'project_title': 'Smart Battery Housing | MCU', 'project_revision': '1.1', 'design_review': '01/09/2023', 'team_lead': 'Robert Pafford',
         'schematic_pdf': REL + 'Tempest_mk_2',
     },
+    'power': {'inputs': ['VBAT (pack, J1 pin 8) through a DMP3056L P-FET soft latch (Q1) that the reed switch, PACK_PWR or the MCU (PWR_CTRL) can hold on'],
+              'makes': ['5V (TS30041 buck, 1 A, 40 V max in)', '3V3 (XC9236 buck, 600 mA)'],
+              'feeds': ['RP2040 block', 'OLED (5V)', 'SHT41']},
     'size_mm': size('sbh_mcu'),
     'media': media('sbh_mcu'),
 })
@@ -528,12 +530,18 @@ boards.append({
     ],
     'battery': {
         'cells_in_series': 5,
+        'design_pack': 'MaxAmps 8000 mAh 5S2P 18.5 V LiPo (8 Ah x 18.5 V = 148 Wh)',
+        'design_pack_note': 'From the team\'s BMS notes: "Designed for MaxAmps 8000 mAh 5S2P 18.5V LiPo battery pack", '
+                            'charge to 4.15 V per cell, discharge no lower than 3.2 V per cell (i.e. about 16-20.75 V per pack in use). '
+                            'Chemistry ID 1356.',
+        'design_pack_source': TF + 'talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L1-L4',
         'cells_source': TF + 'talos/SmartBattery/bq40z80_files/chemistry_identification/config.txt',
         'cell_protection_mV': {'under_voltage': 3000, 'over_voltage': 4200},
         'discharge_overcurrent_mA': {'OCD1': 11250, 'OCD2': 20000},
         'protection_source': TF + 'talos/SmartBattery/bq40z80_files/sbh_bms_config.gg.csv',
-        'note': 'Values from the BQ40Z80 gas-gauge config file in the repo; unconfirmed that every pack runs exactly this file. '
-                'The same file lists Design Capacity 2000 mAh, which may be a placeholder.',
+        'note': 'cell_protection_mV and OCD are the hard protection thresholds in the gas-gauge config file (CUV 3000 mV, COV 4200 mV); '
+                'unconfirmed that every pack runs exactly this file. The same file lists Design Capacity 2000 mAh, which contradicts the '
+                '8000 mAh design pack and is probably a default: do not quote it.',
     },
     'revision': {
         'design': EB + 'TempestBoards/MK2/SBH_BMS/SBM_BMS.PcbDoc',
@@ -542,6 +550,9 @@ boards.append({
         'schematic_pdf': REL + 'Tempest_mk_2',
         'notes': 'Updated 2026-02-15 ("previous versions did the current calculation slightly wrong").',
     },
+    'power': {'inputs': ['cell stack: Pack_in+ (J2) and BAT- (J4)'],
+              'makes': ['Pack+ (J3) = cells -> F1 45 A protector -> Q1/Q2 back-to-back N-FETs switched by the BQ40Z80'],
+              'feeds': ['pack output Pack+/Pack- (J3/J5) to the robot', 'BAT+/BAT- to the MCU board (J10)', 'Pack+ through a 5 A fuse (F3) on J1 pin 3']},
     'size_mm': size('sbh_bms'),
     'media': media('sbh_bms'),
 })
@@ -569,6 +580,9 @@ boards.append({
         'project_title': 'Jetson AGX Breakout', 'project_revision': '1.0 (silk says REV 1.1.1; release agx_breakout_1_1_0 "Release 1.1.1")', 'design_review': '12/22/2022', 'team_lead': 'Robert Pafford',
         'notes': 'Latest commit 2026-09-24: "Deleted NMOS components so that pin 1 on J2 is always at 5V" (IMU power no longer switched).',
     },
+    'power': {'inputs': ['+5 and 3v3 from the Orin 40-pin header'],
+              'makes': [],
+              'feeds': ['IMU: J2 pin 1 = +5 straight from the header (the NMOS power switch was removed 2026-09-24)', 'transceivers (3v3)']},
     'size_mm': size('agx_breakout'),
     'media': media('agx_breakout'),
 })
@@ -593,6 +607,9 @@ boards.append({
     'revision': {'design': EB + enc('TalosBoards/Year One/Jetson_AGX_M.2/Jetson_AGX_M.2.PcbDoc'),
                  'notes': '2024-10-06 "Revert FOG board changes since it works as-is"; Nov-Dec 2025 commits add an SPI-to-RS422 variant (work in progress).',
                  'schematic_pdf': REL + 'talos_boards'},
+    'power': {'inputs': ['3V3 from the M.2 slot'],
+              'makes': ['8V (LM27313 boost)', '5V (LP38693-5.0 LDO from 8V)', '1V8 (TLV70018)'],
+              'feeds': ['gyro: J1 pin 1 = 5V', 'SP335E transceiver (3V3 + 1V8)']},
     'size_mm': size('agx_m2'),
     'media': media('agx_m2'),
 })
@@ -622,7 +639,7 @@ boards.append({
 })
 
 boards_doc = {
-    'generated': '2026-10-30',
+    'generated': '2026-10-31',
     'about': 'Talos circuit boards: what each does, its parts, connectors, firmware and CAN identity. '
              'See docs/media/boards.md for sources and which facts are confirmed vs inferred.',
     'source_commits': {
@@ -642,15 +659,19 @@ boards_doc = {
 # ---------------------------------------------------------------------------------------------
 P = EB + enc('TalosBoards/Year One/PoActuator/Combined_Power_Actuator/')
 power = {
-    'generated': '2026-10-30',
+    'generated': '2026-10-31',
     'about': 'Power tree from the batteries to the loads, as far as the board designs show. '
              'Each node has the board it lives on; edges carry the net name from the design. '
              '"confidence" is confirmed (seen in a schematic/netlist or code) or inferred.',
     'nodes': [
         {'id': 'bat_port', 'label': 'Port battery', 'kind': 'battery', 'board': 'sbh_bms',
-         'detail': '5 Li-ion cells in series (BQ40Z80 config), 45 A protector fuse', 'confidence': 'confirmed'},
+         'detail': 'Each housing: cells (J2 Pack_in+) -> F1 Littelfuse ITV9550L2045MR 45 A protector -> 2 x PSMN4R4-80BS N-FETs (back-to-back, driven by the BQ40Z80) -> Pack+ (J3). '
+                   'Gas-gauge config: 5 cells in series, cell under-voltage 3000 mV, over-voltage 4200 mV.',
+         'confidence': 'confirmed (BMS netlist + gas-gauge config in the repo)', 'source': EB + 'TempestBoards/MK2/SBH_BMS/SBH_BMS.SchDoc'},
         {'id': 'bat_stbd', 'label': 'Starboard battery', 'kind': 'battery', 'board': 'sbh_bms',
          'detail': 'same housing design as port', 'confidence': 'confirmed'},
+        {'id': 'sbh_logic', 'label': 'SBH MCU board (one per housing)', 'kind': 'board', 'board': 'sbh_mcu',
+         'detail': 'VBAT -> soft-latch P-FET -> TS30041 5 V buck -> XC9236 3.3 V buck. Powers the RP2040, OLED and SHT41 inside the housing.', 'confidence': 'confirmed'},
         {'id': 'or', 'label': 'Ideal-diode OR', 'kind': 'distribution', 'board': 'poac',
          'detail': '2 x LTC4412 + 4 x SiR167DP. Whichever battery is higher supplies V+; STAT pins report which are supplying.', 'confidence': 'confirmed'},
         {'id': 'vplus', 'label': 'V+ battery bus', 'kind': 'rail', 'board': 'poac', 'volts': 'battery (about 15-21 V for 5 cells)',
@@ -687,10 +708,18 @@ power = {
         {'id': 'depth', 'label': 'Depth sensor', 'kind': 'load', 'board': 'ccbb', 'detail': '5 V + I2C (MS5837-02BA, i.e. Bar02)', 'confidence': 'confirmed'},
         {'id': 'rgb', 'label': 'RGB status strip', 'kind': 'load', 'board': 'ccbb', 'detail': '5 V', 'confidence': 'confirmed'},
         {'id': 'ext_can', 'label': 'External CAN devices', 'kind': 'load', 'board': 'ccbb', 'detail': '15 V + external CAN on J1/J5', 'confidence': 'confirmed (connector); what is plugged in today is unconfirmed'},
+        {'id': 'imu', 'label': 'VectorNav IMU', 'kind': 'load', 'board': 'agx_breakout',
+         'detail': '5 V from the Orin 40-pin header via the AGX breakout J2 (RS-232, /dev/ttyTHS0)', 'confidence': 'inferred (the breakout is inferred to be fitted; netlist confirmed)'},
+        {'id': 'gyro', 'label': 'Fibre-optic gyro', 'kind': 'load', 'board': 'agx_m2',
+         'detail': 'M.2 3.3 V -> LM27313 boost 8 V -> LP38693 LDO 5 V on J1 (RS-422, /dev/ttyTHS2)', 'confidence': 'inferred (the M.2 card is inferred to be fitted; netlist confirmed)'},
     ],
     'edges': [
-        {'from': 'bat_port', 'to': 'or', 'net': 'VPORT', 'via': 'POAC J3 (Anderson PP45)'},
-        {'from': 'bat_stbd', 'to': 'or', 'net': 'VSTBD', 'via': 'POAC J4 (Anderson PP45)'},
+        {'from': 'bat_port', 'to': 'or', 'net': 'VPORT', 'via': 'POAC J3 (Anderson PP45)',
+         'detail': 'BMS Pack+/Pack- (J3/J5 Redcube) -> housing cable -> POAC J3 "PORT BATTERY"; the cable itself is not in the designs'},
+        {'from': 'bat_stbd', 'to': 'or', 'net': 'VSTBD', 'via': 'POAC J4 (Anderson PP45)',
+         'detail': 'BMS Pack+/Pack- (J3/J5 Redcube) -> housing cable -> POAC J4 "STBD BATTERY"; the cable itself is not in the designs'},
+        {'from': 'bat_port', 'to': 'sbh_logic', 'net': 'BAT+', 'via': 'BMS J10 -> MCU J1 (Milli-Grid 8-pin)'},
+        {'from': 'bat_stbd', 'to': 'sbh_logic', 'net': 'BAT+', 'via': 'BMS J10 -> MCU J1 (Milli-Grid 8-pin)'},
         {'from': 'or', 'to': 'vplus', 'net': 'V+'},
         {'from': 'vplus', 'to': 'kill', 'net': 'V+'},
         {'from': 'kill', 'to': 'motor_pwr', 'net': 'MOTOR_PWR'},
@@ -721,6 +750,8 @@ power = {
         {'from': 'ccbb', 'to': 'depth', 'net': '5V', 'via': 'CCBB J15'},
         {'from': 'ccbb', 'to': 'rgb', 'net': '5V', 'via': 'CCBB J9'},
         {'from': 'ccbb', 'to': 'ext_can', 'net': '15V', 'via': 'CCBB J1/J5'},
+        {'from': 'orin', 'to': 'imu', 'net': '+5', 'via': 'Orin 40-pin header -> AGX breakout J2', 'confidence': 'inferred'},
+        {'from': 'orin', 'to': 'gyro', 'net': '3V3 -> 8V -> 5V', 'via': 'M.2 slot -> RS-422 card J1', 'confidence': 'inferred'},
     ],
     'measurements': {
         'topic': '/talos/state/electrical (riptide_msgs2/ElectricalReadings), 1 Hz from the POAC',

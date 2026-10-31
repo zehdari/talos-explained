@@ -41,7 +41,7 @@ function slider(host, label, min, max, step, value, fmt, onInput) {
 // ---------------------------------------------------------------- sensor explorer
 const SENSORS = [
   {
-    id: 'imu', anchor: 'left', label: 'IMU', title: 'VectorNav VN-100-T IMU', href: '#imu',
+    id: 'imu', anchor: 'nw', label: 'IMU', title: 'VectorNav VN-100-T IMU', href: '#imu',
     what: 'Tilt (roll and pitch), turn rates about all three axes, and acceleration, from MEMS gyros and accelerometers fused by its own Kalman filter.',
     rows: [
       ['Rate', '400 Hz'],
@@ -58,7 +58,7 @@ const SENSORS = [
     rows: [
       ['Rate', '≈475 Hz (throttled to 500 Hz)'],
       ['Topic', `${code('gyro/twist')} (angular.z), ${code('gyro/status')}`],
-      ['Frame', `${code('talos/fog_link')}: no position in ${code('talos.yaml')}, drawn at the frame origin. Only the axis matters for a gyro.`],
+      ['Frame', `${code('talos/fog_link')}: pose all zeros in ${code('talos.yaml')} (drawn at the origin). Only the axis matters for a gyro.`],
       ['Driver', `${link(CORE + 'riptide_gyro/src/riptide_gyro/driver.cpp', 'riptide_gyro')}, RS-422 on ${code('/dev/ttyTHS2')}`],
       ['Used for', 'EKF and MPC yaw rate. Yaw itself is its integral.'],
       ['Watch for', 'A bad tare; temperature outside 37.6 to 51.3 °C.'],
@@ -77,7 +77,7 @@ const SENSORS = [
     ],
   },
   {
-    id: 'depth', anchor: 'right', label: 'Depth', title: 'Bar02 pressure sensor', href: '#depth',
+    id: 'depth', anchor: 'ne', label: 'Depth', title: 'Bar02 pressure sensor', href: '#depth',
     what: 'Water pressure, turned into depth with fresh-water density. Read by the camera cage board\'s RP2040 over I²C.',
     rows: [
       ['Rate', '20 Hz'],
@@ -89,7 +89,7 @@ const SENSORS = [
     ],
   },
   {
-    id: 'hydro', anchor: 'above', label: 'Hydrophone', dotLabel: 'Hydrophone poses (unused)', title: 'Hydrophone (Aquarian Audio H1C)', href: '#acoustics',
+    id: 'hydro', anchor: 'above', label: 'Hydrophone', dotLabel: 'Hydrophone poses (unused)', shortLabel: 'Hydrophones', title: 'Hydrophone (Aquarian Audio H1C)', href: '#acoustics',
     what: 'Sound pressure. The IVC board filters it at the pinger frequency and streams the loudness; Talos compares two places to tell which task has the pinger.',
     rows: [
       ['Rate', 'Streamed while sampling; one Bool per comparison'],
@@ -107,9 +107,9 @@ Promise.all([getJSON('catalog.json')]).then(([cat]) => {
   const chips = document.getElementById('sx-chips');
   const poses = { imu: [cat.poses.imu], fog: [cat.poses.fog], dvl: [cat.poses.dvl], depth: [cat.poses.depth], hydro: [cat.hydrophones.port, cat.hydrophones.starboard] };
   const list = [
-    ...SENSORS.map((s) => ({ id: s.id, label: s.dotLabel ?? s.label, poses: poses[s.id], anchor: s.anchor })),
+    ...SENSORS.map((s) => ({ id: s.id, label: s.dotLabel ?? s.label, shortLabel: s.shortLabel, poses: poses[s.id], anchor: s.anchor })),
     { id: 'base', label: 'base_link', muted: true, anchor: 'below', poses: [[...cat.base_link, 0, 0, 0]] },
-    { id: 'front', label: 'front', muted: true, anchor: 'below', poses: [[0.3, cat.base_link[1], cat.base_link[2], 0, 0, 0]] },
+    { id: 'front', label: 'front', muted: true, arrow: true, anchor: 'right', poses: [[cat.base_link[0] + 0.42, cat.base_link[1], cat.base_link[2], 0, 0, 0]] },
   ];
   let scene = null;
   function pick(id) {
@@ -145,7 +145,7 @@ getJSON('timeline.json').then((tl) => {
     { k: 'IMU', color: '--state', text: '<b>IMU</b>: 400 messages a second, one every 2.5 ms. Stamped when the driver parses the packet.' },
     { k: 'FOG', color: '--reference', text: '<b>Gyro</b>: about 475 a second. The driver passes a reading on only if 2 ms have gone by since the last one (<code>max_publish_rate</code> 500), so spacing jitters between 1 and 3.4 ms.' },
     { k: 'Depth', color: '--prediction', text: '<b>Depth</b>: 20 a second, from the camera cage board over CAN, the micro-ROS agent and <code>depth_converter.py</code>.' },
-    { k: 'DVL', color: '--s7', text: '<b>DVL</b>: 8 a second. Each velocity was measured about 125 ms before it arrived. The hollow dot is that message\'s own stamp, the moment of its echo (not the previous message); the arrow runs from the echo to the arrival.' },
+    { k: 'DVL', color: '--s7', h: 50, text: '<b>DVL</b>: 8 a second. Each velocity was measured about 125 ms before it arrived. The hollow dots (lower line) are the messages\' own stamps, the moments of their echoes; each arrow runs from an echo up to its own arrival. Because the DVL pings every 125 ms, each echo lines up with the previous arrival.' },
     { k: 'EKF', color: '--s4', text: '<b>EKF</b>: <code>odometry/filtered</code> at 30 Hz. Not a sensor: the filter that fuses the rows above (Chapter 9).' },
     { k: 'MPC', color: '--s5', text: '<b>MPC</b>: the controller\'s own state estimate, once per 50 ms tick.' },
   ];
@@ -155,7 +155,10 @@ getJSON('timeline.json').then((tl) => {
   const draw = () => {
     host.innerHTML = '';
     const W = Math.max(280, host.clientWidth || 600), narrow = W < 520;
-    const L = narrow ? 50 : 64, Rm = 14, rowH = 34, top = 10, H = top + ROWS.length * rowH + 26;
+    const L = narrow ? 50 : 64, Rm = 14, rowH0 = 34, top = 10;
+    const rowY = []; let yy = top;
+    ROWS.forEach((r) => { rowY.push(yy); yy += r.h || rowH0; });
+    const H = yy + 26;
     const svg = el('svg', { class: 'chart tl', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Message arrival times per sensor' }, host);
     const sx = (t) => L + ((t - w0) / zoom) * (W - L - Rm);
     // Arrowhead for the DVL echo-to-arrival arcs.
@@ -170,22 +173,26 @@ getJSON('timeline.json').then((tl) => {
     }
     el('text', { x: 4, y: H - 6, class: 'tl-unit' }, axis).textContent = 'ms';
     ROWS.forEach((row, j) => {
-      const y = top + j * rowH, mid = y + rowH / 2;
+      const rowH = row.h || rowH0, y = rowY[j], mid = y + rowH0 / 2;
       const g = el('g', { class: 'tl-row' + (hot && hot !== row.k ? ' dim' : '') + (hot === row.k ? ' hot' : ''), tabindex: 0 }, svg);
       el('rect', { x: 0, y, width: W, height: rowH, fill: 'transparent' }, g);
       el('text', { x: 4, y: mid + 4, class: 'label' }, g).textContent = row.k;
       const d = tl[row.k], color = css(row.color);
+      // DVL: arrival ticks on the upper line, echo dots on a lower line, an arrow from each echo to its own arrival.
+      const tickB = row.k === 'DVL' ? y + 24 : y + rowH - 7, dotY = y + 39;
+      if (row.k === 'DVL') el('text', { x: 4, y: dotY + 4, class: 'label tl-sub' }, g).textContent = 'echo';
+      let n = 0;
       const inWin = (t) => t >= w0 && t <= w0 + zoom;
       let path = '';
       d.recv.forEach((t, i) => {
         if (!inWin(t)) return;
-        path += `M${sx(t).toFixed(1)},${y + 7}V${y + rowH - 7}`;
+        path += `M${sx(t).toFixed(1)},${y + 7}V${tickB}`;
         if (row.k === 'DVL') {
-          const s = d.stamp[i], x0 = sx(Math.max(s, w0));
-          // an arc from the moment of the echo to the arrival
-          const xm = (x0 + sx(t)) / 2;
-          el('path', { d: `M${x0.toFixed(1)},${mid + 3}Q${xm.toFixed(1)},${y - 6} ${(sx(t) - 1.5).toFixed(1)},${y + 6}`, stroke: color, 'stroke-width': 1.3, 'stroke-opacity': 0.6, fill: 'none', 'stroke-dasharray': '3 2.5', 'marker-end': 'url(#tl-arrow)' }, g);
-          if (s >= w0) el('circle', { cx: sx(s), cy: mid + 3, r: 4, fill: 'var(--paper-2)', stroke: color, 'stroke-width': 2 }, g);
+          const s = d.stamp[i], x0 = sx(Math.max(s, w0)), x1 = sx(t);
+          // a diagonal from the echo (lower line) up to the foot of its own arrival tick; alternate strength so pairs read apart
+          const op = n++ % 2 ? 0.45 : 0.9;
+          el('path', { d: `M${(x0 + (s >= w0 ? 4 : 0)).toFixed(1)},${dotY - 1}L${(x1 - 1).toFixed(1)},${tickB + 2}`, stroke: color, 'stroke-width': 1.4, 'stroke-opacity': op, fill: 'none', 'stroke-dasharray': '3 2.5', 'marker-end': 'url(#tl-arrow)' }, g);
+          if (s >= w0) el('circle', { cx: sx(s), cy: dotY, r: 4, fill: 'var(--paper-2)', stroke: color, 'stroke-width': 2, 'stroke-opacity': op === 0.9 ? 1 : 0.6 }, g);
         }
       });
       el('path', { d: path, stroke: color, 'stroke-width': row.k === 'IMU' || row.k === 'FOG' ? (zoom === 1 ? 0.8 : 1.6) : 2.4, fill: 'none' }, g);
@@ -232,7 +239,7 @@ Promise.all([getJSON('still.json'), getJSON('pool.json')]).then(([st, pool]) => 
         { name: 'IMU, run 2', color: blue, dash: true, values: pts(st.driftB.t, st.driftB.imu) },
         { name: 'FOG, run 2', color: orange, dash: true, values: pts(st.driftB.t, st.driftB.fog) },
       ],
-      note: `Yaw-rate bias over the still stretch: IMU <b>${A.imu_yaw_bias_deg_h} °/h</b> (run 1) and <b>${B.imu_yaw_bias_deg_h} °/h</b> (run 2); FOG <b>${A.fog_bias_deg_h}</b> and <b>${B.fog_bias_deg_h} °/h</b> after its tare.`,
+      note: `Run 1 began just after hand tilts: the IMU built up <b>${Math.max(...st.driftA.imu).toFixed(2)}°</b> in about 50 s, then levelled off. Run 2: IMU within <b>${Math.max(...st.driftB.imu.map(Math.abs)).toFixed(2)}°</b> (${B.imu_yaw_bias_deg_h} °/h on average). FOG within <b>${Math.max(...st.driftA.fog.map(Math.abs), ...st.driftB.fog.map(Math.abs)).toFixed(2)}°</b> in both, after its tare.`,
     }),
     noise: () => ({
       opts: { height: 270, xLabel: 'time (s)', yLabel: 'yaw rate (°/s)', digits: 3, unit: '°/s', yZero: true },
@@ -243,7 +250,7 @@ Promise.all([getJSON('still.json'), getJSON('pool.json')]).then(([st, pool]) => 
       note: `Standard deviation per sample: IMU yaw <b>${(B.imu_rate_std_rad_s[2] * R2D).toFixed(3)} °/s</b>, FOG <b>${(B.fog_rate_std_rad_s * R2D).toFixed(3)} °/s</b>. Noise this fast averages out when integrated; bias doesn't.`,
     }),
     pool: () => ({
-      opts: { height: 270, xLabel: `time (s, from ${pool.yaw.t0} s into the run)`, yLabel: 'yaw rate (°/s)', digits: 1, unit: '°/s', yZero: true },
+      opts: { height: 270, xDomain: [0, 120], xLabel: `time (s, from ${pool.yaw.t0} s into the run)`, yLabel: 'yaw rate (°/s)', digits: 1, unit: '°/s', yZero: true },
       series: [
         { name: 'IMU (−z)', color: blue, values: pts(pool.yaw.imu_t, pool.yaw.imu), width: 1.6 },
         { name: 'FOG', color: orange, values: pts(pool.yaw.fog_t, pool.yaw.fog), width: 1.6, dash: true },
@@ -262,7 +269,7 @@ Promise.all([getJSON('still.json'), getJSON('pool.json')]).then(([st, pool]) => 
   show('drift');
 
   // DVL in the pool: DVL axes against body axes
-  const dvlChart = new LineChart(document.getElementById('dvlp-chart'), { height: 260, xLabel: `time (s, from ${pool.dvl.t0} s into the run)`, yLabel: 'velocity (m/s)', digits: 3, unit: 'm/s', yZero: true });
+  const dvlChart = new LineChart(document.getElementById('dvlp-chart'), { height: 260, xDomain: [0, 100], xLabel: `time (s, from ${pool.dvl.t0} s into the run)`, yLabel: 'velocity (m/s)', digits: 3, unit: 'm/s', yZero: true });
   const dv = pool.dvl;
   const showDvl = (k) => dvlChart.set(k === 'raw'
     ? [
@@ -280,7 +287,7 @@ Promise.all([getJSON('still.json'), getJSON('pool.json')]).then(([st, pool]) => 
 
   // Depth: pressure against the integrated DVL heave
   const dp = pool.depth;
-  new LineChart(document.getElementById('depth-chart'), { height: 260, xLabel: `time (s, from ${dp.t0} s into the run)`, yLabel: 'z (m, 0 = surface)', digits: 2, unit: 'm' }).set([
+  new LineChart(document.getElementById('depth-chart'), { height: 260, xDomain: [0, 260], xLabel: `time (s, from ${dp.t0} s into the run)`, yLabel: 'z (m, 0 = surface)', digits: 2, unit: 'm' }).set([
     { name: 'Pressure sensor (depth/pose)', color: blue, values: pts(dp.t, dp.z) },
     { name: 'DVL heave, integrated', color: orange, values: pts(dp.dvl_t, dp.dvl_z), dash: true },
   ]);
@@ -290,27 +297,40 @@ Promise.all([getJSON('still.json'), getJSON('pool.json')]).then(([st, pool]) => 
 getJSON('catalog.json').then(({ gyro: g }) => {
   const host = document.getElementById('cal-chart');
   const note = document.getElementById('cal-note');
-  const chart = new LineChart(host, { height: 260, xLabel: 'raw reading (millions of counts)', yLabel: 'yaw rate (°/s)', digits: 1, unit: '°/s', yZero: true });
+  const controls = document.getElementById('cal-controls');
   const [tLo, tHi] = g.cal_temp_limits;
-  let T = 45;
+  const TREF = 45;
+  let T = 38, view = 'bend', chart = null; // starts away from 45 °C so the temperature effect shows
   const rate = (raw, temp) => {
     const x = (raw - g.rate_norm_mean) / g.rate_norm_std, y = (temp - g.temp_norm_mean) / g.temp_norm_std;
     return g.a + g.b * x ** 3 + g.c * x * y + g.d * Math.cos(g.f * x + g.g);
   };
+  // The straight line: the 45 °C curve's value and slope at zero counts.
+  const z0 = rate(0, TREF), slope = (rate(1e3, TREF) - rate(-1e3, TREF)) / 2e3;
+  const line = (raw) => z0 + slope * raw;
+  const views = `<span class="seg" role="group" aria-label="Calibration view"><button type="button" aria-pressed="true" data-k="bend">Bend</button><button type="button" aria-pressed="false" data-k="full">Full curve</button></span>`;
+  controls.insertAdjacentHTML('beforeend', views);
   // On a phone the chart only has room for three x ticks; ±4 million would get just '0', so it shows ±3 million (ticks −2, 0, 2).
   let span = 0;
   const draw = () => {
     span = (host.clientWidth || 600) < 400 ? 3e6 : 4e6;
     const xs = Array.from({ length: 161 }, (_, i) => -span + (i * 2 * span) / 160);
-    const z0 = rate(0, T), slope = (rate(1e3, T) - rate(-1e3, T)) / 2e3;
-    chart.set([
-      { name: `Calibrated, ${T.toFixed(1)} °C`, color: css('--accent'), values: xs.map((r) => ({ x: r / 1e6, y: rate(r, T) * R2D })) },
-      { name: 'Straight line', color: css('--muted'), dash: true, width: 1.5, values: xs.map((r) => ({ x: r / 1e6, y: (z0 + slope * r) * R2D })) },
-    ]);
-    const r1 = rate(2e6, T) * R2D, lo = rate(2e6, tLo) * R2D, hi = rate(2e6, tHi) * R2D;
-    note.innerHTML = `At ${T.toFixed(1)} °C, a reading of 2,000,000 counts is <b>${r1.toFixed(2)} °/s</b>. Across the calibrated range (${tLo.toFixed(1)} to ${tHi.toFixed(1)} °C) the same reading spans ${Math.min(lo, hi).toFixed(2)} to ${Math.max(lo, hi).toFixed(2)} °/s.`;
+    host.innerHTML = '';
+    const bend = view === 'bend';
+    chart = new LineChart(host, bend
+      ? { height: 260, xLabel: 'raw reading (millions of counts)', yLabel: 'calibrated − straight line (°/s)', digits: 2, unit: '°/s', yZero: true }
+      : { height: 260, xLabel: 'raw reading (millions of counts)', yLabel: 'yaw rate (°/s)', digits: 1, unit: '°/s', yZero: true });
+    const f = bend ? (r, t) => (rate(r, t) - line(r)) * R2D : (r, t) => rate(r, t) * R2D;
+    const series = [{ name: `At ${T.toFixed(1)} °C`, color: css('--accent'), values: xs.map((r) => ({ x: r / 1e6, y: f(r, T) })), width: 2.2 }];
+    if (bend) series.push({ name: `At ${TREF} °C (reference)`, color: css('--muted'), dash: true, width: 1.5, values: xs.map((r) => ({ x: r / 1e6, y: f(r, TREF) })) });
+    else series.push({ name: 'Straight line', color: css('--muted'), dash: true, width: 1.5, values: xs.map((r) => ({ x: r / 1e6, y: line(r) * R2D })) });
+    chart.set(series);
+    const r1 = rate(2e6, T) * R2D, b1 = (rate(2e6, T) - line(2e6)) * R2D, bEnd = (rate(span, T) - line(span)) * R2D;
+    const lo = rate(2e6, tLo) * R2D, hi = rate(2e6, tHi) * R2D;
+    note.innerHTML = `At ${T.toFixed(1)} °C, a reading of 2,000,000 counts is <b>${r1.toFixed(2)} °/s</b>; the straight line is off by <b>${Math.abs(b1).toFixed(2)} °/s</b> there and by ${Math.abs(bEnd).toFixed(1)} °/s at ${span / 1e6} million. Across the calibrated temperatures (${tLo.toFixed(1)} to ${tHi.toFixed(1)} °C) that reading spans ${Math.min(lo, hi).toFixed(2)} to ${Math.max(lo, hi).toFixed(2)} °/s.`;
   };
-  slider(document.getElementById('cal-controls'), 'FOG temperature', tLo, tHi, 0.1, T, (v) => `${v.toFixed(1)} °C`, (v) => { T = v; draw(); });
+  slider(controls, 'FOG temperature', tLo, tHi, 0.1, T, (v) => `${v.toFixed(1)} °C`, (v) => { T = v; draw(); });
+  segment(controls.querySelector('.seg'), (k) => { view = k; draw(); });
   draw();
   new ResizeObserver(() => { if (((host.clientWidth || 600) < 400 ? 3e6 : 4e6) !== span) draw(); }).observe(host);
 });
@@ -390,7 +410,7 @@ getJSON('catalog.json').then(({ gyro: g }) => {
     else verdict = bad
       ? '<p class="dvl-verdict warn"><b>Exactly three beams, one of them wrong:</b> the answer is wrong and nothing can tell.</p>'
       : '<p class="dvl-verdict ok"><b>Three beams: just enough.</b> No spare left to check the answer.</p>';
-    out.innerHTML = `<table class="params dvl-tab"><thead><tr><th></th><th>True</th><th>Solved</th></tr></thead><tbody>${['x', 'y', 'z'].map((a, i) => `<tr><td>v<sub>${a}</sub></td><td>${f3(v[i])}</td><td>${sol ? f3(sol[i]) : '—'}</td></tr>`).join('')}</tbody></table>${verdict}<p class="dvl-tip">Tap a beam: good → lost → wrong by 0.15 m/s.</p>`;
+    out.innerHTML = `<table class="params dvl-tab"><thead><tr><th>Axis</th><th>True</th><th>Solved</th></tr></thead><tbody>${['x', 'y', 'z'].map((a, i) => `<tr><td>v<sub>${a}</sub></td><td>${f3(v[i])}</td><td>${sol ? f3(sol[i]) : '—'}</td></tr>`).join('')}</tbody></table>${verdict}<p class="dvl-tip">Tap a beam: good → lost → wrong by 0.15 m/s.</p>`;
   }
   draw();
 }
@@ -400,7 +420,7 @@ getJSON('catalog.json').then(({ gyro: g }) => {
   const T = [
     ['imu', 'No <code>vectornav/imu</code>', 'Wrong port (Talos needs <code>imu_port:=/dev/ttyTHS1</code>), or the VN-100 hung.', `<code>ros2 topic hz /talos/vectornav/imu</code> should say 400. Driver log: "Unable to connect to IMU". Viewer electrical panel: Cycle IMU (${link(CORE + 'riptide_hardware/riptide_hardware2/imu_power_cycle.py', 'holds Orin GPIO pin 22 low for 10 s')}).`],
     ['imu', 'IMU rate no longer 400 Hz', 'Registers written and not saved, or saved with a different rate.', 'Read the output registers from the viewer\'s electrical panel; save after any change.'],
-    ['imu', 'Gaps in <code>vectornav/imu</code>', 'The driver drops a message with NaN, a quaternion component above 1, a rate above 2π rad/s or an acceleration above 20 m/s². A link hiccup also restarts the VN-100 (a second of data).', 'Driver log errors. <code>ros2 topic hz</code> for gaps.'],
+    ['imu', 'Gaps in <code>vectornav/imu</code>', 'The driver drops a message with NaN, a quaternion component above 1, a rate above 2π rad/s or an acceleration above 20 m/s². A serial hiccup also makes the driver reconnect, which reboots the VN-100 (a gap in the data).', 'Driver log errors. <code>ros2 topic hz</code> for gaps.'],
     ['imu', 'EKF roll and pitch rates small and late', '<code>angular_velocity_covariance</code> 0.01 in <code>riptide_imu/config/vectornav.yaml</code>.', 'Compare <code>odometry/filtered</code> twist with the IMU in a bag (the covariance plot above).'],
     ['fog', 'Heading creeps while Talos sits still', 'A bad or old tare (taken while moving or tilted). Rarely the gyro itself.', 'With Talos still and level, tare from the viewer (100,000 samples).'],
     ['fog', '<code>temp_within_cal</code> false', 'FOG colder than 37.6 °C (just powered on) or hotter than 51.3 °C.', 'Watch the FOG temperature in the viewer header (warns at 55 °C, errors at 75 °C); let it warm up.'],
@@ -412,8 +432,8 @@ getJSON('catalog.json').then(({ gyro: g }) => {
     ['dvl', 'Velocity in the wrong direction', 'TF missing <code>dvl_link</code>\'s −45° turn (it is on <code>/tf</code>, not <code>/tf_static</code>).', '<code>ros2 run tf2_ros tf2_echo talos/base_link talos/dvl_link</code>'],
     ['depth', 'Depth not zero at the surface', 'Board powered up underwater, or an old surface pressure kept through a watchdog reset.', 'At the surface: Clear depth (<code>CLEAR_DEPTH</code>) in the viewer\'s electrical panel.'],
     ['depth', 'No <code>depth/pose</code>', 'No <code>state/depth/raw</code> (CAN, micro-ROS agent, camera cage board), or <code>depth_converter.py</code> can\'t get <code>odom → base_link</code> yet.', '<code>ros2 topic hz /talos/state/depth/raw</code> (20 Hz); is the EKF running?'],
-    ['acoustics', '<code>buffer_0_closer</code> never changes', 'No amplitude stream (IVC firmware without the pinger), or the <code>max</code>-mode gap.', '<code>ros2 topic hz /talos/ivc/pinger/selected_freq_amp_stream</code>'],
-    ['acoustics', '<code>stop_sample</code>: "Cannot compare"', 'A buffer stayed empty: nothing arrived while sampling.', 'Same as above; check <code>ivc/pinger/set_freq_khz</code> matches the pinger. Always the case in Nereus, which has no pinger.'],
+    ['acoustics', '<code>buffer_0_closer</code> never changes', 'No amplitude stream: pinger mode not enabled (viewer electrical panel → Pinger; no viewer running), or IVC firmware without the pinger. Or the <code>max</code>-mode gap.', 'Watch the amplitude in the viewer\'s pinger readout. <code>ros2 topic hz /talos/ivc/pinger/selected_freq_amp_stream</code>'],
+    ['acoustics', '<code>stop_sample</code>: "Cannot compare"', 'A buffer stayed empty: nothing arrived while sampling (pinger mode off, or no stream).', 'Same as above; check the viewer\'s pinger frequency (<code>ivc/pinger/selected_freq_khz</code>) matches the pinger. Always the case in Nereus, which has no pinger.'],
     ['acoustics', 'Talos goes to the wrong task first', 'The tree reads <code>buffer_0_closer</code> (torpedo louder) as <code>is_table</code>, or a stale <code>max</code>-mode answer.', 'The <code>stop_sample</code> response and node log give both results; see <a href="robosub.html#tree">RoboSub</a>.'],
   ];
   const pick = document.getElementById('tr-pick'), list = document.getElementById('tr-list');

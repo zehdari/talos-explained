@@ -12,11 +12,33 @@ ap.add_argument('--width', type=int, default=1600)
 ap.add_argument('--pad', type=float, default=0.05)
 ap.add_argument('--aspect', default='')
 ap.add_argument('--maxkb', type=int, default=290)
+ap.add_argument('--grey-red', action='store_true', help='turn saturated pure-red pixels (CAD face colours that ignore the grey override) grey; the orange highlight is kept')
+ap.add_argument('--drop-small', type=float, default=0, help='ignore detached blobs smaller than this fraction of the largest when cropping (and paint them white)')
 a = ap.parse_args()
 
 im = Image.open(a.src).convert('RGB')
+if a.grey_red:
+    import numpy as np
+    arr = np.array(im).astype(float)
+    hsv = np.array(im.convert('HSV')).astype(float)
+    h, sat = hsv[..., 0] * 360 / 255, hsv[..., 1] / 255
+    red = ((h < 9) | (h > 345)) & (sat > 0.45)
+    lum = arr @ [0.299, 0.587, 0.114]
+    grey = np.clip(0.80 * 255 * (0.35 + 0.65 * lum / max(lum[red].max() if red.any() else 1, 1)), 0, 255)
+    for k in range(3):
+        arr[..., k] = np.where(red, grey * [0.80, 0.82, 0.84][k] / 0.80, arr[..., k])
+    im = Image.fromarray(arr.clip(0, 255).astype('uint8'))
 bg = Image.new('RGB', im.size, (255, 255, 255))
 diff = ImageChops.difference(im, bg).convert('L').point(lambda v: 255 if v > 12 else 0)
+if a.drop_small:
+    import numpy as np
+    from scipy import ndimage
+    mask = np.array(diff) > 0
+    lab, n = ndimage.label(ndimage.binary_dilation(mask, iterations=6))
+    sizes = ndimage.sum(mask, lab, range(1, n + 1))
+    keep = np.isin(lab, 1 + np.flatnonzero(sizes >= a.drop_small * sizes.max()))
+    arr = np.array(im); arr[mask & ~keep] = 255; im = Image.fromarray(arr)
+    diff = Image.fromarray(((mask & keep) * 255).astype('uint8'))
 box = diff.getbbox()
 if box is None:
     sys.exit(f'{a.src}: blank image')

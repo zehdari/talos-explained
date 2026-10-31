@@ -62,7 +62,7 @@ symptoms:
     cat: launch
     symptom: 'A launch sits at <b>3/4 completed</b> on the launcher page instead of <b>Running</b>'
     cause: 'The launcher counts a launch as running once every topic listed for it in the launch YAML has been seen. One hasn''t: that node didn''t start, or the topic was renamed. Hover the bar for <i>Pending Topics</i>. riptide_navigation''s entry lists <code>/a</code>.'
-    check: 'Read the launch''s output on the launcher page (cyan while starting). <code>ros2 topic hz</code> on the pending topic.'
+    check: 'Read the launch''s output on the launcher page (cyan while starting). The page shows only lines printed while it is open: for earlier ones, restart the launch with the page open, or read <code>~/.ros/log/</code> on the Orin. <code>ros2 topic hz</code> on the pending topic.'
     src:
       - [main.js progress bar, launch, remote_launch/pages/main.js, 67-88]
       - [talos_launch_bench_mpc.yaml, launch, remote_launch/launches/talos_launch_bench_mpc.yaml, 43-57]
@@ -70,8 +70,9 @@ symptoms:
     cat: launch
     symptom: 'A launch''s bar on the launcher page says <b>ERROR!</b>'
     cause: 'Its <code>ros2 launch</code> process exited (a node crashed with the launch, or a monitored topic''s monitor died). The launcher logs <code>Launch died</code> and stops the rest of it.'
-    check: 'The launch''s output on the launcher page shows the crash. The launcher''s own log: <code>journalctl -u ros_launcher --since "10 min ago"</code>.'
+    check: 'If the launcher page was open when it died, its output shows the crash; the page keeps nothing, so otherwise read <code>~/.ros/log/</code> on the Orin, or restart the launch with the page open. The launcher''s own log: <code>journalctl -u ros_launcher --since "10 min ago"</code>.'
     src:
+      - [launcher.py _launch_monitor_task, launch, remote_launch/remote_launch/launcher.py, 365-397]
       - [launcher.py _launch_task, launch, remote_launch/remote_launch/launcher.py, 399-500]
   - id: cameras-wrong-nav
     cat: launch
@@ -153,7 +154,7 @@ symptoms:
     cat: ctrl
     symptom: 'Enabled, but the thrusters do nothing for about 5 seconds'
     cause: 'Normal. A kill cuts ESC power; when power returns the ESC boards hold <code>ESC_POWERON_DELAY</code> for 5000 ms while the ESCs start up, and the overseer keeps <code>motion_enabled</code> false.'
-    check: '<code>ros2 topic echo /talos/state/thrusters/telemetry --field disabled_flags</code>: bit 2 (value 4) is the power-on delay. It clears by itself.'
+    check: '<code>ros2 topic echo /talos/state/thrusters/telemetry --no-arr</code>: <code>disabled_flags</code> bit 2 (value 4) is the power-on delay and clears by itself. Telemetry alternates between the two ESC boards (<code>start_thruster_num</code> 0 and 4): read both.'
     src:
       - [dshot.h ESC_POWERUP_DELAY_MS, firmware, talos/ESCBoard/include/dshot.h, 20-29]
       - [core1.c disabled flags, firmware, talos/ESCBoard/src/core1.c, 236-283]

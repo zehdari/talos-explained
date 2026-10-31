@@ -114,7 +114,7 @@ function init(data) {
     { from: 'mpc', to: 'esc', label: 'raw CAN, 20 Hz', lx: 524, ly: 100,
       meta: `two CAN frames each tick, ${canId('esc0')} and ${canId('esc1')}, four int16 RPMs each, skipping ROS entirely` },
     { from: 'esc', to: 'thr', label: 'DShot600', ly: 133, meta: 'throttle out, RPM back (bidirectional DShot)' },
-    { from: 'esc', to: 'ov', label: 'telemetry, 2 Hz', lx: 540, ly: 174,
+    { from: 'esc', to: 'ov', label: 'telemetry, 2 Hz', lx: 524, ly: 160,
       meta: `<code>state/thrusters/telemetry</code> (DshotPartialTelemetry), every ${ms(data.firmware.esc_telemetry_ms)} per board, through the agent` },
     { from: 'ov', to: 'mpc', label: 'motion_enabled', lx: 398, ly: 128, anchor: 'start',
       meta: '<code>controller/motion_enabled</code> (Bool) and <code>controller/FF_body_force</code> (1 Hz)' },
@@ -123,7 +123,7 @@ function init(data) {
     below: 620, width: 360, height: 720, bands: [],
     nodes: {
       bt: { x: 88, y: 46 }, viewer: { x: 272, y: 46 },
-      mpc: { x: 88, y: 210 }, ov: { x: 272, y: 182, label: 'overseer', sub: 'controller_overseer' },
+      mpc: { x: 88, y: 210 }, ov: { x: 246, y: 182, label: 'overseer', sub: 'controller_overseer' },
       agent: { x: 272, y: 330 }, esc: { x: 88, y: 420, label: 'ESC boards', sub: `${canId('esc0')}, ${canId('esc1')}` },
       poac: { x: 272, y: 480 }, thr: { x: 88, y: 590 }, sw: { x: 272, y: 650 },
     },
@@ -131,7 +131,7 @@ function init(data) {
       'bt>mpc': { label: 'goals', bend: 20, lx: 56, ly: 132, anchor: 'end' },
       'mpc>bt': { label: 'trust', bend: 20, lx: 122, ly: 132, anchor: 'start' },
       'viewer>mpc': { label: 'controller/*', lx: 196, ly: 112, anchor: 'start' },
-      'viewer>agent': { via: [104, 190], label: 'software_kill', lx: 182, ly: 262, anchor: 'end' },
+      'viewer>agent': { via: [436, 196], label: 'software_kill', lx: 336, ly: 256, anchor: 'end' },
       'agent>poac': { bend: 18, lx: 300, ly: 410, anchor: 'start', label: 'kill reports' },
       'poac>agent': { bend: 18, lx: 244, ly: 410, anchor: 'end', label: 'state/kill' },
       'sw>poac': { lx: 280, ly: 570, anchor: 'start', label: 'kill line' },
@@ -165,7 +165,7 @@ function init(data) {
     { id: 'kill', name: 'Pull the switch', intro: 'Pulling the physical switch.', steps: [
       { edges: ['sw>poac', 'poac>thr'], text: "The switch line drops. ESC power goes, and the POAC board's interrupt marks slot 0 as asserting." },
       { edges: ['poac>agent', 'agent>esc', 'agent>mpc'], text: '<code>state/kill</code> = true goes out at once. The ESC boards zero their throttles, and the MPC sends zeros and aborts any path.' },
-      { edges: ['mpc>esc'], text: 'The MPC keeps writing frames of zeros every tick, so the ESC targets never go stale. The reference is kept for when the switch goes back in.' },
+      { edges: ['mpc>esc'], text: 'The MPC keeps writing frames of zeros every tick, so the ESC targets never go stale. The reference is kept for when the switch goes back in. A running path is cut short, and its last point becomes the reference.' },
     ] },
     { id: 'health', name: 'Health back', intro: 'What flows back up to the controller and the tree.', steps: [
       { edges: ['esc>ov'], text: 'Each ESC board reports at 2 Hz: disabled flags, RPM, ESC temperature, voltage and current.' },
@@ -295,6 +295,7 @@ function init(data) {
       <div class="ks-detail">
         <div class="table-scroll"><table class="params ks-slots"><thead><tr><th>Slot</th><th>Enabled</th><th>Asserting</th><th>Needs update</th><th>Lock</th></tr></thead><tbody id="ks-slots"></tbody></table></div>
         <div class="ks-strips" id="ks-strips"></div>
+        <h4 class="ks-loghead">Events</h4>
         <ol class="ks-log" id="ks-log"></ol>
       </div>
     </div>`;
@@ -337,7 +338,7 @@ function init(data) {
       s(7, () => sim.viewerCommand(), 'Command: a <code>POSITION</code> pair. The MPC holds position and the thrusters run.'),
       s(3.5, () => sim.closeViewer(), 'Unplug and close the viewer. Its enable latched (<code>needs_update</code> false), so slot 1 stays clear and the run continues.'),
       s(3.5, () => sim.setSwitch(false), 'Pull the switch: ESC power is cut at once, <code>state/kill</code> goes true, and the MPC sends zeros.'),
-      s(3.5, () => sim.setSwitch(true), 'Re-insert it: 5 s of power-on delay, then the MPC flies to its last reference again. The reference survived the kill.'),
+      s(3.5, () => sim.setSwitch(true), 'Re-insert it: 5 s of power-on delay, then the MPC flies to its last reference again. The reference survived the kill. Had a path been running, that reference would be the path\'s last point.'),
     ] },
     nobody: { name: 'Nobody on a slot', start: () => sim.reset({ viewerOpen: false }), steps: [
       s(0, () => {}, 'Viewer closed, nobody on any software slot, switch in. Slot 0 is the only enabled slot and it is clear, so the POAC board enables. Software slots can only add kills.'),
@@ -359,7 +360,7 @@ function init(data) {
     ] },
     agent: { name: 'Agent crash', start: () => { sim.reset(); sim.advance(0.3); sim.viewerEnable(); sim.advance(6); sim.viewerCommand(); sim.advance(1); sim.hist = []; }, steps: [
       s(0, () => {}, 'Talos is holding position.'),
-      s(2, () => sim.setLink(false), `The micro-ROS agent on the Orin dies. The POAC board loses ROS and kills, because its safety code only runs while connected. The ESC boards lose their own micro-ROS session and kill at once. The MPC never hears a kill, but after ${K.overseerTimeout} s without telemetry the overseer drops <code>motion_enabled</code>, so the MPC sends zeros and would abort a path.`),
+      s(2, () => sim.setLink(false), `The micro-ROS agent on the Orin dies, and no ROS message reaches the boards. The ESC boards stop hearing <code>state/kill</code> and kill once ${K.switchTimeout * 1000} ms pass without it. After about ${K.sessionLoss.toFixed(1)} s of failed heartbeats every board drops its session, and the POAC board kills, because its safety code only runs while connected. The MPC never hears a kill (<code>state/kill</code> came through the agent too), but after ${K.overseerTimeout} s without telemetry the overseer drops <code>motion_enabled</code>, so the MPC sends zeros and would abort a path.`),
       s(4, () => sim.setLink(true), 'The agent restarts. The POAC board reconnects with its slots as they were (slot 1 still clear) and re-enables. The ESC boards report <code>ESC_POWERON_DELAY</code> for 5 s, then <code>motion_enabled</code> returns and the MPC drives to its last reference again.'),
     ] },
   };
@@ -394,7 +395,7 @@ function init(data) {
     const flagNames = K.flags.filter((f) => e.flags & (1 << f.bit)).map((f) => f.name);
     $('ks-chain').innerHTML = [
       chip('POAC board', !p.asserting, p.asserting ? 'killed' : 'enabled'),
-      chip('state/kill', p.stateKill === false, sim.inputs.link ? String(p.stateKill) : 'silent'),
+      chip('state/kill', sim.inputs.link && p.stateKill === false, sim.inputs.link ? String(p.stateKill) : 'silent'),
       chip('ESC flags', e.flags === 0, flagNames.length ? flagNames.join(', ') : 'none'),
       chip('motion_enabled', sim.inputs.control && o.motionEnabled, sim.inputs.control ? String(o.motionEnabled) : 'not running'),
       chip('MPC', e.thrustersOn, !sim.inputs.control ? 'not running' : m.killed ? 'killed: zeros' : m.mode === 'DISABLED' ? 'DISABLED: zeros' : m.commanding ? 'thrusting' : 'zeros'),
@@ -409,7 +410,9 @@ function init(data) {
     $('ks-enable').classList.toggle('kill', sim.viewer.enabled);
     $('ks-enable').disabled = !sim.viewer.open;
     $('ks-command').disabled = !sim.viewer.open || !sim.viewer.enabled;
-    $('ks-log').innerHTML = sim.log.map((l) => `<li class="${l.kind}"><span>${l.t.toFixed(2)} s</span> ${esc(l.msg)}</li>`).join('');
+    $('ks-log').innerHTML = sim.log.length
+      ? sim.log.map((l) => `<li class="${l.kind}"><span>${l.t.toFixed(2)} s</span> ${esc(l.msg)}</li>`).join('')
+      : '<li class="empty">Nothing has changed yet. Events appear here, newest first.</li>';
     drawStrips();
   }
   function drawStrips() {

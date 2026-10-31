@@ -17,8 +17,8 @@
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
       <li>Each program is a <span class="term">node</span>. Nodes talk through <span class="term">topics</span> (streams), <span class="term">services</span> (quick request and reply) and <span class="term">actions</span> (long jobs with progress), and they are configured with <span class="term">parameters</span>.</li>
-      <li>Everything of Talos's lives under <code>/talos/</code>. Messages are standard ROS types plus the team's own package, <code>riptide_msgs2</code>.</li>
-      <li>One launch command starts the whole stack. In Nereus the simulator stands in for the hardware, and every node runs on the simulator's clock.</li>
+      <li>Almost all of Talos's names live under <code>/talos/</code>; shared ones like <code>/tf</code> and <code>/clock</code> don't. Messages are standard ROS types plus the team's own package, <code>riptide_msgs2</code>.</li>
+      <li>In Nereus one launch command starts the whole stack; on the robot the launcher starts it subsystem by subsystem. In Nereus the simulator stands in for the hardware, and the stack runs on the simulator's clock.</li>
       <li>The middleware is Zenoh: a router on the Orin, and every laptop connects to it over TCP.</li>
       <li>The <code>ros2</code> command shows all of it from any laptop that can reach the router.</li>
     </ul></aside>
@@ -37,8 +37,10 @@
           <label class="rg-search"><span class="rg-vh">Find a node or topic</span><input type="search" id="rg-q" placeholder="Find a node or topic, e.g. kill or odometry" autocomplete="off" spellcheck="false"></label>
           <div class="rg-results" id="rg-results" hidden></div>
         </div>
-        <div id="rg-graph"></div>
-        <div class="rg-detail" id="rg-detail" aria-live="polite"></div>
+        <div class="rg-body">
+          <div id="rg-graph" class="rg-graph"></div>
+          <div class="rg-detail" id="rg-detail" aria-live="polite"></div>
+        </div>
       </div>
       <figcaption><b>Talos's ROS graph, live from Nereus.</b> 23 nodes and 143 topics, captured with <code>rclpy</code>'s graph calls during a full run of <code>RepairCompMpcTree</code>. An arrow means "sends data to" through a topic, or "calls" a service or action. Tap or hover a node to light its peers and list everything it publishes, subscribes and serves; tap any topic for its message type, measured rate and QoS. The filter keeps one subsystem and its direct peers. Edges leave out the topics nearly every node uses (<code>/clock</code>, <code>/tf</code>, <code>/tf_static</code>, <code>/rosout</code>, <code>/parameter_events</code>, <code>/diagnostics</code>). Four hidden helper nodes that <code>tf2</code> creates inside other nodes, and the <code>ros2 launch</code> process itself, are left out.</figcaption>
     </figure>
@@ -46,7 +48,7 @@
       <p>Things to notice:</p>
       <ul>
         <li><strong>The simulator is just another node.</strong> <code>physics_simulator</code> publishes <code>vectornav/imu</code>, <code>dvl_twist</code>, <code>gyro/twist</code>, <code>depth/pose</code> and the camera images under the same names the real drivers and boards use, and subscribes to <code>thruster_forces</code>. The rest of the stack can't tell. On the robot those topics come from the sensor drivers and the boards' micro-ROS firmware (<a href="firmware.html#microros">Firmware</a>).</li>
-        <li><strong>The viewer is three nodes</strong> on your laptop (<code>nereus_viewer</code>, <code>viewer_panels</code>, <code>viewer_plots</code>), in sim and on the real robot. It takes part in the graph like any other node: it subscribes to images and paths, publishes the software kill and starts trees.</li>
+        <li><strong>The viewer is four nodes</strong> on your laptop (<code>nereus_viewer</code>, <code>viewer_panels</code>, <code>viewer_plots</code> and a timing helper), in sim and on the real robot. It takes part in the graph like any other node: it subscribes to images and paths, publishes the software kill and starts trees.</li>
         <li><strong>One process can hold several nodes.</strong> The AprilTag detector is a <em>component</em> loaded into <code>tag_container</code> (both appear in the graph), and every <code>tf2</code> listener adds a hidden helper node.</li>
         <li><strong>One node can hold many subscriptions to one topic.</strong> <code>autonomy</code> subscribes to <code>odometry/filtered</code> hundreds of times: each behaviour-tree node that reads odometry makes its own subscription (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/CenterDetection.btaction.hpp#L44"><code>CenterDetection</code></a>, for one).</li>
       </ul>
@@ -70,11 +72,11 @@
           <div class="ma-file"><div class="ma-path" id="ma-path"></div><ol class="ma-lines" id="ma-lines"></ol></div>
           <div class="ma-side">
             <div class="ma-note" id="ma-note" aria-live="polite"></div>
-            <div class="ma-yaml"><div class="ma-sub">Its default value, as you'd type it for <code>ros2 topic pub</code></div><pre id="ma-yaml"></pre></div>
+            <div class="ma-yaml"><div class="ma-sub" id="ma-sub"></div><pre id="ma-yaml"></pre></div>
           </div>
         </div>
       </div>
-      <figcaption><b>Anatomy of a message.</b> Five real <code>riptide_msgs2</code> definitions, parsed from the repo. Tap any line to see what it is and what Talos does with it. Messages (<code>.msg</code>) carry fields; services (<code>.srv</code>) and actions (<code>.action</code>) are the same syntax with <code>---</code> between their parts. The box shows the message with every field at its default, in the YAML form the command line takes.</figcaption>
+      <figcaption><b>Anatomy of a message.</b> Five real <code>riptide_msgs2</code> definitions, parsed from the repo. Tap any line to see what it is and what Talos does with it. Messages (<code>.msg</code>) carry fields; services (<code>.srv</code>) and actions (<code>.action</code>) are the same syntax with <code>---</code> between their parts. The dark box shows every field at its default, in the YAML form the <code>ros2</code> command line prints and takes.</figcaption>
     </figure>
     <div class="prose">
       <p>Three habits follow from how messages work:</p>
@@ -108,14 +110,14 @@ rclpy.spin(KillWatcher())      <span class="c"># run callbacks until Ctrl+C</spa
       <table class="params ros2-qos">
         <thead><tr><th>Setting</th><th>Choices</th><th>On Talos</th></tr></thead>
         <tbody>
-          <tr><td>Reliability</td><td><b>reliable</b>: lost data is resent.<br><b>best effort</b>: lost data stays lost.</td><td>Reliable is the default (a bare <code>10</code> in <code>create_publisher(..., 10)</code>). Fast sensors use best effort: the MPC reads the IMU, FOG, DVL and depth with <code>SensorDataQoS().keep_last(50)</code> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L567">line 567</a>), and the boards take the software kill best-effort (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L314">POAC <code>ros.c</code></a>).</td></tr>
+          <tr><td>Reliability</td><td><b>reliable</b>: lost data is resent.<br><b>best effort</b>: lost data stays lost.</td><td>Reliable is the default (a bare <code>10</code> in <code>create_publisher(..., 10)</code>). Subscriptions to fast sensors use best effort: the MPC reads the IMU, FOG, DVL and depth with <code>SensorDataQoS().keep_last(50)</code> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L567">line 567</a>), and the boards take the software kill best-effort (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L314">POAC <code>ros.c</code></a>).</td></tr>
           <tr><td>Durability</td><td><b>volatile</b>: only messages sent after you joined.<br><b>transient local</b>: the publisher keeps its last messages for late joiners ("latched").</td><td><code>/tf_static</code>, <code>robot_description</code> and the MPC's whole planned path (<code>QoS(1).transient_local()</code>, "latched for late viewers", <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L453">line 453</a>). A viewer opened mid-path still draws it.</td></tr>
           <tr><td>History depth</td><td>How many messages wait in the queue if your callback is slow.</td><td>10 for most topics; 50 for the MPC's 400 Hz IMU, so a slow tick doesn't drop samples before the estimator sorts them by stamp.</td></tr>
         </tbody>
       </table>
     </div>
     <div class="prose">
-      <p>Why best effort for sensors: an IMU sample that arrives late is worse than none, because the next one, 2.5 ms later, is fresher. Resending would only delay it. Commands and state changes, like a mapping target or a controller setpoint, are sent once, so they must arrive: reliable.</p>
+      <p>Why best effort for sensors: an IMU sample that arrives late is worse than none, because the next one, 2.5 ms later, is fresher. Resending would only delay it. Commands, like a controller setpoint (<code>controller/linear</code>) or an actuator command, are sent once, so they must arrive: reliable.</p>
       <div class="callout">
         <span class="label">Zenoh is forgiving, DDS is not</span>
         <p>With the default DDS middleware, a best-effort publisher and a reliable subscriber never connect, and nothing tells you: the topic exists, <code>echo</code> just shows nothing. Under rmw_zenoh, which Talos uses, "any publisher can match any subscription" (<a href="https://github.com/ros2/rmw_zenoh/blob/humble/docs/design.md">rmw_zenoh design</a>), so a mismatch still delivers. Choose QoS as if it mattered anyway: Nereus can run on Fast DDS (<code>rmw:=</code>), and transient local still only works if the publisher asks for it. <code>ros2 topic info -v</code> prints both ends' QoS.</p>
@@ -127,7 +129,7 @@ rclpy.spin(KillWatcher())      <span class="c"># run callbacks until Ctrl+C</spa
         <li><code>autonomy/list_trees</code> (<code>riptide_msgs2/srv/ListTrees</code>): the viewer's tree picker fills from it.</li>
         <li><code>set_camera_is_dfc</code> (<code>std_srvs/srv/SetBool</code>): the detector swaps between the forward and down camera models.</li>
         <li><code>mapping_target</code> (<code>riptide_msgs2/srv/MappingTarget</code>): the tree tells mapping which object it is looking for.</li>
-        <li><code>command/actuator/torpedo</code> (<code>std_srvs/srv/Trigger</code>): the trees fire through a service. <code>ActuatorTranslator</code> turns it into a topic for the board, because the boards' firmware only uses topics.</li>
+        <li><code>command/actuator/torpedo</code> (<code>std_srvs/srv/Trigger</code>): the trees fire through a service. <code>ActuatorTranslator</code> turns it into an <code>std_msgs/Empty</code> message on the topic of the same name, which the POAC board's firmware subscribes to (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/ros_torp.c#L36"><code>ros_torp.c</code></a>).</li>
       </ul>
       <p>Prefer standard <code>std_srvs</code> types (<code>Trigger</code>, <code>SetBool</code>) when they fit, as Talos mostly does. Never call a service from inside another callback of the same single-threaded node and block for the reply: the reply can't be processed until your callback returns, so it waits forever.</p>
 
@@ -155,7 +157,7 @@ rclpy.spin(KillWatcher())      <span class="c"># run callbacks until Ctrl+C</spa
       </ul>
     </div>
     <figure class="fig narrow">
-      <img class="media" src="/talos-explained/media/nereus/panel-autonomy-tree-list.webp" width="400" height="913" alt="The Nereus viewer's Autonomy panel with its tree picker open, listing tree files from ActuatorTrees to test_comp_tree" loading="lazy" style="max-width:260px;margin:0 auto">
+      <img class="media" src="/media/nereus/panel-autonomy-tree-list.webp" width="400" height="913" alt="The Nereus viewer's Autonomy panel with its tree picker open, listing tree files from ActuatorTrees to test_comp_tree" loading="lazy" style="max-width:260px;margin:0 auto">
       <figcaption><b>The client side of both calls.</b> The viewer's Autonomy panel: the list comes from the <code>autonomy/list_trees</code> service, and Start sends an <code>ExecuteTree</code> goal.</figcaption>
     </figure>
 
@@ -171,7 +173,7 @@ rclpy.spin(KillWatcher())      <span class="c"># run callbacks until Ctrl+C</spa
       <p>And the node's side, in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L63"><code>mpc_controller_node.cpp</code></a>:</p>
 <pre><code>s.dt = declare_parameter(<span class="s">"control_period"</span>, s.dt);   <span class="c">// the code's default unless YAML says otherwise</span></code></pre>
       <ul>
-        <li><strong>The node name must match.</strong> The YAML key is the node name, not the executable or the package. A typo there doesn't fail; the node silently keeps its code defaults. <code>ros2 param dump</code> shows what it really loaded (the capture's dumps are in <a href="https://github.com/zehdari/talos-explained/tree/main/public/data/rosgraph">this site's data</a>).</li>
+        <li><strong>The node name must match.</strong> The YAML key is the node name, not the executable or the package. A typo there doesn't fail; the node silently keeps its code defaults. <code>ros2 param dump</code> shows what it really loaded (the capture's dump for the MPC is <a href="data/rosgraph/params_mpc.json">in this site's data</a>).</li>
         <li><strong>Some parameters change live.</strong> The MPC registers a callback (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L178">line 178</a>) that accepts new motion limits, weights or a whole new hydrodynamic model while flying. Others are read once at startup. Check the code before relying on <code>ros2 param set</code>.</li>
         <li><strong>A live change dies with the node.</strong> Put anything you want to keep in the YAML, in git.</li>
         <li><strong>Parameters are services underneath.</strong> Every node serves <code>get_parameters</code>, <code>set_parameters</code> and four more. The graph shows <code>autonomy</code> as a client of <code>/talos/mpc_controller/set_parameters</code>: trees change MPC settings mid-mission.</li>
@@ -182,7 +184,7 @@ rclpy.spin(KillWatcher())      <span class="c"># run callbacks until Ctrl+C</spa
       <ul>
         <li><a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/riptide_bringup/launch/bringup.launch.py"><code>riptide_bringup2/bringup.launch.py</code></a> includes one launch file per subsystem: hardware (or acoustics only, with <code>hardware:=none</code>), control, navigation, the detector, mapping and autonomy. It passes each <code>robot:=talos</code>.</li>
         <li>On the robot, the Orin's launcher starts those subsystem files one by one from a list (<a href="computers.html#launcher">Computers and networks</a>).</li>
-        <li>In Nereus, <code>ros2 launch nereus sim.launch.py</code> starts the simulator, then the same bringup with <code>hardware:=none</code>, then the viewer. In the media capture that one command started 18 processes (<a href="https://github.com/zehdari/talos-explained/blob/main/public/data/rosgraph/launch_log.txt">launch log</a>).</li>
+        <li>In Nereus, <code>ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim</code> starts the simulator, then the same bringup with <code>hardware:=none</code>, then the viewer. In the capture that one command started 18 processes (<a href="data/rosgraph/launch_log.txt">launch log</a>). Leave out <code>active_control_model:=mpc</code> and bringup falls back to its default, <code>hybrid</code>, which starts the legacy <code>complete_controller</code> instead of the MPC (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/launch/control_system.launch.py#L36"><code>control_system.launch.py</code></a>). <code>mpc_model:=sim</code> gives the MPC a model of the simulated vehicle.</li>
       </ul>
       <p>One node, from <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/launch/autonomy.launch.py"><code>autonomy.launch.py</code></a>:</p>
 <pre><code>DeclareLaunchArgument(<span class="s">'robot'</span>, default_value=<span class="s">"tempest"</span>),  <span class="c"># an argument: robot:=talos on the command line</span>
@@ -207,7 +209,7 @@ GroupAction(actions=[
           <tr><td><code>"thruster_forces"</code></td><td><code>/talos/mpc_controller</code></td><td><code>/talos/thruster_forces</code></td></tr>
           <tr><td><code>"autonomy/run_tree"</code></td><td><code>/talos/autonomy</code></td><td><code>/talos/autonomy/run_tree</code> (a sub-name, not the node's name)</td></tr>
           <tr><td><code>"/tf"</code></td><td>any</td><td><code>/tf</code>: one transform tree for everyone</td></tr>
-          <tr><td><code>"/" + hostname + "/autonomy/bag_trigger"</code></td><td><code>/talos/autonomy</code></td><td><code>/Cam_PC/autonomy/bag_trigger</code> on the machine in the capture (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L80">DoTask.cpp</a>)</td></tr>
+          <tr><td><code>"/" + hostname + "/autonomy/bag_trigger"</code></td><td><code>/talos/autonomy</code></td><td><code>/&lt;hostname&gt;/autonomy/bag_trigger</code>, named after the computer <code>doTask</code> runs on (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L80">DoTask.cpp</a>)</td></tr>
           <tr><td><code>"~/rgb/..."</code></td><td><code>/talos/ffc/zed_node</code></td><td><code>/talos/ffc/zed_node/rgb/...</code> (the ZED driver's private topics)</td></tr>
         </tbody>
       </table>
@@ -218,13 +220,14 @@ GroupAction(actions=[
       <h2 id="tf">TF: where everything is</h2>
       <p>Positions only mean something in a frame: "1 m ahead" of the camera isn't 1 m ahead of the DVL. ROS keeps all the frames in one tree, <strong>TF</strong>, published on two topics:</p>
       <ul>
-        <li><code>/tf</code> for transforms that move: the EKF's <code>odom → talos/base_link</code> (about 20 Hz in the capture), mapping's object frames (7.5 Hz).</li>
-        <li><code>/tf_static</code>, latched, for the fixed ones: sensor and camera mounts from the robot description, <code>world → odom</code>, <code>world → map</code>.</li>
+        <li><code>/tf</code> for transforms that can move: the EKF's <code>odom → talos/base_link</code> (about 20 Hz in the capture) and mapping's object frames (7.5 Hz). Also the sensor mounts the robot description declares as movable joints (DVL, FOG, pressure sensor, acoustics, thrusters), which <code>robot_state_publisher</code> sends at about 7 Hz even though they never move.</li>
+        <li><code>/tf_static</code>, latched, for the fixed joints: the IMU, the cameras, the torpedo, claw and other actuator mounts, plus <code>world → odom</code> and <code>world → map</code>.</li>
       </ul>
+      <p>So <code>ros2 topic echo /tf_static</code> won't show <code>talos/dvl_link</code>; a tool that replays sensor frames needs <code>/tf</code> too.</p>
       <p>Any node asks a <code>tf2</code> buffer "where is <code>torpedo_frame</code> in <code>talos/base_link</code>, at this stamp?" and gets an answer chained through the tree. The capture's tree had 89 edges, 27 of them static, from two roots: <code>world</code> and the AprilTag's <code>tag36h11:0</code>. In sim there is also a separate truth branch, <code>world → simulator/talos/base_link</code>, so the viewer can draw truth and estimate side by side.</p>
     </div>
     <figure class="fig">
-      <img class="media" src="/talos-explained/media/nereus/viewer-tf-frames.webp" width="1600" height="1000" alt="The Nereus viewer's TF frames window listing the frame tree, with frame axes drawn on Talos and the course in the pool view" loading="lazy">
+      <img class="media" src="/media/nereus/viewer-tf-frames.webp" width="1600" height="1000" alt="The Nereus viewer's TF frames window listing the frame tree, with frame axes drawn on Talos and the course in the pool view" loading="lazy">
       <figcaption><b>The TF tree in the viewer.</b> The TF frames window lists every frame (<code>world → map</code>, <code>odom → talos/base_link</code>, the simulator's truth branch) and draws their axes in the pool. <a href="localization.html">Where am I?</a> explains how the EKF makes <code>odom → talos/base_link</code>; <a href="perception/frames.html">Frames, targets and the mission tree</a> covers the map frames.</figcaption>
     </figure>
 
@@ -239,32 +242,45 @@ GroupAction(actions=[
       </ul>
       <div class="callout safety">
         <span class="label">Sim time is also a safety check</span>
-        <p>The MPC only sends RPM to the ESCs over CAN if its model describes the real hardware, <code>can0</code> exists, and it is <em>not</em> on simulation time: "a simulator on the vehicle computer never drives the real thrusters" (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L684"><code>configureHardwareOutput</code></a>). Don't work around it.</p>
+        <p>The MPC only sends RPM to the ESCs over CAN if its model describes the real hardware, <code>can0</code> exists, and it is <em>not</em> on simulation time: "a simulator on the vehicle computer never drives the real thrusters" (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L684"><code>configureHardwareOutput</code></a>). That check only applies in the default <code>hardware_output: auto</code>; setting it to <code>on</code> skips it. Don't work around it.</p>
       </div>
 
       <h2 id="zenoh">The middleware: Zenoh, and domains</h2>
       <p>ROS 2 doesn't move bytes itself. It hands them to a middleware, the <strong>RMW</strong>, chosen per shell with <code>RMW_IMPLEMENTATION</code>. The default is DDS, which finds other nodes by multicast: every node announces itself to every machine on the network, and every node connects to every other. On one computer that's fine. Across a tether and Wi-Fi it means lots of discovery traffic, multicast that routers often drop, and many connections per laptop.</p>
       <p>Talos uses <strong><code>rmw_zenoh_cpp</code></strong> instead:</p>
       <ul>
-        <li><strong>One router, on the Orin.</strong> The Orin's launcher service starts <code>rmw_zenohd</code> at boot (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py#L29"><code>launcher.py</code></a>). It listens on TCP port 7447 and does discovery for everyone. Multicast is off.</li>
+        <li><strong>One router, on the Orin.</strong> The Orin's launcher service starts <code>rmw_zenohd</code> at boot (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/ros_launcher.service#L22"><code>ros_launcher.service</code></a>, <code>--start-discovery-server</code>). The default command is in <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py#L29"><code>launcher.py</code></a>, but a script that lives only on the Orin (<code>uwrt_config/source/zenoh_server.bash</code>, not in git) can override it, so the Orin router's exact settings aren't in any repo. Laptops reach it on TCP port 7447, and it does discovery for everyone.</li>
         <li><strong>Everyone else connects to it.</strong> The team's session config makes every node a client of <code>tcp/orin2:7447</code> (<a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/dds_scripts/zenoh/zenoh_session.json5"><code>zenoh_session.json5</code></a>). A laptop opens one outgoing TCP connection; the robot never connects back.</li>
-        <li><strong>It holds up under load.</strong> Nereus's launch file records why it defaults to Zenoh: Fast DDS "showed 0.4-0.9 s reliable-delivery stalls of the simulator's /tf under full-stack load with camera traffic; Zenoh delivered the same run without stalls" (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py#L232"><code>sim.launch.py</code></a>).</li>
+        <li><strong>It holds up under load.</strong> Nereus's launch file records why the team runs it on Zenoh: Fast DDS "showed 0.4-0.9 s reliable-delivery stalls of the simulator's /tf under full-stack load with camera traffic; Zenoh delivered the same run without stalls" (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py#L232"><code>sim.launch.py</code></a>).</li>
       </ul>
     </div>
     <figure class="fig narrow">
-      <div class="panel" id="zenoh-diagram"></div>
-      <div class="graph-note" id="zenoh-note">Tap or hover a box.</div>
-      <figcaption><b>Who connects to whom.</b> With DDS every participant finds and connects to every other. With the team's Zenoh config, every session connects to the one router on the Orin, laptops included, over TCP port 7447. Robot LAN address from <a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/dds_scripts/zenoh/zenoh_router.json5"><code>zenoh_router.json5</code></a>.</figcaption>
+      <div class="panel">
+        <div class="seg zn-seg" role="group" aria-label="Middleware" id="zn-seg"><button type="button" aria-pressed="false" data-m="dds">DDS, the default</button><button type="button" aria-pressed="true" data-m="zenoh">Zenoh, on Talos</button></div>
+        <div id="zenoh-diagram"></div>
+        <div class="graph-note" id="zenoh-note"></div>
+      </div>
+      <figcaption><b>Who connects to whom.</b> With DDS every participant discovers and connects to every other, across the tether too. With the team's Zenoh config, every laptop session connects to the one router on the Orin over TCP port 7447, and nothing else crosses the tether. Switch between the two, and tap or hover a box. The laptop-side router config, <a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/dds_scripts/zenoh/zenoh_router.json5"><code>zenoh_router.json5</code></a>, dials the Orin at its robot-LAN address, 192.168.1.24.</figcaption>
     </figure>
     <div class="prose">
-      <p>Both ends must use the same RMW: a laptop on Fast DDS sees none of Talos's topics. <a href="computers.html#zenoh">Computers and networks</a> shows how to set your laptop up, including over Tailscale.</p>
-      <p><strong>Domains</strong> keep separate ROS systems apart on the same network. <code>ROS_DOMAIN_ID</code> (0 to 232 on Linux) is the first part of every Zenoh key, so two domains never see each other's data, even through one router. None of the team's scripts set it, so the robot and laptops use domain 0. Use a different one for anything that must not touch the robot:</p>
-<pre class="cmd" data-where="your laptop"><code><span class="k">export</span> ROS_DOMAIN_ID=61                 <span class="c"># this site's Nereus capture ran in domain 61</span>
-ros2 launch nereus sim.launch.py</code></pre>
-      <p>Nereus's own test scripts refuse to run in domain 0 (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/acceptance/hold.py#L40"><code>hold.py</code></a>). A sim in domain 0 on a laptop connected to the robot would publish fake sensor data, and a fake <code>state/kill</code>, next to the real ones.</p>
+      <ul>
+        <li><strong>Both ends must use the same RMW.</strong> A laptop on Fast DDS sees none of Talos's topics. <a href="computers.html#zenoh">Computers and networks</a> shows how to set your laptop up, including over Tailscale.</li>
+        <li><strong>No router, no graph.</strong> A Zenoh node finds others only through a router. With no session config it looks for one on its own computer (<code>tcp/localhost:7447</code>), and if none is there it prints <code>Unable to connect to a Zenoh router. Have you started a router with `ros2 run rmw_zenoh_cpp rmw_zenohd`?</code> and then sees nobody. For sim on your laptop, start that router in its own terminal first.</li>
+        <li><strong>A client sends everything through its router.</strong> The team's <code>source_rmw.bash</code> makes every node a client of the Orin. Run the sim in a shell with it sourced and all its camera and IMU traffic crosses the tether to the Orin's router and back, even in another domain. And with it sourced, a local router reads <code>zenoh_router.json5</code> and dials the Orin too.</li>
+      </ul>
+      <p><strong>Domains</strong> keep separate ROS systems apart on the same network. <code>ROS_DOMAIN_ID</code>, a number that is 0 when unset, is the first part of every Zenoh key, so two domains never see each other's data, even through one router. None of the team's scripts set it, so the robot and laptops use domain 0. For a sim that must not touch the robot, use another domain <em>and</em> your own router, in a shell without the robot's Zenoh config:</p>
+<pre class="cmd" data-where="your laptop, terminal 1"><code><span class="c"># only needed if your .bashrc sources source_rmw.bash</span>
+<span class="k">unset</span> ZENOH_SESSION_CONFIG_URI ZENOH_ROUTER_CONFIG_URI
+<span class="k">export</span> RMW_IMPLEMENTATION=rmw_zenoh_cpp
+ros2 run rmw_zenoh_cpp rmw_zenohd    <span class="c"># a local router; leave it running</span></code></pre>
+<pre class="cmd" data-where="your laptop, terminal 2"><code><span class="k">unset</span> ZENOH_SESSION_CONFIG_URI ZENOH_ROUTER_CONFIG_URI
+<span class="k">export</span> RMW_IMPLEMENTATION=rmw_zenoh_cpp
+<span class="k">export</span> ROS_DOMAIN_ID=61    <span class="c"># the capture ran in domain 61</span>
+ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim</code></pre>
+      <p>Nereus's own acceptance scripts refuse to run in domain 0 (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/acceptance/hold.py#L40"><code>hold.py</code></a>). A sim in domain 0 on a laptop connected to the robot would publish fake sensor data, and a fake <code>state/kill</code>, next to the real ones.</p>
 
       <h2 id="packages">Packages and colcon</h2>
-      <p>Code is organised in <strong>packages</strong>: a folder with a <code>package.xml</code> (name, version, dependencies, build type). A <strong>workspace</strong> is a <code>src/</code> folder full of them; <strong>colcon</strong> builds them all in dependency order into <code>install/</code>. The release workspace has 29 packages of two kinds:</p>
+      <p>Code is organised in <strong>packages</strong>: a folder with a <code>package.xml</code> (name, version, dependencies, build type). A <strong>workspace</strong> is a <code>src/</code> folder full of them; <strong>colcon</strong> builds them all in dependency order into <code>install/</code>. The release repo's submodules in <code>src/</code> hold 29 packages of two kinds (the ZED camera wrapper is cloned next to them and isn't counted here):</p>
     </div>
     <div class="prose">
       <table class="params ros2-pk">
@@ -278,15 +294,25 @@ ros2 launch nereus sim.launch.py</code></pre>
       </table>
     </div>
     <div class="prose">
-      <p>(The 29th, <code>riptide_teleop2</code>, has a <code>COLCON_IGNORE</code> file, so colcon skips it.) Two naming traps: the <em>package</em> name comes from <code>package.xml</code>, not the folder, so the folder <code>riptide_msgs</code> builds <code>riptide_msgs2</code> and <code>riptide_hardware</code> builds <code>riptide_hardware2</code>; and the node name is set in the launch file, so package <code>riptide_autonomy2</code>, executable <code>doTask</code>, runs as node <code>autonomy</code>. <a href="setup.html#build">Setting up your machine</a> has the build commands and <a href="code-map.html#explorer">A map of the code</a> every package.</p>
+      <p>(The 29th, <code>riptide_teleop2</code>, has a <code>COLCON_IGNORE</code> file, so colcon skips it. Three of the built ones are legacy: the old simulator's <code>c_simulator</code> and <code>camera_faker</code>, replaced by Nereus, and <code>riptide_rviz</code>, from before the team dropped RViz.) Two naming traps: the <em>package</em> name comes from <code>package.xml</code>, not the folder, so the folder <code>riptide_msgs</code> builds <code>riptide_msgs2</code> and <code>riptide_hardware</code> builds <code>riptide_hardware2</code>; and the node name is set in the launch file, so package <code>riptide_autonomy2</code>, executable <code>doTask</code>, runs as node <code>autonomy</code>. <a href="setup.html#build">Setting up your machine</a> has the build commands and <a href="code-map.html#explorer">A map of the code</a> every package.</p>
+      <p><strong>Sourcing</strong> is the step new members trip on most. A built workspace does nothing until a shell <code>source</code>s it:</p>
+      <ul>
+        <li>Source the <em>underlay</em> first (<code>/opt/ros/humble/setup.bash</code>), then your workspace, the <em>overlay</em> (<code>install/setup.bash</code>). The one sourced last wins.</li>
+        <li>After <code>colcon build</code>, a new package or executable isn't found until you re-source <code>install/setup.bash</code> or open a new terminal.</li>
+        <li>Your <code>.bashrc</code> does it for every new terminal; <a href="setup.html#sourcing">Setting up your machine</a> explains the layers.</li>
+      </ul>
 
       <h2 id="cli">The ros2 command line</h2>
       <p>Every idea on this page has a <code>ros2</code> command. Source ROS, the release workspace (or <code>echo</code> can't decode <code>riptide_msgs2</code>) and the Zenoh settings first (<a href="computers.html#zenoh">Computers and networks</a>).</p>
     </div>
     <div class="prose">
       <table class="params ros2-cli">
-        <thead><tr><th>To see</th><th>Type</th></tr></thead>
+        <thead><tr><th>To do</th><th>Command</th></tr></thead>
         <tbody>
+          <tr class="group"><td colspan="2">Start things</td></tr>
+          <tr><td>One executable</td><td><code>ros2 run &lt;package&gt; &lt;executable&gt;</code></td></tr>
+          <tr><td>A launch file</td><td><code>ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim</code></td></tr>
+          <tr><td>Record topics to a bag</td><td><code>ros2 bag record &lt;topics&gt;</code> (<a href="debugging.html#bags">Debugging</a>)</td></tr>
           <tr class="group"><td colspan="2">The graph</td></tr>
           <tr><td>Every node</td><td><code>ros2 node list</code></td></tr>
           <tr><td>One node's topics, services, actions</td><td><code>ros2 node info /talos/mpc_controller</code></td></tr>
@@ -299,7 +325,7 @@ ros2 launch nereus sim.launch.py</code></pre>
           <tr class="group"><td colspan="2">Services, actions, parameters</td></tr>
           <tr><td>Call a service</td><td><code>ros2 service call /talos/autonomy/list_trees riptide_msgs2/srv/ListTrees</code></td></tr>
           <tr><td>Actions and their servers</td><td><code>ros2 action list -t</code> · <code>ros2 action info /talos/follow_path</code></td></tr>
-          <tr><td>Read, change, save parameters</td><td><code>ros2 param get /talos/mpc_controller motion.linear_speed</code> · <code>ros2 param dump /talos/mpc_controller</code></td></tr>
+          <tr><td>Read, change, save parameters</td><td><code>ros2 param get /talos/mpc_controller motion.linear_speed</code> · <code>ros2 param set /talos/mpc_controller motion.linear_speed 0.4</code> · <code>ros2 param dump /talos/mpc_controller</code></td></tr>
           <tr class="group"><td colspan="2">TF and time</td></tr>
           <tr><td>One transform, live</td><td><code>ros2 run tf2_ros tf2_echo talos/base_link talos/dvl_link</code></td></tr>
           <tr><td>Is anything publishing sim time?</td><td><code>ros2 topic echo --once /clock</code></td></tr>

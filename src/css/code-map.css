@@ -39,6 +39,10 @@
 .cm-pkg:hover { border-color: var(--ink-2); }
 .cm-pkg.old { color: var(--muted); background: transparent; border: 1px dashed var(--rule); }
 .cm-pkg.hit { border-color: var(--accent); }
+.cm-pkg.new { background: transparent; border: 1px dashed var(--accent); }
+.cm-pkg small { font-family: var(--sans); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-left: 0.35rem; }
+.cm-pkg.on small, .cm-pkg[aria-pressed='true'] small { color: inherit; }
+.cm-up code { color: var(--ink-2); }
 .cm-pkg.on, .cm-pkg[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .cm-empty { font-size: 0.9rem; color: var(--ink-2); }
 
@@ -109,6 +113,12 @@ svg.cm-hist { display: block; width: 100%; height: auto; font-family: var(--sans
 /* ---------- the folder tree ---------- */
 pre.cm-tree { font-size: 0.76rem; line-height: 1.6; margin: 0; }
 pre.cm-tree b { color: #fff; font-weight: 600; }
+/* Phones get a second tree with each comment on its own line, so nothing scrolls sideways. */
+pre.cm-tree-narrow { display: none; }
+@media (max-width: 640px) {
+  pre.cm-tree-wide { display: none; }
+  pre.cm-tree-narrow { display: block; }
+}
 
 /* foldable groups */
 .cm-group-label button { all: unset; cursor: pointer; display: flex; align-items: baseline; gap: 0.5rem; width: 100%; touch-action: manipulation; }

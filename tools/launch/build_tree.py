@@ -52,6 +52,12 @@ REPOS = {
 
 ASSUMPTIONS = []
 
+# Nodes the launch file leaves unnamed: the name their code gives them (package/executable -> name, source).
+CODE_NAMES = {
+    "riptide_imu/imu": "riptide_imu",                                     # riptide_imu/src/main.cpp: Node("riptide_imu")
+    "riptide_hardware2/actuator_service_translator.py": "ActuatorTranslator",  # super().__init__('ActuatorTranslator')
+}
+
 # One line per program: what it is for. Written from the source of each node (file named in "src").
 # group: hardware | navigation | control | perception | autonomy | diagnostics | sim | operator | legacy
 ROLES = {
@@ -73,18 +79,18 @@ ROLES = {
     "robot_state_publisher/robot_state_publisher@robot_state_publisher": ("navigation", "Builds Talos's URDF from riptide_descriptions2 robots/talos.xacro and publishes every fixed sensor and thruster frame on /tf_static.", None),
     "joint_state_publisher/joint_state_publisher": ("navigation", "Joint states for the URDF (read from /tmp/model.urdf, which navigation.launch.py writes).", None),
     "robot_state_publisher/robot_state_publisher@zed_state_publisher": ("navigation", "The ZED X Mini's own frames (from zed_wrapper's URDF) under this camera's name.", None),
-    "riptide_controllers2/controller_overseer.py": ("control", "Controller supervisor: publishes controller/motion_enabled and the feed-forward body force, warns when thruster telemetry stops.", "riptide_control/riptide_controllers/src/riptide_controllers/controller_overseer.py"),
-    "riptide_controllers2/calibrate_drag.py": ("control", "Drag calibration action server (used by the older controllers' tuning).", None),
-    "riptide_mpc/mpc_controller": ("control", "The MPC: pose and velocity goals in, eight thruster forces out every 50 ms. On the robot it also sends the RPM commands to the ESC boards over CAN itself.", None),
-    "complete_controller/complete_controller": ("legacy", "The older controller, started when active_control_model is anything but mpc. Its package is not in the release workspace.", None),
+    "riptide_controllers2/controller_overseer.py": ("control", "Controller supervisor: publishes controller/motion_enabled (false after 2 s without thruster telemetry) and the feed-forward body force on controller/FF_body_force.", "riptide_control/riptide_controllers/src/riptide_controllers/controller_overseer.py"),
+    "riptide_controllers2/calibrate_drag.py": ("control", "Drag calibration action server (calibrate_drag_new). Idle unless a tool calls it.", "riptide_control/riptide_controllers/src/riptide_controllers/calibrate_drag.py"),
+    "riptide_mpc/mpc_controller": ("control", "The MPC: pose and velocity goals in, eight thruster forces out every 50 ms. On the Orin (wall time, can0 present, a model with a hardware section) it also sends the RPM commands to the ESCs over CAN itself.", "riptide_control/riptide_mpc/src/mpc_controller_node.cpp"),
+    "complete_controller/complete_controller": ("legacy", "The older Simulink-generated controller, started when active_control_model is anything but mpc. riptide_simulink generates its package; it is not in the release sources.", None),
     "rclcpp_components/component_container@zed_container": ("perception", "One process holding both ZED X Mini cameras (two stereolabs::ZedCamera components, ffc and dfc), so images can pass between them without copies.", None),
     "zed_components/stereolabs::ZedCamera": ("perception", "ZED SDK camera node: 1920x1200 (HD1200) at 15 fps, NEURAL_PLUS depth to 4 m. Settings in ffc_config.yaml / dfc_config.yaml.", "riptide_core/riptide_hardware/cfg/ffc_config.yaml"),
     "riptide_hardware2/picture_taker.py": ("perception", "Saves front-camera stereo frames to /home/ros/cal_images when its capture_image service is called (calibration pictures).", "riptide_core/riptide_hardware/riptide_hardware2/picture_taker.py"),
     "tensor_detector/yolo_orientation.py": ("perception", "The YOLO detector on the active camera (ffc or dfc): detections with 3D poses from the depth image, plus an annotated image stream.", None),
     "riptide_mapping2/mapping.py": ("perception", "Mapping: fuses detections into one pose estimate per course object and publishes them as TF frames.", None),
     "chameleon_tf/chameleon_tf": ("perception", "Publishes world -> map; the AprilTag calibration moves it (x, y and yaw unlocked; z, roll and pitch locked).", None),
-    "riptide_autonomy2/doTask": ("autonomy", "Behaviour-tree executor (node autonomy): runs a tree when asked through its action; the viewer's Autonomy panel starts trees here.", None),
-    "riptide_hardware2/actuator_service_translator.py": ("autonomy", "Serves the actuator services the trees call (torpedo, dropper, arm, notify_reload) by publishing the matching command topics.", "riptide_core/riptide_hardware/riptide_hardware2/actuator_service_translator.py"),
+    "riptide_autonomy2/doTask": ("autonomy", "Behaviour-tree executor (node autonomy): runs a tree when asked through its autonomy/run_tree action; the viewer's Autonomy panel starts trees here.", None),
+    "riptide_hardware2/actuator_service_translator.py": ("autonomy", "Node ActuatorTranslator: serves the actuator services the trees call (torpedo, dropper, arm, notify_reload) by publishing the matching command topics.", "riptide_core/riptide_hardware/riptide_hardware2/actuator_service_translator.py"),
     "riptide_hardware2/electrical_monitor.py": ("diagnostics", "Diagnostics monitor (electrical). The team no longer uses the diagnostics.", None),
     "riptide_hardware2/firmware_monitor.py": ("diagnostics", "Diagnostics monitor (firmware status). The team no longer uses the diagnostics.", None),
     "riptide_hardware2/voltage_monitor.py": ("diagnostics", "Diagnostics monitor (voltages). The team no longer uses the diagnostics.", None),
@@ -97,6 +103,12 @@ ROLES = {
     "c_simulator/physics_simulator": ("legacy", "The old simulator (riptide_simulator), replaced by Nereus.", None),
     "process@simulator": ("sim", "sim_supervisor.py, which runs nereus-sim on the resolved scenario and restarts it in another pool when the viewer asks. nereus-sim stands in for the boards, sensors and cameras.", "nereus/integrations/uwrt/launch/sim_supervisor.py"),
     "process@pool_viewer": ("operator", "nereus-viewer, the operator UI. Closing it ends the whole launch unless close_with_viewer:=false.", None),
+}
+
+
+# Launch entries whose package is not in the release sources: what is known about them, and from where.
+MISSING = {
+    "riptide_navigation": "A navigation node built from a Simulink model. Its package isn't in the release sources, so it can't be expanded here (the commit that added it is titled \"Add simulink nav to launches\"; Simulink packages are generated and shared with riptide_simulink, unconfirmed for this one). It is listed beside riptide_hardware2's navigation so the operator can choose which one to start; the launcher waits for the same topics plus /a. When you need the cameras, use riptide_hardware2's: it publishes the ZED camera frames zed needs.",
 }
 
 
@@ -165,7 +177,7 @@ def fake_exists(p):
 
 
 os.path.exists = fake_exists
-socket.gethostbyname = lambda host: "0.0.0.0"   # dvl.launch.py resolves the DVL's host name at launch time
+socket.gethostbyname = lambda host: f"<{host}, looked up at launch>"   # dvl.launch.py resolves the DVL's host name at launch time
 
 # ---------------------------------------------------------------- the walk
 from launch import LaunchContext, LaunchDescription  # noqa: E402
@@ -397,6 +409,15 @@ def finish(tree, prefix, sim_out, roles=True):
 
     def visit(nodes):
         for r in nodes:
+            key = f'{r.get("package")}/{r.get("executable")}'
+            if "<node_name_unspecified>" in str(r.get("fqn")) and key in CODE_NAMES:
+                r["fqn"] = r["fqn"].replace("<node_name_unspecified>", CODE_NAMES[key])
+                r["name_from_code"] = True
+            for k in ("fqn", "namespace"):   # nodes launched outside any namespace sit at the root
+                if isinstance(r.get(k), str):
+                    r[k] = r[k].replace("<node_namespace_unspecified>", "")
+                    if k == "fqn" and not r[k].startswith("/"):
+                        r[k] = "/" + r[k]
             if r["kind"] in ("node", "container", "component", "process"):
                 key = role_key(r)
                 if key in ROLES:
@@ -442,6 +463,8 @@ def main():
             if path is None or not path.exists():
                 rec["missing"] = True
                 rec["children"] = []
+                if pkg in MISSING:
+                    rec["missing_note"] = MISSING[pkg]
             else:
                 rec["url"] = github(path)
                 rec["path"] = short(path)
@@ -470,6 +493,33 @@ def main():
                      "printed": finish(printed, prefix, sim_out, roles=False),
                      "process_count": count(children)}
     print(f"sim.launch.py: {count(children)} processes")
+
+    # HIL, the desk computer's half: the simulator and viewer only (the Orin runs the stack from its launcher).
+    hil_out = f"{tempfile.mkdtemp(prefix='nereus-tree-')}/sim"
+    hil_args = ["stack:=false", f"output:={hil_out}"]
+    children, printed = expand(sim_path, hil_args)
+    result["sim_hil_laptop"] = {"file": "sim.launch.py", "url": github(sim_path), "path": short(sim_path),
+                                "args": hil_args[:1], "children": finish(children, prefix, hil_out),
+                                "process_count": count(children)}
+    print(f"sim.launch.py stack:=false: {count(children)} processes")
+
+    # The viewer against the real robot. robot.launch.py runs the pack resolver at launch time; skip it here.
+    import subprocess
+    real_run = subprocess.run
+    subprocess.run = lambda *a, **k: None
+    try:
+        robot_path = NEREUS / "integrations/uwrt/launch/robot.launch.py"
+        children, printed = expand(robot_path, [])
+    finally:
+        subprocess.run = real_run
+    children = finish(children, prefix, "\0")
+    for r in children:
+        if r.get("name") == "pool_viewer":
+            r["role"] = ("nereus-viewer against the running robot: draws Talos at the localization estimate, on "
+                         "wall-clock time, with the simulator-only panels hidden.")
+    result["robot_viewer"] = {"file": "robot.launch.py", "url": github(robot_path), "path": short(robot_path),
+                              "args": [], "children": children, "process_count": count(children)}
+    print(f"robot.launch.py: {count(children)} processes")
     # launch_ros writes inline parameters to /tmp/launch_params_*; remove the ones this run made.
     for f in set(Path(tempfile.gettempdir()).glob("launch_params_*")) - before:
         f.unlink(missing_ok=True)

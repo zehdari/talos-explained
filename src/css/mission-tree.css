@@ -56,6 +56,8 @@
 .mt-arg { color: var(--ink-2); }
 .mt-arg code { font-size: 0.78rem; padding: 0 0.2em; }
 .mt-cmt { color: var(--muted); font-style: italic; }
+.mt-wrap { color: var(--muted); }
+.mt-wrap b { font-weight: 600; color: var(--ink-2); }
 .mt-ran { color: var(--prediction); font-size: 0.72rem; margin-left: 0.2rem; }
 .mt-more { padding: 0.4rem 0.8rem; color: var(--muted); font-family: var(--sans); font-size: 0.8rem; }
 .mt-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.8rem; margin-top: 0.5rem; font-family: var(--sans); font-size: 0.74rem; color: var(--muted); }
@@ -112,6 +114,12 @@
 #srch-fig .wedge { fill: color-mix(in srgb, var(--ink-2) 6%, transparent); stroke: color-mix(in srgb, var(--ink-2) 22%, transparent); stroke-width: 1; }
 #srch-fig .lbl.strong { fill: var(--ink); font-weight: 600; }
 #srch-pick { flex-wrap: wrap; border-radius: 14px; }
+@media (max-width: 560px) {
+  /* four equal buttons in one row; the two long labels wrap onto two lines */
+  #srch-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; }
+  #srch-pick button { white-space: normal; padding: 0.3rem 0.35rem; line-height: 1.2; }
+  #srch-pick button + button { border-left: 1px solid var(--rule); }
+}
 
 /* ---------- failure table ---------- */
 table.mt-fail td:first-child { white-space: normal; width: 34%; color: var(--ink); }
@@ -137,3 +145,7 @@ table.mt-fail td:first-child { white-space: normal; width: 34%; color: var(--ink
 /* ---------- transit lists ---------- */
 dl.spec dd ol { margin: 0; padding-left: 1.3rem; }
 dl.spec dd ol li { margin: 0 0 0.2rem; }
+
+/* ---------- LED table: a swatch of each colour ---------- */
+table.mt-leds td:first-child { white-space: nowrap; color: var(--ink); }
+.mt-led { display: inline-block; width: 0.8rem; height: 0.8rem; margin-right: 0.45rem; vertical-align: -0.08rem; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 25%, transparent); }

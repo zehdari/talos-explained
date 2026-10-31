@@ -12,3 +12,4 @@ Deploy target: github.com/zehdari/talos-explained (GitHub Pages), same as the tw
 - [ ] Overview, interfaces appendix, glossary
 - [ ] Global review panel + fixes
 - [ ] Build, commit, push, Pages
+- 2026-10-31: workflow 1 hit the session limit (13 agents cut off); resumed same run (task w7ww6cxck). Next: docs/workflow2.js (overview/appendices/integration -> 8-lens panel -> fixers -> verify), pass args.sharedRequests from the journal.

@@ -50,20 +50,32 @@ document.querySelectorAll('img[data-src]').forEach((im) => { im.src = BASE + im.
 
 // ---------------------------------------------------------------------------------------------- board explorer
 const sysData = fetch(BASE + 'data/boards/system.json').then((r) => r.json());
-const explorerReady = Promise.all([fetch(BASE + 'data/boards/explorer.json').then((r) => r.json()), sysData]).then(([d, s]) => buildExplorer(d, s.users));
+const explorerReady = Promise.all([fetch(BASE + 'data/boards/explorer.json').then((r) => r.json()), sysData]).then(([d, s]) => buildExplorer(d, s));
 
 // A board's topics, each with the Orin-side code that uses it (shared by the explorer and the system diagram).
-function topicBlock(ros, users, cls) {
+// Published topics show who reads them on the Orin (→); subscribed topics show who sends them (←). `extra` adds
+// topics from a firmware branch that isn't on master, with its own heading.
+function topicBlock(ros, users, cls, extra) {
   if (!ros) return '';
-  const t = (name) => {
-    const u = users[name];
-    return `<li>${code(name)}${u ? ` <span class="sys-u">→ ${u.map((x) => `<a href="${x.href}" title="${esc(x.what)}">${esc(x.file)}</a>`).join(', ')}</span>` : ''}</li>`;
+  const who = (name, dir) => {
+    const u = (users[name] || []).filter((x) => (dir === 'from' ? x.dir !== 'reads' : x.dir !== 'sends'));
+    if (!u.length) return '';
+    return ` <span class="sys-u">${dir === 'from' ? '←' : '→'} ${u.map((x) => `<a href="${x.href}" title="${esc(x.what)}">${esc(x.label || x.file)}</a>`).join(', ')}</span>`;
   };
-  const col = (head, list) => `<div><b>${head}</b>${list.length ? `<ul>${list.map(t).join('')}</ul>` : '<p class="sys-none">nothing</p>'}</div>`;
-  return `<div class="sys-topics ${cls || ''}">${col('Publishes', ros.publishes)}${col('Subscribes', ros.subscribes)}</div>`;
+  const col = (head, list, dir) => `<div><b>${head}</b>${list.length ? `<ul>${list.map((n) => `<li>${code(n)}${who(n, dir)}</li>`).join('')}</ul>` : '<p class="sys-none">nothing</p>'}</div>`;
+  let h = `<div class="sys-topics ${cls || ''}">${col('Publishes <span class="sys-k">→ read on the Orin by</span>', ros.publishes, 'to')}${col('Subscribes <span class="sys-k">← sent by</span>', ros.subscribes, 'from')}</div>`;
+  if (extra) h += `<p class="sys-extra">${extra.note}</p><div class="sys-topics ${cls || ''}">${col('Publishes', extra.publishes, 'to')}${col('Subscribes', extra.subscribes, 'from')}</div>`;
+  return h;
 }
 
-function buildExplorer(data, users) {
+// The IVC's pinger topics come from a firmware branch, not master: shown under their own note.
+const branchExtra = (sys, id) => {
+  const x = sys.boards[id]?.branchRos;
+  return x && { ...x, note: `Also, in the <a href="${x.url}">${code(x.project)}</a> firmware on the unmerged <code>${esc(x.branch)}</code> branch (the pinger listener; which build is flashed isn't recorded):` };
+};
+
+function buildExplorer(data, sys) {
+  const users = sys.users;
   const boards = data.boards;
   const byId = Object.fromEntries(boards.map((b) => [b.id, b]));
   const pick = document.getElementById('bx-pick');
@@ -96,7 +108,7 @@ function buildExplorer(data, users) {
     st.sel = null;
     drawStage();
   });
-  names.addEventListener('change', () => stage.classList.toggle('names', names.checked));
+  names.addEventListener('change', () => { stage.classList.toggle('names', names.checked); layoutTags(); showSpot(st.sel); });
 
   // Tall boards use the rotated copy when there is room for it, so they fill the width instead of the height.
   const view = () => {
@@ -114,13 +126,47 @@ function buildExplorer(data, users) {
     const w = Math.min(stageWrap.clientWidth, maxH * ar);
     stage.style.width = `${Math.round(w)}px`;
     stage.style.height = `${Math.round(w / ar)}px`;
-    // Ring sizes are fractions of the longer side; keep a finger-sized minimum.
-    const longPx = Math.max(w, w / ar);
+    // Ring sizes are fractions of the longer side, with a finger-sized minimum. Long parts (a reed switch, a 40-pin
+    // header) and tall, narrow boards would get rings that cover the board: cap the diameter at a fifth of the
+    // shorter side and at 56 px on a phone.
+    const longPx = Math.max(w, w / ar), shortPx = Math.min(w, w / ar);
+    const cap = Math.min(0.2 * shortPx, w < 520 ? 56 : 110);
     stage.querySelectorAll('.bx-spot').forEach((s) => {
-      const d = Math.max(26, 2 * +s.dataset.r * longPx);
+      const d = Math.max(26, Math.min(2 * +s.dataset.r * longPx, cap));
       s.style.width = s.style.height = `${d.toFixed(1)}px`;
     });
     sized = stageWrap.clientWidth;
+    layoutTags();
+  }
+
+  // Name tags: slide each one back inside the picture, and with "Show names" on, hide the ones that would
+  // overlap a name already placed (bigger parts first). A hidden name still shows when its ring is tapped.
+  let hiddenTags = 0;
+  function layoutTags() {
+    const tags = [...stage.querySelectorAll('.bx-tag')];
+    if (!tags.length) { hiddenTags = 0; return; }
+    stage.classList.add('measuring');
+    tags.forEach((t) => { t.style.marginLeft = ''; t.parentElement.classList.remove('tag-hide'); });
+    const box = stage.getBoundingClientRect();
+    const rects = tags.map((t) => {
+      const r = t.getBoundingClientRect();
+      const dx = Math.max(box.left + 2 - r.left, 0) + Math.min(box.right - 2 - r.right, 0);
+      if (dx) t.style.marginLeft = `${dx.toFixed(1)}px`;
+      return { l: r.left + dx, r: r.right + dx, t: r.top, b: r.bottom };
+    });
+    hiddenTags = 0;
+    if (names.checked) {
+      const order = tags.map((t, i) => i).sort((a, b) => +tags[b].parentElement.dataset.r - +tags[a].parentElement.dataset.r);
+      const placed = [];
+      for (const i of order) {
+        const a = rects[i];
+        if (placed.some((q) => a.l < q.r + 3 && a.r > q.l - 3 && a.t < q.b + 1 && a.b > q.t - 1)) {
+          tags[i].parentElement.classList.add('tag-hide');
+          hiddenTags++;
+        } else placed.push(a);
+      }
+    }
+    stage.classList.remove('measuring');
   }
   let lastLand = null;
   new ResizeObserver(() => {
@@ -170,7 +216,7 @@ function buildExplorer(data, users) {
     if (i === null || i === undefined || !spots[i]) {
       const n = spots.length;
       note.innerHTML = n
-        ? `${n} parts marked on this side. Tap a ring, or a row with a dot in the lists.`
+        ? `${n} ${n === 1 ? 'part' : 'parts'} marked on this side. Tap a ring, or a row with a dot in the lists.${names.checked && hiddenTags ? ` ${hiddenTags} ${hiddenTags === 1 ? 'name is' : 'names are'} hidden where they would overlap; tap a ring to see it.` : ''}`
         : b.id === 'led_module'
           ? 'The four LEDs have no 3D model, so they render as bare pads. The thermistor is the small part beside them.'
           : `No parts are marked on this side${b.group === 'retired' ? ' of a retired board' : ''}.`;
@@ -215,7 +261,7 @@ function buildExplorer(data, users) {
         ${rev.notes ? `<dt>Revision</dt><dd>${esc(rev.notes)}</dd>` : ''}
       </dl>
       <div class="seg bx-tabs" role="group" aria-label="List">
-        <button data-tab="parts" aria-pressed="${st.tab === 'parts'}">Parts${counts.parts ? ` (${counts.parts})` : ''}</button><button data-tab="conn" aria-pressed="${st.tab === 'conn'}">Connectors${counts.conn ? ` (${counts.conn})` : ''}</button><button data-tab="fw" aria-pressed="${st.tab === 'fw'}">Firmware</button>
+        <button data-tab="parts" aria-pressed="${st.tab === 'parts'}">Parts${counts.parts ? ` <span class="bx-n">${counts.parts}</span>` : ''}</button><button data-tab="conn" aria-pressed="${st.tab === 'conn'}" aria-label="Connectors"><span class="bx-long">Connectors</span><span class="bx-short" aria-hidden="true">Conn.</span>${counts.conn ? ` <span class="bx-n">${counts.conn}</span>` : ''}</button>${b.power ? `<button data-tab="power" aria-pressed="${st.tab === 'power'}">Power</button>` : ''}<button data-tab="fw" aria-pressed="${st.tab === 'fw'}">Firmware</button>
       </div>
       <div class="bx-list" id="bx-list"></div>`;
     info.querySelector('.bx-tabs').addEventListener('click', (e) => {
@@ -236,6 +282,8 @@ function buildExplorer(data, users) {
   function drawList() {
     const b = byId[st.id];
     const list = document.getElementById('bx-list');
+    if (st.tab === 'power' && !b.power) st.tab = 'parts';
+    info.querySelectorAll('.bx-tabs button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.tab === st.tab)));
     if (st.tab === 'parts') {
       const mcuRows = b.mcu && b.mcu.startsWith('RP2040') ? `<p class="bx-more">Plus the shared RP2040 + CAN block (U1R, U1C, U2C …), described <a href="#rp2040">below</a>.</p>` : '';
       list.innerHTML = b.parts.length
@@ -249,6 +297,11 @@ function buildExplorer(data, users) {
       list.innerHTML = b.connectors.length
         ? `<ul>${b.connectors.map((c) => row(c.spotRef, c.spot, `<b>${esc(c.ref)}</b> ${c.label ? `<span class="silk">${esc(c.label)}</span>` : ''}`, `${esc(c.type)}: ${esc(c.carries)}`)).join('')}</ul>`
         : '<p class="bx-more">No connectors listed.</p>';
+    } else if (st.tab === 'power') {
+      const pw = b.power;
+      const col = (head, items) => items && items.length ? `<div class="bx-pw"><b>${head}</b><ul>${items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>` : '';
+      list.innerHTML = col('Takes in', pw.inputs) + col('Makes', pw.makes) + col('Feeds', pw.feeds) +
+        `<p class="bx-more">Read from the board's netlist. <a href="electrical.html">Power and wiring</a> follows the whole tree.</p>`;
     } else {
       const facts = b.firmwareFacts || [];
       const ros = b.ros;
@@ -259,7 +312,7 @@ function buildExplorer(data, users) {
         h += `<p class="bx-more">${code(b.firmware.project)}, built for board ${code(b.firmware.pico_board)}. <a href="firmware.html">Firmware on the boards</a> explains the code.</p>`;
       }
       if (facts.length) h += `<ul class="bx-facts">${facts.map((f) => `<li>${esc(f.text)} <a class="bx-src" href="${f.source}">source</a></li>`).join('')}</ul>`;
-      if (ros) h += topicBlock(ros, users, 'bx-topics');
+      if (ros) h += topicBlock(ros, users, 'bx-topics', branchExtra(sys, b.id));
       list.innerHTML = h;
     }
     showSpot(st.sel);
@@ -316,7 +369,7 @@ function buildSystem(sys) {
   const dev = { fill: 'var(--paper-2)' };
   const nodes = [
     N('led', 300, 62, 'LED board', 'CAN 6', () => `<b>LED board</b>: internal CAN client 6, firmware ${fwLink('led')}. Drives the RGBW light module. At the end of the internal bus.${topicList('led')}`),
-    N('ivc', 300, 142, 'IVC board', 'CAN 8', () => `<b>IVC board</b>: internal CAN client 8, firmware ${fwLink('ivc')}. Acoustic modem: drives the transducer, listens on the hydrophone.${topicList('ivc')}`),
+    N('ivc', 300, 142, 'IVC board', 'CAN 8', () => `<b>IVC board</b>: internal CAN client 8, firmware ${fwLink('ivc')}. Acoustic modem to Triton, and Talos's ear for the competition pinger: drives the transducer, listens on the hydrophone. <a href="#led-ivc">More below</a>.${topicBlock(B.ivc?.ros, users, '', branchExtra(sys, 'ivc'))}`),
     N('esc1', 300, 222, 'ESC board 1', 'CAN 3', () => `<b>ESC board 1</b> (jumper SB1 bridged): internal CAN client 3, thrusters 4–7, firmware ${fwLink('esc')}. Takes raw RPM frames from <code>mpc_controller</code>.${topicList('esc')}`),
     N('esc0', 300, 302, 'ESC board 0', 'CAN 2', () => `<b>ESC board 0</b> (jumper SB1 open): internal CAN client 2, thrusters 0–3, firmware ${fwLink('esc')}. Takes raw RPM frames from <code>mpc_controller</code>.${topicList('esc')}`),
     N('poac', 300, 392, 'POAC', 'CAN 1 · power + kill', () => `<b>POAC</b>: internal CAN client 1, firmware ${fwLink('poac')}. Batteries in, 15 V / 5 V / 12 V out, kill switch, servo.${topicList('poac')}`, { bold: true }),
@@ -334,11 +387,14 @@ function buildSystem(sys) {
     N('fog', 790, 62, 'Fibre-optic gyro', 'Fizoptika VG103S', () => '<b>Fibre-optic gyro</b>: Fizoptika VG103S (TDR), on the FOG board. <a href="sensors.html">Navigation sensors</a>.', dev),
     N('dvl', 790, 392, 'DVL', 'Nortek DVL1000', () => '<b>Nortek DVL1000</b>: gets 15 V on spare pins of its Ethernet cable from the camera cage breakout (jack J14). Its data goes over Ethernet through the network switch to the Orin.', dev),
     N('depth', 680, 470, 'Depth sensor', 'Bar02, I²C', () => '<b>Depth sensor</b>: MS5837-02BA (Blue Robotics Bar02) on the CCBB\'s JST GH J15. The CCBB publishes <code>state/depth/raw</code>; <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/depth_converter.py"><code>depth_converter.py</code></a> turns it into <code>depth/pose</code> for the EKF.', dev),
-    N('batt', 360, 528, 'Battery housings ×2', 'external CAN', () => `<b>Smart battery housings</b>, port and starboard: each a BMS board and an MCU board around a 5S LiPo pack, firmware ${fwLink('sbh_mcu')}. Power goes to the POAC's J3 and J4. Their CAN is the external bus (250 kbit/s); the camera cage breakout's <code>EXT. CAN</code> jacks carry it, but the harness from the housings isn't in the designs.${topicList('sbh_mcu')}`),
+    N('batt', 360, 528, 'Battery housings ×2', 'external CAN', () => `<b>Smart battery housings</b>, port and starboard: each a BMS board and an MCU board around a 5S LiPo pack, firmware ${fwLink('sbh_mcu')}. Power goes to the POAC's J3 and J4. Their CAN is the external bus (250 kbit/s); the camera cage breakout's <code>EXT. CAN</code> jacks carry it, but the harness from the housings isn't in the designs. The Orin's agent for this bus is switched off for now (riptide_core <a href="https://github.com/osu-uwrt/riptide_core/commit/720bdd9cadf0dd77ea728ffb7961af641935ee8c">720bdd9</a>), so these topics don't reach ROS at the moment.${topicList('sbh_mcu')}`),
   ];
   // kind: can (internal/external bus), data (other signals), power, drive (a load's one cable: shown in every view,
   // coloured as data or as power to match the view)
   const E = (from, to, kind, label, extra = {}) => ({ from, to, kind, label, ...extra });
+  // Hand-routed power buses (Graph draws only straight or curved edges): a path from the two nodes' boxes.
+  const busWide = (n, e) => { const a = n(e.from), b = n(e.to); return `M360,${a.y - a.h / 2 - 2} V${b.y} H${b.x + b.w / 2 + 2}`; };
+  const bus = (n, e) => { const a = n(e.from), b = n(e.to); return `M${a.x + a.w / 2 + 2},${a.y} H378 V${b.y} H${b.x + b.w / 2 + 2}`; };
   const edges = [
     E('led', 'ivc', 'can'), E('ivc', 'esc1', 'can'), E('esc1', 'esc0', 'can'), E('esc0', 'poac', 'can'),
     E('poac', 'ccbb', 'can', 'internal CAN'), E('ccbb', 'hat', 'can', 'both buses'), E('hat', 'orin', 'can', 'can0 / can1'),
@@ -347,8 +403,9 @@ function buildSystem(sys) {
     E('kill', 'poac', 'drive'), E('poac', 'servo', 'data', 'serial'), E('imu', 'hat', 'data'), E('fog', 'fogb', 'data'), E('fogb', 'orin', 'data', 'M.2'),
     E('depth', 'ccbb', 'data', 'I²C'), E('dvl', 'orin', 'data', 'Ethernet', { bend: -40 }),
     E('batt', 'poac', 'power', 'battery', { bend: 0 }),
-    E('poac', 'esc0', 'power', 'MOTOR_PWR', { bend: 26 }), E('poac', 'esc1', 'power', '', { bend: 60 }),
-    E('poac', 'ivc', 'power', 'V+, 5 V', { bend: 90 }), E('poac', 'led', 'power', '', { bend: 118 }),
+    // POAC to the boards above it: one bus line up the right of the board column, a short tap into each board.
+    E('poac', 'esc0', 'power', 'MOTOR_PWR', { route: busWide, lx: 352, ly: 352, anchor: 'end' }), E('poac', 'esc1', 'power', '', { route: busWide }),
+    E('poac', 'ivc', 'power', 'V+, 5 V', { route: busWide, lx: 352, ly: 188, anchor: 'end' }), E('poac', 'led', 'power', '', { route: busWide }),
     E('ccbb', 'poac', 'power', '15 V, 5 V', { bend: 28 }), E('servo', 'poac', 'power', '12 V', { bend: 22 }),
     E('ccbb', 'orin', 'power', '15 V switched', { bend: 34 }), E('ccbb', 'dvl', 'power', '15 V'), E('ccbb', 'depth', 'power', '', { bend: 22 }),
     E('fogb', 'fog', 'power', '5 V', { bend: 26 }), E('hat', 'imu', 'power', '5 V', { bend: 26 }),
@@ -380,8 +437,12 @@ function buildSystem(sys) {
     edges: {
       'poac>ccbb': { bend: 0, lx: 300, ly: 600, anchor: 'start' }, 'batt>ccbb': { via: [262, 552], label: '' }, 'batt>poac': { bend: 0 },
       'hat>orin': { lx: 190, ly: 820 }, 'ccbb>hat': { lx: 300, ly: 710, anchor: 'start' },
-      'poac>esc0': { bend: -22, lx: 352, ly: 350, label: '' }, 'poac>esc1': { bend: -54 }, 'poac>ivc': { bend: -84, label: '' }, 'poac>led': { bend: -110 },
-      'ccbb>poac': { bend: 26, label: '' }, 'servo>poac': { bend: -18, label: '' }, 'ccbb>orin': { bend: 40, label: '15 V' }, 'ccbb>dvl': { label: '' },
+      // Power from the POAC to the boards above it runs up one bus line right of the board column, with a short tap
+      // into each board, so the feeds don't pile up behind the boxes.
+      'poac>esc0': { route: bus, label: '' }, 'poac>esc1': { route: bus }, 'poac>ivc': { route: bus, label: '' }, 'poac>led': { route: bus },
+      'ccbb>poac': { bend: 26, label: '' }, 'servo>poac': { bend: -18, label: '' }, 'ccbb>dvl': { label: '' },
+      // The Orin's 15 V goes down the gap between the DVL and the Orin HAT, not across the DVL.
+      'ccbb>orin': { route: (n, e) => { const a = n(e.from), b = n(e.to); return `M${a.x - a.w / 2 - 2},${a.y + 8} H200 V${b.y} H${b.x + b.w / 2 + 2}`; }, label: '15 V', lx: 195, ly: 716, anchor: 'end' },
       'dvl>orin': { bend: 30, label: '' }, 'depth>ccbb': { label: '' }, 'ccbb>depth': { bend: 18 },
       'fogb>orin': { label: '' }, 'fogb>fog': { bend: 18 }, 'hat>imu': { bend: 22 }, 'fog>fogb': {},
       'esc1>thr58': { label: '' }, 'esc0>thr14': { label: '' }, 'led>ledmod': { label: '' },
@@ -391,6 +452,7 @@ function buildSystem(sys) {
   let filter = 'data';
   const apply = (g) => {
     g.edges.forEach((e) => {
+      if (e.route && !e.routed) { e.path.setAttribute('d', e.route((id) => g.nodes.get(id), e)); e.routed = true; }
       const show = filter === 'all' || e.kind === 'drive' || (filter === 'data' ? e.kind !== 'power' : e.kind === 'power');
       e.path.style.display = show ? '' : 'none';
       if (e.kind === 'drive') e.path.style.stroke = filter === 'power' ? colour.power : colour.data;
@@ -553,7 +615,7 @@ function buildSystem(sys) {
 
     // What it means.
     let why;
-    if (s.fetOn) why = '<b>Thrusters have power.</b> The ESC boards see <code>MOTOR_PWR</code> rise, hold their motors off for 5 s (<code>ESC_POWERON_DELAY</code>), then follow the RPM commands.';
+    if (s.fetOn) why = '<b>Thrusters have power.</b> The ESC boards see <code>MOTOR_PWR</code> rise, hold their motors off for 5 s (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/include/dshot.h#L29"><code>ESC_POWERUP_DELAY_MS</code></a>), then follow the RPM commands.';
     else if (!s.alive) why = `<b>No thruster power.</b> With the RP2040 not running, a 10 kΩ resistor pulls <code>SOFTWARE_KILL</code> low, so the normally-open DG448 stays open and a 47 kΩ pull-up holds <code>MOTOR_EN</code> at V+. The FETs stay off even ${s.inserted ? 'with the kill switch inserted' : 'before you look at the switch'}.`;
     else if (!s.inserted) why = '<b>No thruster power, twice over.</b> With the switch out, a 100 kΩ pull-up takes its line to V+. That turns the gate drivers\' output high and the P-FETs off. The RP2040 also reads the switch and opens the DG448.';
     else why = '<b>No thruster power.</b> The kill switch is in, but the RP2040 holds <code>SOFTWARE_KILL</code> in the kill state, the DG448 opens, and the 47 kΩ pull-up turns the FETs off.';

@@ -1,0 +1,130 @@
+{
+ "generated_by": "tools/firmware/esc_spots.py",
+ "image": "media/boards/esc-top.webp",
+ "image_px": [
+  1400,
+  1003
+ ],
+ "spots": {
+  "U1R": {
+   "value": "RP2040",
+   "x": 0.1034,
+   "y": 0.4573
+  },
+  "U2R": {
+   "value": "W25Q128JVSIQ",
+   "x": 0.1205,
+   "y": 0.5251
+  },
+  "Y1R": {
+   "value": "CRYSTAL 12.0000MHZ 18PF SMD",
+   "x": 0.1088,
+   "y": 0.387
+  },
+  "U1C": {
+   "value": "MCP2517FD",
+   "x": 0.0548,
+   "y": 0.3956
+  },
+  "U2C": {
+   "value": "CAN Transceiver",
+   "x": 0.0426,
+   "y": 0.3031
+  },
+  "SW1C": {
+   "value": "Switch DPDT",
+   "x": 0.0758,
+   "y": 0.2492
+  },
+  "D1C": {
+   "value": "EAST1616RGBB4",
+   "x": 0.1387,
+   "y": 0.3894
+  },
+  "J1R": {
+   "value": "TagConnect SWD",
+   "x": 0.0966,
+   "y": 0.3124
+  },
+  "SW1R": {
+   "value": "434123025826",
+   "x": 0.1336,
+   "y": 0.2908
+  },
+  "SW2R": {
+   "value": "434123025826",
+   "x": 0.1336,
+   "y": 0.337
+  },
+  "J11": {
+   "value": "USB_MICRO R/A",
+   "x": 0.0294,
+   "y": 0.6085
+  },
+  "SB1": {
+   "value": "0 Ohm Jumper No Fit",
+   "x": 0.0428,
+   "y": 0.5527
+  },
+  "J12": {
+   "value": "HEADER DUAL VERT 2.54MM",
+   "x": 0.0848,
+   "y": 0.6859
+  },
+  "J6": {
+   "value": "Mini-Fit Jr R/A",
+   "x": 0.157,
+   "y": 0.1146
+  },
+  "M1": {
+   "value": "APD 80F3[X]",
+   "x": 0.244,
+   "y": 0.5093
+  },
+  "M2": {
+   "value": "APD 80F3[X]",
+   "x": 0.4177,
+   "y": 0.5093
+  },
+  "M3": {
+   "value": "APD 80F3[X]",
+   "x": 0.5914,
+   "y": 0.5093
+  },
+  "M4": {
+   "value": "APD 80F3[X]",
+   "x": 0.7651,
+   "y": 0.5093
+  },
+  "J7": {
+   "value": "HEADER VERT 2.54MM",
+   "x": 0.3253,
+   "y": 0.6315
+  },
+  "J8": {
+   "value": "HEADER VERT 2.54MM",
+   "x": 0.499,
+   "y": 0.6315
+  },
+  "J9": {
+   "value": "HEADER VERT 2.54MM",
+   "x": 0.6727,
+   "y": 0.6315
+  },
+  "J10": {
+   "value": "HEADER VERT 2.54MM",
+   "x": 0.8464,
+   "y": 0.6315
+  },
+  "R3": {
+   "value": "10k Ohm 0.5% 1/10W",
+   "x": 0.033,
+   "y": 0.7671
+  },
+  "R4": {
+   "value": "1k Ohm 5% 1/10W",
+   "x": 0.0224,
+   "y": 0.4646
+  }
+ }
+}

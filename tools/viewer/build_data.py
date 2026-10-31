@@ -38,15 +38,18 @@ def full(name):
 
 # Who answers on the real robot, for interfaces the simulator stands in for in sim (checked in each repo).
 ROBOT = {
+    # titan_firmware paths are on origin/master (checked 2026-10-31).
     "state/kill": "POAC board firmware (talos/PoacBoard/src/ros.c)",
     "command/software_kill": "POAC board firmware (talos/PoacBoard/src/ros.c)",
     "state/actuator/status": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
-    "command/actuator/arm": "POAC board firmware (actuators/ros_torp.c)",
-    "command/actuator/torpedo": "POAC board firmware (actuators/ros_torp.c)",
-    "command/actuator/dropper": "POAC board firmware (actuators/ros_torp.c)",
-    "command/actuator/claw": "POAC board firmware (actuators/ros_torp.c)",
-    "command/electrical": "POAC board firmware (talos/PoacBoard/src/ros.c)",
-    "command/led": "Camera cage board firmware (talos/CameraCageBB/src/ros.c)",
+    "command/actuator/arm": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c); refused while killed",
+    "command/actuator/torpedo": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
+    "command/actuator/dropper": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
+    "command/actuator/claw": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
+    "command/actuator/notify_reload": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c): torpedo and dropper counts back to 2",
+    "command/actuator/claw_move_s": "No subscriber found in titan_firmware or the robot stack: only the simulator uses it",
+    "command/electrical": "POAC board firmware (talos/PoacBoard/src/ros.c) and other boards",
+    "command/led": "LED firmware (talos/CameraCageBB/src/ros.c, talos/LEDBoard/src/ros.c)",
     "state/battery": "SmartBattery firmware (talos/SmartBattery/src/ros.c)",
     "gyro/status": "FOG driver (riptide_gyro driver.cpp)",
     "dvl/bottom_lock": "DVL driver (nortek_dvl dvl_driver.cpp)",
@@ -86,7 +89,7 @@ def peers(name, kind, direction):
     return sorted(n for n in out if "transform_listener_impl" not in n and not n.startswith("/launch_ros"))
 
 
-def iface(rel, kind, direction, note="", when=""):
+def iface(rel, kind, direction, note="", when="", robot=None, peers_note=""):
     name = full(rel)
     t = topics.get(name, {})
     typ = t.get("type", "")
@@ -102,7 +105,9 @@ def iface(rel, kind, direction, note="", when=""):
     return {
         "name": name, "kind": kind, "dir": direction, "type": typ, "peers": p,
         "rate": round(rate, 1) if rate else None, "sim_hz": t.get("sim_configured_hz"),
-        "sim_only": sim_only, "robot": ROBOT.get(rel.lstrip("/"), ""), "note": note, "when": when,
+        "sim_only": sim_only, "robot": ROBOT.get(rel.lstrip("/"), "") if robot is None else robot, "note": note, "when": when,
+        # Shown instead of the peer list where the captured subscribers would mislead (e.g. every /tf listener).
+        "peers_note": peers_note,
     }
 
 
@@ -112,7 +117,8 @@ tp = host["topics"]
 groups = [
     {"id": "enable", "title": "Enable / KILL", "node": "/talos/viewer_panels", "items": [
         iface(mo["kill_topic"], "topic", "out", f"KillSwitchReport on slot {mo['kill_switch_id']} every 50 ms"),
-        iface(mo["kill_topic"], "topic", "in", "Watches for anyone else on slot 1 (a competing operator)"),
+        iface(mo["kill_topic"], "topic", "in", "Watches for anyone else on slot 1 (a competing operator)",
+              robot="Any other sender on slot 1, such as a second viewer. There should be none"),
         iface(mo["kill_state_topic"], "topic", "in", "\"Robot: killed / enabled\" under the button"),
     ]},
     {"id": "motion", "title": "Motion and the pose gizmo", "node": "/talos/viewer_panels", "items": [
@@ -120,7 +126,9 @@ groups = [
         iface(mo["linear_topic"], "topic", "out", "Position half of each command (map frame)"),
         iface(mo["angular_topic"], "topic", "out", "Orientation half of each command"),
         iface(mo["linear_topic"], "topic", "in", "Also listens, so the gizmo follows a tree's setpoints"),
-        iface("/tf", "topic", "out", f"Broadcasts the command as the frame {mo['setpoint_frame']}"),
+        iface("/tf", "topic", "out", f"Broadcasts the command as the frame {mo['setpoint_frame']}",
+              peers_note=f"Every /tf listener gets it; {mo['setpoint_frame']} is there for anyone who wants the commanded "
+                         "pose. Nothing in the stack uses it", robot=""),
         iface("/tf", "topic", "in", f"Actual pose: {mo['command_frame']} → {mo['base_frame'].replace('{namespace}', 'talos')}"),
     ]},
     {"id": "autonomy", "title": "Autonomy", "node": "/talos/viewer_panels", "items": [
@@ -169,7 +177,8 @@ groups = [
         iface("mapping/torpedo", "topic", "in", "Covariance toggle: one mapping/<object> topic per prop", "only while Covariance is on"),
         *[iface(c["topic"], "topic", "in", f"Point cloud: {c['title']}", "only while ticked in Vision") for c in host["point_clouds"]],
         iface("simulator/actual_thruster_forces", "topic", "in", "Spins the drawn propellers"),
-        iface("command/led", "topic", "in", "Colours the drawn LED bars"),
+        iface("command/led", "topic", "in", "Colours the drawn LED bars",
+              robot="Published by the trees and mapping, as in sim; the LED firmware (CameraCageBB, LEDBoard) listens"),
         iface(tp["claw_joints"], "topic", "in", "Claw jaw positions"),
         iface(tp["task_objects"], "topic", "in", "Loose props (table items, magnets)"),
         iface(tp["projectiles"], "topic", "in", "Torpedoes and markers in flight"),

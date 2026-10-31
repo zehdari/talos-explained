@@ -133,7 +133,7 @@ const explorer = (() => {
         const pk = r.packages.filter((p) => pkgOk(r, p)).map((p) => {
           const on = st.sel?.repo === r.id && st.sel?.pkg === p.id;
           const hit = st.q && (p.id.toLowerCase().includes(st.q) || text(p).includes(st.q));
-          return `<button type="button" class="cm-pkg${on ? ' on' : ''}${p.status === 'legacy' || p.status === 'other' ? ' old' : ''}${hit ? ' hit' : ''}" data-pkg="${esc(p.id)}" aria-pressed="${on}">${brk(p.id)}</button>`;
+          return `<button type="button" class="cm-pkg${on ? ' on' : ''}${p.status === 'legacy' || p.status === 'other' ? ' old' : ''}${p.status === 'new' ? ' new' : ''}${hit ? ' hit' : ''}" data-pkg="${esc(p.id)}" aria-pressed="${on}">${brk(p.id)}${p.status === 'new' ? '<small>new</small>' : ''}</button>`;
         }).join('');
         card.innerHTML = `<button type="button" class="cm-repo-head" aria-pressed="${st.sel?.repo === r.id && !st.sel?.pkg}">
             <span class="cm-name">${brk(r.name)}</span>${branch}${tag}<span class="cm-size">${sizeText(r)}</span>
@@ -210,6 +210,7 @@ const explorer = (() => {
       if (p.tools?.length) h += `<p class="cm-sub">Other programs it installs</p><div class="cm-codes">${p.tools.map((n) => `<code>${brk(n)}</code>`).join('')}</div>`;
       if (p.launch?.length) h += `<p class="cm-sub">Launch files</p><div class="cm-codes">${p.launch.map((n) => `<code>${brk(n)}</code>`).join('')}</div>`;
       if (p.deps?.length) h += `<p class="cm-sub">Depends on</p><div class="cm-codes">${p.deps.map(pkgRef).join('')}</div>`;
+      if (p.upstream?.length) h += `<p class="cm-sub">Upstream packages</p><div class="cm-codes cm-up">${p.upstream.map((n) => `<code>${brk(n)}</code>`).join('')}</div><p class="cm-small">From <code>package.xml</code>: outside packages besides core ROS 2 (rclcpp, the common message types, tf2).</p>`;
       if (p.usedBy?.length) h += `<p class="cm-sub">Used by</p><div class="cm-codes">${p.usedBy.map(pkgRef).join('')}</div>`;
       const links = [];
       if (p.github) links.push(`<a href="${esc(p.github)}">Code on GitHub${r.branch && !p.submodule ? ` (${esc(r.branch)})` : ''}</a>`);
@@ -218,7 +219,7 @@ const explorer = (() => {
     } else {
       const flags = r.status !== 'talos' ? `<span class="cm-tag cm-${r.status}">${STATUS[r.status]}</span>` : '';
       h += `<h4 class="cm-title">${brk(r.name)}</h4>
-        <p class="cm-meta">${r.branch ? `branch <code>${brk(r.branch)}</code>` : 'local only'}${r.commitDate ? ` · last commit ${esc(r.commitDate)}` : ''} ${flags}</p>
+        <p class="cm-meta">${r.branch ? `branch <code>${brk(r.branch)}</code>` : 'local only'}${r.commitDate ? (r.ref ? ` · pinned commit dated ${esc(r.commitDate)}` : ` · last commit ${esc(r.commitDate)}`) : ''} ${flags}</p>
         <p>${esc(r.desc)}</p>${r.extra ? `<p class="cm-small">${esc(r.extra)}</p>` : ''}`;
       if (r.pin) {
         h += `<p class="cm-pin">riptide_release pins <code>${esc(r.pin.sha)}</code> (${esc(r.pin.date)})${r.pin.ahead ? `; the branch is <b>${r.pin.ahead} commit${r.pin.ahead > 1 ? 's' : ''} ahead</b>, so some of what's described here may be newer than the pin` : '; the branch is at the pin'}.</p>`;
@@ -382,19 +383,24 @@ const explorer = (() => {
     });
     // event labels and the month axis
     const yAxis = top + repos.length * rowH + 16;
-    let lastX = -1e9;
+    // Month labels where a month starts, skipping crowded ones; the last month is always labelled.
+    const gap = small ? 34 : 30;
+    const ticks = [];
     history.forEach((c, i) => {
-      const [yy, mm] = c.date.split('-').map(Number);
       const prev = history[i - 1];
-      if (!prev || prev.date.slice(0, 7) !== c.date.slice(0, 7)) {
-        const x = cx(i) - colW / 2;
-        if (x - lastX > (small ? 34 : 30)) {
-          const t = el('text', { class: 'cm-haxis', x, y: yAxis }, svg);
-          t.textContent = mm === 1 || !prev ? `${MONTH[mm - 1]} ${String(yy).slice(2)}` : MONTH[mm - 1];
-          el('line', { class: 'cm-htick', x1: x, x2: x, y1: yAxis - 12, y2: yAxis - 9 }, svg);
-          lastX = x;
-        }
-      }
+      if (prev && prev.date.slice(0, 7) === c.date.slice(0, 7)) return;
+      const [yy, mm] = c.date.split('-').map(Number);
+      const tk = { x: cx(i) - colW / 2, label: mm === 1 || !prev ? `${MONTH[mm - 1]} ${String(yy).slice(2)}` : MONTH[mm - 1] };
+      const lastTk = ticks[ticks.length - 1];
+      if (!lastTk || tk.x - lastTk.x > gap) ticks.push(tk);
+      else if (i === history.findIndex((h) => h.date.slice(0, 7) === history[history.length - 1].date.slice(0, 7)) && ticks.length > 1) ticks[ticks.length - 1] = tk;
+    });
+    ticks.forEach(({ x, label }) => {
+      const t = el('text', { class: 'cm-haxis', x: Math.min(x, w - (small ? 22 : 26)), y: yAxis }, svg);
+      t.textContent = label;
+      el('line', { class: 'cm-htick', x1: x, x2: x, y1: yAxis - 12, y2: yAxis - 9 }, svg);
+    });
+    history.forEach((c, i) => {
       if (/^RoboSub 20\d\d$/.test(c.msg)) {
         const t = el('text', { class: 'cm-hevent', x: cx(i), y: 12 }, svg);
         t.textContent = c.msg.replace('RoboSub ', small ? 'RS ' : 'RoboSub ');

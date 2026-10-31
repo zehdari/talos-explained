@@ -33,13 +33,13 @@ const STEPS = [
   },
   {
     t: 'Install ROS 2 Humble', tags: ['sudo', 'ask'], file: 'setup_scripts/install_ros.bash', l: 'L9-L42',
-    cmd: '# adds the ROS apt key and packages.ros.org to apt sources, then:\nsudo apt install ros-humble-desktop -y     # ros-humble-ros-base if you type "base"\nsudo apt install python3-rosdep python3-colcon-common-extensions python3-colcon-clean -y\nsudo rosdep init\nrosdep update',
+    cmd: '# adds the ROS apt key and packages.ros.org to the apt sources\n# ros-humble-ros-base instead if you type "base"\nsudo apt install ros-humble-desktop -y\nsudo apt install python3-rosdep python3-colcon-common-extensions python3-colcon-clean -y\nsudo rosdep init\nrosdep update',
     d: 'Everything lands in <code>/opt/ros/humble</code>. Skipped if that folder already exists.',
   },
   {
-    t: 'Clone the development workspaces', tags: [], file: 'setup_scripts/dev_install/install_dev.bash', l: 'L3-L22',
-    cmd: 'mkdir -p ~/osu-uwrt/development && cd ~/osu-uwrt/development\nvcs import < riptide_setup/setup_scripts/dev_install/riptide.repos . --recursive\nvcs pull\ntouch titan_firmware/COLCON_IGNORE',
-    d: '<a href="' + RS + 'setup_scripts/dev_install/riptide.repos"><code>riptide.repos</code></a> puts six riptide repos in <code>software/src</code>, five drivers in <code>dependencies/src</code> (nortek_dvl, micro_ros_setup, vectornav, zed_ros2_wrapper, chameleon_tf) and <code>titan_firmware</code>. colcon has to skip the firmware: it is built with the Pico toolchain (<a href="firmware.html">Firmware on the boards</a>).',
+    t: 'Clone the development workspaces', tags: ['sudo'], file: 'setup_scripts/dev_install/install_dev.bash', l: 'L3-L22',
+    cmd: 'mkdir -p ~/osu-uwrt/development && cd ~/osu-uwrt/development\nsudo rosdep init\nrosdep update\nvcs import < ~/osu-uwrt/riptide_setup/setup_scripts/dev_install/riptide.repos . --recursive\nvcs pull\ntouch titan_firmware/COLCON_IGNORE',
+    d: '<a href="' + RS + 'setup_scripts/dev_install/riptide.repos"><code>riptide.repos</code></a> puts six riptide repos in <code>software/src</code>, five drivers in <code>dependencies/src</code> (nortek_dvl, micro_ros_setup, vectornav, zed_ros2_wrapper, chameleon_tf) and <code>titan_firmware</code>. If step 3 already ran <code>rosdep init</code>, it prints "default sources list file already exists" here and the script carries on. colcon has to skip the firmware: it is built with the Pico toolchain (<a href="firmware.html">Firmware on the boards</a>).',
   },
   {
     t: 'Skip GPU packages if there is no NVIDIA driver', tags: [], file: 'setup_scripts/dev_install/install_dev.bash', l: 'L28-L34',
@@ -444,11 +444,11 @@ dataWs.then((ws) => {
     ]],
     ['riptide_setup', [
       ['setup', 'Cloned riptide_setup and ran setup.bash, answering y for release', '~/osu-uwrt/riptide_setup/setup.bash', '#riptide-setup'],
-      ['reboot', 'Rebooted, then answered R in the first terminal', 'groups                 # lists uwrt, video, dialout', '#riptide-setup'],
+      ['reboot', 'Rebooted, then answered R (and Enter) in the first terminal', 'groups                 # lists uwrt, video, dialout', '#riptide-setup'],
     ]],
     ['Build', [
       ['rossrc', 'Sourced ROS before building release, and added it above the Release/Development block in ~/.bashrc', 'source /opt/ros/humble/setup.bash', '#build'],
-      ['deps', 'rosdep, Zenoh and Ultralytics (with numpy below 2) installed for release', 'rosdep install --from-paths src --ignore-src -r -y', '#build'],
+      ['deps', 'rosdep, GLFW, Zenoh and Ultralytics (with numpy below 2) installed for release', 'rosdep install --from-paths src --ignore-src -r -y', '#build'],
       ['colcon', 'colcon build finishes in ~/osu-uwrt/release', 'colcon build', '#build'],
       ['source', 'A new terminal finds the workspace', 'ros2 pkg prefix riptide_mpc', '#sourcing'],
       ['nereus', 'Nereus built with ./setup.sh and ./build.sh', '', '#nereus'],

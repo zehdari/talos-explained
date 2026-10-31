@@ -5,7 +5,9 @@
 //   viewer       nereus uwrt_motion.cpp + ros_runtime.cpp (slot 1 heartbeat, Enable / KILL, competing operator)
 //   MPC          mpc_controller_node.cpp tick() gate (state/kill, motion_enabled, DISABLED reference)
 // Constants (`K`) come from public/data/commanding/commanding.json, written by tools/commanding/extract.py.
-// Simplifications: both ESC boards behave as one; messages arrive at once; odometry is always fresh.
+// Simplifications: both ESC boards behave as one; messages arrive at once; odometry is always fresh; a board's
+// failed heartbeats are counted as if each publish failed at once, so it drops its session (more than 7 failures,
+// 100 ms apart) about 0.8 s after the agent dies.
 
 const DT = 0.01; // s per step
 const HIST = 20; // s of strips
@@ -19,6 +21,7 @@ export function makeConstants(data) {
     escPenalty: f.esc_rpm_penalty_ms.value / 1000,
     escPoweron: f.esc_poweron_delay_ms.value / 1000,
     escTelem: f.esc_telemetry_ms.value / 1000,
+    sessionLoss: (f.ros_heartbeat_ms.value * (f.ros_max_missed_heartbeats.value + 1)) / 1000,
     flags: f.esc_flags,
     stopTolerance: data.overseer.stop_tolerance.value,
     overseerTimeout: data.overseer.power_timeout_s.value,
@@ -42,6 +45,7 @@ export class KillSim {
     this.hist = [];
     this.pid = 4100;
     this.inputs = { switchIn, link, control };
+    this.linkDownAt = link ? null : -1e9;
     this.viewer = { open: false, enabled: false, sender: '', competitorAt: -1e9, nextBeat: 0, session: false };
     if (viewerOpen) this.openViewer(true);
     this.laptop = { slot: 3, needsUpdate: true, repeat: null, nextSend: 0, sender: 'laptop-cli' };
@@ -55,6 +59,7 @@ export class KillSim {
     };
     this.esc = {
       slot: { enabled: false, asserting: false, timeoutAt: 0 },
+      session: link,
       wasOff: true,
       poweronUntil: 0,
       rpmExpireAt: -1,
@@ -207,7 +212,8 @@ export class KillSim {
   setLink(up) {
     if (this.inputs.link === up) return;
     this.inputs.link = up;
-    this.note(up ? 'micro-ROS agent back: boards reconnect' : 'micro-ROS agent down: boards lose ROS', up ? '' : 'bad');
+    this.linkDownAt = up ? null : this.t;
+    this.note(up ? 'micro-ROS agent back: boards reconnect' : 'micro-ROS agent down: nothing reaches the boards over ROS', up ? '' : 'bad');
   }
 
   setControl(on) {
@@ -243,10 +249,13 @@ export class KillSim {
     if (v.open && t >= v.nextBeat) { v.nextBeat = t + K.viewerBeat; this.viewerReport(); }
     if (l.repeat && t >= l.nextSend) { l.nextSend = t + 0.05; this.publishKill(l.slot, l.sender, l.repeat.asserting, l.needsUpdate); }
 
+    // Each board's micro-ROS session: kept while the agent is up, lost after its heartbeats fail for sessionLoss.
+    const session = this.inputs.link || t - this.linkDownAt < K.sessionLoss;
+
     // POAC main loop: ROS link, safety_tick (refresh, then the physical switch)
-    if (!this.inputs.link) {
-      if (p.initialized) { p.initialized = false; this.poacKill(); this.note('POAC lost ROS: safety_deinit kills', 'bad'); }
-    } else if (!p.initialized) {
+    if (!session) {
+      if (p.initialized) { p.initialized = false; this.poacKill(); this.note('POAC: lost its ROS session, safety_deinit kills', 'bad'); }
+    } else if (this.inputs.link && !p.initialized) {
       p.initialized = true;
       p.nextPublish = t + K.poacPublish;
       this.note('POAC reconnected: safety_init, slots kept');
@@ -280,7 +289,12 @@ export class KillSim {
 
     // ESC boards: power, own kill slot, RPM targets (core1.c phase 2)
     const powered = this.inputs.switchIn && !p.asserting;
-    const escKilled = !this.inputs.link || !e.slot.enabled || e.slot.asserting || t >= e.slot.timeoutAt;
+    if (e.session && !session) this.note('ESC boards: lost their ROS session, safety_deinit', 'bad');
+    if (!e.session && this.inputs.link) this.note('ESC boards: reconnected, waiting for state/kill');
+    if (e.slot.enabled && !e.slot.asserting && t >= e.slot.timeoutAt && !e.slotTimedOut) this.note(`ESC boards: no state/kill for ${K.switchTimeout * 1000} ms, killed`, 'bad');
+    e.slotTimedOut = e.slot.enabled && t >= e.slot.timeoutAt;
+    e.session = this.inputs.link || (e.session && session);
+    const escKilled = !e.session || !e.slot.enabled || e.slot.asserting || t >= e.slot.timeoutAt;
     let flags = 0;
     if (escKilled) flags |= 1 << 0;
     if (!powered) { flags |= 1 << 1; e.poweronUntil = t + K.escPoweron; }
@@ -326,7 +340,7 @@ export class KillSim {
         t,
         sw: this.inputs.switchIn,
         poac: !p.asserting,
-        kill: p.stateKill === false,
+        kill: this.inputs.link && p.stateKill === false,
         esc: flags === 0,
         motion: this.inputs.control && o.motionEnabled,
         thrust: e.thrustersOn,

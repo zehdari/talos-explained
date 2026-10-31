@@ -49,7 +49,7 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
   function draw() {
     const W = host.clientWidth || 600;
     const narrow = W < 520;
-    const left = narrow ? 8 : 112, right = 10, top = 6, laneH = narrow ? 26 : 24;
+    const left = narrow ? 8 : 112, right = 10, top = narrow ? 10 : 6, laneH = narrow ? 30 : 24;
     const H = top + LANES.length * laneH + 22;
     host.innerHTML = '';
     svg = el('svg', { class: 'chart rel-svg', viewBox: `0 0 ${W} ${H}`, width: W, height: H }, host);
@@ -64,12 +64,12 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
       const y = top + j * laneH + laneH / 2;
       el('line', { x1: left, x2: W - right, y1: y, y2: y, stroke: css('--rule'), 'stroke-dasharray': '2 3' }, svg);
       if (!narrow) el('text', { class: 'label', x: left - 8, y: y + 4, 'text-anchor': 'end', 'font-size': 11.5 }, svg).textContent = l.label;
-      else el('text', { class: 'label', x: left + 2, y: y - 6, 'font-size': 9.5, fill: css('--muted') }, svg).textContent = l.label;
+      else el('text', { class: 'label rel-lane', x: left + 2, y: y - 7, 'font-size': 10 }, svg).textContent = l.label;
     });
     pts = ev.map((e, i) => {
       const j = LANES.findIndex((l) => l.k === e.k);
       const x = sx(e.t), y = top + j * laneH + laneH / 2;
-      const r = e.k === 'other' ? 2.4 : narrow ? 3.2 : 4;
+      const r = e.k === 'other' ? (narrow ? 2.8 : 2.4) : narrow ? 3.2 : 4;
       const node = e.k === 'tag'
         ? el('rect', { x: x - r, y: y - r, width: 2 * r, height: 2 * r, transform: `rotate(45 ${x} ${y})`, fill: KIND[e.k].color, class: 'rel-pt' }, svg)
         : el('circle', { cx: x, cy: y, r, fill: KIND[e.k].color, 'fill-opacity': e.k === 'other' ? 0.45 : 0.9, class: 'rel-pt' }, svg);
@@ -148,7 +148,7 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
   const STAGES = [['all', 'All'], ['repo', 'repo'], ['bench', 'bench'], ['guided', 'guided'], ['planned', 'planned']];
   const pickEl = document.getElementById('chk-pick');
   const list = document.getElementById('chk-list');
-  let cur = 'all';
+  let cur = 'bench';
   const render = () => {
     const ORDER = ['repo', 'bench', 'guided', 'sim', 'dayof'];
     const rows = P.checks.filter((c) => cur === 'all' || (cur === 'planned' ? !c.built : c.built && c.stage === cur))
@@ -174,7 +174,7 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
   const stateEl = document.getElementById('tt-state');
   const acts = document.getElementById('tt-actions');
   const note = document.getElementById('tt-note');
-  const DIR = { V: 'points forward (surge and yaw)', H: 'angled at 45° (sway, heave and roll)' };
+  const DIR = { V: 'a vector thruster, pointing forward (surge, yaw and pitch)', H: 'a heave thruster, angled at 45° (sway, heave and roll)' };
   const describe = (t) => {
     const [d, v, s] = t.name;
     return `<b>${t.name}, thruster ${t.i}</b>: ${v === 'U' ? 'upper' : 'lower'} ${s === 'P' ? 'port' : 'starboard'}, ${DIR[d]}. ESC board ${t.i < 4 ? 0 : 1}.`;
@@ -220,7 +220,7 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
     g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(); } });
     return { g, t };
   });
-  note.innerHTML = 'Tap a thruster for its name. Names: first letter V (forward) or H (angled), then Upper/Lower, then Port/Starboard.';
+  note.innerHTML = 'Tap a thruster for its name. Names, from the naming comment in <code>talos.yaml</code>: H (heave, angled 45°) or V (vector, pointing forward), then Upper/Lower, then Port/Starboard.';
 
   // state machine
   const st = { running: false, start: 0, sw: true, viewer: false, power: 0, done: false, lastIdx: -1, pulledAfterCycle: false, cycles: 0 };
@@ -233,7 +233,6 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
   mk('run', '1 · Run the test', () => {
     st.running = true; st.start = performance.now(); st.lastIdx = -1;
     say('ros@orin2:~$ ros2 run riptide_controllers2 thruster_test_canbus', 'cmd');
-    say(TT.lines.init);
     tick();
   }, true);
   mk('enable', '2 · Enable in the viewer', () => { st.viewer = true; if (st.sw) st.power = performance.now(); tick(); });
@@ -248,7 +247,11 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
     if (st.running) {
       idx = Math.floor((now - st.start) / WIN) % N;
       const cyc = Math.floor((now - st.start) / WIN);
-      if (cyc !== st.lastIdx) { st.lastIdx = cyc; say(`${TT.lines.testing}${idx}...`); }
+      if (cyc !== st.lastIdx) {
+        st.lastIdx = cyc;
+        say(`${TT.lines.testing}${idx}...`);
+        if (cyc === 0) say(TT.lines.init); // printed by the first send_thruster_cmd_canbus call, after the printf
+      }
     }
     const spinning = st.running && escReady(now) ? idx : -1;
     nodes.forEach((n, i) => { n.g.classList.toggle('spin', i === spinning); n.g.classList.toggle('cur', st.running && i === idx); });
@@ -266,6 +269,70 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
   }
   B.reset.onclick();
   addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+}
+
+// ---------------------------------------------------------------- the operator's screen
+{
+  // Positions in the 1480 x 940 screenshot. What each control does: nereus docs/viewer.md.
+  const SPOTS = [
+    [176, 62, 'KILL / Enable', 'One button, also at the top of the Motion panel. The viewer starts on KILL; Enable clears slot 1 and latches, so Talos keeps running if the tether comes off.'],
+    [856, 62, 'Health chips', '<code>FOG</code> temperature (amber at 55 °C), <code>DVL</code> bottom lock, <code>CPU</code> temperature (only with the diagnostics launch, no longer started), <code>PORT</code> and <code>STBD</code> battery charge (amber below 50 %, red below 20 %). A red <code>BAG</code> chip appears while a bag records.'],
+    [1279, 62, 'Edit map', 'Ctrl+M. Moves the props in riptide_mapping\'s prior map to where they are in this pool.'],
+    [516, 18, 'Search, Ctrl+P', 'Typed moves (<code>forward 0.5</code>, <code>turn 30</code>) and plots (<code>plot disturbance</code>).'],
+    [370, 207, 'Motion', 'Actual, commanded and error per axis. Watch the error column on the first small moves.'],
+    [391, 512, 'Dive in place', 'Holds the current x, y and heading, level, at the configured depth. The first thing to send after Enable.'],
+    [97, 664, 'Mapping', '<strong>Calibrate</strong> on the AprilTag sets <code>world → map</code>; Lock map picks the mapping target.'],
+    [282, 664, 'Autonomy', 'Pick a tree, Start, Stop. Manual commands are blocked while a tree runs.'],
+    [990, 300, 'Pool view', 'Talos drawn from its own localization estimate, here in front of the AprilTag board.'],
+    [1330, 102, 'Cameras', 'Forward and downward ZED streams. Check for fog or bubbles on the lens.'],
+    [1242, 684, 'Recording, Bagging', 'SVO video on the robot; <code>ros2 bag record</code> on the robot or on op-top.'],
+    [1398, 684, 'Electrical, Actuators', 'Power commands, mag cal, gyro tare; arm, fire torpedoes, drop markers.'],
+  ];
+  const wrap = document.getElementById('vw');
+  const key = document.getElementById('vw-key');
+  const img = wrap.querySelector('img');
+  const IW = 1480, IH = 940, CROP = 520; // source px shown across the loupe
+  // On a phone the full screenshot is ~350 px wide and unreadable: a tapped spot is shown enlarged below it.
+  const loupe = h('div', 'vw-loupe', '<div class="vw-crop"><span class="vw-ring"></span></div><p></p>');
+  loupe.setAttribute('aria-live', 'polite');
+  wrap.after(loupe);
+  const crop = loupe.querySelector('.vw-crop'), ring = loupe.querySelector('.vw-ring'), cap = loupe.querySelector('p');
+  const showLoupe = (k) => {
+    const [x, y, title, text] = SPOTS[k];
+    loupe.classList.add('on');
+    const lw = crop.clientWidth, lh = crop.clientHeight;
+    if (!lw) return;
+    const sc = lw / CROP, ch = lh / sc;
+    const left = Math.min(Math.max(x - CROP / 2, 0), IW - CROP), top = Math.min(Math.max(y - ch / 2, 0), IH - ch);
+    crop.style.backgroundImage = `url("${img.currentSrc || img.src}")`;
+    crop.style.backgroundSize = `${IW * sc}px ${IH * sc}px`;
+    crop.style.backgroundPosition = `${-left * sc}px ${-top * sc}px`;
+    ring.style.left = `${(x - left) * sc}px`;
+    ring.style.top = `${(y - top) * sc}px`;
+    cap.innerHTML = `<b>${k + 1} · ${title}.</b> ${text}`;
+  };
+  const narrow = () => matchMedia('(max-width: 560px)').matches;
+  const items = [];
+  const pick = (k) => {
+    items.forEach(([b, li], j) => { b.classList.toggle('on', j === k); li.classList.toggle('on', j === k); });
+    if (narrow()) showLoupe(k);
+  };
+  SPOTS.forEach(([x, y, title, text], k) => {
+    const b = h('button', 'vw-spot', String(k + 1));
+    b.type = 'button';
+    b.style.left = `${(100 * x) / 1480}%`;
+    b.style.top = `${(100 * y) / 940}%`;
+    b.setAttribute('aria-label', `${k + 1}: ${title}`);
+    const li = h('li', null, `<b>${title}.</b> ${text}`);
+    li.value = k + 1;
+    b.addEventListener('click', () => { pick(k); if (!narrow()) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+    b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') pick(k); });
+    li.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') pick(k); });
+    li.addEventListener('click', () => { pick(k); if (narrow()) wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+    wrap.appendChild(b);
+    key.appendChild(li);
+    items.push([b, li]);
+  });
 }
 
 // ---------------------------------------------------------------- the first eight seconds after the switch goes in

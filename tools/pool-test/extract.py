@@ -33,11 +33,11 @@ G = 9.80665
 # ---------------------------------------------------------------- the release log
 def kind(msg: str) -> str:
     m = msg.lower()
-    if re.search(r"robosub|\brs ?\d\d\b|\brs\d\d", m):
+    if re.search(r"robosub|\brs ?\d\d\b|\brs\d\d|semifinals", m):
         return "comp"
     if "lake" in m:
         return "lake"
-    if re.search(r"\bpost\b|post[- ]", m) or m.startswith(("changes after", "working code from", "3 for 3")):
+    if re.search(r"\bpost\b|post[- ]", m) or m.startswith(("changes after", "chnages from", "changes from", "working code from", "3 for 3")):
         return "post"
     if re.search(r"\bpre\b|pre[- ]|\bprep\b|before .*test|configure release for|ready for hil", m):
         return "pre"

@@ -85,14 +85,15 @@ document.querySelectorAll('img[data-src]').forEach((i) => { i.src = IMG + i.data
   const nodes = [
     { id: 'ffc', x: 85, y: 70, label: 'Forward ZED X Mini', sub: 'ffc · camera_id 0', info: 'Looks ahead, pitched 2.9° down. Two image sensors 50 mm apart behind one window. Its <code>serial_number</code> (55348591) in <code>ffc_config.yaml</code> is how the SDK knows this one is ffc.' },
     { id: 'dfc', x: 85, y: 170, label: 'Down ZED X Mini', sub: 'dfc · camera_id 1', info: 'Looks straight down, 12 cm to starboard of <code>base_link</code>. Serial 51491740 in <code>dfc_config.yaml</code>.' },
-    { id: 'card', x: 265, y: 120, label: 'GMSL2 capture card', sub: 'in the camera cage', info: 'Turns each camera\'s GMSL2 serial link back into video for the Orin. GMSL2 carries high-rate video over one thin cable.' },
-    { id: 'zed', x: 455, y: 120, label: 'zed_node ×2', sub: 'ZED SDK on the GPU', info: `Two <code>stereolabs::ZedCamera</code> components in one process, <code>zed_container</code>, started by <a href="${R}launch/zed.launch.py">zed.launch.py</a>. Each grabs 1920 × 1200 at 15 Hz, rectifies with the underwater calibration and computes depth (NEURAL_PLUS on ffc). It only produces the topics someone subscribes to.` },
+    { id: 'card', x: 290, y: 120, label: 'GMSL2 capture card', sub: 'on the Orin', info: 'Turns each camera\'s GMSL2 serial link back into video frames for the Orin. GMSL2 carries uncompressed high-rate video, power and control over one coax cable, so raw pixels never cross USB or Ethernet.' },
+    { id: 'zed', x: 455, y: 120, label: 'zed_node ×2', sub: 'ZED SDK on the GPU', info: `Two <code>stereolabs::ZedCamera</code> components in one process, <code>zed_container</code>, started by <a href="${R}launch/zed.launch.py">zed.launch.py</a>. Each grabs 1920 × 1200 at 15 Hz, rectifies with the underwater calibration and computes depth (NEURAL_PLUS on ffc) on every frame, because positional tracking is on. It only publishes the topics someone subscribes to.` },
     { id: 'topics', x: 650, y: 120, label: '/talos/<cam>/zed_node/…', sub: 'rgb · depth · camera_info', info: 'Raw images (<code>bgra8</code>, <code>32FC1</code>) plus a JPEG <code>/compressed</code> twin of each colour image made by <code>image_transport</code>. Topic names and frames are listed in the next sections.' },
-    { id: 'det', x: 830, y: 50, label: 'yolo_orientation', sub: 'detector, one camera', info: 'Reads the active camera\'s compressed colour image, its depth image and <code>camera_info</code>, all on the Orin. <code>set_camera_is_dfc</code> picks the camera.' },
-    { id: 'pic', x: 830, y: 130, label: 'picture_taker', sub: 'calibration pairs', info: `Saves raw stereo pairs from <code>stereo_raw/image_raw_color</code> on its <code>capture_image</code> service (<a href="${R}riptide_hardware2/picture_taker.py">picture_taker.py</a>). Started subscribed, so the raw side-by-side image is produced while it runs.` },
-    { id: 'tether', x: 650, y: 214, label: 'Tether', sub: 'Zenoh to the laptop', info: 'The link between the robot and the laptop: everything the laptop subscribes to crosses it. Only JPEG colour images belong on it; one raw image stream is about 1.1 Gbit/s.' },
-    { id: 'viewer', x: 650, y: 300, label: 'Nereus viewer', sub: 'camera cards', info: 'The operator UI on the laptop. Its "Forward camera" and "Downward camera" cards show the compressed images (and depth, if you switch a card to Depth).' },
-    { id: 'sim', x: 455, y: 300, label: 'Nereus bridge', sub: 'simulator only', info: 'Runs on the simulator machine, not the Orin. In simulation there are no ZED nodes: the bridge renders both cameras and publishes the topics the stack uses, with the same names and frames, JPEG at quality 93.' },
+    { id: 'det', x: 830, y: 52, label: 'yolo_orientation', sub: 'detector, one camera', info: 'Reads the active camera\'s compressed colour image, its depth image and <code>camera_info</code>, all on the Orin. <code>set_camera_is_dfc</code> picks the camera.' },
+    { id: 'pic', x: 830, y: 114, label: 'picture_taker', sub: 'calibration pairs', info: `Saves raw stereo pairs from <code>stereo_raw/image_raw_color</code> on its <code>capture_image</code> service (<a href="${R}riptide_hardware2/picture_taker.py">picture_taker.py</a>). Forward camera only. Started subscribed, so the forward node sends it the raw side-by-side image (18.4 MB, about 2.2 Gbit/s at 15 Hz) the whole time; its <code>enable_subscription</code> service turns that off.` },
+    { id: 'tag', x: 830, y: 176, label: 'AprilTag node', sub: 'forward JPEG', info: `<code>apriltag_ros</code>, started by <code>hardware.launch.py</code> through <a href="${R}launch/apriltag.launch.py">apriltag.launch.py</a>. Reads the forward camera's compressed colour image and <code>camera_info</code>.` },
+    { id: 'tether', x: 650, y: 250, label: 'Tether', sub: 'Zenoh to the laptop', info: 'The link between the robot and the laptop: everything the laptop subscribes to crosses it. Only JPEG colour images belong on it; one raw image stream is about 1.1 Gbit/s.' },
+    { id: 'viewer', x: 650, y: 336, label: 'Nereus viewer', sub: 'camera cards', info: 'The operator UI on the laptop. Its "Forward camera" and "Downward camera" cards show the compressed images (and depth, if you switch a card to Depth).' },
+    { id: 'sim', x: 400, y: 336, label: 'Nereus bridge', sub: 'simulator only', info: 'Runs on the simulator machine, not the Orin. In simulation there are no ZED nodes: the bridge renders both cameras and publishes the topics the stack uses, with the same names and frames, JPEG at quality 93.' },
   ];
   const edges = [
     { from: 'ffc', to: 'card', label: 'GMSL2' },
@@ -101,36 +102,39 @@ document.querySelectorAll('img[data-src]').forEach((i) => { i.src = IMG + i.data
     { from: 'zed', to: 'topics' },
     { from: 'topics', to: 'det' },
     { from: 'topics', to: 'pic' },
-    { from: 'topics', to: 'tether', label: 'JPEG' },
+    { from: 'topics', to: 'tag' },
+    { from: 'topics', to: 'tether', label: 'JPEG', lx: 640, ly: 196, anchor: 'end' },
     { from: 'tether', to: 'viewer' },
     { from: 'sim', to: 'topics', dash: true },
   ];
   const narrow = {
-    below: 620, width: 380, height: 680,
+    below: 620, width: 380, height: 722,
     bands: [
-      { label: 'CAMERA CAGE', points: [[14, 18], [366, 18], [366, 214], [14, 214]] },
-      { label: 'ORIN', points: [[14, 234], [214, 234], [214, 326], [366, 326], [366, 474], [14, 474]] },
+      { label: 'CAMERAS', points: [[14, 18], [366, 18], [366, 112], [14, 112]] },
+      { label: 'ORIN', points: [[14, 126], [366, 126], [366, 220], [214, 220], [214, 324], [366, 324], [366, 592], [184, 592], [184, 404], [14, 404]] },
       { label: 'SIMULATOR', points: [[226, 234], [366, 234], [366, 314], [226, 314]] },
-      { label: 'LAPTOP', points: [[14, 562], [366, 562], [366, 664], [14, 664]] },
+      { label: 'LAPTOP', points: [[14, 612], [366, 612], [366, 708], [14, 708]] },
     ],
     nodes: {
       ffc: { x: 98, y: 70 }, dfc: { x: 282, y: 70 }, card: { x: 190, y: 170 },
-      zed: { x: 112, y: 286 }, sim: { x: 296, y: 280 }, topics: { x: 190, y: 370 },
-      det: { x: 90, y: 440 }, pic: { x: 290, y: 440 },
-      tether: { x: 190, y: 518 }, viewer: { x: 190, y: 614 },
+      zed: { x: 112, y: 286 }, sim: { x: 296, y: 280 }, topics: { x: 120, y: 362 },
+      det: { x: 284, y: 440 }, pic: { x: 284, y: 502 }, tag: { x: 284, y: 564 },
+      tether: { x: 98, y: 562 }, viewer: { x: 190, y: 660 },
     },
     edges: {
       'ffc>card': { label: '' }, 'dfc>card': { label: '' },
-      'topics>tether': { lx: 198, ly: 490, anchor: 'start' },
+      'topics>pic': { via: [196, 500] },
+      'topics>tag': { via: [180, 566] },
+      'topics>tether': { lx: 106, ly: 470, anchor: 'start' },
     },
   };
   new Graph(host, {
-    width: 920, height: 344, nodes, edges, narrow,
+    width: 920, height: 380, nodes, edges, narrow,
     bands: [
-      { label: 'CAMERA CAGE', points: [[14, 22], [350, 22], [350, 205], [14, 205]] },
-      { label: 'ORIN', points: [[370, 22], [918, 22], [918, 175], [370, 175]] },
-      { label: 'SIMULATOR', points: [[370, 256], [545, 256], [545, 336], [370, 336]] },
-      { label: 'LAPTOP', points: [[560, 256], [918, 256], [918, 336], [560, 336]] },
+      { label: 'CAMERAS', points: [[8, 22], [178, 22], [178, 214], [8, 214]] },
+      { label: 'ORIN', points: [[192, 22], [918, 22], [918, 210], [192, 210]] },
+      { label: 'SIMULATOR', points: [[300, 292], [500, 292], [500, 372], [300, 372]] },
+      { label: 'LAPTOP', points: [[560, 292], [918, 292], [918, 372], [560, 372]] },
     ],
     info: (n) => { note.innerHTML = n ? `<b>${esc(n.label)}.</b> ${n.info}` : 'Tap or hover a box.'; },
   });
@@ -220,7 +224,7 @@ Promise.all([getJSON('fov.json')]).then(([F]) => {
     // view window, metres
     const sb = sil.bounds;
     const phone = (svg.clientWidth || 900) < 520; // a phone keeps the view tight around the target
-    const xFar = Math.min(7, phone ? Math.max(D + 0.5, 1.6) : Math.max(D + 0.7, 2.2, ffcFloor && ffcFloor[0] < 6.5 ? ffcFloor[0] + 0.4 : 0));
+    const xFar = Math.min(7, phone ? Math.max(D + 0.35, 1.6) : Math.max(D + 0.7, 2.2, ffcFloor && ffcFloor[0] < 6.5 ? ffcFloor[0] + 0.4 : 0));
     let x0 = Math.min(sb[0][0], ...foot.map((p) => p[0])) - 0.25, x1 = xFar, y0, y1;
     if (side) { y0 = -H - 0.3; y1 = Math.max(sb[1][1] + 0.25, 0.9); }
     else {
@@ -285,6 +289,20 @@ Promise.all([getJSON('fov.json')]).then(([F]) => {
       const p = P2(c.pos);
       el('circle', { cx: X(p[0]), cy: Y(p[1]), r: 5.5, fill: col, stroke: css('--paper'), 'stroke-width': 2 }, g);
     }
+    // which dot is which (on a phone Talos is small)
+    {
+      const tag = (x, y, text, anchor, col) => { label(x, y, text, { 'text-anchor': anchor, 'font-weight': 650 }).style.fill = col; };
+      if (side) {
+        const up = P2(at(ffc, fA, 0.45)), lo = P2(at(dfc, dB, 0.42));
+        tag(X(up[0]), Y(up[1]) - 8, 'ffc', 'middle', blue);
+        tag(X(lo[0]) - 6, Y(lo[1]), 'dfc', 'end', green);
+      } else {
+        const e1 = P2(at(ffc, fA, 0.7)), e2 = P2(at(ffc, fB, 0.7)), up = Y(e1[1]) < Y(e2[1]) ? e1 : e2;
+        tag(X(up[0]), Y(up[1]) - 10, 'ffc', 'middle', blue);
+        const fp = foot.map(P2), fx = Math.min(...fp.map((q) => q[0])), fy = Math.max(...fp.map((q) => q[1]));
+        tag(X(fx) + 6, Y(fy) + fz + 2, 'dfc', 'start', green);
+      }
+    }
     // labels
     const fwdEnd = P2(at(ffc, fMid, range[1]));
     if (fwdEnd[0] < x1 - 0.1) label(X(fwdEnd[0]) - 6, Y(fwdEnd[1]) - 8, 'depth ends at 4 m', { 'text-anchor': 'end', fill: blue });
@@ -340,7 +358,7 @@ getJSON('bandwidth.json').then((B) => {
       { label: 'JPEG colour, both cameras', v: mbit(2 * j), color: css('--s7') },
       { label: 'Raw colour (bgra8), one', v: mbit(B.raw.bgra8), color: css('--s8') },
       { label: 'Raw depth (32FC1), one', v: mbit(B.raw.depth32), color: css('--s8') },
-      { label: 'Raw side-by-side (picture_taker)', v: mbit(B.raw.stereo_raw_bgra8), color: css('--s8') },
+      { label: 'Raw side-by-side, ffc (picture_taker, on the Orin)', v: mbit(B.raw.stereo_raw_bgra8), color: css('--s8') },
       { label: 'Raw colour + depth, both', v: mbit(2 * (B.raw.bgra8 + B.raw.depth32)), color: css('--s8') },
     ];
     host.replaceChildren();
@@ -348,7 +366,7 @@ getJSON('bandwidth.json').then((B) => {
     wrap.style.position = 'relative';
     host.appendChild(wrap);
     const narrow = host.clientWidth < 560;
-    const W = narrow ? 380 : 720, rowH = narrow ? 50 : 30, labelW = narrow ? 0 : 230, top = 6, axisH = 26;
+    const W = narrow ? 380 : 720, rowH = narrow ? 50 : 30, labelW = narrow ? 0 : 300, top = 6, axisH = 26;
     const Hc = top + rows.length * rowH + axisH;
     const svg = el('svg', { class: 'chart', viewBox: `0 0 ${W} ${Hc}` }, wrap);
     wrap.appendChild(tip);

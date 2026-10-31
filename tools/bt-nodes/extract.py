@@ -2,7 +2,7 @@
 """Build the catalogue of riptide_autonomy's custom behaviour-tree nodes from the real source.
 
     python3 tools/bt-nodes/extract.py [--autonomy ~/osu-uwrt/release/src/riptide_autonomy]
-                                      [--mission /tmp/perc/mission11_data.json]
+                                      [--mission tools/bt-nodes/mission11_tree.json.gz]
 
 Reads
   include/riptide_autonomy/bt_{actions,conditions,decorators}/*.hpp   one class per file (file name = class = XML ID)
@@ -10,19 +10,21 @@ Reads
   include/riptide_autonomy/autonomy_lib.hpp                            topic and service name constants
   trees/*.xml and trees/.groot/workspace.xml                           where each node is used, and Groot's models
   tools/bt-nodes/notes.json                                            the hand-written group, summary and notes
-and, if given, the tree stack of a recorded Nereus mission (the perception site's bag_to_mission.py output) to
-measure how long each node type was the deepest running node.
+and the tree stack of a recorded Nereus mission, to measure how long each node type was the deepest running node.
+mission11_tree.json.gz (kept here) is the `tree` list of mission11 (Nereus, RepairCompMpcTree, 2026-10-29): the
+autonomy/tree_stack topic read from that run's bag by the perception site's tools/bag_to_mission.py. --mission also
+takes a full bag_to_mission.py output (.json with a `tree` key).
 
 Writes public/data/bt-nodes/catalogue.json and public/data/bt-nodes/mission_time.json.
 """
-import argparse, collections, json, os, re, subprocess
+import argparse, collections, gzip, json, os, re, subprocess
 import xml.etree.ElementTree as ET
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.dirname(os.path.dirname(HERE))
 ap = argparse.ArgumentParser()
 ap.add_argument('--autonomy', default=os.path.expanduser('~/osu-uwrt/release/src/riptide_autonomy'))
-ap.add_argument('--mission', default='/tmp/perc/mission11_data.json')
+ap.add_argument('--mission', default=os.path.join(HERE, 'mission11_tree.json.gz'))
 ap.add_argument('--comp', default='RepairCompMpcTree.xml')
 args = ap.parse_args()
 A = args.autonomy
@@ -420,7 +422,7 @@ print(f'{len(nodes)} nodes; comp tree: {cat["comp"]["nodeInstances"]} node insta
 
 # ---------- one recorded mission: time as the deepest running node ----------
 if args.mission and os.path.exists(args.mission):
-    stack = json.load(open(args.mission))['tree']
+    stack = json.load((gzip.open if args.mission.endswith('.gz') else open)(args.mission, 'rt'))['tree']
     secs, starts = collections.Counter(), collections.Counter()
     unmapped = collections.Counter()
 

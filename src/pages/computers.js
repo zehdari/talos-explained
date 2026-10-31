@@ -65,7 +65,7 @@ function networkMap() {
   const edges = [
     E('cams', 'orin', 'GMSL2', { sensors: 1 }),
     E('serial', 'orin', 'serial', { sensors: 1 }),
-    E('boards', 'orin', 'can0 · 1 Mbit/s', { sensors: 0, ros: 0 }),
+    E('boards', 'orin', 'can0', { sensors: 0, ros: 0 }),
     E('batt', 'orin', 'can1', { sensors: 1 }),
     E('dvl', 'switch', 'Ethernet', { sensors: 1 }),
     E('switch', 'orin', 'eth0', { sensors: 1, ros: 0, time: 1, internet: 0, ssh: 1 }),
@@ -187,7 +187,7 @@ async function launchExplorer() {
     'riptide_hardware2/hardware.launch.py': `Sensor drivers (DVL, IMU, gyro), the micro-ROS agent on ${c('can0')}, AprilTag, acoustics, actuators and IMU power-cycling.`,
     'riptide_hardware2/hardware_fake_dvl.launch.py': `${c('hardware.launch.py')} with the DVL driver replaced by ${a(GH.core + 'riptide_hardware2/fake_dvl.py', c('fake_dvl.py'))}. It publishes a DVL twist of zero plus 0.005 m/s noise and a DVL status, 8 times a second, so the EKF and the MPC still get a velocity on the bench.`,
     'riptide_hardware2/navigation.launch.py': 'The EKF (robot_localization) and the robot description: odometry/filtered and TF. The cameras need this one running.',
-    'riptide_navigation/navigation.launch.py': `Simulink-generated navigation, started in ${c('replacement')} mode. Its package isn't in the release workspace.`,
+    'riptide_navigation/navigation.launch.py': `Started with ${c('mode:=replacement')}. Its package isn't in the release workspace or any team repo we found; the commit that added it is titled "Add simulink nav to launches". The cameras need riptide_hardware2's navigation entry, not this one.`,
     'riptide_controllers2/control_system.launch.py': `The controller, here the MPC (${c('active_control_model:=mpc')}). <b class="warn">On an enabled robot this spins the thrusters.</b>`,
     'riptide_hardware2/zed.launch.py': 'Both ZED cameras as components in one container, plus a picture taker.',
     'tensor_detector/tensorrt.launch.py': 'The YOLO detector (yolo_orientation) on the GPU.',
@@ -291,13 +291,12 @@ function frameTrip() {
     return b;
   });
   detail.innerHTML = `<div class="td-text"></div><figure class="td-img"><img src="${BASE}img/computers/ffc-frame.webp" width="960" height="600" alt="A real forward-camera frame from Talos on the bench: the team's lab, with a workbench, shelves, toolboxes and RoboSub banners on the wall." loading="lazy"><figcaption></figcaption></figure>`;
-  const txt = detail.querySelector('.td-text'), cap = detail.querySelector('figcaption'), img = detail.querySelector('.td-img');
+  const txt = detail.querySelector('.td-text'), cap = detail.querySelector('figcaption');
   function go(k) {
     i = (k + stages.length) % stages.length;
     cards.forEach((b, j) => { b.classList.toggle('on', j === i); b.classList.toggle('past', j < i); b.setAttribute('aria-current', j === i ? 'step' : 'false'); });
     const s = stages[i];
     txt.innerHTML = `<p class="td-head">${i + 1}. ${s.title} <span>· ${s.where}</span></p><p>${s.html}</p>`;
-    img.classList.toggle('raw', i < 3);
     cap.textContent = i < 2 ? 'What the forward camera saw: a real frame from the bench' : i === 2 ? 'As raw BGRA pixels: 9.2 MB' : 'As the JPEG on the topic: 537 kB (shown downscaled)';
     count.textContent = `Stage ${i + 1} of ${stages.length}`;
   }

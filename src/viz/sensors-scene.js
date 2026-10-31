@@ -97,6 +97,25 @@ export function createSensorScene(canvas, { sensors, baseLink, onPick, labelHost
   for (const s of sensors) {
     s.poses.forEach((pose, k) => {
       const pos = at(pose);
+      if (s.arrow) {
+        // A muted arrow from base_link to this point (used for 'front'); the label sits at its tip.
+        const from = v3(at(baseLink)), to = v3(pos), dir = to.clone().sub(from), len = dir.length();
+        const mat = overlay(new THREE.MeshBasicMaterial({ color: 0x546d79, opacity: 0.85 }));
+        const arrow = new THREE.Group();
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, len - 0.04, 10), mat);
+        shaft.position.y = (len - 0.04) / 2;
+        const head = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.04, 14), mat);
+        head.position.y = len - 0.02;
+        shaft.renderOrder = head.renderOrder = 9;
+        arrow.add(shaft, head);
+        arrow.position.copy(from);
+        arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+        root.add(arrow);
+        const label = labelHost ? document.createElement('span') : null;
+        if (label) { label.className = 'sx-label muted'; label.textContent = s.label; labelHost.appendChild(label); }
+        items.push({ id: s.id, muted: true, mesh: null, axes: null, label, pos, anchor: 'tip', from: at(baseLink) });
+        return;
+      }
       const mesh = new THREE.Mesh(dotGeo, overlay(new THREE.MeshBasicMaterial({ color: s.muted ? 0x546d79 : 0x0f2633 })));
       mesh.position.copy(v3(pos));
       mesh.renderOrder = 10;
@@ -125,6 +144,8 @@ export function createSensorScene(canvas, { sensors, baseLink, onPick, labelHost
         label.type = 'button';
         label.className = 'sx-label' + (s.muted ? ' muted' : '');
         label.textContent = s.label;
+        label.dataset.full = s.label;
+        if (s.shortLabel) label.dataset.short = s.shortLabel;
         if (!s.muted) label.addEventListener('click', () => onPick?.(s.id));
         else label.tabIndex = -1;
         labelHost.appendChild(label);
@@ -135,6 +156,7 @@ export function createSensorScene(canvas, { sensors, baseLink, onPick, labelHost
 
   function select(id) {
     for (const it of items) {
+      if (!it.mesh) continue;
       const on = it.id === id;
       it.axes.visible = on && !it.muted;
       it.mesh.material.color.set(on ? 0xd9480f : it.muted ? 0x546d79 : 0x0f2633);
@@ -175,13 +197,39 @@ export function createSensorScene(canvas, { sensors, baseLink, onPick, labelHost
   resize();
 
   // Labels follow their markers (on the side given by `anchor`); one that would leave the view is clamped to its edge.
-  const OFFSET = { above: 'translate(-50%, -150%)', below: 'translate(-50%, 55%)', left: 'translate(calc(-100% - 9px), -50%)', right: 'translate(9px, -50%)' };
+  // nw / ne: diagonally up and away, for markers that sit close together.
+  const OFFSET = { above: 'translate(-50%, -150%)', below: 'translate(-50%, 55%)', left: 'translate(calc(-100% - 9px), -50%)', right: 'translate(9px, -50%)',
+    nw: 'translate(calc(-100% - 7px), calc(-100% - 7px))', ne: 'translate(7px, calc(-100% - 7px))' };
+  let narrowLabels = null;
   function placeLabels() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
+    // Short names on a phone, so the labels don't cover the markers.
+    if ((w < 480) !== narrowLabels) {
+      narrowLabels = w < 480;
+      for (const it of items) if (it.label?.dataset.short) it.label.textContent = narrowLabels ? it.label.dataset.short : it.label.dataset.full;
+    }
     for (const it of items) {
       if (!it.label) continue;
       const p = toThree(it.pos).project(camera);
-      const x = Math.min(Math.max((p.x + 1) / 2 * w, 6), w - 6), y = Math.min(Math.max((1 - p.y) / 2 * h, 14), h - 10);
+      if (it.anchor === 'tip') {
+        // Just beyond the arrow's tip, along the arrow as seen on screen.
+        const q = toThree(it.from).project(camera);
+        const tx = (p.x + 1) / 2 * w, ty = (1 - p.y) / 2 * h;
+        let dx = tx - (q.x + 1) / 2 * w, dy = ty - (1 - q.y) / 2 * h;
+        const n = Math.hypot(dx, dy) || 1; dx /= n; dy /= n;
+        const lw = it.label.offsetWidth || 0, lh = it.label.offsetHeight || 0;
+        const k = Math.min((lw / 2 + 6) / (Math.abs(dx) || 1e-6), (lh / 2 + 6) / (Math.abs(dy) || 1e-6));
+        const x = Math.min(Math.max(tx + dx * k, lw / 2 + 4), w - lw / 2 - 4), y = Math.min(Math.max(ty + dy * k, 14), h - 14);
+        it.label.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -50%)`;
+        continue;
+      }
+      // Keep the whole label inside the view: its width decides how close to an edge the anchor point may go.
+      const lw = it.label.offsetWidth || 0, a = it.anchor || 'above';
+      const left = a === 'left' || a === 'nw', right = a === 'right' || a === 'ne';
+      const lo = left ? lw + 13 : right ? 4 : lw / 2 + 4;
+      const hi = left ? w - 4 : right ? w - lw - 13 : w - lw / 2 - 4;
+      const top = a === 'nw' || a === 'ne' ? 34 : 14;
+      const x = Math.min(Math.max((p.x + 1) / 2 * w, lo), Math.max(lo, hi)), y = Math.min(Math.max((1 - p.y) / 2 * h, top), h - 10);
       it.label.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) ${OFFSET[it.anchor] || OFFSET.above}`;
     }
   }

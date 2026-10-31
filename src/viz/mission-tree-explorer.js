@@ -335,9 +335,25 @@ export class TreeExplorer {
     if (this.leaf === p) st.push('leaf');
     if (this.sel === p) st.push('sel');
     if (this.hits && this.hits.has(p)) st.push('hit');
+    const wrap = kids && !open && cls === 'dec' && !n.n ? this.wraps(p) : '';
     return `<div class="mt-row ${st.join(' ')}" data-p="${p}" style="--d:${d}" role="treeitem" tabindex="0"${kids ? ` aria-expanded="${open}"` : ''}>`
       + `<button class="mt-caret${kids ? '' : ' none'}" type="button" tabindex="-1" aria-label="${open ? 'Close' : 'Open'}" aria-expanded="${open}"></button>`
-      + `<span class="mt-badge k-${cls}">${badge}</span><span class="mt-label">${this.label(n)}</span></div>`;
+      + `<span class="mt-badge k-${cls}">${badge}</span><span class="mt-label">${this.label(n)}${wrap}</span></div>`;
+  }
+  // What a closed, unnamed decorator wraps, so a row of ForceSuccess reads "ForceSuccess › GateTreeMpc": follows
+  // further unnamed one-child decorators (at most two) down to the first node that says what it is.
+  wraps(p) {
+    const chain = [];
+    let ks = this.rowKids(p);
+    for (let hop = 0; hop < 3 && ks.length === 1; hop++) {
+      const c = this.def(ks[0]);
+      if (c.k === 'SubTree') { chain.push(`<b>${esc(c.id)}</b>`); break; }
+      const [, cls] = this.kind(c);
+      if (cls === 'dec' && !c.n && hop < 2) { chain.push(esc(this.title(c))); ks = this.rowKids(ks[0]); continue; }
+      chain.push(`${esc(this.title(c))}${c.n ? ` <b>${esc(c.n)}</b>` : ''}`);
+      break;
+    }
+    return chain.length ? ` <span class="mt-wrap">› ${chain.join(' › ')}</span>` : '';
   }
   bbRow(ps, d) {
     const items = ps.map((p) => this.def(p).a || {});

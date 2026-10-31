@@ -10,8 +10,8 @@
 .dx-head { display: flex; align-items: center; gap: 0.6rem; }
 .dx-n { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; display: grid; place-items: center; font-size: 0.8rem; font-weight: 650; background: var(--paper-3); color: var(--ink); font-variant-numeric: tabular-nums; }
 .dx-step.active .dx-n { background: var(--ink); color: var(--paper); }
-.dx-step.fail .dx-n { background: var(--accent); color: #fff; }
-.dx-step.done .dx-n, .dx-step.end .dx-n { background: var(--prediction); color: #fff; }
+.dx-step.fail .dx-n { background: var(--accent); color: var(--paper); }
+.dx-step.done .dx-n, .dx-step.end .dx-n { background: var(--prediction); color: var(--paper); }
 .dx-q { color: var(--ink); font-weight: 600; flex: 1; min-width: 0; }
 .dx-step.done .dx-q { font-weight: 500; color: var(--ink-2); }
 .dx-redo { font: inherit; font-size: 0.78rem; color: var(--muted); background: none; border: 0; padding: 0.2rem 0; cursor: pointer; text-decoration: underline; text-underline-offset: 0.15em; flex: none; }
@@ -19,7 +19,7 @@
 .dx-cmd { margin: 0 0 0.6rem; padding: 0.55rem 0.75rem; font-size: 0.76rem; white-space: pre; }
 .dx-ok, .dx-no { display: grid; grid-template-columns: 4.1rem minmax(0, 1fr); gap: 0.5rem; margin-bottom: 0.5rem; }
 .dx-ok > span, .dx-no > span { color: var(--muted); font-size: 0.78rem; padding-top: 0.08rem; }
-.dx-no > span { color: #a8360a; font-weight: 600; }
+.dx-no > span { color: color-mix(in srgb, var(--accent) 78%, var(--ink)); font-weight: 600; }
 .dx-no ul { margin: 0; padding-left: 1.05em; }
 .dx-no li { margin-bottom: 0.25rem; }
 .dx-no a { color: var(--ink); }
@@ -71,7 +71,7 @@
 .logs-table td:first-child { white-space: normal; min-width: 7.5rem; }
 .loglines { font-size: 0.95rem; }
 .loglines code { font-size: 0.8rem; }
-pre.cmd.out { background: #13303d; margin-top: -0.8rem; }
+pre.cmd.out { background: color-mix(in srgb, var(--ink) 90%, var(--ink-2)); margin-top: -0.8rem; }
 
 /* ---------- bag budget ---------- */
 .bb { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1.2rem 1.6rem; align-items: start; font-family: var(--sans); }
@@ -81,6 +81,7 @@ pre.cmd.out { background: #13303d; margin-top: -0.8rem; }
 .bb-row input { accent-color: var(--accent); margin: 0; width: 1rem; height: 1rem; }
 .bb-row i { width: 0.65rem; height: 0.65rem; border-radius: 2px; }
 .bb-row small { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-left: 0.2rem; }
+.bb-topics { grid-column: 3 / -1; margin-top: -0.3rem; font-size: 0.72rem; line-height: 1.35; color: var(--muted); overflow-wrap: anywhere; }
 .bb-rate { font-size: 0.8rem; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bb-row:has(input:not(:checked)) .bb-name, .bb-row:has(input:not(:checked)) .bb-rate { color: var(--muted); }
 .bb-row:has(input:not(:checked)) i { opacity: 0.3; }

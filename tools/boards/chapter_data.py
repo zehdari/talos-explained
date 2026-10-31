@@ -12,11 +12,12 @@ Writes  public/data/boards/explorer.json  one record per board for the board exp
 Run:    python3 tools/boards/chapter_data.py
 Repos:  ~/osu-uwrt/release (riptide_release and submodules), ~/osu-uwrt/release/nereus
 """
-import json, pathlib, re
+import json, pathlib, re, subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 DATA = ROOT / 'public' / 'data' / 'boards'
 REL = pathlib.Path.home() / 'osu-uwrt' / 'release'
+TITAN = pathlib.Path.home() / 'osu-uwrt' / 'development' / 'titan_firmware'
 
 boards = json.loads((DATA / 'boards.json').read_text())
 hot = json.loads((DATA / 'hotspots.json').read_text())['boards']
@@ -169,28 +170,45 @@ GH = {
     'src/riptide_autonomy': 'https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/',
     'nereus': 'https://github.com/osu-uwrt/nereus/blob/main/',
 }
+# Each entry is (repo, path, what) for code that reads a board's topic, or (repo, path, what, 'sends') for code that
+# sends a topic a board subscribes to.
 USERS = {
     'state/kill': [('src/riptide_control', 'riptide_mpc/src/mpc_controller_node.cpp', 'mpc_controller holds the thrusters at zero while killed'),
                    ('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: the enable / kill state in the command bar')],
-    'command/software_kill': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: Enable and Kill (kill switch slot 1)')],
+    'command/software_kill': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: Enable and Kill (kill switch slot 1)', 'sends')],
     'state/depth/raw': [('src/riptide_core', 'riptide_hardware/riptide_hardware2/depth_converter.py', 'depth_converter turns it into depth/pose for the EKF')],
-    'command/led': [('src/riptide_autonomy', 'include/riptide_autonomy/autonomy_lib.hpp', 'mission tree status colours'),
-                    ('src/riptide_perception', 'riptide_mapping/riptide_mapping2/mapping.py', 'mapping pulses the light on a detection'),
-                    ('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: LED colour picker')],
-    'command/electrical': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: Electrical panel (cycle computer, fans, LEDs, clear depth ...)')],
-    'command/actuator/torpedo': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: Actuators panel'),
-                                 ('src/riptide_core', 'riptide_hardware/riptide_hardware2/actuator_service_translator.py', 'turns the trees\' actuator services into these topics')],
+    'command/led': [('src/riptide_autonomy', 'include/riptide_autonomy/autonomy_lib.hpp', 'mission tree status colours', 'sends'),
+                    ('src/riptide_perception', 'riptide_mapping/riptide_mapping2/mapping.py', 'mapping pulses the light on a detection', 'sends'),
+                    ('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: LED colour picker', 'sends')],
+    'command/electrical': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: Electrical panel (cycle computer, fans, LEDs, clear depth ...)', 'sends')],
+    'command/actuator/torpedo': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: Actuators panel', 'sends'),
+                                 ('src/riptide_core', 'riptide_hardware/riptide_hardware2/actuator_service_translator.py', 'turns the trees\' actuator services into these topics', 'sends')],
     'state/actuator/status': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: Actuators panel')],
     'state/battery': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: PORT / STBD charge readings')],
-    'ivc/tx': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: IVC panel')],
+    'ivc/tx': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: IVC panel', 'sends')],
     'ivc/rx': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: IVC panel')],
     'state/thrusters/rpm': [('src/riptide_control', 'riptide_mpc/src/pool_identify_node.cpp', 'pool_identify records it during system identification')],
     'state/thrusters/telemetry': [('src/riptide_control', 'riptide_mpc/src/pool_identify_node.cpp', 'pool_identify records it during system identification')],
+    # Pinger topics: only in the IVC firmware on the unmerged blake/ivc branch (IVC_BRANCH below).
+    'ivc/pinger/selected_freq_amp_stream': [
+        ('src/riptide_core', 'riptide_acoustics/src/Acoustics.cpp', 'riptide_acoustics compares the amplitude heard at two spots'),
+        ('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: Pinger amplitude in the Electrical panel')],
+    'ivc/pinger/selected_freq_khz': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: the selected pinger frequency')],
+    'ivc/pinger/enable': [('nereus', 'content/viewer/talos_uwrt_panels.yaml', 'Nereus viewer: Enable pinger, re-sent every second', 'sends')],
+    'ivc/pinger/set_freq_khz': [('src/riptide_core', 'riptide_hardware/src/pinger_broker.cpp', 'pinger_broker re-sends the viewer\'s frequency choice every second', 'sends')],
+}
+# Subscribed topics that another board sends, not the Orin.
+BOARD_SENDERS = {'state/kill': ('POAC', '#poac'), 'state/physkill_notify': ('POAC', '#kill'), 'state/depth/raw': ('CCBB', '#ccbb')}
+# Firmware on a branch that isn't on master but matters on the robot: the IVC's pinger listener.
+IVC_BRANCH = {
+    'branch': 'blake/ivc', 'project': 'talos/IVCBoard2', 'file': 'talos/IVCBoard2/src/ros.c',
+    'publishes': ['ivc/pinger/selected_freq_amp_stream', 'ivc/pinger/selected_freq_khz'],
+    'subscribes': ['ivc/pinger/enable', 'ivc/pinger/set_freq_khz'],
 }
 users = {}
 for topic, lst in USERS.items():
     users[topic] = []
-    for repo, path, what in lst:
+    for repo, path, what, *rest in lst:
         f = REL / repo / path
         if not f.exists():
             raise SystemExit(f'missing {f}')
@@ -198,11 +216,21 @@ for topic, lst in USERS.items():
         leaf = topic
         if leaf not in text and leaf.split('/')[-1] not in text:
             raise SystemExit(f'{topic} not mentioned in {f}')
-        users[topic].append({'href': GH[repo] + path, 'file': path.split('/')[-1], 'what': what})
+        users[topic].append({'href': GH[repo] + path, 'file': path.split('/')[-1], 'what': what, 'dir': rest[0] if rest else 'reads'})
+for topic, (label, href) in BOARD_SENDERS.items():
+    users.setdefault(topic, []).append({'href': href, 'file': label, 'label': label, 'what': f'published by the {label}', 'dir': 'sends'})
+
+ros_c = subprocess.run(['git', '-C', str(TITAN), 'show', f'origin/{IVC_BRANCH["branch"]}:{IVC_BRANCH["file"]}'],
+                       capture_output=True, text=True, check=True).stdout
+for t in IVC_BRANCH['publishes'] + IVC_BRANCH['subscribes']:
+    if f'"{t}"' not in ros_c:
+        raise SystemExit(f'{t} not in {IVC_BRANCH["branch"]}:{IVC_BRANCH["file"]}')
 
 system = {
     'about': 'System diagram data for boards.html, generated by tools/boards/chapter_data.py.',
-    'boards': {b['id']: {'name': b['name'], 'count': b['count'], 'can': b['can'], 'firmware': b['firmware'], 'ros': b['ros']}
+    'boards': {b['id']: {'name': b['name'], 'count': b['count'], 'can': b['can'], 'firmware': b['firmware'], 'ros': b['ros'],
+                         **({'branchRos': {**IVC_BRANCH, 'url': f'https://github.com/osu-uwrt/titan_firmware/blob/{IVC_BRANCH["branch"]}/{IVC_BRANCH["file"]}#L44-L47'}}
+                            if b['id'] == 'ivc' else {})}
                for b in explorer if b['ros']},
     'users': users,
     'thrusterFrames': {

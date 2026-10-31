@@ -37,6 +37,7 @@
         </tbody>
       </table>
       <p><strong>Why stateful actions?</strong> <code>doTask</code> ticks the whole tree from one thread. A node that blocked (waiting for a service reply, say) would freeze every other node, including the conditions guarding it. So a slow node starts its work in <code>onStart</code>, returns RUNNING, and checks for the result on each later tick.</p>
+      <p>The service nodes break this rule a little: each waits up to 1 s in <code>onStart</code> for its service to appear (<code>wait_for_service(1s)</code>), and the whole tree waits with it.</p>
     </div>
     <figure class="fig narrow">
       <div class="panel" id="life-graph"></div>
@@ -44,12 +45,10 @@
     </figure>
     <div class="prose">
       <h2 id="ports">Ports and the blackboard</h2>
+      <p>The port rules (every port is a string, <code>{key}</code> reads the blackboard, empty means default, subtree ports name a key) are in <a href="bt-workflow.html#ports">Chapter 4</a>. Two more matter for reading the catalogue:</p>
       <ul>
-        <li><strong>Every port is a string.</strong> <code>UwrtInput("x")</code> is <code>BT::InputPort&lt;std::string&gt;</code>, so neither Groot nor BT.CPP checks types. The node converts when it reads: <code>tryGetRequiredInput&lt;double&gt;(this, "x", 0)</code>.</li>
-        <li><strong>Defaults are in the code, not the XML.</strong> An unset port, or one left empty, gets the default. Groot saves every port, unset ones as <code>""</code>, which is why empty means default (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/autonomy_lib.hpp#L205"><code>tryGetInput</code></a>).</li>
-        <li><strong>"Required" is only a warning.</strong> <code>tryGetRequiredInput</code> logs <i>"does not have a value for required port"</i> and carries on with the default.</li>
-        <li><strong><code>{key}</code> reads the blackboard.</strong> Outputs write the value as text with <code>postOutput</code>. <code>Info</code>, <code>Error</code>, <code>Format</code> and <code>FollowPath</code> also fill <code>{key}</code> entries inside a longer string.</li>
-        <li><strong>Subtree ports name a key, never a value.</strong> That is why trees first set keys named after their values: <code>&lt;SetBlackboard output_key="1" value="1"/&gt;</code> (<a href="bt.html#subtrees">Chapter 1</a>).</li>
+        <li><strong>Defaults live in the code, not the XML.</strong> Each is the last argument of <code>tryGetRequiredInput&lt;T&gt;(this, "x", default)</code>, and the catalogue lists them. "Required" only logs <i>"does not have a value for required port"</i> and carries on with the default.</li>
+        <li><strong>Some nodes fill <code>{key}</code> inside a longer string.</strong> <code>Info</code>, <code>Error</code>, <code>Format</code> and <code>FollowPath</code> replace each <code>{key}</code> in their text with the blackboard value, so <code>"at {x}, {y}"</code> works there and nowhere else.</li>
       </ul>
 
       <h2 id="ros">Talking to ROS</h2>
@@ -68,13 +67,7 @@
       <p>Most of these sit idle: 486 <code>GetOdometry</code> subscriptions all receive every odometry message for the whole run. The <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/README.md#service-response-scheduling">README</a> notes that this load makes a real bug worse: Humble's multi-threaded executor can starve service replies under steady subscription traffic, so <code>doTask</code> now spins a single-threaded executor and ticks the tree on its own thread.</p>
 
       <h2 id="registration" data-short="Registration">How a node gets into the factory</h2>
-      <p>No list of nodes is kept by hand. The build generates it from the file names:</p>
-      <ol>
-        <li>Each node is one header in <code>include/riptide_autonomy/bt_actions</code>, <code>bt_conditions</code> or <code>bt_decorators</code>, named <code>&lt;Name&gt;.btaction.hpp</code> (or <code>.btcondition</code>, <code>.btdecorator</code>).</li>
-        <li>When CMake configures, it runs <code>btassistant.py generate_registrators</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/assistant/actions/generateRegistrators.py"><code>generateRegistrators.py</code></a>). It globs the headers and writes one <code>registerNodeType</code> line per file. The file name, up to its first dot, is both the C++ class and the XML ID.</li>
-        <li>The generated files compile into three plugins: <code>libautonomy_actions.so</code>, <code>libautonomy_conditions.so</code>, <code>libautonomy_decorators.so</code>.</li>
-        <li><code>doTask</code> loads them into its factory at start-up (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/util.cpp#L18"><code>registerPluginsForFactory</code></a>), plus any listed in its <code>ext_plugin_list</code> parameter.</li>
-      </ol>
+      <p>No list of nodes is kept by hand. When CMake configures, <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/assistant/actions/generateRegistrators.py"><code>generateRegistrators.py</code></a> globs the headers in <code>bt_actions</code>, <code>bt_conditions</code> and <code>bt_decorators</code> and writes one line per file; the file name up to its first dot is both the C++ class and the XML ID. The three generated files compile into <code>libautonomy_actions.so</code>, <code>libautonomy_conditions.so</code> and <code>libautonomy_decorators.so</code>, which <code>doTask</code> loads at start-up (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/util.cpp#L18"><code>registerPluginsForFactory</code></a>), plus any in its <code>ext_plugin_list</code> parameter. The whole pipeline, step by step, is in <a href="bt-workflow.html#pipeline">Chapter 4</a>.</p>
       <pre><code><span class="c">// registerActions.cpp, generated in the build folder (abridged)</span>
 #include "riptide_autonomy/bt_actions/FollowPath.btaction.hpp"
 #include "riptide_autonomy/bt_actions/Wait.btaction.hpp"
@@ -86,13 +79,8 @@ BT_REGISTER_NODES(factory)
     <span class="c">...</span>
     bulkRegisterSimpleActions(factory);   <span class="c">// Info, Error, Math, AddWaypoint, ...</span>
 }</code></pre>
-      <p>Two consequences. A new header needs CMake to configure again (<code>btassistant.py create</code> does it for you; see <a href="bt-workflow.html">Chapter 4</a>). And Groot needs the node declared in a <code>TreeNodesModel</code> to show its ports. The six newest nodes (<code>FollowPath</code>, <code>AddWaypoint</code>, <code>AddArc</code>, <code>LatestDetection</code>, <code>MapConverged</code>, <code>CenterDetection</code>) are declared in the tree files' own models but not yet in <code>trees/.groot/workspace.xml</code>.</p>
-    </div>
-    <figure class="fig">
-      <div class="panel" id="reg-graph"></div>
-      <figcaption><b>From a header to a running node.</b> Orange steps happen in the build; the rest each time a tree runs. Tap a step.</figcaption>
-    </figure>
-    <div class="prose">
+      <p>Two consequences. A new header needs CMake to configure again (<code>btassistant.py create</code> does it for you). And Groot needs the node declared in a <code>TreeNodesModel</code> to show its ports. The six newest nodes (<code>FollowPath</code>, <code>AddWaypoint</code>, <code>AddArc</code>, <code>LatestDetection</code>, <code>MapConverged</code>, <code>CenterDetection</code>) are declared in the tree files' own models but not yet in <code>trees/.groot/workspace.xml</code>.</p>
+
       <h2 id="catalogue">The catalogue</h2>
       <p>All 44 nodes, grouped by what they are for. The bar shows how many instances the competition tree builds; the number after it is how many of the <span data-bind="files">34</span> tree files use the node at all. Nodes marked <i>legacy</i> were written for the old controller.</p>
     </div>
@@ -119,6 +107,10 @@ torpedo_frame: 1.937824843,0.4948079185,0,0 | arc=0,0,0.25 | heading=look_at | l
       <div class="panel" id="path-builder"></div>
       <figcaption><b>Build a path the way the competition tree does.</b> <i>Sweep</i> is the forward-camera search in <code>SearchMpc</code>: in front of the target, then round it each way, the heading swinging by <i>pan</i>. <i>Spiral</i> is <code>DownwardSearchMpc</code>'s spiral out from the estimate. The string is what <code>AddWaypoint</code> and <code>AddArc</code> write (ported line for line); arrows show the heading each piece asks for. Tap a piece to see its line of the string.</figcaption>
     </figure>
+    <figure class="fig">
+      <video class="media" id="torpedo-video" data-src="video/bt-nodes/torpedo_2x" width="1280" height="836" controls muted playsinline preload="none" aria-label="Talos doing the torpedo task in the Nereus viewer, with the running tree node shown"></video>
+      <figcaption><b>Nodes at work.</b> The torpedo task from the Nereus run in <a href="#time">the time chart below</a>, at 2× speed. The label is the deepest running node, read from <code>autonomy/tree_stack</code>, and the name of the step it belongs to. <code>CenterDetection</code> chases the board once it is seen; then three <code>FollowPath</code> goals stand off, line torpedo 1 up on hole 1 and slide across to hole 2, with <code>Wait</code>s in between. The light on Talos is the viewer drawing <code>command/led</code>: the <a href="#leds"><code>SetStatus</code> pattern</a>, plus a short green flash from mapping for each detection it takes in.</figcaption>
+    </figure>
     <div class="prose">
       <h2 id="perception" data-short="Searching">Perception: search until the map has it</h2>
       <p>Searches combine three nodes from the catalogue. <code>SeenRecently</code> and <code>MapConverged</code> are conditions that answer at once, so in a <code>ReactiveSequence</code> they are re-checked on every tick and stop the move beneath them the moment either passes. From <code>SearchMpc</code> (empty ports left out):</p>
@@ -131,10 +123,10 @@ torpedo_frame: 1.937824843,0.4948079185,0,0 | arc=0,0,0.25 | heading=look_at | l
     &lt;/Inverter&gt;
     &lt;Action ID="FollowPath" max_depth="-2.5" min_depth="-0.75" timeout="90" waypoints="{sweep_path}"/&gt;
 &lt;/ReactiveSequence&gt;</code></pre>
-      <p>When a condition flips, the <code>ReactiveSequence</code> halts <code>FollowPath</code>, whose <code>onHalted</code> cancels the goal. The search then calls <code>CenterDetection</code> to bring the target into the middle of the image, and holds there until <code>MapConverged</code> passes or the target has been out of sight for 2 s. What the covariance thresholds mean is in <a href="perception/frames.html#published">How Talos sees, Chapter 9</a>; the whole search, stage by stage, is in <a href="mission-tree.html#search">Chapter 3</a>.</p>
+      <p>When a condition flips, the <code>ReactiveSequence</code> halts <code>FollowPath</code>, whose <code>onHalted</code> cancels the goal. The search then calls <code>CenterDetection</code> to bring the target into the middle of the image, and holds there (at most 8 s) until <code>MapConverged</code> passes or the target has been out of sight for 2 s. What the covariance thresholds mean is in <a href="perception/frames.html#published">How Talos sees, Chapter 9</a>; the whole search, stage by stage, is in <a href="mission-tree.html#search">Chapter 3</a>.</p>
 
       <h2 id="calls" data-short="Services and topics">What the generic nodes call</h2>
-      <p>Seven nodes take any topic or service name as a port. In the competition tree they reach these:</p>
+      <p>Ten nodes take any topic or service name as a port. Nine of them appear in the competition tree, and reach these:</p>
     </div>
     <figure class="fig narrow">
       <div class="panel" id="calls-table"></div>
@@ -149,16 +141,16 @@ torpedo_frame: 1.937824843,0.4948079185,0,0 | arc=0,0,0.25 | heading=look_at | l
       <ul>
         <li><span class="m">T^{\text{world}}_{\text{ref}}</span>: the prop's frame in world, from TF (mapping publishes it).</li>
         <li><span class="m">T^{\text{ref}}_{\text{link}}</span>: where you want the tool, the node's <code>x … oy</code> ports.</li>
-        <li><span class="m">T^{\text{link}}_{\text{base}}</span>: the base seen from the tool, a fixed offset from Talos's robot description (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L353"><code>talos.yaml</code></a>).</li>
+        <li><span class="m">T^{\text{link}}_{\text{base}}</span>: the base seen from the tool, looked up in TF (the node waits up to 5 s for it). The robot description publishes these frames from <code>talos.yaml</code> (the <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L353"><code>torpedoes</code> entry</a>, for example).</li>
       </ul>
-      <p>The competition tree aligns six tools this way: <span data-bind="links">the down camera, the claw, the forward camera, a torpedo tube, the magnet and the dropper</span>.</p>
+      <p>The competition tree lines up these frames this way: <span id="link-list">the down camera, the claw, the forward camera, both torpedo tubes, the magnet and the dropper</span>.</p>
 
       <h2 id="leds">Status lights: SetStatus</h2>
       <p>The LED strips tell swimmers and the surface crew what the tree is doing. <code>SetStatus</code> sends one of ten named patterns on <code>command/led</code>; <code>doTask</code> sets the last one itself when the tree ends.</p>
     </div>
     <figure class="fig narrow">
       <div class="panel" id="led-table"></div>
-      <figcaption><b>The status patterns</b>, with the colours from <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/SetStatus.btaction.hpp"><code>SetStatus</code></a> and how often the competition tree sets each. The swatches blink at the same kind of rate as the strips (exact timing is in the LED firmware).</figcaption>
+      <figcaption><b>The status patterns</b>, with the colours from <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/SetStatus.btaction.hpp"><code>SetStatus</code></a> and how often the competition tree sets each. The swatches blink at the strips' own rates, from the boards' shared LED driver (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/driver_status_strip/status_strip.c#L9"><code>status_strip.c</code></a>: a 50 ms update; one fast flash takes 0.3 s, one slow flash 2 s, one breath 6 s).</figcaption>
     </figure>
     <div class="prose">
       <h2 id="time" data-short="Where time goes">Where a mission's time goes</h2>
@@ -174,10 +166,10 @@ torpedo_frame: 1.937824843,0.4948079185,0,0 | arc=0,0,0.25 | heading=look_at | l
       <h2 id="dotask">doTask: the tree runner</h2>
       <p><a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp"><code>DoTask.cpp</code></a> is one ROS node, <code>/talos/autonomy</code>, started by <code>autonomy.launch.py</code>. It offers:</p>
       <dl class="spec">
-        <dt>autonomy/run_tree</dt><dd>Action, <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_msgs/action/ExecuteTree.action"><code>riptide_msgs2/ExecuteTree</code></a>. Goal: <code>tree</code>, the full path of an XML file. Result: <code>uint32 returncode</code>, BT.CPP's status (2 SUCCESS, 3 FAILURE; 1 when the goal was canceled), or −1 after an exception, which reads as 4294967295 in a <code>uint32</code>; and <code>bool error</code>, true only for a canceled goal.</dd>
+        <dt>autonomy/run_tree</dt><dd>Action, <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_msgs/action/ExecuteTree.action"><code>riptide_msgs2/ExecuteTree</code></a>. Goal: <code>tree</code>, the full path of an XML file. Result: <code>uint32 returncode</code>, BT.CPP's status (2 SUCCESS, 3 FAILURE; 1 when the goal was canceled), or −1 after an exception, which reads as 4294967295 in a <code>uint32</code>; and <code>bool error</code>, true only for a canceled goal. Its feedback field (<code>TreeStack stack</code>) is never sent; watch <code>autonomy/tree_stack</code>.</dd>
         <dt>autonomy/list_trees</dt><dd>Service: every <code>.xml</code> in the source <code>trees/</code> folder, the installed copy and any <code>ext_tree_dirs</code>.</dd>
         <dt>autonomy/tree_stack</dt><dd>Topic: the names of the running nodes, root first.</dd>
-        <dt>/&lt;host&gt;/autonomy/bag_trigger</dt><dd>Topic, once a second: true while a tree runs.</dd>
+        <dt>/&lt;host&gt;/autonomy/bag_trigger</dt><dd>Topic, once a second: true while a tree runs. Read by the old RViz bagging panel; nothing in Nereus uses it.</dd>
         <dt>~/btlogs/</dt><dd>One <code>BTLog_&lt;date&gt;.fbl</code> per run: every status change, for replay in Groot.</dd>
         <dt>Parameters</dt><dd><code>enable_zmq</code> (live view in Groot; false in <code>autonomy.launch.py</code>), <code>log_file_dir</code> (default <code>~/btlogs</code>), <code>ext_tree_dirs</code> (more folders for <code>list_trees</code>) and <code>ext_plugin_list</code> (more node plugins).</dd>
       </dl>
@@ -197,11 +189,12 @@ ros2 action send_goal /talos/autonomy/run_tree riptide_msgs2/action/ExecuteTree 
       <h2 id="watch">Things to watch</h2>
       <ul>
         <li><strong>The kill switch does not stop the tree.</strong> <code>doTask</code> listens to <code>state/kill</code>, but the check that would end the tree is commented out (<code>// || robotKilled</code>). The tree keeps ticking with the thrusters off. To stop a run, cancel the goal (<i>Stop</i> in the viewer).</li>
-        <li><strong>Start one tree at a time.</strong> The "already running" check in <code>handleGoal</code> looks at a thread that has already been detached, so it never refuses. A second goal fails while starting its loggers (only one may exist), and its error path sends DISABLED to the controller and sets <code>bag_trigger</code> to false while the first tree keeps running. The viewer only offers <i>Start</i> when nothing runs.</li>
+        <li><strong>Start one tree at a time.</strong> The "already running" check in <code>handleGoal</code> looks at a thread that has already been detached, so it never refuses. A second goal fails while starting its loggers (only one may exist), and its error path sends DISABLED to the controller, flashes the LEDs red and sets <code>bag_trigger</code> to false while the first tree keeps running. The viewer only offers <i>Start</i> when nothing runs.</li>
+        <li><strong>A missing service freezes the tree for 1 s.</strong> <code>CallTriggerService</code>, <code>CallSetBoolService</code>, <code>CallSetStringService</code>, <code>CallStartBinaryClassifierService</code>, <code>SetMappingTarget</code> and <code>PublishEKFPose</code> wait up to 1 s in <code>onStart</code> for their service, with nothing else ticking, then return FAILURE. With mapping or the detector down, or a mistyped <code>srv_name</code>, every such call costs a frozen second. The four generic ones also make a new client on every start.</li>
         <li><strong>Setpoints end paths.</strong> A <code>PublishToController</code> in parallel with a <code>FollowPath</code> stops the path.</li>
         <li><strong><code>Error</code> succeeds.</strong> Logging an error does not fail anything.</li>
         <li><strong>The topic readers wait for the next message.</strong> <code>GetBoolTopic</code>, <code>GetFloat64Topic</code>, <code>GetTwistTopic</code> and <code>GetImuOrientation</code> subscribe when they start and wait up to 3 s, so a topic that is published rarely, or only on change, makes them fail.</li>
-        <li><strong>Names that mislead.</strong> <code>PublishInt8</code> publishes a <code>UInt16</code>. <code>getCovariance</code>'s output is an error score in m², not a covariance.</li>
+        <li><strong>Names that mislead.</strong> <code>PublishInt8</code> publishes a <code>UInt16</code>. <code>getCovariance</code>'s output is a single score built from the covariance diagonal (position variances, plus the angular ones divided by 2π), not a covariance.</li>
         <li><strong><code>ApproxEqualToAngle</code> wraps one way only.</strong> A difference below −π isn't wrapped. With a 0.25 rad range, <code>a</code> = 3.1, <code>b</code> = −3.1 passes (the angles are 0.08 rad apart), but <code>a</code> = −3.1, <code>b</code> = 3.1 fails.</li>
         <li><strong>The old flip still runs at the gate.</strong> <code>FlipTree</code> first sends DISABLED on <code>controller/linear</code> (<code>PublishToController</code> mode 0), so the MPC stops commanding. Then <code>SetControllerSafeMode</code> waits its full 10 s for a parameter the MPC doesn't have, and fails. The <code>Sequence</code> stops there, so <code>TriggerControllerStunt</code> never runs, and a <code>ForceSuccess</code> lets the gate exit go on (<a href="mission-tree.html#gate">Chapter 3</a>).</li>
         <li><strong>A timed-out retry leaves its child running.</strong> When <code>RetryUntilSuccessfulOrTimeout</code> runs out of time it returns FAILURE without halting a child that is still RUNNING (read from the code; not yet tested in Nereus). In <code>SearchMpc</code> it wraps the sweep, so a timeout mid-sweep skips <code>FollowPath</code>'s <code>onHalted</code>: the MPC keeps flying the sweep until the next setpoint or path.</li>

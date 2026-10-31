@@ -26,7 +26,7 @@ function flowGraph(run) {
   const N = (id, label, x, y, sub, info) => ({ id, label, x, y, sub, info, w: 96 });
   const nodes = [
     N('kill', 'Kill switch', 62, 130, 'then 5 s', 'WaitForKillSwitch and PrepForRun: wait for state/kill to read not killed, wait 5 s, lock the map with no target, reload and disarm the actuators.'),
-    N('dive', 'Dive', 170, 130, dur(secs('Dive')), 'Straight down to −0.75 m (the tree asks for −0.56; PrimitiveMovePosition won\'t go shallower than −0.75). The only step that can end the mission: 60 s to reach depth.'),
+    N('dive', 'Dive', 170, 130, dur(secs('Dive')), 'Straight down to −0.75 m (the tree asks for −0.56; PrimitiveMovePosition won\'t go shallower than −0.75). Within 25 cm counts as there: from Nereus\'s spawn depth of about −0.33 m that takes 2 s. The only step that can end the mission: 60 s to reach depth.'),
     N('gate', 'Gate', 278, 130, dur(secs('Gate')), 'GateTreeMpc: through gate_repair from its prior, map locked. The old FlipTree turns the controller off for 10 s on the way.'),
     N('slalom', 'Slalom', 386, 130, dur(secs('Slalom')), 'SlalomPathMpc: one look to 0.3, then one path through the three pole sets, on the side the gate picked, ending at the torpedo\'s stand-off.'),
     N('pinger', 'Pinger', 494, 130, dur(secs('Pinger')), 'RandomPingerTree: listen 10 s at the torpedo and 10 s at the table. Louder at the torpedo stop means table first. In Nereus there is no pinger: torpedo first.'),
@@ -198,7 +198,18 @@ function explorer(tree, run) {
       const s = run.segments.find((x) => x[2] === a.dataset.seg);
       if (s) jump(s[0] + 0.3);
       const p = ex.find(a.dataset.node, s ? s[0] + 0.3 : null);
-      if (p !== null) { ex.reveal(p); ex.select(p, true); }
+      if (p !== null) {
+        // show only the way to this task: clear the search and what earlier jumps opened, open the task itself
+        // (following the run opens it further down to what is running), and scroll its row near the top of the box
+        const q = document.getElementById('mt-q');
+        q.value = ''; ex.query = '';
+        const r = ex.rowOf(p);
+        ex.open = new Set(['']);
+        ex.focus = '';
+        ex.reveal(r);
+        ex.open.add(r);
+        ex.select(r, true);
+      }
       document.getElementById('explorer-fig').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     });
   });
@@ -255,29 +266,43 @@ function searchFigure() {
     let H;
     if (mode !== 'spiral') {
       const st = STAGES[+mode];
-      const far = Math.max(...STAGES.map((q) => q.dist));
       const wide = Math.max(...STAGES.map((q) => q.sweep)) + 0.15;
-      // world → screen: the estimate at (cx, cy); its +x (the side Talos is on) points down the screen
-      const k = Math.min(62, (W - 70) / (2 * far * Math.sin(wide))), cx = W / 2, cy = 34;
-      H = Math.ceil(cy + far * k + 40);
+      // Each camera wedge at a piece's end: Talos's position and the two far corners, in the estimate's frame (m).
+      const wedges = (s) => arcPieces(s).map((p) => {
+        const px = s.dist * Math.cos(p.ang), py = s.dist * Math.sin(p.ang);
+        const look = Math.atan2(-py, -px) + p.pan; // facing the estimate, plus the pan
+        const L = s.dist + 0.35;
+        return [[px, py], [px + L * Math.cos(look - FOV), py + L * Math.sin(look - FOV)], [px + L * Math.cos(look + FOV), py + L * Math.sin(look + FOV)]];
+      });
+      // One scale for all three stages, fitted across to every stage's wedges and rings, so switching stages never
+      // rescales and the distances compare. Up and down, only this stage is fitted: the panel is no taller than its
+      // own wedges and ring, and the other stages' faint rings may run off its edge.
+      const extent = (ss) => {
+        const pts = ss.flatMap((s) => [...wedges(s).flat(), ...[-wide, 0, wide].map((a) => [s.dist * Math.cos(a), s.dist * Math.sin(a)])]);
+        pts.push([0, -0.6], [0, 0.6]);
+        const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+        return [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+      };
+      const [, , y0w, y1w] = extent(STAGES);
+      const [x0w, x1w] = extent([st]);
+      const padX = phone ? 8 : 34, padTop = 10, padBottom = 34;
+      const k = Math.min(62, (W - 2 * padX) / (y1w - y0w));
+      // world → screen: the estimate's +x (the side Talos is on) points down the screen, +y to the left
+      const cx = padX + y1w * k + ((W - 2 * padX) - (y1w - y0w) * k) / 2, cy = padTop - x0w * k;
+      H = Math.ceil(cy + x1w * k + padBottom);
       const S = (x, y) => [cx - y * k, cy + x * k];
       const pts = arcPieces(st);
-      // camera wedges at each piece's end, under everything else
-      for (const p of pts) {
-        const px = st.dist * Math.cos(p.ang), py = st.dist * Math.sin(p.ang);
-        const look = Math.atan2(-py, -px) + p.pan; // facing the estimate, plus the pan
-        const L = st.dist + 0.35;
-        const a1 = look - FOV, a2 = look + FOV;
-        const [sx, sy] = S(px, py);
-        const [ax, ay] = S(px + L * Math.cos(a1), py + L * Math.sin(a1)), [bx, by] = S(px + L * Math.cos(a2), py + L * Math.sin(a2));
+      // camera wedges, under everything else
+      for (const [p, a, b] of wedges(st)) {
+        const [sx, sy] = S(...p), [ax, ay] = S(...a), [bx, by] = S(...b);
         el('path', { d: `M${sx},${sy} L${ax},${ay} L${bx},${by} Z`, class: 'wedge' }, svg);
       }
-      // distance rings for all three stages, faint
+      // distance rings for all three stages, faint: arcs round the estimate on Talos's side
       const rings = [];
       for (const s of STAGES) {
-        const [x0, y0] = S(s.dist * Math.cos(-wide), s.dist * Math.sin(-wide)), [x1, y1] = S(s.dist * Math.cos(wide), s.dist * Math.sin(wide));
-        el('path', { d: `M${x0},${y0} A${s.dist * k},${s.dist * k} 0 0 0 ${x1},${y1}`, fill: 'none', stroke: css('--rule'), 'stroke-dasharray': '3 4' }, svg);
-        rings.push([x1 - 4, y1 + 4, `${s.dist} m`]);
+        const [rx0, ry0] = S(s.dist * Math.cos(-wide), s.dist * Math.sin(-wide)), [rx1, ry1] = S(s.dist * Math.cos(wide), s.dist * Math.sin(wide));
+        el('path', { d: `M${rx0},${ry0} A${s.dist * k},${s.dist * k} 0 0 1 ${rx1},${ry1}`, fill: 'none', stroke: css('--rule'), 'stroke-dasharray': '3 4' }, svg);
+        if (s === st) rings.push([rx1 - 4, ry1 + 4, `${s.dist} m`]); // only the ring this stage flies is labelled
       }
       // the path: start in front, then the three arcs
       let d = '';
@@ -299,7 +324,7 @@ function searchFigure() {
       el('rect', { x: cx - 0.6 * k, y: cy - 7, width: 1.2 * k, height: 7, fill: css('--paper-3'), stroke: ink, 'stroke-width': 1.5, rx: 2 }, svg);
       el('circle', { cx, cy, r: 3.5, fill: accent }, svg);
       label(cx + 0.6 * k + 8, cy - 1, phone ? 'estimate' : "torpedo's estimate", 'strong');
-      for (const [x, y, t] of rings) label(x, y, t, 'small', 'end');
+      for (const [x, y, t] of rings) label(x, y, t, 'strong', 'end');
       const [tx, ty] = S(st.dist, 0);
       label(tx, ty + 24, phone ? 'Talos starts here' : 'Talos starts here, facing the board', 'strong', 'middle');
       note.innerHTML = `<b>Stage ${mode}.</b> ${st.text} As soon as the board is seen (in the last 0.5 s) or converged, the sweep stops and Talos chases it with <code>CenterDetection</code>.`;

@@ -119,11 +119,53 @@
 .dec .seg { flex-wrap: wrap; }
 .dec .verdict { font-size: 0.9rem; color: var(--ink); margin: 0.2rem 0 0.5rem; min-height: 1.4em; }
 .dec .verdict.bad { color: var(--s8); }
+.dec .verdict .unk { color: var(--muted); }
 .dec table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 .dec td { padding: 0.3rem 0.5rem 0.3rem 0; border-top: 1px solid var(--rule); vertical-align: top; line-height: 1.4; }
 .dec td.bit { width: 2.2rem; font-variant-numeric: tabular-nums; color: var(--muted); }
-.dec td.nm { font-family: var(--mono); font-size: 0.76rem; color: var(--ink); width: 40%; overflow-wrap: anywhere; }
+.dec td.nm { font-family: var(--mono); font-size: 0.76rem; color: var(--ink); width: 40%; }
 .dec td.nm small { display: block; font-family: var(--sans); font-size: 0.72rem; color: var(--muted); }
 .dec tr.on td { background: #fde9df; }
 .dec tr.on td.nm { color: #a8360a; font-weight: 600; }
 .dec tr.quiet td { color: var(--muted); }
+
+/* ---------- ESC board, as the firmware sees it ---------- */
+.escx-pic { position: relative; width: 100%; overflow: hidden; }
+.escx-pic img { display: block; width: 100%; height: auto; }
+.escx-pic.zoomed { border-radius: 8px; background: #1d3b2a; }
+.escx-pic.zoomed img { position: absolute; max-width: none; height: auto; }
+.escx-box { position: absolute; border: 2px dashed var(--accent); border-radius: 6px; pointer-events: none; }
+.escx-m { position: absolute; transform: translate(-50%, -50%); width: 1.55rem; height: 1.55rem; padding: 0; border-radius: 50%; border: 2px solid #fff; background: var(--accent); color: #fff; font: 650 0.72rem/1 var(--sans); cursor: pointer; box-shadow: 0 1px 3px rgba(15, 38, 51, 0.45); display: grid; place-items: center; }
+.escx-m.on { background: var(--ink); transform: translate(-50%, -50%) scale(1.18); z-index: 2; }
+.escx-m:focus-visible { outline: 2px solid var(--state); outline-offset: 2px; }
+.escx { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); grid-template-areas: 'whole zoom' 'list list' 'note note'; gap: 1rem 1.1rem; align-items: start; }
+.escx-whole { grid-area: whole; }
+.escx-zoom { grid-area: zoom; }
+.escx-list { grid-area: list; }
+.escx-note { grid-area: note; }
+.escx-list { display: flex; flex-wrap: wrap; gap: 0.3rem; font-family: var(--sans); }
+.escx-list button { font: inherit; font-size: 0.8rem; border: 1px solid var(--rule); background: var(--paper); color: var(--ink-2); border-radius: 999px; padding: 0.22rem 0.6rem 0.22rem 0.3rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; }
+.escx-list button b { display: inline-grid; place-items: center; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.68rem; }
+.escx-list button[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.escx-list button[aria-pressed='true'] b { background: var(--paper); color: var(--ink); }
+.escx-note { background: var(--paper); border-radius: 8px; padding: 0.7rem 0.85rem; margin-top: 0; min-height: 5.5em; line-height: 1.5; }
+.escx-note .ref { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); }
+.escx-note code { font-size: 0.8em; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .escx { grid-template-columns: minmax(0, 46%) minmax(0, 1fr); grid-template-areas: 'whole whole' 'zoom note' 'list list'; gap: 0.8rem 0.7rem; }
+  .escx-m { width: 1.35rem; height: 1.35rem; font-size: 0.66rem; }
+  .escx-list button { font-size: 0.74rem; padding: 0.18rem 0.5rem 0.18rem 0.22rem; }
+  .escx-note { font-size: 0.82rem; }
+}
+
+/* ---------- what a board listens to ---------- */
+.tm-subs { display: flex; flex-wrap: wrap; gap: 0.35rem 0.5rem; align-items: baseline; margin-top: 0.85rem; padding-top: 0.6rem; border-top: 1px solid var(--rule); font-family: var(--sans); font-size: 0.84rem; }
+.tm-subs .lbl { font-size: 0.74rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-right: 0.2rem; flex-basis: 100%; }
+.tm-sub { display: flex; flex-direction: column; background: var(--paper); border-radius: 6px; padding: 0.3rem 0.55rem; max-width: 100%; }
+.tm-sub code { font-size: 0.8rem; color: var(--ink); }
+.tm-sub small { color: var(--muted); font-size: 0.72rem; font-family: var(--mono); overflow-wrap: anywhere; }
+.tm-sub em { font-style: normal; color: var(--ink-2); font-size: 0.78rem; line-height: 1.35; margin-top: 0.1rem; max-width: 22rem; }
+.tm-sub code { background: none; padding: 0; }
+.tm-off { margin: 0.85rem 0 0; font-family: var(--sans); font-size: 0.84rem; color: var(--ink-2); }
+.tm-off code { font-size: 0.9em; }
+code.nowrap { white-space: nowrap; }

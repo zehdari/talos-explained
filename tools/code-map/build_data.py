@@ -14,7 +14,8 @@ Also writes the release repo's commit history (which submodule pins moved in eac
 public/data/code-map/release-history.json.
 
 GitHub-only repos are read from shallow clones in /tmp/gh/<name> (`gh repo clone osu-uwrt/<name> /tmp/gh/<name> -- --depth 1`);
-their last-commit dates come from `gh repo list` (cached in /tmp/codemap_repos.json if present).
+their last-commit dates come from the GitHub API (the tip of the catalog branch, or the default branch), falling back
+to the clone's HEAD; `gh repo list` (cached in /tmp/codemap_repos.json) only supplies the archived flag.
 """
 import json
 import os
@@ -37,6 +38,12 @@ RELEASE = Path.home() / 'osu-uwrt' / 'release'
 VENDOR = re.compile(r'(^|/)(third_party|vendor|vnproglib-[^/]*|node_modules|yaml-cpp|imgui|glm|pico-sdk|matlab_msg_gen'
                     r'|weights|meshes|collision_files|textures|external|mcp251Xfd|glad)(/|$)'
                     r'|(xterm\.js|addon-fit\.js|xterm\.css|\.min\.js|package-lock\.json|uv\.lock|(^|/)json\.hpp|(^|/)stb_[^/]*\.h)$')
+
+# package.xml deps every ROS 2 package has; the explorer lists the other outside packages as "upstream".
+CORE = {'rclcpp', 'rclpy', 'rclcpp_action', 'rclcpp_components', 'rclcpp_lifecycle', 'std_msgs', 'std_srvs',
+        'geometry_msgs', 'sensor_msgs', 'nav_msgs', 'builtin_interfaces', 'action_msgs', 'tf2', 'tf2_ros',
+        'tf2_geometry_msgs', 'tf2_msgs', 'launch', 'launch_ros', 'ros2launch', 'python3-pytest', 'pytest',
+        'unique_identifier_msgs', 'diagnostic_msgs', 'visualization_msgs', 'message_filters'}
 
 LANG = {
     '.py': 'Python', '.cpp': 'C++', '.cc': 'C++', '.cxx': 'C++', '.hpp': 'C++', '.hh': 'C++', '.ino': 'C++',
@@ -192,16 +199,27 @@ def launches_of(files):
                    or re.search(r'(^|/)launch/[^/]+_launch\.py$', f)})
 
 
-def gh_dates():
+def gh_info():
+    """Archived flags from `gh repo list` (cached). Not dates: updatedAt is a metadata time, not a commit."""
     p = Path('/tmp/codemap_repos.json')
     if not p.exists():
-        r = subprocess.run(['gh', 'repo', 'list', 'osu-uwrt', '--limit', '300', '--json',
-                            'name,updatedAt,pushedAt,isArchived,primaryLanguage'], capture_output=True, text=True)
+        r = subprocess.run(['gh', 'repo', 'list', 'osu-uwrt', '--limit', '300', '--json', 'name,isArchived'],
+                           capture_output=True, text=True)
         p.write_text(r.stdout)
     try:
         return {r['name']: r for r in json.loads(p.read_text())}
     except json.JSONDecodeError:
         return {}
+
+
+def gh_commit_date(github, branch, clone):
+    """Committer date of the branch tip on GitHub (shallow clones may be stale), else of the clone's HEAD."""
+    if github:
+        r = subprocess.run(['gh', 'api', f'repos/{github}/commits/{branch or "HEAD"}', '--jq', '.commit.committer.date'],
+                           capture_output=True, text=True)
+        if r.returncode == 0 and re.match(r'\d{4}-\d\d-\d\d', r.stdout.strip()):
+            return r.stdout.strip()[:10]
+    return git(clone, 'log', '-1', '--format=%cd', '--date=short')
 
 
 def repo_path(src):
@@ -222,7 +240,7 @@ def gh_url(github, branch, sub=''):
 
 def build():
     cat = yaml.safe_load((HERE / 'catalog.yaml').read_text())
-    ghinfo = gh_dates()
+    ghinfo = gh_info()
     pins = {}
     for line in git(RELEASE, 'ls-tree', 'HEAD', 'src/', 'nereus').splitlines():
         _, kind, sha, path = line.split(None, 3)
@@ -233,7 +251,7 @@ def build():
     for rc in cat['repos']:
         src = rc['source']
         path = repo_path(src)
-        r = {k: rc.get(k) for k in ('id', 'group', 'status', 'layers', 'chapters', 'desc', 'extra', 'branch')}
+        r = {k: rc.get(k) for k in ('id', 'group', 'status', 'layers', 'chapters', 'desc', 'extra', 'branch', 'ref') if k in rc}
         r['name'] = rc.get('name', rc['id'])
         r['githubRepo'] = rc.get('github', '')
         r['github'] = gh_url(rc.get('github'), rc.get('branch'))
@@ -244,18 +262,24 @@ def build():
             continue
         is_git = bool(git(path, 'rev-parse', '--git-dir'))
         files = tracked(path) if is_git else []
+        # Describe the branch Talos runs: if the local checkout is on another branch (a fix in progress),
+        # take the commit and date from origin/<branch> instead. Line counts still come from the checkout.
+        ref = rc.get('ref') or 'HEAD'  # catalog `ref`: a pinned commit to describe (zed_wrapper.repos)
         if is_git and src['kind'] != 'gh':
-            r['commit'] = git(path, 'rev-parse', '--short=7', 'HEAD')
-            r['commitDate'] = git(path, 'log', '-1', '--format=%ad', '--date=short')
             r['checkedOut'] = git(path, 'rev-parse', '--abbrev-ref', 'HEAD')
+            if ref == 'HEAD' and rc.get('branch') and r['checkedOut'] not in (rc['branch'], 'HEAD') \
+                    and git(path, 'rev-parse', '--verify', '-q', 'origin/' + rc['branch']):
+                ref = 'origin/' + rc['branch']
+            r['commit'] = git(path, 'rev-parse', '--short=7', ref)
+            r['commitDate'] = git(path, 'log', '-1', '--format=%ad', '--date=short', ref)
         if src['kind'] == 'gh':
             gi = ghinfo.get(Path(src['path']).name, {})
-            r['commitDate'] = (gi.get('pushedAt') or gi.get('updatedAt') or '')[:10] or git(path, 'log', '-1', '--format=%ad', '--date=short')
+            r['commitDate'] = gh_commit_date(rc.get('github'), rc.get('branch'), path)
             r['archived'] = bool(gi.get('isArchived'))
         if src['kind'] == 'release' and src['path'] in pins:
             sha = pins[src['path']]
             r['pin'] = {'sha': sha[:7], 'date': git(path, 'log', '-1', '--format=%ad', '--date=short', sha),
-                        'ahead': int(git(path, 'rev-list', '--count', f'{sha}..HEAD') or 0)}
+                        'ahead': int(git(path, 'rev-list', '--count', f'{sha}..{ref}') or 0)}
         if rc.get('pinNote'):
             r['pinNote'] = rc['pinNote']
 
@@ -345,6 +369,7 @@ def build():
         repos.append(r)
 
     # Internal dependencies: package.xml deps that name another package in this map.
+    repo_ros = {r['ros'] for r in repos if r.get('ros')}  # single-package repos (apriltag_msgs, ...): in the map, not upstream
     by_ros = {}
     for r in repos:
         for p in r['packages']:
@@ -352,8 +377,13 @@ def build():
                 by_ros[p['ros']] = (r['id'], p['id'])
     for r in repos:
         for p in r['packages']:
-            deps = [d for d in p.pop('depsAll', []) if d in by_ros and d != p.get('ros')]
+            alldeps = p.pop('depsAll', [])
+            deps = [d for d in alldeps if d in by_ros and d != p.get('ros')]
             p['deps'] = [list(by_ros[d]) for d in deps]
+            up = [d for d in alldeps if d not in by_ros and d not in repo_ros and d not in CORE
+                  and not d.startswith(('ament_', 'rosidl_'))]
+            if up:
+                p['upstream'] = up
     used_by = defaultdict(list)
     for r in repos:
         for p in r['packages']:

@@ -84,7 +84,9 @@ table.params.ks-slots td.lock { font-family: var(--mono); font-size: 0.7rem; ove
 .ks-strips .lname { font-size: 11px; fill: var(--ink-2); text-anchor: end; dominant-baseline: central; }
 .ks-strips .lname.in { text-anchor: start; fill: var(--ink); paint-order: stroke; stroke: var(--paper-2); stroke-width: 3px; }
 .ks-strips .tick { font-size: 10px; fill: var(--muted); }
-.ks-log { list-style: none; padding: 0; margin: 0.5rem 0 0; font-size: 0.8rem; color: var(--ink-2); min-height: 9.5em; }
+.ks-loghead { font-size: 0.78rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); margin: 0.7rem 0 0.2rem; }
+.ks-log { list-style: none; padding: 0; margin: 0; font-size: 0.8rem; color: var(--ink-2); min-height: 9.5em; }
+.ks-log li.empty { color: var(--muted); border-bottom: 0; }
 .ks-log li { padding: 0.12rem 0; border-bottom: 1px solid var(--rule); }
 .ks-log li span { display: inline-block; min-width: 3.9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .ks-log li.bad { color: #8a2c08; }

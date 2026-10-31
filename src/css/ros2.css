@@ -1,0 +1,149 @@
+/* ROS 2, the Talos way: the ROS graph explorer, the message anatomy, the action sequence, the Zenoh diagram. */
+.rg-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- ROS graph explorer ---------- */
+.rg { font-family: var(--sans); container-type: inline-size; }
+.rg-controls { display: grid; gap: 0.6rem; margin-bottom: 0.9rem; position: relative; }
+.rg-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.rg-chip { font: inherit; font-size: 0.8rem; background: var(--paper); color: var(--ink-2); border: 1px solid var(--rule); border-radius: 999px; padding: 0.24rem 0.7rem; cursor: pointer; touch-action: manipulation; display: inline-flex; align-items: center; gap: 0.4rem; }
+.rg-chip:hover { border-color: var(--ink-2); color: var(--ink); }
+.rg-chip[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.rg-chip i { width: 0.55rem; height: 0.55rem; border-radius: 50%; flex: none; }
+.rg-chip small { font-size: 0.72rem; opacity: 0.75; }
+.rg-search { display: flex; }
+.rg-search input { flex: 1; min-width: 0; font: inherit; font-size: 0.86rem; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 0.36rem 0.9rem; }
+.rg-search input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+.rg-results { position: absolute; z-index: 6; left: 0; right: 0; top: 100%; margin-top: 0.25rem; background: var(--paper); border-radius: 8px; box-shadow: 0 6px 22px rgba(15, 38, 51, 0.18), 0 0 0 1px var(--rule); padding: 0.3rem; max-height: 19rem; overflow-y: auto; }
+.rg-results[hidden] { display: none; }
+.rg-results button { display: flex; width: 100%; gap: 0.6rem; align-items: baseline; text-align: left; font: inherit; font-size: 0.84rem; background: none; border: 0; border-radius: 6px; padding: 0.38rem 0.55rem; cursor: pointer; color: var(--ink); }
+.rg-results button:hover, .rg-results button.on { background: var(--paper-2); }
+.rg-results button span { font-family: var(--mono); font-size: 0.78rem; overflow-wrap: anywhere; min-width: 0; }
+.rg-results button small { margin-left: auto; color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
+.rg-results .rg-none { font-size: 0.84rem; color: var(--ink-2); padding: 0.4rem 0.55rem; }
+
+.rg-legend { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; font-size: 0.78rem; color: var(--ink-2); }
+.rg-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.rg-legend i { display: inline-block; width: 18px; height: 0; border-top: 1.6px solid var(--ink-2); }
+.rg-legend i.dash { border-top-style: dashed; }
+.rg-legend span.txt { display: inline; }
+.rg-legend b { font-weight: 600; color: var(--ink); }
+.rg-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.9rem; align-items: start; }
+@container (min-width: 860px) {
+  .rg-body { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .rg-detail { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+}
+/* Phones and narrow columns: the detail docks to the bottom of the screen while the graph is in view, so a tapped
+   node's details show next to its highlight. */
+@container (max-width: 859px) {
+  .rg-detail { position: sticky; bottom: 0.5rem; z-index: 3; max-height: 42vh; overflow-y: auto; box-shadow: 0 -2px 18px rgba(15, 38, 51, 0.16), 0 0 0 1px var(--rule); }
+}
+.rg-graph { min-width: 0; }
+svg.rg-svg { display: block; width: 100%; height: auto; font-family: var(--sans); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+svg.rg-svg .rg-band { fill: var(--paper-3); }
+svg.rg-svg .rg-band.on { fill: #f6dccd; }
+svg.rg-svg .rg-blabel { fill: var(--accent); font-size: 10.5px; font-weight: 650; letter-spacing: 0.08em; }
+svg.rg-svg .rg-bsub { fill: var(--muted); font-size: 10.5px; }
+svg.rg-svg .rg-edge { fill: none; stroke: var(--ink-2); stroke-opacity: 0.2; transition: stroke-opacity 0.15s ease; }
+svg.rg-svg .rg-edge.svc { stroke-dasharray: 4 3; }
+svg.rg-svg .rg-edge.on { stroke-opacity: 0.6; }
+svg.rg-svg .rg-edge.dim { stroke-opacity: 0.05; }
+svg.rg-svg .rg-edge.hot { stroke: var(--accent); stroke-opacity: 1; }
+svg.rg-svg .rg-node { cursor: pointer; outline: none; touch-action: manipulation; transition: opacity 0.15s ease; }
+svg.rg-svg .rg-node rect { fill: var(--paper); stroke: var(--ink-2); stroke-width: 1.1; }
+svg.rg-svg .rg-node text { fill: var(--ink); font-size: 12px; dominant-baseline: central; }
+svg.rg-svg .rg-node.dim { opacity: 0.22; }
+svg.rg-svg .rg-node.peer rect { stroke: var(--ink); stroke-width: 1.5; }
+svg.rg-svg .rg-node.hot rect { stroke: var(--accent); stroke-width: 2.2; }
+svg.rg-svg .rg-node:focus-visible rect { stroke: var(--accent); stroke-width: 2.2; }
+
+.rg-detail { background: var(--paper); border-radius: 8px; padding: 0.85rem 1rem 0.7rem; font-size: 0.88rem; line-height: 1.5; color: var(--ink); min-width: 0; }
+.rg-detail p { margin: 0 0 0.55rem; }
+.rg-detail code { font-size: 0.8rem; overflow-wrap: anywhere; }
+.rg-kind { font-size: 0.7rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.15rem; }
+.rg-title { font-family: var(--mono); font-stretch: 100%; font-size: 0.98rem; font-weight: 650; letter-spacing: 0; margin: 0 0 0.3rem; overflow-wrap: anywhere; line-height: 1.3; }
+.rg-meta { font-size: 0.8rem; color: var(--ink-2); }
+.rg-meta a { color: var(--ink-2); }
+.rg-sub { font-size: 0.7rem; font-weight: 650; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin: 0.75rem 0 0.3rem !important; }
+.rg-list { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.rg-ref { font-family: var(--mono); font-size: 0.74rem; color: var(--ink); background: var(--paper-2); border: 1px solid transparent; border-radius: 4px; padding: 0.1rem 0.4rem; cursor: pointer; touch-action: manipulation; overflow-wrap: anywhere; text-align: left; display: inline-flex; gap: 0.35rem; align-items: baseline; max-width: 100%; }
+.rg-ref:hover { border-color: var(--accent); color: var(--accent); }
+.rg-ref b { font-family: var(--sans); font-weight: 600; font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
+.rg-ref.node { font-family: var(--sans); font-size: 0.78rem; border-radius: 999px; padding: 0.12rem 0.55rem; background: var(--paper); border-color: var(--rule); }
+.rg-ref.node i { width: 0.5rem; height: 0.5rem; border-radius: 50%; align-self: center; }
+.rg-plain { font-family: var(--mono); font-size: 0.74rem; background: var(--paper-2); border-radius: 4px; padding: 0.1rem 0.4rem; overflow-wrap: anywhere; }
+.rg-plain small { font-family: var(--sans); color: var(--muted); }
+.rg-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.2rem 0.8rem; font-size: 0.82rem; margin: 0.4rem 0 0.2rem; }
+.rg-facts dt { color: var(--muted); }
+.rg-facts dd { margin: 0; overflow-wrap: anywhere; }
+.rg-def { margin-top: 0.5rem; font-size: 0.82rem; }
+.rg-def summary { cursor: pointer; color: var(--ink-2); }
+.rg-def pre { margin: 0.4rem 0 0.2rem; font-size: 0.72rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rg-hint { font-size: 0.8rem; color: var(--muted); }
+.rg-back { font: inherit; font-size: 0.78rem; color: var(--ink-2); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 0.15em; margin-bottom: 0.4rem; }
+
+/* ---------- message anatomy ---------- */
+.ma { font-family: var(--sans); }
+.ma-tabs { margin-bottom: 0.9rem; }
+.ma-tabs button small { font-size: 0.7rem; opacity: 0.7; margin-left: 0.25rem; }
+.ma-body { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+@media (max-width: 760px) { .ma-body { grid-template-columns: minmax(0, 1fr); } .ma-lines { max-height: none; } }
+.ma-file { background: var(--paper); border-radius: 8px; padding: 0.55rem 0.4rem 0.5rem; min-width: 0; }
+.ma-path { font-size: 0.76rem; color: var(--muted); padding: 0 0.45rem 0.4rem; overflow-wrap: anywhere; }
+.ma-path a { color: var(--ink-2); }
+.ma-lines { list-style: none; margin: 0; padding: 0; counter-reset: ln; max-height: 30rem; overflow-y: auto; }
+.ma-lines li { margin: 0; counter-increment: ln; }
+.ma-lines button { display: grid; grid-template-columns: 1.7rem minmax(0, 1fr); width: 100%; text-align: left; font-family: var(--mono); font-size: 0.76rem; line-height: 1.45; color: var(--ink); background: none; border: 0; border-radius: 4px; padding: 0.06rem 0.3rem; cursor: pointer; touch-action: manipulation; }
+.ma-lines button::before { content: counter(ln); color: var(--muted); font-size: 0.68rem; text-align: right; padding-right: 0.55rem; }
+.ma-lines button:hover { background: var(--paper-2); }
+.ma-lines button[aria-pressed='true'] { background: #fbe3d6; box-shadow: inset 2px 0 0 var(--accent); }
+.ma-lines span.code { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; }
+.ma-lines button.blank { min-height: 1.1rem; }
+.ma-lines .t { color: var(--state); }
+.ma-lines .n { font-weight: 650; }
+.ma-lines .v { color: var(--accent); }
+.ma-lines .cm { color: var(--muted); }
+.ma-lines .sep { color: var(--accent); font-weight: 700; }
+.ma-side { display: grid; gap: 0.8rem; min-width: 0; }
+.ma-note { background: var(--paper); border-radius: 8px; padding: 0.8rem 0.95rem 0.6rem; font-size: 0.88rem; line-height: 1.5; color: var(--ink); min-height: 7rem; }
+.ma-note p { margin: 0 0 0.55rem; }
+.ma-note code { font-size: 0.8rem; overflow-wrap: anywhere; }
+.ma-note .ma-k { font-size: 0.7rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.2rem; }
+.ma-note .ma-line { font-family: var(--mono); font-size: 0.86rem; font-weight: 650; margin: 0 0 0.4rem; overflow-wrap: anywhere; }
+.ma-sub { font-size: 0.78rem; color: var(--ink-2); margin-bottom: 0.3rem; }
+.ma-yaml pre { margin: 0; font-size: 0.74rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ma-yaml pre .hl { background: rgba(217, 72, 15, 0.35); border-radius: 2px; }
+
+/* ---------- action sequence ---------- */
+.ac { font-family: var(--sans); }
+.ac-bar { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
+.ac-count { font-size: 0.84rem; color: var(--ink-2); font-variant-numeric: tabular-nums; margin-right: auto; order: -1; }
+svg.ac-svg { display: block; width: 100%; height: auto; font-family: var(--sans); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+svg.ac-svg .life { stroke: var(--rule); stroke-width: 1.5; stroke-dasharray: 3 4; }
+svg.ac-svg .head rect { fill: var(--paper); stroke: var(--ink); stroke-width: 1.4; }
+svg.ac-svg .head text { fill: var(--ink); font-size: 12.5px; font-weight: 650; text-anchor: middle; dominant-baseline: central; }
+svg.ac-svg .head text.sub { fill: var(--muted); font-size: 11px; font-weight: 400; }
+svg.ac-svg .msg { cursor: pointer; touch-action: manipulation; outline: none; }
+svg.ac-svg .msg .hit { fill: transparent; }
+svg.ac-svg .msg path { fill: none; stroke: var(--ink-2); stroke-width: 1.4; }
+svg.ac-svg .msg.topic path { stroke-dasharray: 5 3; }
+svg.ac-svg .msg text { fill: var(--ink-2); font-size: 11.5px; text-anchor: middle; paint-order: stroke; stroke: var(--paper-2); stroke-width: 4px; stroke-linejoin: round; }
+svg.ac-svg .msg.future { opacity: 0.25; }
+svg.ac-svg .msg.now path { stroke: var(--accent); stroke-width: 2.2; }
+svg.ac-svg .msg.now text { fill: var(--ink); font-weight: 650; }
+svg.ac-svg .msg:focus-visible text { fill: var(--accent); }
+svg.ac-svg .step-n { fill: var(--muted); font-size: 10.5px; text-anchor: end; }
+svg.ac-svg .msg.now .step-n { fill: var(--accent); font-weight: 650; }
+.ac-detail { background: var(--paper); border-radius: 8px; padding: 0.8rem 0.95rem 0.5rem; margin-top: 0.6rem; font-size: 0.88rem; line-height: 1.5; min-height: 9rem; }
+.ac-detail p { margin: 0 0 0.55rem; }
+.ac-detail code { font-size: 0.8rem; overflow-wrap: anywhere; }
+.ac-detail .ac-k { font-size: 0.7rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.15rem; }
+.ac-detail .ac-name { font-family: var(--mono); font-size: 0.9rem; font-weight: 650; overflow-wrap: anywhere; margin: 0 0 0.15rem; }
+.ac-detail .ac-type { font-size: 0.8rem; color: var(--ink-2); margin-bottom: 0.45rem; overflow-wrap: anywhere; }
+.ac-detail pre { margin: 0.2rem 0 0.7rem; font-size: 0.74rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ---------- zenoh ---------- */
+.zn-seg { margin-bottom: 0.6rem; }
+
+/* tables in this chapter: code in the first column may wrap */
+table.ros2-names td:first-child, table.ros2-cli td:first-child, table.ros2-qos td:first-child { white-space: normal; }
+table.ros2-cli td:last-child code { overflow-wrap: anywhere; }

@@ -32,6 +32,16 @@ class J {
       if (p[0] == '^') { if (c.Name2.StartsWith(p.Substring(1), StringComparison.OrdinalIgnoreCase)) return true; }
       else if (c.Name2.IndexOf(p, StringComparison.OrdinalIgnoreCase) >= 0) return true; }
     return false; }
+  // graphics + tree updates off while changing visibility/appearance (thousands of components); on for shots
+  // freeze|none|gfx|tree|both picks what Freeze(true) turns off (default none). Visibility changes made with the
+  // FeatureManager tree off did not reach the 2026-10-31 shots, appearance changes did.
+  static string freezeMode = "none";
+  static void Freeze(bool on) {
+    if (m == null) return;
+    bool g = freezeMode == "gfx" || freezeMode == "both", t = freezeMode == "tree" || freezeMode == "both";
+    try { if (g || !on) ((ModelView)m.ActiveView).EnableGraphicsUpdate = !on; } catch {}
+    try { if (t || !on) m.FeatureManager.EnableFeatureTree = !on; } catch {}
+  }
   static int Main() {
     var app = Sw.App;
     app.FrameState = (int)swWindowState_e.swWindowMaximized;
@@ -40,9 +50,12 @@ class J {
       string line = raw.Trim(); if (line.Length == 0 || line.StartsWith("#")) continue;
       string[] f = line.Split('|');
       var t0 = DateTime.Now;
+      bool paint = f[0] == "color" || f[0] == "ghostleaf" || f[0] == "unghostleaf";
       try {
+      if (paint && freezeMode == "none") { try { ((ModelView)m.ActiveView).EnableGraphicsUpdate = false; m.FeatureManager.EnableFeatureTree = false; } catch {} }
       switch (f[0]) {
-        case "doc": m = Sw.Activate(f[1]); break;
+        case "doc": m = Sw.Activate(f[1]); Freeze(true); break;
+        case "freeze": Freeze(false); freezeMode = f[1]; Freeze(true); break;
         case "prefs":
           if (f[1] == "white") {
             string bk = @"C:\talos\explainer_cad\_out\prefs_backup.txt";
@@ -101,6 +114,46 @@ class J {
           }
           Sw.P("color {0}: {1}", f[1], n);
           break; }
+        case "onlyleaf": {
+          // hide what doesn't match the include patterns (or matches the excludes), hiding whole subassemblies where
+          // possible (one call per subtree instead of per leaf); never unhides
+          var inc = f[1].Split(','); var exc = f.Length > 2 ? f[2].Split(',') : new string[0]; int nh = 0;
+          var all = All();
+          Func<Component2, bool> anyExc = null, anyInc = null;
+          anyExc = c => { foreach (var k in all) if (k.Name2.StartsWith(c.Name2 + "/") && Match(k, exc)) return true; return false; };
+          anyInc = c => { foreach (var k in all) if (k.Name2.StartsWith(c.Name2 + "/") && Match(k, inc)) return true; return false; };
+          Action<Component2> walk = null;
+          walk = c => {
+            if (c.GetSuppression2() == 0 || c.Visible == 0) return;
+            if (Match(c, exc)) { c.Visible = 0; nh++; return; }
+            if (IsLeaf(c)) { if (!Match(c, inc)) { c.Visible = 0; nh++; } return; }
+            if (Match(c, inc) && !anyExc(c)) return;      // keep the whole subassembly
+            if (!Match(c, inc) && !anyInc(c)) { c.Visible = 0; nh++; return; }   // nothing to keep below: hide it whole
+            foreach (object o in (object[])c.GetChildren()) walk((Component2)o);
+          };
+          foreach (var c in Top()) walk(c);
+          Sw.P("onlyleaf {0} -{1}: {2} hidden", f[1], f.Length > 2 ? f[2] : "", nh);
+          break; }
+        case "stl": {
+          // binary STL in mm, assembly frame, one file, given quality (coarse|fine)
+          // remember the user's STL options and put them back afterwards
+          int[] tg = { (int)swUserPreferenceToggle_e.swSTLBinaryFormat, (int)swUserPreferenceToggle_e.swSTLComponentsIntoOneFile, (int)swUserPreferenceToggle_e.swSTLDontTranslateToPositive };
+          int[] iv = { (int)swUserPreferenceIntegerValue_e.swExportStlUnits, (int)swUserPreferenceIntegerValue_e.swSTLQuality };
+          bool[] tg0 = tg.Select(k => app.GetUserPreferenceToggle(k)).ToArray();
+          int[] iv0 = iv.Select(k => app.GetUserPreferenceIntegerValue(k)).ToArray();
+          app.SetUserPreferenceToggle((int)swUserPreferenceToggle_e.swSTLBinaryFormat, true);
+          app.SetUserPreferenceToggle((int)swUserPreferenceToggle_e.swSTLComponentsIntoOneFile, true);
+          app.SetUserPreferenceToggle((int)swUserPreferenceToggle_e.swSTLDontTranslateToPositive, true);
+          app.SetUserPreferenceIntegerValue((int)swUserPreferenceIntegerValue_e.swExportStlUnits, (int)swLengthUnit_e.swMM);
+          app.SetUserPreferenceIntegerValue((int)swUserPreferenceIntegerValue_e.swSTLQuality,
+            f.Length > 2 && f[2] == "fine" ? (int)swSTLQuality_e.swSTLQuality_Fine : (int)swSTLQuality_e.swSTLQuality_Coarse);
+          Directory.CreateDirectory(Path.GetDirectoryName(f[1]));
+          int e = 0, w = 0;
+          bool ok = m.Extension.SaveAs3(f[1], 0, (int)swSaveAsOptions_e.swSaveAsOptions_Silent | (int)swSaveAsOptions_e.swSaveAsOptions_Copy, null, null, ref e, ref w);
+          for (int k = 0; k < tg.Length; k++) app.SetUserPreferenceToggle(tg[k], tg0[k]);
+          for (int k = 0; k < iv.Length; k++) app.SetUserPreferenceIntegerValue(iv[k], iv0[k]);
+          Sw.P("stl {0}: {1} e={2} w={3} {4} KB", Path.GetFileName(f[1]), ok, e, w, File.Exists(f[1]) ? new FileInfo(f[1]).Length / 1024 : -1);
+          break; }
         case "unghostleaf":
           foreach (var c in All()) if (IsLeaf(c)) c.RemoveMaterialProperty2((int)swInConfigurationOpts_e.swThisConfiguration, null);
           break;
@@ -133,14 +186,18 @@ class J {
           double[] wh = D(f[4]);
           double[] box = f.Length > 5 && f[5].Length > 0 ? D(f[5]) : null;
           Directory.CreateDirectory(Path.GetDirectoryName(f[1]));
+          Freeze(false);
           bool ok = Sw.Shot(m, f[1], from, up, box, (int)wh[0], (int)wh[1]);
+          Freeze(true);
           Sw.P("shot {0}: {1}", Path.GetFileName(f[1]), ok);
           break; }
         default: Sw.P("unknown {0}", f[0]); break;
       }
       } catch (Exception e) { Sw.P("ERR {0}: {1}", line, e.Message); }
+      if (paint && freezeMode == "none") { try { ((ModelView)m.ActiveView).EnableGraphicsUpdate = true; m.FeatureManager.EnableFeatureTree = true; } catch {} }
       double dt = (DateTime.Now - t0).TotalSeconds; if (dt > 5) Sw.P("  ({0:F0}s) {1}", dt, f[0]);
     }
+    Freeze(false);
     return 0;
   }
 }

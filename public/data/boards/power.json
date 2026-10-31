@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30",
+ "generated": "2026-10-31",
  "about": "Power tree from the batteries to the loads, as far as the board designs show. Each node has the board it lives on; edges carry the net name from the design. \"confidence\" is confirmed (seen in a schematic/netlist or code) or inferred.",
  "nodes": [
   {
@@ -7,8 +7,9 @@
    "label": "Port battery",
    "kind": "battery",
    "board": "sbh_bms",
-   "detail": "5 Li-ion cells in series (BQ40Z80 config), 45 A protector fuse",
-   "confidence": "confirmed"
+   "detail": "Each housing: cells (J2 Pack_in+) -> F1 Littelfuse ITV9550L2045MR 45 A protector -> 2 x PSMN4R4-80BS N-FETs (back-to-back, driven by the BQ40Z80) -> Pack+ (J3). Gas-gauge config: 5 cells in series, cell under-voltage 3000 mV, over-voltage 4200 mV.",
+   "confidence": "confirmed (BMS netlist + gas-gauge config in the repo)",
+   "source": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TempestBoards/MK2/SBH_BMS/SBH_BMS.SchDoc"
   },
   {
    "id": "bat_stbd",
@@ -16,6 +17,14 @@
    "kind": "battery",
    "board": "sbh_bms",
    "detail": "same housing design as port",
+   "confidence": "confirmed"
+  },
+  {
+   "id": "sbh_logic",
+   "label": "SBH MCU board (one per housing)",
+   "kind": "board",
+   "board": "sbh_mcu",
+   "detail": "VBAT -> soft-latch P-FET -> TS30041 5 V buck -> XC9236 3.3 V buck. Powers the RP2040, OLED and SHT41 inside the housing.",
    "confidence": "confirmed"
   },
   {
@@ -228,6 +237,22 @@
    "board": "ccbb",
    "detail": "15 V + external CAN on J1/J5",
    "confidence": "confirmed (connector); what is plugged in today is unconfirmed"
+  },
+  {
+   "id": "imu",
+   "label": "VectorNav IMU",
+   "kind": "load",
+   "board": "agx_breakout",
+   "detail": "5 V from the Orin 40-pin header via the AGX breakout J2 (RS-232, /dev/ttyTHS0)",
+   "confidence": "inferred (the breakout is inferred to be fitted; netlist confirmed)"
+  },
+  {
+   "id": "gyro",
+   "label": "Fibre-optic gyro",
+   "kind": "load",
+   "board": "agx_m2",
+   "detail": "M.2 3.3 V -> LM27313 boost 8 V -> LP38693 LDO 5 V on J1 (RS-422, /dev/ttyTHS2)",
+   "confidence": "inferred (the M.2 card is inferred to be fitted; netlist confirmed)"
   }
  ],
  "edges": [
@@ -235,13 +260,27 @@
    "from": "bat_port",
    "to": "or",
    "net": "VPORT",
-   "via": "POAC J3 (Anderson PP45)"
+   "via": "POAC J3 (Anderson PP45)",
+   "detail": "BMS Pack+/Pack- (J3/J5 Redcube) -> housing cable -> POAC J3 \"PORT BATTERY\"; the cable itself is not in the designs"
   },
   {
    "from": "bat_stbd",
    "to": "or",
    "net": "VSTBD",
-   "via": "POAC J4 (Anderson PP45)"
+   "via": "POAC J4 (Anderson PP45)",
+   "detail": "BMS Pack+/Pack- (J3/J5 Redcube) -> housing cable -> POAC J4 \"STBD BATTERY\"; the cable itself is not in the designs"
+  },
+  {
+   "from": "bat_port",
+   "to": "sbh_logic",
+   "net": "BAT+",
+   "via": "BMS J10 -> MCU J1 (Milli-Grid 8-pin)"
+  },
+  {
+   "from": "bat_stbd",
+   "to": "sbh_logic",
+   "net": "BAT+",
+   "via": "BMS J10 -> MCU J1 (Milli-Grid 8-pin)"
   },
   {
    "from": "or",
@@ -417,6 +456,20 @@
    "to": "ext_can",
    "net": "15V",
    "via": "CCBB J1/J5"
+  },
+  {
+   "from": "orin",
+   "to": "imu",
+   "net": "+5",
+   "via": "Orin 40-pin header -> AGX breakout J2",
+   "confidence": "inferred"
+  },
+  {
+   "from": "orin",
+   "to": "gyro",
+   "net": "3V3 -> 8V -> 5V",
+   "via": "M.2 slot -> RS-422 card J1",
+   "confidence": "inferred"
   }
  ],
  "measurements": {

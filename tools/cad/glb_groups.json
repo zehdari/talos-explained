@@ -1,0 +1,244 @@
+[
+ {
+  "id": "frame",
+  "label": "Frame: corner modules, cross bars, battery rails, tension cables",
+  "top": [
+   "^Dorito-2",
+   "^MirroredDorito-3",
+   "^Taco-2",
+   "^Mirrored_Taco-5",
+   "Holy L Bar",
+   "Battery Mounting Rail",
+   "Side Cable",
+   "Top Cable",
+   "Bottom Cable",
+   "Turnbuckle"
+  ],
+  "include": [
+   "/",
+   "Cable",
+   "Turnbuckle"
+  ],
+  "exclude": [
+   "T200",
+   "Foam",
+   "Thruster Cable",
+   "Thruster Protector"
+  ],
+  "colour": "#7d8f99"
+ },
+ {
+  "id": "thruster_guards",
+  "label": "Thruster guards",
+  "top": [
+   "^Dorito-2",
+   "^MirroredDorito-3",
+   "^Taco-2",
+   "^Mirrored_Taco-5"
+  ],
+  "include": [
+   "Thruster Protector"
+  ],
+  "exclude": [],
+  "colour": "#b8c0c7"
+ },
+ {
+  "id": "thrusters",
+  "label": "T200 thrusters (8)",
+  "top": [
+   "^Dorito-2",
+   "^MirroredDorito-3",
+   "^Taco-2",
+   "^Mirrored_Taco-5"
+  ],
+  "include": [
+   "T200"
+  ],
+  "exclude": [],
+  "colour": "#d9480f"
+ },
+ {
+  "id": "foam",
+  "label": "Buoyancy foam",
+  "top": [
+   "^Dorito-2",
+   "^MirroredDorito-3",
+   "^Taco-2",
+   "^Mirrored_Taco-5",
+   "Talos Main Housing"
+  ],
+  "include": [
+   "Foam",
+   "Buoyancy Assembly"
+  ],
+  "exclude": [],
+  "colour": "#e87ba4"
+ },
+ {
+  "id": "hull",
+  "label": "Main housing: hull tubes, lids, viewports, latches",
+  "top": [
+   "Talos Main Housing"
+  ],
+  "include": [
+   "/"
+  ],
+  "exclude": [
+   "Cage Assembly-1",
+   "ECageClean",
+   "Cage Assembly 4",
+   "Buoyancy Assembly"
+  ],
+  "colour": "#2a78d6"
+ },
+ {
+  "id": "electronics",
+  "label": "Electronics and computer cages (inside the hull)",
+  "top": [
+   "Talos Main Housing"
+  ],
+  "include": [
+   "Cage Assembly-1",
+   "ECageClean",
+   "Cage Assembly 4"
+  ],
+  "exclude": [],
+  "colour": "#008300"
+ },
+ {
+  "id": "batteries",
+  "label": "Smart battery housings (2)",
+  "top": [
+   "Smart Battery Housing Assembly"
+  ],
+  "include": [
+   "/"
+  ],
+  "exclude": [],
+  "colour": "#eda100"
+ },
+ {
+  "id": "dvl",
+  "label": "DVL and mount",
+  "top": [
+   "DVL Assembly"
+  ],
+  "include": [
+   "/"
+  ],
+  "exclude": [
+   "DVL Sensor Cone"
+  ],
+  "colour": "#1baf7a"
+ },
+ {
+  "id": "down_camera",
+  "label": "Down camera (ZED X Mini) and mount",
+  "top": [
+   "^ZEDX_Mini.step-1",
+   "^DFC Mount"
+  ],
+  "include": [
+   "ZEDX",
+   "DFC"
+  ],
+  "exclude": [],
+  "colour": "#1baf7a"
+ },
+ {
+  "id": "launcher",
+  "label": "Torpedo and marker launcher",
+  "top": [
+   "Torpedoes + Markers V8",
+   "^Torpservoholder",
+   "^ServoHousing",
+   "^mounting"
+  ],
+  "include": [
+   "Torpedoes",
+   "Torpservoholder",
+   "ServoHousing",
+   "mounting"
+  ],
+  "exclude": [],
+  "colour": "#6250d6"
+ },
+ {
+  "id": "claw",
+  "label": "Claw",
+  "top": [
+   "^EMERGENCYCLAWASSEMBLY"
+  ],
+  "include": [
+   "/"
+  ],
+  "exclude": [],
+  "colour": "#6250d6"
+ },
+ {
+  "id": "magnet_poker",
+  "label": "Magnet poker",
+  "top": [
+   "^Magnet poker"
+  ],
+  "include": [
+   "/"
+  ],
+  "exclude": [],
+  "colour": "#6250d6"
+ },
+ {
+  "id": "acoustics",
+  "label": "Hydrophone pods and transducer",
+  "top": [
+   "^Acoustics Pods",
+   "^Acoustic_Mount",
+   "^Transducer-2"
+  ],
+  "include": [
+   "Acoustic",
+   "Transducer"
+  ],
+  "exclude": [],
+  "colour": "#1baf7a"
+ },
+ {
+  "id": "kill_switch",
+  "label": "Kill switch and SubConn cover",
+  "top": [
+   "^Kill Switch",
+   "^Subconn Cover"
+  ],
+  "include": [
+   "Kill Switch",
+   "Subconn Cover"
+  ],
+  "exclude": [],
+  "colour": "#e34948"
+ },
+ {
+  "id": "cables",
+  "label": "Modelled cables",
+  "top": [
+   "^Dorito-2",
+   "^MirroredDorito-3",
+   "^Taco-2",
+   "^Mirrored_Taco-5",
+   "Thruster",
+   "Battery Data Cable",
+   "Macoroni",
+   "DVL Cable",
+   "Straight Battery Cable"
+  ],
+  "include": [
+   "Cable"
+  ],
+  "exclude": [
+   "Side Cable",
+   "Top Cable",
+   "Bottom Cable",
+   "Thimble"
+  ],
+  "colour": "#3f5b67"
+ }
+]

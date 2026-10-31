@@ -31,7 +31,7 @@
     </div>
     <figure class="fig">
       <div class="panel" id="loop-panel"></div>
-      <figcaption><b>The edit, build, test, run loop.</b> Tap a step, or use the arrows, for its command, where it runs and how long it takes. Times were measured while writing this page.</figcaption>
+      <figcaption><b>The edit, build, test, run loop.</b> Tap a step, or use the arrows, for its command, where it runs and how long it takes. Build and test times were measured while writing this page; the others are rough.</figcaption>
     </figure>
 
     <div class="prose">
@@ -49,11 +49,21 @@
       </table>
 
       <h2 id="editing">Editing a tree</h2>
-      <p>The graphical editor is the team's <a href="https://github.com/osu-uwrt/Groot">Groot fork</a> (BehaviorTree.CPP v3, with UWRT's workspace and required ports), named in the riptide_autonomy README. Install it with <a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/setup_scripts/optional_installs/install_groot.bash"><code>install_groot.bash</code></a> from riptide_setup: it builds the fork in <code>~/groot</code> and adds a <code>groot</code> command. The team's other editors don't fit: <a href="https://github.com/osu-uwrt/btstudio">btstudio</a> writes BehaviorTree.CPP <strong>v4</strong> XML with its own subtree library, and the <a href="https://github.com/osu-uwrt/behaviortree_vscode_extension">VS Code extension</a> is archived and empty.</p>
+      <p>The team has three tree editors on GitHub. Only one writes what doTask can run:</p>
+      <table class="params editors">
+        <thead><tr><th>Editor</th><th>What it is</th><th>For Talos's trees?</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://github.com/osu-uwrt/Groot">Groot fork</a></td><td>Qt desktop app, BehaviorTree.CPP <strong>v3</strong>, with UWRT's <code>workspace.xml</code> and required ports. Last pushed Feb 2024.</td><td><strong>Yes</strong>: the one the riptide_autonomy README names.</td></tr>
+          <tr><td><a href="https://github.com/osu-uwrt/btstudio">btstudio</a></td><td>React and Electron editor, last changed Mar 2026. Writes <code>BTCPP_format="4"</code> XML and keeps shared subtrees in its own <code>subtree_library.xml</code>.</td><td>Not today: doTask is built on <code>behaviortree_cpp_v3</code>, and btstudio doesn't read <code>workspace.xml</code>.</td></tr>
+          <tr><td><a href="https://github.com/osu-uwrt/behaviortree_vscode_extension">VS Code extension</a></td><td>Archived. Holds only a README and a licence.</td><td>No.</td></tr>
+        </tbody>
+      </table>
+      <p>A port of riptide_autonomy to BehaviorTree.CPP v4 exists on the <a href="https://github.com/osu-uwrt/riptide_autonomy/tree/bt4"><code>bt4</code></a> branch (Oct 2026), not merged. Until it is, everything on this page is v3.</p>
+      <p>Install Groot with <a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/setup_scripts/optional_installs/install_groot.bash"><code>install_groot.bash</code></a> from riptide_setup: it builds the fork in <code>~/groot</code> and links a <code>groot</code> command. A text editor is just as good, and safer for the competition files:</p>
       <div class="callout"><span class="label">Groot replaces the file's subtrees</span>
         <p>Opening a file in Groot loads every subtree in <code>.groot/workspace.xml</code> <em>over</em> the file's copy of the same name; saving writes what's on screen to both files (<a href="https://github.com/osu-uwrt/Groot/blob/master/bt_editor/mainwindow.cpp#L333-L346"><code>mainwindow.cpp</code></a>; read from the code, not tried). Open and save <code>RepairCompMpcTree.xml</code> and seven of its subtrees turn back into the workspace's copies, which lag behind (<code>PrimitiveMovePosition</code>, <code>SurfaceTree</code>, ...). Edit the Comp Mpc files as text, and read <code>git diff</code> after any Groot save.</p>
       </div>
-      <p>In a text editor, keep the structure Groot expects: one <code>&lt;BehaviorTree&gt;</code> per tree, a <code>&lt;TreeNodesModel&gt;</code> listing every custom node and subtree, and every port written out.</p>
+      <p>In a text editor, keep the structure Groot expects: one <code>&lt;BehaviorTree&gt;</code> per tree, a <code>&lt;TreeNodesModel&gt;</code> listing every custom node and subtree, and every port written out. Empty attributes trip Groot up too: the team's retreat paths are written <code>";"</code> rather than <code>""</code> "so Groot can save" (<a href="https://github.com/osu-uwrt/riptide_autonomy/commit/debcd47">commit debcd47</a>).</p>
 
       <h2 id="workspace" data-short="The workspace file">The workspace file and the tree files</h2>
       <p>BehaviorTree.CPP loads one file and nothing else, so every tree file carries its own copy of each subtree it uses. <code>workspace.xml</code> was meant to be the master copy: Groot loads it into every file you open, <code>checkBT</code> checks its node models against the C++, and <code>checkBT --apply-workspace</code> copies its subtrees into tree files, <em>replacing</em> any with the same ID.</p>
@@ -61,7 +71,7 @@
     </div>
     <figure class="fig">
       <div class="panel" id="drift"></div>
-      <figcaption><b>Each tree file against <code>workspace.xml</code>.</b> Each subtree is the same as the workspace's copy, different, or only in that file. <b>Differs isn't newer:</b> where the workspace has <code>RepairCompMpcTree.xml</code>'s copy (the file recent work goes into), the tree file is behind. Old files differ because they are behind; the Comp Mpc files because they moved on. Tap a file for its list. Data: <a href="https://github.com/zehdari/talos-explained/blob/main/tools/bt-workflow/extract.py"><code>extract.py</code></a>.</figcaption>
+      <figcaption><b>Each tree file against <code>workspace.xml</code>.</b> Each subtree is the same as the workspace's copy, different, or only in that file. Pink: the workspace has the newer copy, the one in <code>RepairCompMpcTree.xml</code>, so the file is behind. Orange: the file and the workspace disagree some other way. Tap a file for its list. Data: <a href="https://github.com/zehdari/talos-explained/blob/main/tools/bt-workflow/extract.py"><code>extract.py</code></a>.</figcaption>
     </figure>
     <div class="prose">
       <p>What that means for you:</p>
@@ -72,7 +82,7 @@
       </ul>
 
       <h2 id="ports">Ports and the blackboard</h2>
-      <p>Every value reaches a node through a <strong>port</strong>, an XML attribute. BehaviorTree.CPP v3's rules have three surprises:</p>
+      <p>Every value reaches a node through a <strong>port</strong>, an XML attribute. BehaviorTree.CPP v3 has four rules, three of them surprising:</p>
       <ul>
         <li><strong>Leaf nodes</strong> (actions, conditions): <code>z="{ceiling}"</code> reads the blackboard entry <code>ceiling</code>; <code>z="-0.5"</code> is the literal value.</li>
         <li><strong>SubTree ports</strong> name an <em>entry in the parent tree</em>, without braces: <code>depth="depth"</code>. A number is a name too, so <code>z="-1"</code> needs <code>&lt;SetBlackboard output_key="-1" value="-1"/&gt;</code> above it.</li>
@@ -86,6 +96,31 @@
     </figure>
     <div class="prose">
       <p>Tunables go in a <code>SetBlackboard</code> at the top of the subtree, its <code>name</code> saying what the number means, with units: <code>SearchMpc</code> has <code>name="Once seen, hold there at most this long for the map to converge (s)" output_key="hold_secs" value="8"</code>.</p>
+
+      <h3 id="new-subtree">Adding a subtree</h3>
+      <p>Most changes are a new or changed subtree, not a new node. Three pieces, all in the file you run:</p>
+<pre><code><span class="c">&lt;!-- 1. The subtree itself, next to the file's other &lt;BehaviorTree&gt;s --&gt;</span>
+&lt;BehaviorTree ID="HoldUnlessRising"&gt;
+    &lt;ReactiveSequence&gt;
+        &lt;Condition ID="DeeperThan" max_age_secs="" z="{ceiling}"/&gt;
+        &lt;Action ID="Wait" seconds="{seconds}"/&gt;
+    &lt;/ReactiveSequence&gt;
+&lt;/BehaviorTree&gt;
+
+<span class="c">&lt;!-- 2. Its ports, inside the same file's &lt;TreeNodesModel&gt; --&gt;</span>
+&lt;SubTree ID="HoldUnlessRising"&gt;
+    &lt;input_port name="ceiling" required="true"&gt;Give up above this z (m)&lt;/input_port&gt;
+    &lt;input_port name="seconds" required="true"&gt;How long to hold (s)&lt;/input_port&gt;
+&lt;/SubTree&gt;
+
+<span class="c">&lt;!-- 3. The call, in the parent tree: port values name the parent's entries --&gt;</span>
+&lt;SetBlackboard name="Hold this long (s)" output_key="hold_secs" value="10"/&gt;
+&lt;SubTree ID="HoldUnlessRising" __shared_blackboard="false" ceiling="ceiling" seconds="hold_secs"/&gt;</code></pre>
+      <ul>
+        <li><strong>The model (2)</strong> lists every port as <code>input_port</code> or <code>output_port</code>. BehaviorTree.CPP ignores it, but Groot draws the ports from it, and <code>checkBT</code> starts each subtree's list of known entries from its <code>input_port</code> names (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/CheckBT.cpp#L606-L626"><code>CheckBT.cpp</code></a>). Groot also adds a <code>__shared_blackboard</code> port line.</li>
+        <li><strong>The call (3)</strong> keeps <code>__shared_blackboard="false"</code>, as every call with ports in the Comp Mpc trees does (it is also v3's default), so the subtree sees only what its ports pass in.</li>
+        <li><strong>Copy all three into both Comp Mpc files</strong>, and into <code>workspace.xml</code> if others should get it in Groot.</li>
+      </ul>
 
       <h2 id="node">Writing a node</h2>
       <p>Write one for a new topic, service or calculation. Each node is one header in <code>include/riptide_autonomy/bt_&lt;kind&gt;s/</code>, a class deriving from a UWRT base class (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/UwrtBtNode.hpp"><code>UwrtBtNode.hpp</code></a>):</p>
@@ -109,6 +144,22 @@
       <div class="panel"><div id="pipeline"></div><div class="graph-note" id="pipeline-note">Tap or hover a box.</div></div>
       <figcaption><b>From a header to a running node.</b> Registration is generated when CMake configures. A plain <code>colcon build</code> skips that once a build folder exists, so a new header is silently left out. Tap or hover a box.</figcaption>
     </figure>
+
+    <div class="prose">
+      <h2 id="assistant">The BT assistant</h2>
+      <p><a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/assistant/btassistant.py"><code>btassistant.py</code></a> does the chores. It finds the source package from its own path, so the installed copy edits <code>src/</code> too. Four commands:</p>
+<pre class="cmd" data-where="your machine"><code>ros2 run riptide_autonomy2 btassistant.py [-s] [-f] &lt;command&gt; ...</code></pre>
+      <table class="params assistant">
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>create &lt;action|<wbr>condition|<wbr>decorator&gt; &lt;Name&gt; [--no-rebuild]</code></td><td>Writes <code>bt_&lt;kind&gt;s/Name.bt&lt;kind&gt;.hpp</code> and <code>test/…/bt_&lt;kind&gt;s/TestName.cpp</code> from <a href="https://github.com/osu-uwrt/riptide_autonomy/tree/autonomy-mapping/src/riptide_autonomy/assistant/templates">templates</a>, then a clean rebuild (no tests) unless <code>--no-rebuild</code>.</td></tr>
+          <tr><td><code>reconfigure_autonomy [--with-tests] [--debug]</code></td><td><code>colcon build --cmake-clean-cache --packages-select riptide_autonomy2</code> from the workspace root, adding <code class="nowrap">-DAUTONOMY_BUILD_TESTS=ON</code> or a debug build.</td></tr>
+          <tr><td><code>check &lt;files|<wbr>behaviortree|<wbr>nodes|<wbr>system&gt;</code></td><td><code>files</code>: every header has a <code>TestName.cpp</code> and the reverse. <code>behaviortree</code>: runs <code>checkBT</code>. <code>nodes</code>: rebuilds with tests and runs <code>test_nodes</code>. <code>system</code>: all three, then a summary.</td></tr>
+          <tr><td><code>generate_registrators &lt;dir&gt;</code></td><td>Writes the three <code>register*.cpp</code> files. CMake runs it; you never need to.</td></tr>
+        </tbody>
+      </table>
+      <p><code>-f</code> (before the command) skips every prompt: it answers yes to "overwrite?" and "do nothing" in <code>check files</code>. <code>-s</code> hides the assistant's own messages.</p>
+    </div>
 
     <div class="prose">
       <h2 id="example">Worked example: a depth guard</h2>
@@ -242,27 +293,31 @@ GTEST_FILTER='*DeeperThan*:*all_trees_load*' ros2 run riptide_autonomy2 test_nod
             &lt;Action ID="Info" message="Stayed deep the whole time"/&gt;
         &lt;/Sequence&gt;
     &lt;/BehaviorTree&gt;
-    &lt;TreeNodesModel&gt;   <span class="c">&lt;!-- DeeperThan's two input ports, as Groot writes them --&gt;</span>
-        …
+    &lt;TreeNodesModel&gt;   <span class="c">&lt;!-- as Groot writes it --&gt;</span>
+        &lt;Condition ID="DeeperThan"&gt;
+            &lt;input_port name="max_age_secs" required="false"&gt;Fail if the newest odometry is older than this (default 0.5)&lt;/input_port&gt;
+            &lt;input_port name="z" required="true"&gt;Succeed while odometry z is below this (m, negative underwater)&lt;/input_port&gt;
+        &lt;/Condition&gt;
     &lt;/TreeNodesModel&gt;
 &lt;/root&gt;</code></pre>
       <p>Without <code>GetOdometry</code> (which waits up to 3 s for a message) the first version failed 30 ms in: <code>DeeperThan</code> was ticked before any odometry arrived. Fixing the XML took no rebuild.</p>
 
       <h3 id="ex-run">6. Run it</h3>
+      <p>The goal needs doTask running and something publishing <code>/talos/odometry/filtered</code>: the <a href="#nereus">Nereus sim</a> or the robot give you both. For a bench-only test, start doTask alone (<code>ros2 launch riptide_autonomy2 autonomy.launch.py robot:=talos</code>; the default name is <code>tempest</code>) and publish fake odometry yourself. The output below came from a 10 Hz test publisher at <span class="m">z = -1</span> (<a href="https://github.com/zehdari/talos-explained/blob/main/tools/bt-workflow/sandbox.sh"><code>sandbox.sh</code></a>).</p>
 <pre class="cmd" data-where="your machine"><code>ros2 action send_goal \
   /talos/autonomy/run_tree riptide_msgs2/action/ExecuteTree \
   "{tree: $HOME/osu-uwrt/release/src/riptide_autonomy/trees/DeeperThanDemo.xml}"</code></pre>
 <pre><code>[talos.autonomy]: At z = -1; holding 10 s while deeper than -0.5 m
 [talos.autonomy]: Stayed deep the whole time
 [talos.autonomy]: Tree ended with status SUCCESS</code></pre>
-      <p>With the odometry raised to −0.3 m four seconds in, it stopped at once with FAILURE (<code>returncode: 3</code>).</p>
+      <p>With the test publisher switched to −0.3 m four seconds in, it stopped at once with FAILURE (<code>returncode: 3</code>).</p>
 
       <h3 id="ex-workspace">7. Commit it</h3>
       <p>riptide_autonomy is a submodule of riptide_release (<code>src/riptide_autonomy</code>, branch <code>autonomy-mapping</code>):</p>
       <ol>
         <li>Work on a branch of riptide_autonomy made from <code>autonomy-mapping</code>.</li>
-        <li>Add the node to <code>workspace.xml</code> so the next person sees it in the palette: in Groot, right-click it in the palette and pick <strong>Add To Workspace</strong>, or run <code>checkBT -a</code> and answer <code>y</code> only to <code>DeeperThan was not found in groot workspace. Would you like to add it?</code>. Not <code>-y</code>: that applies every fix in every tree.</li>
-        <li>Commit the header, the test, the tree and <code>workspace.xml</code> together and push. Get it into <code>autonomy-mapping</code> by a pull request or a merge, as the team agrees; its history has both.</li>
+        <li>Add the node to <code>workspace.xml</code> so the next person sees it in the palette: in Groot, right-click it in the palette and pick <strong>Add To Workspace</strong>. Or, in <code>src/riptide_autonomy</code>, run <code>ros2 run riptide_autonomy2 checkBT -a $PWD/trees/.groot/workspace.xml</code> and answer <code>y</code> only to <code>DeeperThan was not found…</code> (eight questions today). Without the file, <code>-a</code> asks about every tree too (160 questions); <code>-y</code> applies every fix in every tree.</li>
+        <li>Commit the header, the test, <code>workspace.xml</code> and the real tree that uses the node, together, and push. Leave test and demo trees like <code>DeeperThanDemo.xml</code> out: anything in <code>trees/</code> shows up in everyone's viewer list and in <code>test_all_trees_load</code>. Get it into <code>autonomy-mapping</code> by a pull request or a merge, as the team agrees; its history has both.</li>
         <li>Once it's merged, bump the submodule in riptide_release so a deploy picks it up (<a href="pool-test.html">Pool test day</a>).</li>
       </ol>
     </div>
@@ -275,7 +330,7 @@ GTEST_FILTER='*DeeperThan*:*all_trees_load*' ros2 run riptide_autonomy2 test_nod
         <tbody>
           <tr><td><code>TEST_F(BtTest, name)</code></td><td>A fresh ROS context and a <code>toolNode</code> per test, in namespace <code>bt_testing</code> (so <code>ODOMETRY_TOPIC</code> is <code>/bt_testing/odometry/filtered</code>).</td></tr>
           <tr><td><code>createLeafNodeFromConfig(id, cfg)</code></td><td>Builds one node from the real plugin libraries and calls <code>rosInit()</code>. Decorators: <code>createDecoratorNodeFromConfig</code>.</td></tr>
-          <tr><td><code>spinForTime(t)</code>, <code>tickUntilFinished(node)</code></td><td>Let callbacks run; tick every 30 ms, like doTask, until SUCCESS or FAILURE.</td></tr>
+          <tr><td><code>spinForTime(t)</code>, <code>tickUntilFinished(node)</code></td><td>Let callbacks run; tick every 30 ms, like doTask, until SUCCESS or FAILURE; it gives up after 1 s unless you pass a timeout (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/autonomy_test/autonomy_testing.hpp#L135">L135</a>).</td></tr>
           <tr><td><code>TimedPublisher</code>, <code>DummyActionServer</code>, ...</td><td>Stand-ins for the rest of the robot.</td></tr>
         </tbody>
       </table>
@@ -286,6 +341,7 @@ GTEST_FILTER='*DeeperThan*:*all_trees_load*' ros2 run riptide_autonomy2 test_nod
       </dl>
 
       <h2 id="checkbt">Checking the XML: checkBT</h2>
+      <p>Run it on your machine: deploy builds leave it out (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/CMakeLists.txt#L186"><code>CMakeLists.txt</code></a>).</p>
 <pre class="cmd" data-where="your machine"><code>cd ~/osu-uwrt/release/src/riptide_autonomy
 ros2 run riptide_autonomy2 checkBT                       <span class="c"># workspace, then every tree</span>
 ros2 run riptide_autonomy2 checkBT $PWD/trees/MyTree.xml <span class="c"># one file</span></code></pre>
@@ -294,7 +350,7 @@ ros2 run riptide_autonomy2 checkBT $PWD/trees/MyTree.xml <span class="c"># one f
         <li>Unbalanced braces such as <code>{key|</code>.</li>
         <li>SubTree port values that no earlier node writes (empty values and numbers are skipped).</li>
       </ul>
-      <p>It answers "no" to its fix-it prompts unless you pass <code>-a</code> (ask) or <code>-y</code> (yes to all), and exits 2 if anything is unresolved. Today: 152 warnings (mostly ports filled further up, out of its sight) and 9 issues of three kinds:</p>
+      <p>It answers "no" to its fix-it prompts unless you pass <code>-a</code> (ask) or <code>-y</code> (yes to all), and exits 2 if anything is unresolved. Today: 152 warnings (mostly ports filled further up, out of its sight) and 8 issues of three kinds:</p>
 <pre><code>[ERROR] [btchecker]: Node SeenRecently: port min_score has a different direction (inout_port) in Groot than in the c++ implementation (input_port).
 [ERROR] [btchecker]: Node CenterDetection has a c++ implementation but is missing from the Groot workspace.
 [ERROR] [btchecker]: Node CompareNums in tree TorpedoTree (trees/DemoTableTree.xml) has a malformed blackboard reference in port "a": {repair_mission|. Check that every '{' has a matching '}'.</code></pre>
@@ -316,26 +372,27 @@ ros2 run riptide_autonomy2 checkBT $PWD/trees/MyTree.xml <span class="c"># one f
         <dt>Stack</dt><dd><code>/talos/autonomy/tree_stack</code>: the running branch. The action's feedback is never sent; read this topic.</dd>
         <dt>Ticks</dt><dd>Every 30 ms, on its own thread.</dd>
         <dt>Log file</dt><dd><code>~/btlogs/BTLog_YYYY_MM_DD_HH:MM:SS.fbl</code>: every status change (parameter <code>log_file_dir</code>).</dd>
-        <dt>Also</dt><dd><code>/&lt;hostname&gt;/autonomy/bag_trigger</code> is <code>true</code> once a second while a tree runs. Groot's live monitor (ZMQ) is off: <code>enable_zmq: false</code>.</dd>
+        <dt>Also</dt><dd><code>/&lt;hostname&gt;/autonomy/bag_trigger</code>, published every second: <code>true</code> while a tree runs, <code>false</code> otherwise. Groot's live monitor (ZMQ) is off: <code>enable_zmq: false</code>.</dd>
       </dl>
       <p>The file is read when the goal arrives, so an edit in <code>src/riptide_autonomy/trees/</code> is live on the next run. On the robot, deploy again after editing.</p>
     </div>
     <figure class="fig">
       <div class="media-grid shots">
-        <figure><img class="media" src="img/bt-workflow/viewer-autonomy-ready.webp" width="400" height="200" alt="The Nereus viewer's Autonomy panel: status Ready, a tree selected in the drop-down, Refresh enabled, Start and Stop greyed out, and an empty last execution stack." loading="lazy"><figcaption><b>Ready.</b> A tree is picked, but Start stays grey until the viewer's Enable is on.</figcaption></figure>
-        <figure><img class="media" src="img/bt-workflow/viewer-autonomy-running.webp" width="400" height="276" alt="The Autonomy panel while a tree runs: Tree running (external), Stop enabled, and an execution stack of Sequence, wait unless Talos rises, Wait, DeeperThan." loading="lazy"><figcaption><b>Running.</b> The example tree, started from the command line, so the panel says "external". Stop still cancels it.</figcaption></figure>
+        <figure><img class="media" src="img/bt-workflow/viewer-autonomy-ready.webp" width="840" height="400" alt="The Nereus viewer's Autonomy panel: status Ready, a tree selected in the drop-down, Refresh enabled, Start and Stop greyed out, and an empty last execution stack." loading="lazy"><figcaption><b>Ready.</b> A tree is picked, but Start stays grey until the viewer's Enable is on.</figcaption></figure>
+        <figure><img class="media" src="img/bt-workflow/viewer-autonomy-running.webp" width="840" height="560" alt="The Autonomy panel while a tree runs: Tree running (external), Stop enabled, and an execution stack of Sequence, wait unless Talos rises, Wait, DeeperThan." loading="lazy"><figcaption><b>Running.</b> The example tree, started from the command line, so the panel says "external". Stop still cancels it.</figcaption></figure>
       </div>
       <figcaption><b>The viewer's Autonomy panel</b> (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/autonomy_panel.cpp"><code>autonomy_panel.cpp</code></a>). It lists only trees outside <code>install/</code>, by file name; hover one for its path.</figcaption>
     </figure>
     <div class="prose">
-      <p>The team runs trees from the <a href="viewer.html">Nereus viewer</a>, in the sim and at the pool: open <strong>Autonomy</strong>, pick a tree, press <strong>Enable</strong>, then <strong>Start</strong>. Start stays grey until the viewer's motion is enabled, fresh and uncontested; while a tree runs the panel's manual motion is blocked. <strong>Stop</strong> (or Kill) cancels the tree, whoever started it. How a run ends:</p>
+      <p>The team runs trees from the <a href="viewer.html">Nereus viewer</a>, in the sim and at the pool: open <strong>Autonomy</strong>, pick a tree, press <strong>Enable</strong>, then <strong>Start</strong>. Start stays grey until the viewer's motion is enabled, fresh and uncontested; while a tree runs the panel's manual motion is blocked. <strong>Stop</strong>, or the viewer's <strong>Kill</strong> button, cancels the tree, whoever started it. The physical kill switch does not (<a href="bt.html">Behaviour trees</a>). How a run ends:</p>
       <table class="params">
         <thead><tr><th>What happened</th><th>Action status</th><th>returncode</th><th>LEDs</th></tr></thead>
         <tbody>
           <tr><td>Tree returned SUCCESS</td><td>SUCCEEDED</td><td>2</td><td>green, breathing</td></tr>
           <tr><td>Tree returned FAILURE</td><td>SUCCEEDED (!)</td><td>3</td><td>red, breathing</td></tr>
-          <tr><td>Cancelled (Stop)</td><td>CANCELED</td><td>1</td><td>red, breathing</td></tr>
+          <tr><td>Cancelled (Stop, or the viewer's Kill)</td><td>CANCELED</td><td>1</td><td>red, breathing</td></tr>
           <tr><td>Exception: bad XML, port typo, failed conversion</td><td>ABORTED</td><td>4294967295 (−1)</td><td>red, fast flash</td></tr>
+          <tr><td>Kill switch pulled</td><td>still running, thrusters off: press Stop</td><td>none yet</td><td>none</td></tr>
           <tr><td>File doesn't exist</td><td>goal rejected</td><td>none</td><td>none</td></tr>
         </tbody>
       </table>
@@ -344,7 +401,7 @@ ros2 run riptide_autonomy2 checkBT $PWD/trees/MyTree.xml <span class="c"># one f
       <ul>
         <li><strong>Info messages</strong> go to doTask's log: the launch terminal (<code>output='screen'</code>) and <code>/rosout</code>.</li>
         <li><strong>The stack</strong> without the viewer: <code>ros2 topic echo /talos/autonomy/tree_stack</code>.</li>
-        <li><strong>The .fbl log</strong> is on the computer that ran doTask, the Orin at the pool. Copy it off like a bag (<code>rsync -a ros@orin2:btlogs/ ~/btlogs/</code>) and open it in Groot's <strong>Log Replay</strong> mode.</li>
+        <li><strong>The .fbl log</strong> is on the computer that ran doTask, the Orin at the pool. Copy it off like a bag (<code>rsync -a ros@192.168.1.24:btlogs/ ~/btlogs/</code>) and open it in Groot's <strong>Log Replay</strong> mode.</li>
         <li><strong>If doTask crashed</strong>, it stays down (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/launch/autonomy.launch.py#L20"><code>respawn=False</code></a>) until you relaunch.</li>
       </ul>
       <p>Bags and the rest: <a href="debugging.html">Debugging, bags and data</a>.</p>
@@ -359,6 +416,9 @@ ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim   <spa
         <li><strong>Start Talos next to the task.</strong> Copy <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/scenarios/talos_uwrt/scenario.yaml"><code>scenarios/talos_uwrt/scenario.yaml</code></a> into a new pack folder, change <code>initial.position_m</code> (or a task's <code>task_placements</code>), and launch with <code>scenario:=&lt;folder&gt;</code>. Pack paths in it must stay relative. Moving props: <a href="perception/workflow.html">Perception's "Working on it yourself"</a>.</li>
         <li><strong>Run it headless</strong> for a repeatable check. <a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/acceptance/mission.py"><code>acceptance/mission.py</code></a> starts the sim and stack in a private ROS domain, releases the kill switch, runs <code>--tree</code>, and writes <code>mission.json</code> (result, visited stack, scores) and the bridge's <code>tasks.json</code> into <code>--output</code>.</li>
       </ul>
+<pre class="cmd" data-where="your machine"><code>cd ~/osu-uwrt/release/nereus
+python3 integrations/uwrt/acceptance/mission.py --output /tmp/mission_run1   <span class="c"># folder must not exist yet</span></code></pre>
+      <p>It runs <code>RepairCompTree.xml</code> unless you pass <code>--tree</code>, and gives up after <code>--timeout</code> (1800 s). It passes no controller arguments, so the stack comes up with the launch files' default controller (<code>hybrid</code>, the legacy one), not riptide_mpc. For the Mpc trees, use <code>sim.launch.py</code> with the MPC arguments above.</p>
       <p>Every sim run writes its records (<code>resolved.json</code>, <code>execution.json</code>, <code>summary.json</code>, <code>tasks.json</code>) to <code>/tmp/nereus_sim/&lt;timestamp&gt;</code>. Record a bag too, to tell a tree mistake from a perception or control one. Before the pool, run the exact file you will run there, start to finish.</p>
     </div>
 

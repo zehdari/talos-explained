@@ -23,13 +23,17 @@ table.rs-roles td:first-child { white-space: normal; }
 .rs-chips button { font: inherit; font-family: var(--sans); font-size: 0.82rem; border: 1px solid var(--rule); background: var(--paper); color: var(--ink-2); padding: 0.28rem 0.7rem; border-radius: 999px; cursor: pointer; }
 .rs-chips button:hover { border-color: var(--ink-2); }
 .rs-chips button[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.rs-map { position: relative; }
+.rs-map { position: relative; border-radius: 6px; overflow: hidden; }
+.rs-zoom { position: absolute; top: 0.45rem; right: 0.45rem; font: inherit; font-family: var(--sans); font-size: 0.78rem; border: 1px solid var(--ink-2); background: var(--paper); color: var(--ink); padding: 0.22rem 0.65rem; border-radius: 999px; cursor: pointer; box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 15%, transparent); }
+.rs-zoom:hover { border-color: var(--ink); }
+.rs-zoom[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.rs-svg.zoomed .scalebar, .rs-svg.zoomed .sbl { display: none; }
 .rs-svg { display: block; width: 100%; height: auto; border-radius: 6px; touch-action: manipulation; }
 .rs-svg * { vector-effect: non-scaling-stroke; }
 .rs-svg .deck { fill: var(--paper-3); }
 .rs-svg .water { fill: var(--water); }
-.rs-svg .wall { fill: none; stroke: #7fa3ad; stroke-width: 2; }
-.rs-svg .lane { stroke: #b4d6dd; vector-effect: none; stroke-linecap: butt; }
+.rs-svg .wall { fill: none; stroke: color-mix(in srgb, var(--water-deep) 70%, var(--ink-2)); stroke-width: 2; }
+.rs-svg .lane { stroke: color-mix(in srgb, var(--water) 55%, var(--water-deep)); vector-effect: none; stroke-linecap: butt; }
 .rs-svg .tagboard { fill: var(--ink); }
 .rs-svg .axes line { stroke: var(--ink-2); stroke-width: 1.2; }
 .rs-svg .lab { font-family: var(--sans); fill: var(--ink); font-weight: 600; paint-order: stroke; stroke: var(--water); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
@@ -55,8 +59,8 @@ table.rs-roles td:first-child { white-space: normal; }
 .rs-svg .crate.fire { fill: var(--reference); }
 .rs-svg .crate.blood { fill: var(--s8); }
 .rs-svg .light { fill: var(--paper); stroke: var(--s8); stroke-width: 2.5; }
-.rs-svg .octagon { fill: rgba(255, 255, 255, 0.35); stroke: var(--paper); stroke-width: 3; }
-.rs-svg .table { fill: #b9cfd4; stroke: var(--ink-2); stroke-width: 1; }
+.rs-svg .octagon { fill: color-mix(in srgb, var(--paper) 40%, transparent); stroke: var(--paper); stroke-width: 3; }
+.rs-svg .table { fill: color-mix(in srgb, var(--water-deep) 45%, var(--paper-3)); stroke: var(--ink-2); stroke-width: 1; }
 .rs-svg .basket { stroke: var(--ink); stroke-width: 1; }
 .rs-svg .basket.helmet { fill: var(--s8); }
 .rs-svg .basket.warning { fill: var(--s4); }
@@ -83,7 +87,7 @@ table.rs-roles td:first-child { white-space: normal; }
 .rs-svg .task.sel .row { stroke: var(--accent); stroke-dasharray: none; stroke-width: 1.5; }
 .rs-svg .task.sel .start { stroke: var(--accent); stroke-width: 2.5; }
 .rs-svg .task.sel .crate, .rs-svg .task.sel .light { stroke: var(--accent); stroke-width: 2; }
-.rs-svg .task.hover { filter: drop-shadow(0 0 2px rgba(217, 72, 15, 0.6)); }
+.rs-svg .task.hover { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--accent) 60%, transparent)); }
 
 .rs-toggles { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; font-family: var(--sans); font-size: 0.82rem; color: var(--ink-2); margin: 0.55rem 0 0.2rem; }
 .rs-toggles label { display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; }
@@ -111,21 +115,27 @@ table.rs-roles td:first-child { white-space: normal; }
 .rs-card table.pts td:last-child { text-align: right; padding-left: 0.8rem; font-weight: 600; white-space: nowrap; }
 .rs-card .kit { display: flex; flex-wrap: wrap; gap: 0.2rem 1.1rem; margin: 0 0 0.4rem; color: var(--ink-2); }
 .rs-card .kit b { color: var(--ink); font-weight: 600; margin-right: 0.25rem; }
-.rs-card .run { margin: 0.8rem 0 0.2rem; color: var(--ink-2); }
+.rs-card .run { margin: 0.8rem 0 0.2rem; color: var(--ink-2); display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.7rem; }
+.rs-card .rs-watch { font-size: 0.78rem; padding: 0.2rem 0.65rem; }
+.rs-video { display: block; width: 100%; border-radius: 10px; background: var(--ink); aspect-ratio: 16 / 9; }
 .rs-card .readmore { margin: 0.4rem 0 0; color: var(--ink-2); }
 .rs-shot { margin: 0.2rem 0 0.4rem; }
-.rs-shot img { display: block; width: 100%; height: auto; border-radius: 6px; background: #0f2633; aspect-ratio: auto; }
+.rs-shot img { display: block; width: 100%; height: auto; border-radius: 6px; background: var(--ink); }
 .rs-shot figcaption { font-size: 0.76rem; color: var(--muted); margin-top: 0.25rem; line-height: 1.35; }
 
 /* Desktop: the card scrolls inside the height of the map column. */
 @media (min-width: 861px) {
   .rs-card-body { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
-  .rs-card::after { content: ''; position: absolute; left: 0; right: 10px; bottom: 0; height: 1.6rem; background: linear-gradient(rgba(243, 247, 247, 0), var(--paper)); pointer-events: none; }
+  .rs-card::after { content: ''; position: absolute; left: 0; right: 10px; bottom: 0; height: 1.6rem; background: linear-gradient(color-mix(in srgb, var(--paper) 0%, transparent), var(--paper)); pointer-events: none; }
 }
 @media (max-width: 860px) {
   .rs-course { grid-template-columns: 1fr; }
   .rs-card { border-left: 0; border-top: 1px solid var(--rule); }
   .rs-map-col { padding: 0.7rem 0.6rem 0.7rem; }
+}
+/* Phones: the zoom pill would sit on the busiest corner of the course; put it under the map. */
+@media (max-width: 520px) {
+  .rs-zoom { position: static; display: block; margin: 0.45rem 0 0 auto; box-shadow: none; }
 }
 
 /* ---- what each task uses ---- */
@@ -169,7 +179,7 @@ button.linkish { font: inherit; background: none; border: 0; padding: 0; color: 
 .rs-pq { display: block; width: 100%; height: auto; border-radius: 6px; }
 .rs-pq * { vector-effect: non-scaling-stroke; }
 .rs-pq .water { fill: var(--water); }
-.rs-pq .zone { fill: rgba(15, 38, 51, 0.08); stroke: var(--ink-2); stroke-dasharray: 3 3; }
+.rs-pq .zone { fill: color-mix(in srgb, var(--ink) 8%, transparent); stroke: var(--ink-2); stroke-dasharray: 3 3; }
 .rs-pq .path { fill: none; stroke: var(--state); stroke-width: 2; stroke-linejoin: round; }
 .rs-pq .gate { stroke: var(--ink); stroke-width: 4; }
 .rs-pq .pole { fill: var(--accent); }
@@ -180,13 +190,13 @@ button.linkish { font: inherit; background: none; border: 0; padding: 0; color: 
 .rs-pq .bot polygon { fill: var(--accent); stroke: var(--ink); stroke-width: 1; }
 
 /* ---- robots ---- */
-.rs-robots { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.fig .rs-robots { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
 .rs-robots figcaption { font-family: var(--sans); font-size: 0.82rem; line-height: 1.4; color: var(--ink-2); }
 .rs-robots figcaption b { color: var(--ink); }
 .rs-robots .yr { color: var(--accent); font-weight: 600; margin-left: 0.2rem; }
 .rs-robots code { font-size: 0.76rem; }
 @media (max-width: 520px) {
-  .rs-robots { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem 0.6rem; }
+  .fig .rs-robots { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem 0.6rem; }
   .rs-robots figcaption { font-size: 0.76rem; }
 }
 

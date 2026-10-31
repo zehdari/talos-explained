@@ -35,10 +35,10 @@
           <tr><td>ESC board</td><td>2</td><td>internal 2, 3</td><td>Four motor controllers each: thrusters 0–3 and 4–7</td></tr>
           <tr><td>Camera cage breakout (CCBB)</td><td>1</td><td>internal 4</td><td>Powers the Orin and DVL, reads the depth sensor, joins the Orin to CAN</td></tr>
           <tr><td>LED board</td><td>1</td><td>internal 6</td><td>Drives the RGBW status light</td></tr>
-          <tr><td>IVC board</td><td>1</td><td>internal 8</td><td>Acoustic modem for talking to the team's second vehicle</td></tr>
+          <tr><td>IVC board</td><td>1</td><td>internal 8</td><td>Acoustic modem to Triton, the team's second vehicle; also listens for the competition pinger</td></tr>
           <tr><td>Smart battery MCU + BMS</td><td>2 pairs</td><td>external</td><td>Protect and report each battery pack</td></tr>
-          <tr><td>Orin HAT</td><td>1</td><td>(none)</td><td>CAN transceivers for the Orin, RS-232 for the IMU</td></tr>
-          <tr><td>FOG board</td><td>1</td><td>(none)</td><td>RS-422 port and 5 V for the fibre-optic gyro</td></tr>
+          <tr><td>Orin HAT</td><td>1</td><td>(none)</td><td>CAN transceivers for the Orin, a serial port for the IMU</td></tr>
+          <tr><td>FOG board</td><td>1</td><td>(none)</td><td>A serial port and 5 V for the fibre-optic gyro</td></tr>
         </tbody>
       </table>
       <p>The boards live in two cages that slide out of the hulls. The <strong>board stack</strong> is in the port hull, and the <strong>camera cage</strong>, with the Orin, is in the starboard hull (<a href="https://org.osu.edu/osu-uwrt/electrical-team/">electrical team page</a>). The camera cage rides on rails and meets the board stack through a spring-loaded connector (<a href="https://org.osu.edu/osu-uwrt/mechanical-team/">mechanical team page</a>). The batteries ride in their own sealed housings outside the hulls. <a href="mechanical.html">Hull, frame and layout</a> has the mechanical side.</p>
@@ -50,7 +50,7 @@
 
     <div class="prose">
       <h2 id="explorer">Board explorer</h2>
-      <p>Pick a board, then tap the parts on it. Every ring is a real component, placed from the board's PCB file. The lists give its key chips, its connectors with their silkscreen labels, and the ROS topics its firmware creates. Tap a row with a dot to find that part.</p>
+      <p>Pick a board, then tap the parts on it. Every ring is a real component, placed from the board's PCB file. The tabs list its key chips, its connectors with their silkscreen labels, its power in and out, and the ROS topics its firmware creates. Tap a row with a dot to find that part.</p>
     </div>
     <figure class="fig" id="explorer-fig">
       <div class="panel bx" id="bx">
@@ -81,7 +81,7 @@
         <div id="sys-graph"></div>
         <div class="graph-note sys-note" id="sys-note"></div>
       </div>
-      <figcaption><b>Boards, buses and the things they drive</b>, laid out like the team's own architecture drawing (2026 TDR, Fig. 15) and checked against each board's connectors. External CAN is drawn through the CCBB's <code>EXT. CAN</code> jacks, which carry it to the HAT; the TDR draws it straight to the Orin HAT. Tap or hover a board to see its CAN ID, its firmware, the topics it publishes and subscribes to, and which code on the Orin uses them.</figcaption>
+      <figcaption><b>Boards, buses and the things they drive</b>, laid out like the team's own architecture drawing (2026 TDR, Fig. 15) and checked against each board's connectors. External CAN is drawn through the CCBB's <code>EXT. CAN</code> jacks, which carry it to the HAT; the TDR draws it straight to the Orin HAT. Tap or hover a board to see its CAN ID, its firmware and its topics: → names the code on the Orin that reads a topic, ← who sends a topic the board subscribes to. Topics are from each board's firmware on <code>master</code>; the IVC's pinger topics, from a branch, are listed separately.</figcaption>
     </figure>
     <div class="prose">
       <p>Two kinds of traffic share the internal bus:</p>
@@ -89,26 +89,26 @@
         <li><strong>micro-ROS.</strong> One agent on the Orin, <code>copro_agent</code>, bridges every board's micro-ROS client into ROS (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/copro_agent.launch.py#L13-L17"><code>copro_agent.launch.py</code></a> runs <code>micro_ros_agent can -D can0 -v4 -m rmw</code>). The topics land under <code>/talos</code> (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_boards/include/robots/talos.h#L10"><code>ROBOT_NAMESPACE</code></a>): <code>state/kill</code> in this chapter is <code>/talos/state/kill</code>.</li>
         <li><strong>Raw thruster frames.</strong> Thrust skips ROS: <code>mpc_controller</code> writes one 8-byte frame per ESC board per tick, four signed 16-bit RPMs (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c"><code>send_thruster_cmd_canbus.c</code></a>), read by the ESC firmware (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/main.c#L131-L161"><code>ESCBoard/src/main.c</code></a>).</li>
       </ul>
-      <p>The agent for the external bus (<code>can1</code>) is commented out in the same file, so the code doesn't show how the battery housings reach ROS today. <a href="computers.html#can">Computers and networks</a> covers the Orin side of CAN.</p>
+      <p>The agent for the external bus (<code>can1</code>) is commented out in the same file. That is on purpose: the title of the commit of 27 Oct 2026 ends "… turn off external uros agent until poac/batteries happy" (<a href="https://github.com/osu-uwrt/riptide_core/commit/720bdd9cadf0dd77ea728ffb7961af641935ee8c">720bdd9</a>), so for now the battery housings' <code>state/battery</code> doesn't reach ROS. <a href="computers.html#can">Computers and networks</a> covers the Orin side of CAN.</p>
 
       <h2 id="rp2040" data-short="One MCU per board">One microcontroller on every board</h2>
       <p>Why one per board? The story is in the comments of <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/tools/DeviceList.jsonc"><code>DeviceList.jsonc</code></a>:</p>
       <ul>
-        <li>The first-generation electronics, Mark 1 (in Talos's predecessor, Tempest), kept running into I²C trouble.</li>
+        <li>The first-generation electronics, Mark 1 (in Talos's predecessor, Tempest), kept running into trouble with I²C, a simple two-wire chip-to-chip bus meant for short distances.</li>
         <li>At a pool test in fall 2021 a 3-foot I²C run to the depth sensor stopped working. A spare Raspberry Pi Pico, reading the sensor and sending depth over USB, got the test going again.</li>
         <li>The first Mark 2 plan shared one I²C bus between every board. That test killed it: Mark 2 put an RP2040 on every board and joined them with CAN, which is built for long cables in electrically noisy places.</li>
       </ul>
       <p>Every board with a microcontroller copies the same Altium sheet, <a href="https://github.com/osu-uwrt/electric_boogaloo/blob/master/Device_Sheets/RP2040_with_CAN.SchDot"><code>RP2040_with_CAN.SchDot</code></a>, so the firmware shares one pin map and one CAN driver. The block's parts carry an R or C suffix: on every board <code>U1R</code> is the RP2040 and <code>U1C</code> the CAN controller.</p>
       <dl class="spec">
         <dt>Microcontroller</dt><dd>RP2040 (two Cortex-M0+ cores), 12 MHz crystal, W25Q128JV 16 MB flash. Builds assume 2 MB of flash.</dd>
-        <dt>CAN</dt><dd>MCP2517FD CAN FD controller on SPI0 (nCS 17, SCK 18, MOSI 19, MISO 20, interrupt 22) and a TJA1442AT transceiver</dd>
-        <dt>CAN clock</dt><dd>The RP2040 makes 4 MHz on GPIO21 from its 48 MHz USB clock. The MCP2517FD multiplies that by 10 to 40 MHz. SPI runs at 20 MHz (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/driver_canbus/src/can_mcp251XFD.c#L54-L62">driver</a>).</dd>
+        <dt>CAN</dt><dd>An MCP2517FD CAN controller, which the RP2040 talks to over SPI (a fast chip-to-chip bus), and a TJA1442AT transceiver, which turns its logic levels into the bus's two-wire signal</dd>
+        <dt>CAN clock</dt><dd>The RP2040 makes 4 MHz on GPIO21 from its 48 MHz USB clock (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/driver_canbus/src/can_mcp251XFD.c#L53-L62">driver</a>). The MCP2517FD multiplies that by 10 to 40 MHz; SPI runs at 20 MHz (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/driver_canbus/src/can_mcp251XFD.c#L252-L261">driver</a>).</dd>
         <dt>Termination</dt><dd>A slide switch (silk <code>TERM ON</code>) adds a split 120 Ω terminator (2 × 60.4 Ω). The firmware can read the switch's position.</dd>
-        <dt>Debug</dt><dd>Tag-Connect TC2030 SWD pads, BOOT and RESET buttons, micro-USB, debug UART TX on GPIO16</dd>
+        <dt>Debug</dt><dd>Tag-Connect TC2030 pads for SWD (the chip's debug and flashing port), BOOT and RESET buttons, micro-USB, a debug serial output on GPIO16</dd>
         <dt>Status LED</dt><dd>RGB, GPIO 13/14/15 (below)</dd>
-        <dt>Buses</dt><dd>Internal: CAN FD, 1 Mbit/s arbitration, 5 Mbit/s data. External: classic CAN, 250 kbit/s (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_boards/include/robots/talos.h#L16-L25"><code>robots/talos.h</code></a>).</dd>
+        <dt>Buses</dt><dd>Internal: CAN FD, the newer CAN that can send a frame's data faster than its header: 1 Mbit/s header, 5 Mbit/s data. External: classic CAN, 250 kbit/s throughout (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_boards/include/robots/talos.h#L16-L25"><code>robots/talos.h</code></a>).</dd>
       </dl>
-      <p>A CAN bus needs a 120 Ω terminator at each end and nowhere else. If the TDR's chain order is right, the ends are the LED board and the Orin HAT's <code>can0</code> transceiver, and both have termination switches. The designs don't record the switch positions, so check the physical switches.</p>
+      <p>A CAN bus needs a 120 Ω terminator at each end and nowhere else: a resistor across its two wires that stops signals bouncing back off the end of the cable. If the TDR's chain order is right, the ends are the LED board and the Orin HAT's <code>can0</code> transceiver, and both have termination switches. The designs don't record the switch positions, so check the physical switches.</p>
     </div>
     <figure class="fig">
       <div class="panel bx-sch-one"><button class="bx-zoom" data-full="media/boards/rp2040-can-block.webp" aria-label="Open the RP2040 + CAN schematic full size"><img data-src="media/boards/rp2040-can-block.webp" width="1800" height="966" alt="Schematic of the shared RP2040 and CAN block: RP2040, flash, crystal, Tag-Connect header, buttons, RGB LED, MCP2517FD controller, TJA1442 transceiver and termination switch." loading="lazy"></button></div>
@@ -135,11 +135,11 @@
       <h2 id="poac" data-short="POAC">The POAC: batteries, rails and the kill switch</h2>
       <p>The <strong>POAC</strong> ("power + actuator", 177.8 × 127 mm) replaced the Mark 2 power and actuator boards to free space in the stack, and kept the power board's CAN ID 1. It does five jobs:</p>
       <ul>
-        <li><strong>Combines the batteries.</strong> Each pack (Anderson PP45, J3 and J4) goes through an LTC4412 ideal-diode controller and two P-channel FETs onto one bus, <code>V+</code>. The higher pack supplies the robot and neither can feed the other (<a href="electrical.html#two-packs">Two packs, one bus</a>).</li>
-        <li><strong>Makes the rails.</strong> Two TDK-Lambda i6A4W modules (20 A, 9–53 V in) make 15 V (PS1) and 5 V (PS2). A MIC29300 makes 12 V from 15 V for the servo only. Each RP2040 board makes its own 3.3 V with an LM1117.</li>
+        <li><strong>Combines the batteries.</strong> Each pack (Anderson PP45, J3 and J4) goes through two P-channel FETs (transistors used as power switches) onto one bus, <code>V+</code>. An LTC4412 ideal-diode controller switches them so they pass current one way only, like a diode without a diode's voltage drop. The higher pack supplies the robot and neither can feed the other (<a href="electrical.html#two-packs">Two packs, one bus</a>).</li>
+        <li><strong>Makes the rails.</strong> Two TDK-Lambda i6A4W modules (20 A, 9–53 V in) make 15 V (PS1) and 5 V (PS2). A MIC29300 linear regulator makes 12 V from 15 V for the servo only. Each RP2040 board makes its own 3.3 V with an LM1117, another linear regulator.</li>
         <li><strong>Switches thruster power</strong> through the kill switch circuit (below).</li>
         <li><strong>Measures itself.</strong> An MCP3428 16-bit ADC reads four rails onto <code>state/electrical</code> once a second; two field names mislead, see <a href="electrical.html#measured">What the POAC measures</a>. An SHT41 reads temperature and humidity.</li>
-        <li><strong>Drives the actuators.</strong> One Hiwonder bus servo indexes two torpedoes and two markers over a half-duplex 115200-baud serial line made by the RP2040's PIO (<a href="actuators.html">Torpedoes, dropper and claw</a>).</li>
+        <li><strong>Drives the actuators.</strong> One Hiwonder bus servo indexes two torpedoes and two markers over a 115200-baud serial line. It is half-duplex: one wire, and the two ends take turns to talk. The RP2040 makes it with its PIO, small programmable engines that can drive pins in any timing pattern (<a href="actuators.html">Torpedoes, dropper and claw</a>). The claw firmware the 2026 TDR describes (several servos, positions kept across reboots) is on unmerged branches; on <code>master</code> the claw topics are named but never subscribed. Which build is flashed on Talos isn't recorded anywhere; its <code>state/firmware</code> version would tell.</li>
       </ul>
 
       <h3 id="kill">The kill switch, in hardware</h3>
@@ -166,7 +166,7 @@
       <p>Three details make it fail safe:</p>
       <ul>
         <li><strong>A dead microcontroller means no thrust.</strong> A 10 kΩ resistor pulls <code>SOFTWARE_KILL</code> low, so with the RP2040 in reset, unflashed or crashed, the normally-open DG448 stays open and a 47 kΩ pull-up holds <code>MOTOR_EN</code> at V+: P-FETs off. The firmware also starts in the kill state.</li>
-        <li><strong>The RP2040 sees the switch too.</strong> An N-FET translates the switch line to 3.3 V on GPIO1 (<code>PHYS_KILLSWITCH</code>), and the firmware treats it as kill slot 0, so pulling the switch opens both paths. The board publishes <code>state/kill</code> every 150 ms and on every change; the ESC boards stop their thrusters when they see it.</li>
+        <li><strong>The RP2040 sees the switch too.</strong> An N-channel FET translates the switch line to 3.3 V on GPIO1 (<code>PHYS_KILLSWITCH</code>), and the firmware treats it as kill slot 0, so pulling the switch opens both paths. The board publishes <code>state/kill</code> every 150 ms and on every change; the ESC boards stop their thrusters when they see it.</li>
         <li><strong>Software holds kill slots too</strong>, such as the Nereus viewer's Kill button. The slots and their timeouts are in <a href="commanding.html#kill">Commanding Talos</a>.</li>
       </ul>
     </div>
@@ -181,7 +181,7 @@
       <p>The silkscreen labels <code>ESC 1/5</code> … <code>ESC 4/8</code> count from 1 (board 0 / board 1). The firmware, the MPC and <code>state/thrusters/*</code> count from 0. The pre-test thruster test names them VUS, VUP, HUS, HUP, HLS, HLP, VLS, VLP in that order (<a href="thrusters-hw.html">Thrusters and ESCs</a>).</p>
       <dl class="spec">
         <dt>Power</dt><dd><code>MOTOR_PWR</code> on Würth Redcube terminals, reverse-voltage P-FETs, a 60 A board fuse, a 15 A fuse per ESC</dd>
-        <dt>Motor signal</dt><dd>Bidirectional DShot600 from the RP2040's PIO: one wire per ESC carries the command out and the RPM back. A serial telemetry line returns temperature, voltage, current and charge used.</dd>
+        <dt>Motor signal</dt><dd>Bidirectional DShot600, a digital motor-command protocol, generated by the RP2040's PIO: one wire per ESC carries the command out and the RPM back. A serial telemetry line returns temperature, voltage, current and charge used.</dd>
         <dt>Commands</dt><dd>Raw CAN frames from <code>mpc_controller</code> (four RPMs per frame), or <code>command/thruster_rpm</code> over micro-ROS</dd>
         <dt>Safety</dt><dd>Thrusters stay off for 5 s after ESC power appears, and stop if no command arrives for 500 ms (then stay off for 1 s). ESC power counts as present above 9 V (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/include/dshot.h#L21-L39"><code>dshot.h</code></a>).</dd>
         <dt>ESC firmware</dt><dd>Stock APD firmware had no reversible ("3D") DShot, so the team patched it in (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/esc_firmware_patching/README.md">README</a>). Each ESC has a <code>FLASH CONN</code> header.</dd>
@@ -198,7 +198,7 @@
         <li><strong>Cooling and lights:</strong> four 5 V fan outputs with tachometers, a switched 15 V Peltier output and an RGB status strip.</li>
       </ul>
       <p>The firmware still creates a <code>state/leak</code> publisher, but its publish is commented out; the leak sensor is no longer used. The design doesn't show whether a Peltier and all four fans are fitted today.</p>
-      <p>Other buttons in the viewer's <a href="https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml#L88-L101">Electrical panel</a>: Cycle IMU is handled on the Orin by <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/imu_power_cycle.py#L37-L40"><code>imu_power_cycle.py</code></a> (header pin 22 low for 10 s, through an Orin HAT switch the Sep 2026 design removes). No Talos firmware on <code>master</code> acts on Cycle acoustics or Kill acoustics.</p>
+      <p>Other buttons in the viewer's <a href="https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml#L88-L101">Electrical panel</a>: Cycle IMU is handled on the Orin by <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/imu_power_cycle.py#L37-L40"><code>imu_power_cycle.py</code></a> (header pin 22 low for 10 s, through an Orin HAT switch the Sep 2026 design removes). No Talos firmware, on <code>master</code> or any branch, acts on Cycle acoustics or Kill acoustics. The same panel's Pinger section drives the IVC board (next).</p>
 
       <h2 id="led-ivc">The LED and IVC boards</h2>
       <p>The <strong>LED board</strong> drives the status light, an aluminium-core module with four RGBW LEDs and a thermistor:</p>
@@ -208,14 +208,17 @@
         <li><strong>Self-protection:</strong> out of the water (depth above −5 cm on <code>state/depth/raw</code>) it runs at 1 % brightness. It dims past 30 °C and turns off at 50 °C (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/LEDBoard/src/ledc_driver.c#L41-L54"><code>ledc_driver.c</code></a>).</li>
         <li><strong>Revision:</strong> Talos has the 2023-24 ("Year One") board. A five-driver redesign is in the repo, but the firmware's pin map only fits the two-driver board.</li>
       </ul>
-      <p>The <strong>IVC board</strong> ("inter-vehicle communication", 2025) is an acoustic modem for talking to the team's second vehicle.</p>
+      <p>The <strong>IVC board</strong> ("inter-vehicle communication", 2025) does two jobs with one hydrophone. It is an acoustic modem for talking to <strong>Triton</strong>, the team's second vehicle, and it is how Talos hears the competition pinger (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">2026 TDR</a>).</p>
       <ul>
         <li><strong>Transmit:</strong> the RP2040 makes a tone, filtered (OPA1664) and amplified by an OPA548 power op-amp on ±24 V from an isolated TRACO converter, into a transducer the team built.</li>
         <li><strong>Receive:</strong> a hydrophone feeds a filter and amplifier chain on an isolated ±5 V supply; the RP2040's ADC samples it and an FFT finds the tones.</li>
         <li><strong>Protocol on <code>master</code>:</strong> 17 and 19 kHz tones, 50 ms per bit, 8 data bits and a 4-bit CRC (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/IVCBoard/src/ivc.c#L17-L26"><code>ivc.c</code></a>). The 2026 TDR describes 51–53 kHz tones.</li>
+        <li><strong>Pinger:</strong> the IVC firmware on the unmerged <code>blake/ivc</code> branch (<a href="https://github.com/osu-uwrt/titan_firmware/tree/blake/ivc/talos/IVCBoard2"><code>IVCBoard2</code></a>) also measures the hydrophone's amplitude at one chosen pinger frequency, 20 to 40 kHz (<a href="https://github.com/osu-uwrt/titan_firmware/blob/blake/ivc/talos/IVCBoard2/include/ivc.h#L35-L41"><code>ivc.h</code></a>), and streams it on <code>ivc/pinger/selected_freq_amp_stream</code>.</li>
+        <li><strong>Pinger, Orin side:</strong> <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/src/pinger_broker.cpp"><code>pinger_broker</code></a> re-sends the chosen frequency to the board every second (30 kHz until told otherwise). <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_acoustics/src/Acoustics.cpp#L31"><code>riptide_acoustics</code></a> compares how loud the pinger was in two listening windows. The mission tree's <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RandomPingerTree.xml#L1204-L1232"><code>RandomPingerTree</code></a> listens for 10 s near the torpedo board and 10 s near the table, then asks which was louder. The Pinger section of the viewer's Electrical panel turns listening on and picks 25, 30, 35, 37 or 40 kHz (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml#L107-L114">panel config</a>).</li>
+        <li><strong>Which firmware is on the robot?</strong> As with the POAC, it isn't recorded: the board's <code>state/firmware</code> version tells you. The branch also renames some modem topics, so <code>master</code>'s list may not be what's flashed.</li>
         <li><strong>Extra:</strong> a BM83 Bluetooth audio module can play sound through the transducer.</li>
       </ul>
-      <p>A solder jumper lets the same board serve another vehicle ("Populate SB5 for Lil' Boat, DNP for Talos").</p>
+      <p>A solder jumper lets the same board serve another vehicle ("Populate SB5 for Lil' Boat, DNP for Talos"; <code>LilBoatBoards</code> holds the 2025 second vehicle's boards).</p>
     </div>
     <figure class="fig">
       <div class="media-grid bx-sch">
@@ -228,19 +231,19 @@
 
     <div class="prose">
       <h2 id="batteries" data-short="Battery housings">Inside the smart battery housings</h2>
-      <p>Each of the two 5S LiPo packs (MaxAmps 8000 mAh, 18.5 V nominal, <a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">TDR</a>) sits in a sealed housing with two boards. What the housing does for the pack is in <a href="electrical.html#smart">What "smart" means</a>; the boards:</p>
+      <p>Each pack is a MaxAmps 8000 mAh 5S2P LiPo, 18.5 V nominal, about 148 Wh. The team's battery notes set the working limits at 4.15 V per cell when charging and 3.2 V when discharging (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L1-L4">BQ40Z80 notes</a>). Each pack sits in a sealed housing with two boards. What the housing does for the pack is in <a href="electrical.html#smart">What "smart" means</a>; the boards:</p>
       <ul>
         <li><strong>BMS board:</strong> a TI BQ40Z80 battery manager watches and balances the five cells and controls two 80 V, 100 A N-channel protection FETs, backed by a 45 A Littelfuse protector.</li>
-        <li><strong>MCU board:</strong> an RP2040 reads the BQ40Z80 over SMBus (in PIO, because the board's pins don't match the RP2040's I²C pin options), drives a small OLED and reports <code>state/battery</code> on the external bus. A reed switch is the power button.</li>
-        <li><strong>Its CAN ID is its serial number</strong> (housings #1 to #5), not "port" or "starboard" (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/src/main.c#L200">main.c</a>).</li>
+        <li><strong>MCU board:</strong> an RP2040 reads the BQ40Z80 over SMBus, a stricter form of I²C (in PIO, because the board's pins don't match the RP2040's I²C pin options), drives a small OLED and reports <code>state/battery</code> on the external bus. A reed switch is the power button.</li>
+        <li><strong>Its CAN ID is its serial number</strong> (housings #1 to #5), not "port" or "starboard" (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/src/main.c#L200">main.c</a>). Its side comes from a side-detect pin instead, reported in the <code>detect</code> field of <code>state/battery</code> (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/src/ros.c#L183-L191">ros.c</a>); the viewer's PORT and STBD readings use it.</li>
         <li><strong>It can cut the robot's power:</strong> <code>CYCLE_ROBOT</code> briefly opens the FETs and <code>KILL_ROBOT_POWER</code> latches them open (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/src/ros.c#L70-L84">ros.c</a>). The viewer asks for confirmation before sending either.</li>
       </ul>
 
       <h2 id="orin-side" data-short="Orin add-ons">Two boards on the Orin</h2>
       <p>Neither has a microcontroller; they give the Orin the ports it lacks. The 2026 TDR calls them the "Orin HAT" and the "FOG Board".</p>
       <ul>
-        <li><strong>Orin HAT</strong> (Jetson AGX breakout, 52 × 34 mm) on the 40-pin header: two TJA1442 CAN transceivers for the Orin's logic-level CAN controllers (<code>can0</code> internal, <code>can1</code> external), each with a termination switch, and an SN65C3221 RS-232 transceiver for the VectorNav IMU on <code>/dev/ttyTHS1</code> (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml"><code>talos_launch_mpc.yaml</code></a>).</li>
-        <li><strong>FOG board</strong> (M.2 E-key card, 22 × 30 mm): an SP335E transceiver in RS-422 mode and a 3.3 → 8 → 5 V supply for the fibre-optic gyro on <code>/dev/ttyTHS2</code> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_gyro/config/gyro_config.yaml"><code>gyro_config.yaml</code></a>).</li>
+        <li><strong>Orin HAT</strong> (Jetson AGX breakout, 52 × 34 mm) on the 40-pin header: two TJA1442 CAN transceivers for the Orin's logic-level CAN controllers (<code>can0</code> internal, <code>can1</code> external), each with a termination switch, and an SN65C3221 transceiver for the VectorNav IMU, which speaks RS-232, the classic serial-port signal, on <code>/dev/ttyTHS1</code> (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml"><code>talos_launch_mpc.yaml</code></a>).</li>
+        <li><strong>FOG board</strong> (M.2 E-key card, 22 × 30 mm): an SP335E transceiver in RS-422 mode (serial over a pair of wires carrying opposite signals, which shrugs off noise) and a 3.3 → 8 → 5 V supply for the fibre-optic gyro on <code>/dev/ttyTHS2</code> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_gyro/config/gyro_config.yaml"><code>gyro_config.yaml</code></a>).</li>
       </ul>
       <p>The sensors themselves are in <a href="sensors.html">Navigation sensors</a>.</p>
 
@@ -248,8 +251,8 @@
       <p>Steps 1–3 follow the team's how-to, <a href="https://github.com/osu-uwrt/electric_boogaloo/blob/master/ProjectCreation.md"><code>ProjectCreation.md</code></a>; the rest is what the repo and its history show.</p>
       <ol class="bx-steps">
         <li><b>Set up Altium once.</b> Clone <a href="https://github.com/osu-uwrt/electric_boogaloo">electric_boogaloo</a>, import <code>UWRTPreferences.DXPPrf</code>, point Altium's document and library paths at the repo, and register <code>UWRT_Template_Project</code> as a template.</li>
-        <li><b>Start from the template.</b> New project from <code>UWRT_Project_Template</code>, sheets named <code>ProjectName_SheetName.SchDoc</code>; keep the 2- or 4-layer PCB template you need. Set <code>ProjectTitle</code>, <code>TeamLead</code> and <code>BoardRevision</code> for the title block and silkscreen.</li>
-        <li><b>Use the team's libraries and blocks.</b> Parts come from <code>Library/</code>, the microcontroller from <code>Device_Sheets/RP2040_with_CAN.SchDot</code>, so the firmware's shared code just works.</li>
+        <li><b>Start from the template.</b> New project from <code>UWRT_Project_Template</code>, sheets named <code>ProjectName_SheetName.SchDoc</code>; keep the 2- or 4-layer PCB template you need. Set <code>ProjectTitle</code> and <code>TeamLead</code>; leave <code>BoardRevision</code> at 1.0 and <code>DateOfDesignReview</code> until the review. On each sheet set <code>Date</code>, <code>Author</code> and <code>Title</code> for its title block.</li>
+        <li><b>Use the team's libraries and blocks.</b> Add the repo's <code>Library</code> folder as file-based libraries and take parts from there; the microcontroller comes from <code>Device_Sheets/RP2040_with_CAN.SchDot</code>, so the firmware's shared code just works.</li>
         <li><b>Lay it out for the fab.</b> Use JLCPCB's 4-layer rules and stack-up from the repo (<code>JLCPCB_4Layers.RUL</code>, <code>.stackup</code>). Boards in one stack share an outline: POAC and ESC boards are both 177.8 × 127 mm.</li>
         <li><b>Design review.</b> The date goes in <code>DateOfDesignReview</code> (the ESC board's reads 01/08/2023). Commits say when a design isn't ready: "ready for design review … do not order boards on this commit".</li>
         <li><b>Generate the order files.</b> The output job runs the design-rule check and exports the BOM, Gerber X2 and drill files (set up in 2022 for "JLC export").</li>
@@ -259,7 +262,7 @@
       </ol>
 
       <h2 id="history">Mark 1, Mark 2 and the POAC</h2>
-      <p>Most of Talos's electronics are older than Talos. The <strong>Mark 2</strong> system (the "Tempest MK 2" order, January 2023) brought the RP2040-and-CAN design, and its ESC boards, camera cage breakout and battery boards moved over to Talos. The 2023-24 order added the POAC, the LED board and module, and the FOG board; the IVC board followed in 2025.</p>
+      <p>Most of Talos's electronics are older than Talos. The <strong>Mark 2</strong> system (the "Tempest MK 2" order, January 2023) brought the RP2040-and-CAN design, and its ESC boards, camera cage breakout and battery boards moved over to Talos. The 2023-24 order added the POAC, the LED board and module, and the FOG board; the IVC board followed in 2025. The same orders hold boards that aren't in Talos today (<a href="#others">below</a>).</p>
     </div>
     <figure class="fig">
       <div class="media-grid bx-history">
@@ -272,8 +275,17 @@
     <div class="prose">
       <div class="callout">
         <span class="label">The renders may be newer than the robot</span>
-        <p>These designs changed after their boards were probably built: POAC (Feb 2026, separate 12 V servo output), ESC board (late 2025, voltage protector), battery BMS (Feb 2026, current-sense fix), Orin HAT (Sep 2026, IMU power switch removed), camera cage breakout (Nov 2024, connectors and LDOs; unconfirmed whether rebuilt). Check the physical board.</p>
+        <p>These designs changed after their boards were probably built: POAC (Feb 2026, separate 12 V servo output), ESC board (late 2025, voltage protector), battery BMS (Feb 2026, current-sense fix), Orin HAT (Sep 2026, IMU power switch removed), camera cage breakout (Nov 2024, connectors and linear regulators; unconfirmed whether rebuilt). Check the physical board.</p>
       </div>
+
+      <h3 id="others">Other designs in the repo</h3>
+      <p>Open <code>electric_boogaloo</code> or its releases and you'll find these too. None is in the 2026 TDR's drawing of Talos's boards.</p>
+      <dl class="spec bx-others">
+        <dt>Acoustics Board, Acoustics Preamp</dt><dd>Pinger hardware in the <a href="https://github.com/osu-uwrt/electric_boogaloo/releases/tag/talos_boards">2023-24</a> and <a href="https://github.com/osu-uwrt/electric_boogaloo/releases/tag/ssfb_boards">2024-25</a> releases (<a href="https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/Acoustics"><code>Year One/Acoustics</code></a>, <a href="https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20Two/Acoustics"><code>Year Two/Acoustics</code></a>). The 2024 TDR describes a two-hydrophone direction finder for Talos; the 2025 TDR, pinger filters sharing the IVC's hydrophone and preamp. Neither has a firmware project in <code>titan_firmware</code>. Whether one is in Talos today is unconfirmed; the pinger code above goes through the IVC board.</dd>
+        <dt>SBH Charger</dt><dd>A charger for the smart battery housings, USB-C or barrel jack, with a touch screen (2024 TDR, Appendix F). Not a board inside Talos.</dd>
+        <dt>PoHalf, HBridge, Jetson Nano Breakout</dt><dd>Boards for the 2025 second vehicle, the SS Flip Barker: the 2025 TDR lists a PoHalf, an H-Bridge and a Nano Hat, and the repo keeps them in <a href="https://github.com/osu-uwrt/electric_boogaloo/tree/master/LilBoatBoards"><code>LilBoatBoards</code></a> (released as <code>ssfb_boards</code>). Triton's power board is a PoHalf too (<a href="https://github.com/osu-uwrt/titan_firmware/tree/master/mercury/PoHalfBoard"><code>mercury/PoHalfBoard</code></a>). Not on Talos.</dd>
+        <dt>External Camera HAT, ConnectTech Breakout, FPGA Acoustics</dt><dd>The first is in the 2023-24 release and carries a Raspberry Pi 5 pin map; the other two are folders under <a href="https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards"><code>TalosBoards</code></a> with no release. What they are for, and whether any was built, is unconfirmed.</dd>
+      </dl>
 
       <h2 id="trouble" data-short="Troubleshooting">When a board misbehaves</h2>
       <ul>
@@ -300,7 +312,7 @@ candump can0                               <span class="c"># raw frames on the i
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>
 </main>
-<dialog class="bx-lightbox" id="bx-lightbox" aria-label="Schematic, full size"><button class="bx-close" aria-label="Close">×</button><div class="bx-lb-scroll"></div></dialog>
+<dialog class="bx-lightbox" id="bx-lightbox" aria-label="Schematic, full size"><div class="bx-lb-bar"><button class="bx-zoom-toggle" aria-pressed="false">Zoom</button><button class="bx-close" aria-label="Close">×</button></div><div class="bx-lb-scroll"></div></dialog>
 <script type="module" src="/src/pages/boards.js"></script>
 </body>
 </html>

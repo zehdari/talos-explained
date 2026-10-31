@@ -1,7 +1,8 @@
 # Boards media and fact library
 
 For the electrical, boards, firmware, thrusters and actuators chapters. Everything here was built on
-2026-10-30 from local repos and the team's GitHub. Facts are split into **confirmed** (seen in a
+2026-10-30 from local repos and the team's GitHub, and re-checked on 2026-10-31 (source heads unchanged;
+power fields, battery pack facts and the RS26 TDR cross-check in section 8 added). Facts are split into **confirmed** (seen in a
 schematic, PCB netlist, firmware or config) and **inferred** (a reasonable reading that nothing in the
 sources states outright). Use inferred facts only with a hedge ("probably", "the design suggests").
 
@@ -105,6 +106,11 @@ on Cam-PC for this). A full render pass takes about 20 minutes.
   project only had the template placeholder ("Sample Template Project": POAC, LED board, M.2 card) the
   field was removed rather than printing the placeholder.
 - A few parts have no 3D model (the LED module's OSRAM LEDs, some passives). They show as bare pads.
+- The POAC silk reads "P RT BATTERY" next to J3. That is how the text is stored in the Altium PcbDoc
+  (Texts6 stream), not a conversion fault; do not "correct" it in a caption, just call the connector
+  J3 "PORT BATTERY" as the schematic does.
+- The PCB footprint comment on SBH MCU J1 / BMS J10 says "Mini-Fit Jr R/A", but the schematic part is a
+  Molex Milli-Grid 2.00 mm 8-pin (right angle on the MCU, vertical on the BMS). The schematic is used here.
 
 ---
 
@@ -330,6 +336,18 @@ Confirmed:
   voltages). Gas-gauge config: cell under-voltage 3000 mV, over-voltage 4200 mV, discharge over-current
   11.25 A / 20 A tiers. TF `talos/SmartBattery/bq40z80_files/`. The same file lists 2000 mAh design
   capacity, which may be a test value: **do not quote it as Talos's pack capacity**.
+- Design pack (team's BMS notes, TF `talos/SmartBattery/bq40z80_files/BQ40Z80 Configuration.txt#L1-L4`):
+  "Designed for MaxAmps 8000 mAh 5S2P 18.5V LiPo battery pack", chemistry ID 1356, charge to 4.15 V per
+  cell, discharge no lower than 3.2 V per cell. So about 16-20.75 V per pack in use, 8 Ah x 18.5 V = 148 Wh
+  (the electrical chapter quotes 148 Wh from this). The .gg.csv protection thresholds above (CUV 3000 mV,
+  COV 4200 mV) are the hard limits behind those working limits. The notes also record that a permanent-fail
+  fuse event happened at RoboSub 2024 ("IT DID AT RS24").
+- RS26 TDR: Talos and Triton "use the same custom external battery pack, allowing batteries and charging
+  equipment to be shared between vehicles".
+- Power inside the housing (netlists): BMS J2 Pack_in+ (cells) -> F1 45 A protector -> Q1/Q2 back-to-back
+  N-FETs (BQ40Z80 high-side drive) -> J3 Pack+; J5 Pack-, J4 BAT-. The MCU board gets VBAT on J1 pin 8,
+  switched by a DMP3056L P-FET soft latch (Q1) to VCC -> TS30041 5 V (1 A, 40 V max in) -> XC9236 3.3 V
+  (600 mA). BMS J1 pin 3 is Pack+ through a 5 A fuse (F3).
 - MCU board: RP2040 block, TS30041 5 V buck, XC9236 3.3 V buck, 128x32 OLED, SHT41, reed switch
   (magnet power button) and a soft power latch (PWR_CTRL) so the MCU can switch itself off when the pack
   is idle and the display is off. SMBus to the BQ40Z80 is done in PIO because the pins are swapped
@@ -341,19 +359,22 @@ Confirmed:
 - Projects "Smart Battery Housing | MCU/BMS", rev 1.1, lead Robert Pafford (Jan 2023).
 
 Open: `pretest_checks` expects housings at external IDs 1 and 2, which only holds if housings #1 and #2
-are fitted. Battery capacity and the exact battery bus voltage range are not in the designs.
+are fitted. riptide_core 720bdd9 (2026-10-27) says "turn off external uros agent until poac/batteries
+happy", so the battery telemetry on the external bus is not reaching ROS at the moment.
 
 ### Jetson AGX breakout (inferred fitted)
 
 Two TJA1442 CAN transceivers (can0, can1, each with a termination switch), SN65C3221 RS-232 for the IMU
-(`/dev/ttyTHS0` in RC `riptide_hardware/launch/imu.launch.py`), on the Orin 40-pin header. Silk
+(`/dev/ttyTHS0` in RC `riptide_hardware/launch/imu.launch.py`), on the Orin 40-pin header. Power
+(netlist): J2 pin 1 is +5 taken straight from the header's 5 V pins; transceivers run on 3v3. Silk
 "REV 1.1.1". 2026-09-24: IMU power-switch NMOS removed so J2 pin 1 is always 5 V
 (`imu_pwr_cycle.yaml` still exists in riptide_hardware).
 
 ### Jetson M.2 RS-422 card (inferred fitted)
 
 E-key M.2 card: SP335E transceiver in RS-422, LM27313 boost to 8 V and LP38693 LDO to 5 V for the gyro,
-TLV70018 1.8 V. Gyro config uses `/dev/ttyTHS2` (RC `riptide_gyro/config/gyro_config.yaml`).
+TLV70018 1.8 V. Power chain (netlist): M.2 3V3 -> LM27313 boost -> 8V -> LP38693-5.0 -> 5V on J1 pin 1
+(the gyro); the SP335E runs on 3V3 + 1V8. Gyro config uses `/dev/ttyTHS2` (RC `riptide_gyro/config/gyro_config.yaml`).
 
 ---
 
@@ -371,6 +392,9 @@ V+ -> Schottky -> Vreg -> PS1 15 V (20 A module) -> 12 V LDO -> servo
                                                 -> stack link, camera cage link
                        -> PS2 5 V (20 A module) -> 3.3 V LDO on every board, fans, stack link, camera cage
 V+ -> stack link -> LED board (LED drivers), IVC (isolated +/-24 V for the transducer amp)
+each housing: cells -> 45 A protector -> BQ40Z80 FETs -> Pack+ -> (housing cable, not in designs) -> POAC J3/J4
+              cells -> BAT+ -> SBH MCU soft latch -> 5 V buck -> 3.3 V buck (RP2040, OLED)
+Orin side:    40-pin header 5 V -> AGX breakout J2 -> IMU;  M.2 3.3 V -> 8 V boost -> 5 V LDO -> gyro
 camera cage board: 15 V -> Orin (switched), DVL (Ethernet power injection), Peltier (switched),
                    external CAN connectors; 5 V -> network switch, fans, depth sensor, RGB strip
 ```
@@ -381,6 +405,14 @@ thruster_cutoff 17 V; battery_current warn 35 A, fuse 45 A; 3V3 3.2-3.4; 5V 4.7-
 pretest_checks reuses these numbers.
 
 Inferred: the 5 V for the ESC logic arrives over the ESC stack link from the POAC side (cable not in the designs).
+Inferred: the battery housing cable from the BMS Redcube terminals to the POAC Andersons (not in the designs).
+Inferred: the IMU and gyro branches (the two Orin-side boards are inferred to be fitted; their netlists are confirmed).
+
+power.json (2026-10-31): 31 nodes, 36 edges. `bat_port -> or` and `bat_stbd -> or` are kept as direct edges
+because tools/electrical/build_system.py asserts them; the BMS chain is in the battery node `detail`, and
+`bat_* -> sbh_logic` edges add the housing's own MCU supply. New load nodes `imu` and `gyro` hang off `orin`.
+boards.json `power` ({inputs, makes, feeds}) is now filled for sbh_mcu, sbh_bms, agx_breakout and agx_m2;
+sbh_bms `battery` gains `design_pack`, `design_pack_note`, `design_pack_source`.
 
 ---
 
@@ -407,3 +439,40 @@ From [uwrt.org legacy-site.md](https://github.com/osu-uwrt/uwrt.org/blob/main/do
   boards.
 - hotspots.json pairs with the renders for a tap-to-identify figure; positions were checked on POAC and
   CCBB overlays. Radius includes +1 mm so small chips stay tappable.
+
+---
+
+## 8. Cross-check with the RS26 TDR (2026) and firmware branches
+
+Source: [RS26 TDR](https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf),
+section "B. Talos Electrical" and "E. Triton Electrical" (text read with pdftotext). Where it disagrees with
+the code, **the code wins** for what the site states, and the chapter can mention the difference.
+
+Agrees with the designs/code (confirmed twice):
+- "a dedicated RP2040 microcontroller on each circuit board, with boards exchanging ROS2 messages over a
+  custom CAN bus protocol"; Triton reuses Talos's circuit designs and firmware.
+- APD 80F3 ESCs (Triton boards are "approximately 36% smaller than their equivalent Talos counterparts").
+- IVC: RP2040 drives the transducer with PWM for transmit (firmware uses a PWM slice) and samples the
+  hydrophone with its own ADC; frequency-shift keying.
+
+TDR only (not in code or designs; quote as the team's report):
+- IVC hydrophone is an Aquarian Audio H1C.
+- Talos and Triton share the same external battery pack and charging equipment.
+
+Disagrees with the code:
+- **IVC frequencies.** TDR: "transmit frequencies of 51, 52, and 53 kHz" with a synchronisation signal.
+  Code: `FREQ_LOW_HZ 17000`, `FREQ_HIGH_HZ 19000`, 50 ms symbols, 8 data bits + 4-bit CRC
+  (TF `talos/IVCBoard/src/ivc.c#L17-L26`), identical on master and every remote branch including
+  `blake/ivc` (checked 2026-10-31). Use the code's numbers; say the report describes a different version.
+- **Claw firmware.** TDR: servo firmware with multiple servos, multi-turn tracking past the 0-240 deg range,
+  positions persisted across reboots, stall detection for the claw. On titan_firmware **master** the POAC
+  drives one Hiwonder servo for torpedoes + markers. The claw topic names (`command/actuator/claw`,
+  `.../claw/set_closed_pos`) are defined in `talos/PoacBoard/src/actuators/ros_torp.c#L38-L43` but never
+  subscribed, and `claw_state` is always published as 0 (`#L377`). The claw work is on unmerged branches:
+  `poac-multiple-servos` (8 ahead / 12 behind master; "Poac multiple servos" 2026-03-01 ... "Claw is ID 3"
+  2026-06-28), `servo-continuous-persistence` (12 ahead, 2026-04-14) and `claw-improvements` (2 ahead;
+  "Improved claw by adding voltage + wrap around" 2026-10-04, "fix arming issues" 2026-10-09). Which build
+  is flashed on Talos today is **unconfirmed** (the Orin is offline; `state/firmware` would tell).
+- `blake/ivc` (23 ahead, "ivc dac project" 2026-10-08) also adds `talos/LEDBoard2`, firmware for the
+  Year Two 5-driver LED board. Not on master, so the Year One LED board remains the confirmed one.
+

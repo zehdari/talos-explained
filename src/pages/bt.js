@@ -10,7 +10,8 @@ const GH = 'https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/'
 const TREE_URL = GH + 'trees/RepairCompMpcTree.xml';
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const getJSON = (f) => fetch(`${BASE}data/bt/${f}`).then((r) => r.json());
-// public images: the base is added here, so the same path works in dev and in the build
+// public images: the base is added here (Vite's dev server would add it twice to a src written in the HTML)
+document.querySelectorAll('source[data-srcset]').forEach((s) => (s.srcset = BASE + s.dataset.srcset));
 document.querySelectorAll('img[data-src]').forEach((i) => (i.src = BASE + i.dataset.src));
 
 // ---------- doTask's loop ----------
@@ -23,8 +24,8 @@ document.querySelectorAll('img[data-src]').forEach((i) => (i.src = BASE + i.data
     load: '<b>Build the tree.</b> <code>createTreeFromFile</code> parses the XML and creates every node; <code>initRosForTree</code> then gives each Talos node the ROS node handle and calls its <code>rosInit()</code>. Loggers start: the <code>.fbl</code> file in ~/btlogs and the node stack on <code>autonomy/tree_stack</code>.',
     tick: '<b>tickRoot()</b>: one tick, from the root down. It returns the root\'s status.',
     sleep: '<b>RUNNING:</b> check for a cancel, then <code>loop_rate.sleep()</code>, a <code>rclcpp::Rate</code> of 30 ms, so roughly 33 ticks a second when ticks are quick. Then tick again.',
-    halt: '<b>Cancel requested</b> (the viewer\'s Stop): <code>haltTree()</code> halts every RUNNING node, so actions cancel their goals. This is the only way to end a tree early: the kill switch check is commented out.',
-    done: '<b>Finished.</b> <code>doTask</code> publishes <code>DISABLED</code> on <code>controller/linear</code> and <code>controller/angular</code>, and the LEDs breathe green for SUCCESS or red otherwise. If a node throws, the LEDs flash red fast and the goal is aborted.',
+    halt: '<b>Cancel requested</b> (the viewer\'s Stop): <code>haltTree()</code> halts every RUNNING node. <code>FollowPath</code> cancels its MPC goal; most other nodes do nothing when halted. The kill switch does not end a tree: its check is commented out.',
+    done: '<b>Tree ends.</b> <code>doTask</code> publishes <code>DISABLED</code> on <code>controller/linear</code> and <code>controller/angular</code>. The LEDs breathe green for SUCCESS, red for FAILURE. After a cancel the root is still RUNNING: the goal is marked canceled and the LEDs breathe red. If a node throws, the LEDs flash red fast and the goal is aborted.',
   };
   new Graph(host, {
     width: 900, height: 250,
@@ -33,14 +34,14 @@ document.querySelectorAll('img[data-src]').forEach((i) => (i.src = BASE + i.data
       { id: 'load', x: 290, y: 55, label: 'Build the tree', sub: 'XML → nodes, rosInit' },
       { id: 'tick', x: 485, y: 55, label: 'tickRoot()', sub: 'one tick', bold: true },
       { id: 'sleep', x: 485, y: 200, label: 'sleep to next 30 ms', sub: 'loop_rate.sleep()' },
-      { id: 'done', x: 790, y: 55, label: 'SUCCESS or FAILURE', sub: 'controller off, LEDs' },
-      { id: 'halt', x: 790, y: 200, label: 'haltTree()', sub: 'goal cancelled' },
+      { id: 'done', x: 790, y: 55, label: 'Tree ends', sub: 'controller off, LEDs' },
+      { id: 'halt', x: 790, y: 200, label: 'haltTree()', sub: 'halt RUNNING nodes' },
     ],
     edges: [
       { from: 'goal', to: 'load' }, { from: 'load', to: 'tick' },
       { from: 'tick', to: 'sleep', label: 'RUNNING', bend: -28 },
       { from: 'sleep', to: 'tick', bend: -28 },
-      { from: 'tick', to: 'done', label: 'done' },
+      { from: 'tick', to: 'done', label: 'SUCCESS / FAILURE' },
       { from: 'tick', to: 'halt', label: 'cancel', lx: 655, ly: 118 },
       { from: 'halt', to: 'done' },
     ],
@@ -52,7 +53,7 @@ document.querySelectorAll('img[data-src]').forEach((i) => (i.src = BASE + i.data
       },
       edges: {
         'tick>sleep': { bend: 22, lx: 82, ly: 262 }, 'sleep>tick': { bend: 22 },
-        'tick>done': { lx: 198, ly: 300, anchor: 'start' }, 'tick>halt': { lx: 262, ly: 258 },
+        'tick>done': { label: 'done', lx: 186, ly: 360, anchor: 'start' }, 'tick>halt': { lx: 262, ly: 258 },
       },
     },
     info: (n) => { note.innerHTML = n ? INFO[n.id] : 'Tap or hover a step.'; },
@@ -66,19 +67,19 @@ document.querySelectorAll('img[data-src]').forEach((i) => (i.src = BASE + i.data
   const SVGNS = 'http://www.w3.org/2000/svg';
   // the nodes of RepairCompMpcTree.xml lines 3087-3103, in document order; d = depth
   const N = [
-    { id: 'root', d: 0, label: 'Sequence', sub: 'the subtree', x: 420, y: 40, bold: true },
-    { id: 'st1', d: 1, label: 'SetStatus', sub: 'waiting', x: 62, y: 140 },
-    { id: 'info1', d: 1, label: 'Info', sub: 'Waiting for…', x: 168, y: 140 },
-    { id: 'wait5a', d: 1, label: 'Wait', sub: '5 s', x: 262, y: 140 },
-    { id: 'retry', d: 1, label: 'RetryUntilSuccessful', sub: 'num_attempts −1', x: 420, y: 140, bold: true },
-    { id: 'seq', d: 2, label: 'Sequence', sub: 'one check', x: 420, y: 240, bold: true },
-    { id: 'get', d: 3, label: 'GetBoolTopic', sub: 'state/kill', x: 226, y: 340 },
-    { id: 'inv', d: 3, label: 'Inverter', sub: '"IsFalse"', x: 366, y: 340 },
-    { id: 'istrue', d: 4, label: 'IsTrue', sub: '{kill_switch_inserted}', x: 366, y: 440 },
-    { id: 'wait1', d: 3, label: 'Wait', sub: '1 s', x: 480, y: 340 },
-    { id: 'info2', d: 3, label: 'Info', sub: 'INSERTED…', x: 594, y: 340 },
-    { id: 'st2', d: 1, label: 'SetStatus', sub: 'starting', x: 620, y: 140 },
-    { id: 'wait5b', d: 1, label: 'Wait', sub: '5 s', x: 740, y: 140 },
+    { id: 'root', d: 0, label: 'Sequence', sub: 'the subtree', x: 481, y: 40, bold: true },
+    { id: 'st1', d: 1, label: 'SetStatus', sub: 'waiting', x: 76, y: 150, w: 104 },
+    { id: 'info1', d: 1, label: 'Info', sub: 'Waiting for…', x: 204, y: 150, w: 112 },
+    { id: 'wait5a', d: 1, label: 'Wait', sub: '5 s', x: 328, y: 150, w: 96 },
+    { id: 'retry', d: 1, label: 'RetryUntilSuccessful', sub: 'num_attempts −1', x: 481, y: 150, w: 170, bold: true },
+    { id: 'seq', d: 2, label: 'Sequence', sub: 'one check', x: 481, y: 255, w: 150, bold: true },
+    { id: 'get', d: 3, label: 'GetBoolTopic', sub: 'state/kill', x: 298, y: 360, w: 150 },
+    { id: 'inv', d: 3, label: 'Inverter', sub: '"IsFalse"', x: 443, y: 360, w: 100 },
+    { id: 'istrue', d: 4, label: 'IsTrue', sub: '{kill_switch_inserted}', x: 443, y: 460 },
+    { id: 'wait1', d: 3, label: 'Wait', sub: '1 s', x: 561, y: 360, w: 96 },
+    { id: 'info2', d: 3, label: 'Info', sub: 'INSERTED…', x: 684, y: 360, w: 110 },
+    { id: 'st2', d: 1, label: 'SetStatus', sub: 'starting', x: 638, y: 150, w: 104 },
+    { id: 'wait5b', d: 1, label: 'Wait', sub: '5 s', x: 758, y: 150, w: 96 },
   ];
   const PARENT = { st1: 'root', info1: 'root', wait5a: 'root', retry: 'root', st2: 'root', wait5b: 'root', seq: 'retry', get: 'seq', inv: 'seq', wait1: 'seq', info2: 'seq', istrue: 'inv' };
   const INFO = {
@@ -122,6 +123,7 @@ document.querySelectorAll('img[data-src]').forEach((i) => (i.src = BASE + i.data
   const W = 150, H = 38, PITCH = 47, IND = 22;
   const narrowNodes = {};
   N.forEach((n, i) => { narrowNodes[n.id] = { x: 6 + n.d * IND + W / 2, y: 24 + i * PITCH, w: W, h: H }; });
+  // both layouts hide the library's straight edges; decorate() draws tree-style lines instead
   narrowNodes.info1.sub = 'Waiting for kill…';
   narrowNodes.retry.sub = 'attempts −1';
   narrowNodes.retry.label = 'RetryUntilSuccessful';
@@ -130,9 +132,9 @@ document.querySelectorAll('img[data-src]').forEach((i) => (i.src = BASE + i.data
 
   let svgDone = null;
   const graph = new Graph(gHost, {
-    width: 830, height: 480, arrows: false,
-    nodes: N.map((n) => ({ ...n, h: 58, w: { seq: 150, get: 150, retry: 170 }[n.id] })),
-    edges: Object.entries(PARENT).map(([c, p]) => ({ from: p, to: c })),
+    width: 830, height: 500, arrows: false,
+    nodes: N.map((n) => ({ ...n, h: 58 })),
+    edges: Object.entries(PARENT).map(([c, p]) => ({ from: p, to: c, opacity: 0 })),
     narrow: { below: 600, width: 360, height: 24 + (N.length - 1) * PITCH + 30, nodes: narrowNodes, edges: hideEdges },
     info: (n) => { decorate(); note.innerHTML = n ? INFO[n.id] : SCENES[scene].text; },
   });
@@ -156,6 +158,15 @@ document.querySelectorAll('img[data-src]').forEach((i) => (i.src = BASE + i.data
     if (!narrow && svgDone !== graph.svg) {
       // wide layout: three lines in each box (name, detail, what it returned)
       graph.nodes.forEach((n) => { const [a, b] = n.g.querySelectorAll('text'); a.setAttribute('y', -15); b.setAttribute('y', 1); });
+      // tree lines: down from the parent, along a bar, down onto the top of each child
+      Object.entries(PARENT).forEach(([c, p]) => {
+        const a = graph.nodes.get(p), b = graph.nodes.get(c);
+        const top = a.y + a.h / 2, mid = (top + b.y - b.h / 2) / 2;
+        const path = document.createElementNS(SVGNS, 'path');
+        path.setAttribute('class', 'edge wfk-elbow');
+        path.setAttribute('d', `M${a.x},${top} V${mid} H${b.x} V${b.y - b.h / 2 - 1}`);
+        graph.gEdges.appendChild(path);
+      });
     }
     svgDone = graph.svg;
     const sc = SCENES[scene];
@@ -215,7 +226,8 @@ getJSON('usage.json').then(({ counts }) => {
     ['ForceFailure', 'FAILURE whenever the child finishes.', c('ForceFailure')],
     ['Inverter', 'swaps SUCCESS and FAILURE; RUNNING passes through.', c('Inverter')],
     ['Repeat', 'runs the child <code>num_cycles</code> times; fails at the first FAILURE.', c('Repeat')],
-    ['Delay', 'waits <code>delay_msec</code> before ticking the child.', c('Delay')],
+    ['Delay', 'waits <code>delay_msec</code> (RUNNING meanwhile), then ticks the child.', c('Delay')],
+    ['BlackboardCheck\u00adString', 'ticks the child only if <code>value_A</code> equals <code>value_B</code>, else returns <code>return_on_mismatch</code>. The trees write <code>"0"</code> there, which is not a status name, so the library falls back to FAILURE.', c('BlackboardCheckString')],
   ]);
 });
 
@@ -504,7 +516,8 @@ getJSON('subtrees.json').then((d) => {
   const show = (i) => {
     const c = d.calls[i];
     const attrs = c.ports.map((p) => ` ${p.port}="${esc(p.key)}"`).join('');
-    host.querySelector('#remap-xml').innerHTML = `<code>&lt;SubTree ID="${esc(c.child)}" __shared_blackboard="false"${attrs}/&gt;</code>`;
+    const sharedAttr = c.shared_attr != null ? ` __shared_blackboard="${esc(c.shared_attr)}"` : ''; // printed only where the XML has it
+    host.querySelector('#remap-xml').innerHTML = `<code>&lt;SubTree ID="${esc(c.child)}"${sharedAttr}${attrs}/&gt;</code>`;
     host.querySelector('#remap-table').innerHTML = c.ports.length
       ? `<table class="params bt-table"><thead><tr><th>Port in ${esc(c.child)}</th><th>Caller's key</th><th>Value there</th></tr></thead><tbody>${c.ports.map((p) => {
         const lit = numeric(p.value) && p.key === p.value;
@@ -532,7 +545,7 @@ getJSON('subtrees.json').then((d) => {
   const note = document.createElement('div');
   note.className = 'graph-note';
   const INFO = {
-    sweep: '<b>Sweep</b>: <code>FollowPath</code> flies arcs round the estimate, inside a <code>ReactiveSequence</code> behind two inverted conditions (<code>SeenRecently</code> 0.5 s, <code>MapConverged</code>).',
+    sweep: '<b>Sweep</b>: <code>FollowPath</code> flies arcs round the estimate, inside a <code>ReactiveSequence</code> behind two inverted conditions (<code>SeenRecently</code> 0.5 s, <code>MapConverged</code>). It ends when the target is seen, the map converges, or the path ends (finished, rejected, or the 90 s <code>FollowPath</code> timeout).',
     chase: '<b>Chase</b>: a <code>Sequence</code> that needs <code>SeenRecently</code> (1 s), then <code>CenterDetection</code> inside <code>ForceSuccess</code>, so losing it still moves on.',
     hold: '<b>Hold</b>: <code>RetryUntilSuccessfulOrTimeout</code> (8 s) around a <code>Fallback</code>: <code>MapConverged</code>, or not seen for 2 s.',
     check: '<b>Check</b>: <code>getCovariance</code>, then a <code>Fallback</code>: <code>CompareNums</code> cov &lt; target_cov, or fail this sweep.',
@@ -556,7 +569,7 @@ getJSON('subtrees.json').then((d) => {
       { from: 'sweep', to: 'chase', label: 'seen' },
       { from: 'chase', to: 'hold', label: 'centred or lost' },
       { from: 'hold', to: 'check', label: 'converged, lost or 8 s', lx: 592, ly: 186, anchor: 'start' },
-      { from: 'sweep', to: 'check', label: 'path done, unseen', bend: 22, lx: 300, ly: 222 },
+      { from: 'sweep', to: 'check', label: 'path ends or map converged', bend: 22, lx: 300, ly: 222 },
       { from: 'check', to: 'sweep', label: 'not yet, but seen', bend: 22, lx: 395, ly: 152 },
       { from: 'check', to: 'done', label: 'converged' },
       { from: 'check', to: 'widen', label: 'not yet, nothing seen', lx: 340, ly: 258 },
@@ -577,7 +590,7 @@ getJSON('subtrees.json').then((d) => {
       edges: {
         'sweep>chase': { lx: 190, ly: 84, anchor: 'start' }, 'chase>hold': { label: 'centred / lost', lx: 190, ly: 174, anchor: 'start' },
         'hold>check': { label: 'done or 8 s', lx: 190, ly: 264, anchor: 'start' },
-        'sweep>check': { bend: 0, via: [350, 170], label: 'path done', lx: 270, ly: 174, anchor: 'start' },
+        'sweep>check': { bend: 0, via: [350, 170], label: 'ends or converged', lx: 246, ly: 224, anchor: 'start' },
         'check>sweep': { bend: 0, via: [20, 170], label: 'seen', lx: 108, ly: 178, anchor: 'start' },
         'widen>sweep': { bend: 0, via: [-40, 200], label: 'wider', lx: 50, ly: 216, anchor: 'start' },
         'check>widen': { label: 'unseen', lx: 112, ly: 346, anchor: 'end' },

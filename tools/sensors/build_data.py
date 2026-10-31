@@ -132,6 +132,17 @@ pool['yaw'] = {'t0': a, 'fog_t': r(tfg - a, 3), 'fog': r(yf * R2D, 3), 'imu_t': 
 pool['dvl_age_ms'] = r(np.percentile(dv[:, 0] - dv[:, 1], [5, 50, 95]) * 1e3, 1)
 pool['dvl_fom'] = round(float(np.sqrt(np.median(dv[:, 6]))), 5)
 pool['dvl_gap_max_s'] = round(float(np.diff(dv[:, 0]).max()), 2)
+# DVL scatter while holding still: per-axis std in 5 s windows whose mean |v| < 1 cm/s and peak |v| < 3 cm/s
+# (includes any real motion during the hold, so it is an upper bound on sensor noise)
+hold = []
+for a0 in np.arange(0, dv[-1, 1] - tP - 5, 2.5):
+    m = (dv[:, 1] - tP >= a0) & (dv[:, 1] - tP < a0 + 5)
+    if m.sum() < 30:
+        continue
+    v = dv[m, 2:5]
+    if np.abs(v.mean(0)).max() < 0.01 and np.abs(v).max() < 0.03:
+        hold.append(v.std(0))
+pool['dvl_hold_std_mm_s'] = {'windows': len(hold), 'median': r(np.median(hold, 0) * 1e3, 2)}
 save('pool.json', pool)
 
 # ---------- one second of messages (receive time on the Orin) ----------

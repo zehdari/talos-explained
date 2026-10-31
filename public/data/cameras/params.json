@@ -202,7 +202,7 @@
   },
   {
    "key": "general.self_calib",
-   "why": "Let the SDK re-tune the stereo calibration at start-up. Off: it assumes air and would undo the underwater calibration.",
+   "why": "Let the SDK re-tune the stereo calibration at start-up. Off, so it can\u2019t override the team\u2019s underwater calibration file.",
    "ffc": {
     "layers": [
      true,
@@ -400,7 +400,7 @@
   },
   {
    "key": "pos_tracking.pos_tracking_enabled",
-   "why": "The SDK\u2019s own visual odometry.",
+   "why": "The SDK\u2019s own visual odometry. On by default, and it needs depth, so depth is computed every frame even when nobody subscribes to it (wrapper f6978f5).",
    "ffc": {
     "layers": [
      true,

@@ -119,6 +119,15 @@
         ],
         "createdAt": "2026-10-31T01:59:27.943Z",
         "reason": "agent: data-src filled by JS with the Vite base URL; public/img/commanding/poac-kill-switch.webp exists"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "docs/workflow2.js"
+        ],
+        "createdAt": "2026-10-31T14:01:55.044Z",
+        "reason": "agent: an orchestration script whose prompt text mentions <img>; not a page"
       }
     ]
   }

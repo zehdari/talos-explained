@@ -223,7 +223,7 @@
     "design": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator/PoactuatorPCB4.PcbDoc",
     "project": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator",
     "schematic_pdf": "https://github.com/osu-uwrt/electric_boogaloo/releases/tag/talos_boards",
-    "notes": "Project PCB is PoactuatorPCB4 (ECO logs Jan 2024; PDF in the 2023-24 board-order release, Feb 2024). Last commit 2026-02-18: \"poactuator fix to create separate output for servo 12V\". Project title/revision fields are still the template placeholders, so no revision number."
+    "notes": "Project PCB is PoactuatorPCB4 (ECO logs Jan 2024; PDF in the 2023-24 board-order release, Feb 2024). A Feb 2026 commit adds a separate 12 V output for the servo."
    },
    "battery": null,
    "power": {
@@ -790,7 +790,7 @@
     "design_review": "01/08/2023",
     "team_lead": "Robert Pafford",
     "schematic_pdf": "https://github.com/osu-uwrt/electric_boogaloo/releases/tag/Tempest_mk_2",
-    "notes": "Designed for Tempest Mark 2 (Jan 2023) and reused on Talos. The repo has later edits (Oct-Dec 2025: \"ESC Voltage protector\", traces); unconfirmed whether the boards in Talos were rebuilt."
+    "notes": "Designed for Tempest Mark 2 (Jan 2023) and reused on Talos. The repo has later edits (Oct-Dec 2025: a voltage protector, traces); unconfirmed whether the boards in Talos were rebuilt."
    },
    "battery": null,
    "power": {
@@ -1750,7 +1750,7 @@
     "design": "https://github.com/osu-uwrt/electric_boogaloo/blob/master/TalosBoards/Year%20One/LED_Board/LED_Control.PcbDoc",
     "project": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/LED_Board",
     "schematic_pdf": "https://github.com/osu-uwrt/electric_boogaloo/releases/tag/talos_boards",
-    "notes": "Year One (2023-24) design; template placeholders for title/revision. A Year Two redesign (TalosBoards/Year Two/LED_Board, 5 drivers) exists in the repo."
+    "notes": "Year One (2023-24) design. A Year Two redesign (TalosBoards/Year Two/LED_Board, 5 drivers) exists in the repo."
    },
    "battery": null,
    "power": {
@@ -2534,7 +2534,20 @@
     "schematic_pdf": "https://github.com/osu-uwrt/electric_boogaloo/releases/tag/Tempest_mk_2"
    },
    "battery": null,
-   "power": null,
+   "power": {
+    "inputs": [
+     "VBAT (pack, J1 pin 8) through a DMP3056L P-FET soft latch (Q1) that the reed switch, PACK_PWR or the MCU (PWR_CTRL) can hold on"
+    ],
+    "makes": [
+     "5V (TS30041 buck, 1 A, 40 V max in)",
+     "3V3 (XC9236 buck, 600 mA)"
+    ],
+    "feeds": [
+     "RP2040 block",
+     "OLED (5V)",
+     "SHT41"
+    ]
+   },
    "ros": {
     "publishes": [
      "state/battery",
@@ -2737,6 +2750,9 @@
    },
    "battery": {
     "cells_in_series": 5,
+    "design_pack": "MaxAmps 8000 mAh 5S2P 18.5 V LiPo (8 Ah x 18.5 V = 148 Wh)",
+    "design_pack_note": "From the team's BMS notes: \"Designed for MaxAmps 8000 mAh 5S2P 18.5V LiPo battery pack\", charge to 4.15 V per cell, discharge no lower than 3.2 V per cell (i.e. about 16-20.75 V per pack in use). Chemistry ID 1356.",
+    "design_pack_source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L1-L4",
     "cells_source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/chemistry_identification/config.txt",
     "cell_protection_mV": {
      "under_voltage": 3000,
@@ -2747,9 +2763,21 @@
      "OCD2": 20000
     },
     "protection_source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/sbh_bms_config.gg.csv",
-    "note": "Values from the BQ40Z80 gas-gauge config file in the repo; unconfirmed that every pack runs exactly this file. The same file lists Design Capacity 2000 mAh, which may be a placeholder."
+    "note": "cell_protection_mV and OCD are the hard protection thresholds in the gas-gauge config file (CUV 3000 mV, COV 4200 mV); unconfirmed that every pack runs exactly this file. The same file lists Design Capacity 2000 mAh, which contradicts the 8000 mAh design pack and is probably a default: do not quote it."
    },
-   "power": null,
+   "power": {
+    "inputs": [
+     "cell stack: Pack_in+ (J2) and BAT- (J4)"
+    ],
+    "makes": [
+     "Pack+ (J3) = cells -> F1 45 A protector -> Q1/Q2 back-to-back N-FETs switched by the BQ40Z80"
+    ],
+    "feeds": [
+     "pack output Pack+/Pack- (J3/J5) to the robot",
+     "BAT+/BAT- to the MCU board (J10)",
+     "Pack+ through a 5 A fuse (F3) on J1 pin 3"
+    ]
+   },
    "ros": null,
    "landscape": false,
    "images": {
@@ -2955,7 +2983,16 @@
     "notes": "Latest commit 2026-09-24: \"Deleted NMOS components so that pin 1 on J2 is always at 5V\" (IMU power no longer switched)."
    },
    "battery": null,
-   "power": null,
+   "power": {
+    "inputs": [
+     "+5 and 3v3 from the Orin 40-pin header"
+    ],
+    "makes": [],
+    "feeds": [
+     "IMU: J2 pin 1 = +5 straight from the header (the NMOS power switch was removed 2026-09-24)",
+     "transceivers (3v3)"
+    ]
+   },
    "ros": null,
    "landscape": false,
    "images": {
@@ -3119,7 +3156,20 @@
     "schematic_pdf": "https://github.com/osu-uwrt/electric_boogaloo/releases/tag/talos_boards"
    },
    "battery": null,
-   "power": null,
+   "power": {
+    "inputs": [
+     "3V3 from the M.2 slot"
+    ],
+    "makes": [
+     "8V (LM27313 boost)",
+     "5V (LP38693-5.0 LDO from 8V)",
+     "1V8 (TLV70018)"
+    ],
+    "feeds": [
+     "gyro: J1 pin 1 = 5V",
+     "SP335E transceiver (3V3 + 1V8)"
+    ]
+   },
    "ros": null,
    "landscape": false,
    "images": {

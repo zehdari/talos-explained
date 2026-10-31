@@ -4,32 +4,312 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hull, frame and layout · How Talos works</title>
-<meta name="description" content="One or two sentences on what this chapter explains.">
+<meta name="description" content="Talos's mechanical design from the team's CAD: size and mass, the aluminium frame, the two-tube polycarbonate hull and how it seals, the electronics cages, battery pods, the eight-thruster layout, sensors and tools outside the hull, buoyancy and trim, opening the robot up, and how the geometry reaches the code.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">The vehicle</div>
+    <div class="kicker">The vehicle · Chapter 1</div>
     <h1>Hull, frame and layout</h1>
-    <p class="lede">One or two sentences: what this is and why a new member should care.</p>
+    <p class="lede">Talos is a sealed two-tube hull held in an open aluminium frame, with eight thrusters, two battery pods and its tools bolted on outside. Where everything sits, why it sits there, and how to get inside.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Three to five bullets a reader can stop after.</li>
+      <li>An open aluminium <span class="term">frame</span> carries everything. In the middle sits the <span class="term">main hull</span>: two clear tubes, one for the computer, one for the circuit boards. Batteries, sensors and tools mount outside.</li>
+      <li>925 mm wide, 639 mm tall, 582 mm long without the claw; 32.4 kg dry on a scale.</li>
+      <li>All eight T200 thrusters sit in one cross-section: four at the corners push fore and aft, four inner ones are tilted 45°.</li>
+      <li>Talos floats very slightly (+1.6 N). Its centre of buoyancy is about 2 cm above its centre of mass, so it rolls back upright; it is also slightly ahead, so with the thrusters off the model says it settles nose-up.</li>
+      <li>Each tube opens at its stern lid and its cage slides out. Every time Talos is sealed: clean the O-ring surfaces, then pressure-test.</li>
     </ul></aside>
+
     <div class="prose">
-      <p>Opening paragraph.</p>
-      <h2 id="first-section">First section</h2>
-      <p>Coming soon.</p>
+      <p>The numbers come from the team's SolidWorks CAD (<em>Talos 7-11-26</em>, saved 11 July 2026), the vehicle config <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml"><code>talos.yaml</code></a> and the MPC's model of the real robot. Where the CAD disagrees with the robot or a scale, the robot wins (<a href="#limits">what the CAD doesn't show</a>).</p>
     </div>
     <figure class="fig">
-      <div class="panel" id="some-figure"></div>
-      <figcaption><b>Bold lead-in.</b> What to look at. Tap or hover … (if interactive).</figcaption>
+      <div class="media-grid mx-photos">
+        <figure><img class="media" src="/img/mechanical/talos-front-lab.webp" width="1400" height="934" loading="lazy" alt="Talos from the front on a lab bench: two round viewports side by side, a stereo camera behind the left one and a fan behind the right one with a red kill switch handle on its rim, angled thruster arms at the four corners with black thruster guards, two buoyancy bottles on top and the DVL cylinder below the middle."></figure>
+        <figure><img class="media" src="/img/mechanical/talos-cages-out.webp" width="1400" height="937" loading="lazy" alt="Talos on a windowsill with both electronics cages taken out of the hull and standing in front of it: the board stack with green circuit boards on the left and the computer cage with its fan in the middle. The empty hull tubes show their red internal rings."></figure>
+      </div>
+      <figcaption><b>The real Talos.</b> Left: from the front; the forward camera is behind the starboard (left) window, the red kill switch handle on the port one. Right: both electronics cages out. Team photos, taken before the 2026 claw was added.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="explore">Talos in 3D</h2>
+      <p>The CAD, simplified to 233,000 triangles and coloured by system.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel flush mx-explorer" id="mx-explorer">
+        <div class="mx-chips" id="mx-chips" role="group" aria-label="Systems"></div>
+        <div class="mx-body">
+          <div class="mx-view" id="mx-view">
+            <canvas id="mx-canvas" aria-label="3D model of Talos from the CAD"></canvas>
+            <div class="mx-labels" id="mx-labels"></div>
+            <div class="mx-tip" id="mx-tip" hidden></div>
+            <div class="mx-loading" id="mx-loading">Loading the 2.7 MB model…</div>
+          </div>
+          <div class="mx-side">
+            <div class="mx-tools">
+              <div class="mx-tool"><span>Hull</span><div class="seg" role="group" aria-label="Hull" id="mx-hull"><button data-v="solid" aria-pressed="true">Solid</button><button data-v="glass" aria-pressed="false">See-through</button><button data-v="off" aria-pressed="false">Hidden</button></div></div>
+              <label class="mx-tool"><span>Pull apart</span><input type="range" id="mx-explode" min="0" max="1" step="0.01" value="0" aria-label="Pull apart"></label>
+              <div class="mx-tool"><span>Frames</span><div class="seg" role="group" aria-label="Show frames" id="mx-frames"><button data-v="off" aria-pressed="true">Off</button><button data-v="on" aria-pressed="false">COM, COB, frames</button></div></div>
+            </div>
+            <div class="mx-card" id="mx-card" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>Talos in 3D.</b> Drag to turn; pinch or scroll to zoom. Tap a name, a dot or a part. <em>Pull apart</em> spreads the systems out (the electronics slide out of the stern, as on the robot). <em>Frames</em> marks the centre of mass, the centre of buoyancy, <code>base_link</code> and <code>origin</code> from the configs.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="numbers">The numbers</h2>
+      <dl class="spec">
+        <dt>Size</dt><dd>925 × 720 × 711 mm (width × height × length) with the claw and magnet poker; 925 × 639 × 582 mm without (CAD). The <a href="robosub.html#rules">RoboSub</a> box is 0.9 × 0.9 × 1.8 m, so the width only fits along its long side.</dd>
+        <dt>Mass</dt><dd>32.444 kg dry on a scale, as deployed for the 2026-10-03 pool tests; 34.084 kg weighed wet straight after (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L7-L13"><code>talos.yaml</code> L7-13</a>). The MPC model uses 34.307 kg, from the newer "TalosMostlyGood" CAD (2026-10-24), with its volume and COB re-expressed to keep the identified net buoyancy (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml#L4-L7"><code>models/talos.yaml</code> L4-7</a>).</dd>
+        <dt>Inertia</dt><dd>1.84, 1.01 and 1.86 kg·m² in roll, pitch and yaw (July CAD). Pitch is the easy axis: the heavy parts are spread sideways.</dd>
+        <dt>Thrusters</dt><dd>8 Blue Robotics T200, limited to ±24 N each and 73 N in total (<a href="control/thrusters.html">Thrusters and allocation</a>).</dd>
+        <dt>Hull</dt><dd>Two polycarbonate tubes and bow windows with machined 6061 aluminium rings and lids, made by Xometry in 2021 (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">2026 report</a>, parts table).</dd>
+        <dt>Frame</dt><dd>6063 aluminium C-channel and 5052-H32 plates in the corner modules, 6061 angle in the cross bars, stainless cables and 316 turnbuckles; from 2023. Fasteners are 18-8 stainless.</dd>
+        <dt>Batteries</dt><dd>Two MaxAmps 8000 mAh 5S2P 18.5 V LiPo packs in milled 6061 aluminium pods (<a href="electrical.html#batteries">Power and wiring</a>).</dd>
+        <dt>Printed parts</dt><dd>Cages, mounts, spacers, launcher and claw bodies, the kill switch handle (the CAD tags ABS, PET or PBT; maybe not the real filament). TPU for the claw jaws and some cage mounts (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">2026</a>, <a href="https://org.osu.edu/osu-uwrt/files/2024/06/TDR_THEOhioStateUniversity_RS2024.pdf">2024</a> reports).</dd>
+      </dl>
+      <p>Every resolved CAD part adds up to 36.3 kg; without the hidden parts (an old ZED 2i, a bulkhead plate) and two duplicate foam blocks, about 34.9 kg (<code>talos.yaml</code> quotes 34.7). That is still 2.3–2.5 kg over the scale: the foam is weighed as water and the connectors as solid brass. Use the CAD to compare parts, not to weigh the robot.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel">
+        <div class="seg mx-mass-seg" role="group" aria-label="Group the CAD mass" id="mx-mass-seg"><button data-v="group" aria-pressed="true">By system</button><button data-v="material" aria-pressed="false">By material</button></div>
+        <div id="mx-mass"></div>
+      </div>
+      <figcaption><b>Where the CAD's 36.3 kg sits</b>, hidden and duplicate parts included. The main hull assembly (tubes, lids, cages, bottles) is half of it. Orange materials are overweight: <em>no material set</em> counts as 1000 kg/m³ (all the foam, every vendor model), and the brass is connector models. Tap a bar for its value.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="why">Why it looks like this</h2>
+      <p>Talos was built for RoboSub 2023. Three choices from the team's report that year still shape it (<a href="https://org.osu.edu/osu-uwrt/files/2023/06/TDR_THEOhioStateUniversity_RS2023.pdf">2023 report</a>):</p>
+      <ul>
+        <li><strong>Triangles, not sheets.</strong> The previous AUV hung everything on polyethylene sheets. Talos uses aluminium triangles tied with steel cables, checked by finite-element analysis: 2.7 kg lighter, 47 cm narrower. (The report says 6061; the CAD tags the C-channels 6063-O.)</li>
+        <li><strong>Tools under the hull:</strong> central, out of the thrusters' wash, and in the cameras' view.</li>
+        <li><strong>Adjustable balance.</strong> The battery pods slide fore and aft on indexed rails to move the centre of mass; foam blocks move the centre of buoyancy.</li>
+      </ul>
+      <table class="params">
+        <thead><tr><th>Year</th><th>Change since</th></tr></thead>
+        <tbody>
+          <tr><td>2024</td><td>Turnbuckles, so the frame comes apart. L-channel bars instead of square tube (screws fell inside). Bottles on top for buoyancy. ¼-20 battery rods instead of bending 8-32. Colour-coded SubConns, rubber bumpers (<a href="https://org.osu.edu/osu-uwrt/files/2024/06/TDR_THEOhioStateUniversity_RS2024.pdf">2024 report</a>).</td></tr>
+          <tr><td>2025</td><td>Rails press-fit inside the hull; the cages slide in with no screws. A ZED X Mini down camera against the bottom of the hull (<a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2025/07/Robosub_2025.pdf">2025 report</a>).</td></tr>
+          <tr><td>2026</td><td>A new claw with ribbed TPU jaws on a hinged mount, and a neutrally buoyant torpedo (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">2026 report</a>).</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="frame">The frame</h2>
+      <ul>
+        <li><strong>Four corner modules:</strong> two upper ("Dorito" in the CAD) and two lower ("Taco"). Each C-channel triangle carries two T200s with guards, a foam block and rubber handles; the upper two also have crane hooks.</li>
+        <li><strong>Two 432 mm cross bars</strong> ("Holy L Bars") under the hull carry the tools; four rails carry the battery pods.</li>
+        <li><strong>Eight stainless cables</strong> brace the modules. Cables only pull, so turnbuckles tension them; slacken those to take the frame apart.</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="media-grid mx-grid3">
+        <figure><img class="media mx-light" src="/media/cad/sub-frame-iso.webp" width="1600" height="1591" loading="lazy" alt="CAD render of the bare frame: four triangular corner modules in black with red plates, two cross bars underneath, battery rails and thin tension cables."><figcaption>The bare frame, 805 × 555 × 346 mm.</figcaption></figure>
+        <figure><img class="media mx-light" src="/media/cad/sub-thruster-module-upper-port.webp" width="1600" height="1376" loading="lazy" alt="CAD render of one upper corner module from the side: a triangle of black C-channel with a thruster in a white guard at its outer tip, a second thruster inside it, two rubber handles and a foam block."><figcaption>An upper "Dorito" module.</figcaption></figure>
+        <figure><img class="media mx-light" src="/media/cad/sub-thruster-module-lower-stbd.webp" width="1600" height="1359" loading="lazy" alt="CAD render of one lower corner module from the side: an inverted triangle of C-channel with its two thrusters, foam and feet."><figcaption>A lower "Taco" module.</figcaption></figure>
+      </div>
+      <figcaption><b>The frame from the CAD.</b> In the real robot (photos above) the top cable with its turnbuckle runs between the two upper modules, over the bottles.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="thrusters">Eight thrusters in one plane</h2>
+      <p>All eight T200s sit 1–2 cm ahead of the centre of mass, in one cross-section. Their names in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L392-L438"><code>talos.yaml</code></a> say where they are: <code>V</code> ("vector", the outer corners, fore and aft) or <code>H</code> ("heave", inner, tilted 45° to push up or down <em>and</em> sideways); then <code>U</code>pper or <code>L</code>ower; then <code>P</code>ort or <code>S</code>tarboard.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel mx-thr">
+        <div class="seg mx-thr-seg" role="group" aria-label="Motion" id="mx-thr-seg"></div>
+        <div class="mx-thr-body">
+          <div class="mx-thr-pic" id="mx-thr-pic">
+            <img src="/media/cad/talos-front.webp" width="1600" height="1265" alt="Talos from the front (CAD), with the thrusters marked." loading="lazy">
+            <svg id="mx-thr-svg" viewBox="0 0 1600 1265" aria-hidden="true"></svg>
+          </div>
+          <div class="mx-thr-card" id="mx-thr-card" aria-live="polite"></div>
+        </div>
+      </div>
+      <figcaption><b>Talos from the front, as the thrusters see it.</b> Pick a motion. Arrows are each thruster's push in this plane; ⊙ is toward you (forward), ⊗ away. Orange: spinning forward; blue: reversed. The mix is the minimum-effort one, from the poses in <code>talos.yaml</code> about the centre of mass (+). Tap a thruster for its details.</figcaption>
     </figure>
     <div class="prose">
-      <h2 id="second-section">Second section</h2>
-      <p>Coming soon.</p>
+      <ul>
+        <li><strong>Surge, yaw and pitch</strong> use only the corners: all four for surge (the lower pair a little harder, as the centre of mass sits nearer them), port against starboard for yaw, upper against lower for pitch.</li>
+        <li><strong>Heave, sway and roll</strong> use almost only the tilted four: two 45° pushes cancel sideways and add up and down, or the other way round. In heave and sway the corners add 2–3 % to cancel a small pitch or yaw, because the tilted four sit 1 cm ahead of the centre of mass.</li>
+      </ul>
+      <p>More in <a href="control/thrusters.html">Thrusters and allocation</a> (the 6×8 matrix) and <a href="thrusters-hw.html">Thrusters and ESCs</a> (motors and wiring).</p>
+
+      <h2 id="hull">The main hull</h2>
+      <p>The dry space for the computer, the boards and both cameras: two tubes side by side, joined by aluminium blocks at the bow and stern.</p>
+      <dl class="spec">
+        <dt>Tubes</dt><dd>Clear polycarbonate cylinders, 146 mm long, each clamped between two aluminium rings by four stainless tension rods.</dd>
+        <dt>Bow</dt><dd>A flat 3 mm polycarbonate window about 202 mm across on each tube. The forward camera looks out of the starboard one.</dd>
+        <dt>Stern</dt><dd>A removable lid on each tube, held by draw latches (four McMaster 6200A31 in the CAD). Every cable into the hull goes through bulkhead connectors on the lids.</dd>
+        <dt>Seals</dt><dd>Static O-rings: four X-profile lid O-rings (nitrile), four square-profile O-rings where the tubes meet the rings, and two lid gaskets.</dd>
+      </dl>
+      <p>Because the tubes are clear, the down camera can sit inside the starboard tube and look out through its bottom; mounting it directly against the wall keeps the curved shell's distortion small (<a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2025/07/Robosub_2025.pdf">2025 report</a>).</p>
+    </div>
+    <figure class="fig">
+      <div class="media-grid mx-grid2">
+        <figure><img class="media mx-light" src="/media/cad/sub-main-housing-iso.webp" width="1600" height="1132" loading="lazy" alt="CAD render of the main housing from the front: two clear tubes side by side with black rings, round bow windows, and the two buoyancy bottles on top."><figcaption>From the bow: windows, tubes, bottles on top.</figcaption></figure>
+        <figure><img class="media mx-light" src="/media/cad/sub-main-housing-rear.webp" width="1600" height="1207" loading="lazy" alt="CAD render of the main housing from the stern: two lids covered in bulkhead connectors, the white SubConn cover over the port lid's connectors, and latches around the rims."><figcaption>From the stern: lids, connectors, the SubConn cover.</figcaption></figure>
+      </div>
+      <figcaption><b>The main hull.</b> The port lid (left in the stern view) carries most of the connectors: 17 small bulkheads, the two battery connectors and the vacuum valve. The starboard lid carries the depth sensor and four more bulkheads (two DBH8F, two MCBH4F).</figcaption>
+    </figure>
+    <div class="prose">
+      <h3 id="sealing">Keeping water out</h3>
+      <ul>
+        <li><strong>Connectors:</strong> MacArtney SubConn bulkheads (MC, HP and D series; <a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">2026 report</a>), colour-coded so plugs go back where they came from.</li>
+        <li><strong>The pressure test:</strong> pump the hull down through the port lid's vacuum valve to 0.05 bar below ambient, then watch pressure and temperature for five minutes; a leak lets air back in. Below ambient is safer than pressurising (<a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2025/07/Robosub_2025.pdf">2025 report</a>). When it passes, the green SubConn cover goes on (<a href="pool-test.html#pvt">the depressurization test</a>).</li>
+        <li><strong>No leak sensor</strong> any more: a rising humidity reading on a board is the early warning (<a href="sensors.html#housekeeping">housekeeping sensors</a>).</li>
+      </ul>
+
+      <h3 id="inside">Inside: two cages</h3>
+      <ul>
+        <li><strong>Starboard, the computer cage:</strong> the Jetson AGX Orin, its GMSL2 camera card, the forward ZED X Mini, the VN-100 IMU, a 40 mm fan, and shelves for the network switch, fibre-optic gyro and breakout board (<a href="computers.html#orin">Computers and networks</a>).</li>
+        <li><strong>Port, the board stack:</strong> circuit boards behind a 90 mm fan, whose plate holds the Hall-effect kill switch sensor right behind the red handle (<a href="boards.html">The circuit boards</a>).</li>
+        <li><strong>Rails:</strong> since 2025 the cages slide on rails press-fit into the hull (the old screwed-in ones stripped). The down camera meets its cage through a slide-in adapter, so there's no cable to plug in by hand (<a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2025/07/Robosub_2025.pdf">2025 report</a>).</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="media-grid mx-grid3">
+        <figure><img class="media mx-light" src="/media/cad/sub-housing-internals-iso.webp" width="1600" height="1203" loading="lazy" alt="CAD render of both cages without the hull: the starboard computer cage in a red ring frame with the forward camera at its front, and the port board stack with green boards behind a black fan plate."><figcaption>Both cages, hull hidden.</figcaption></figure>
+        <figure><img class="media mx-light" src="/media/cad/ctx-computer-iso.webp" width="1600" height="1248" loading="lazy" alt="CAD render of the inside of the hull in grey with the Jetson Orin and its camera card in orange, in the starboard cage."><figcaption>The Orin and its camera card (orange).</figcaption></figure>
+        <figure><img class="media mx-light" src="/media/cad/ctx-electronics-cage-iso.webp" width="1600" height="1249" loading="lazy" alt="CAD render of the inside of the hull in grey with the port board stack in orange."><figcaption>The board stack (orange).</figcaption></figure>
+      </div>
+      <figcaption><b>Inside the main hull</b> (CAD assemblies <code>Cage Assembly</code> and <code>ECageClean</code>).</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="batteries">Battery pods</h2>
+      <ul>
+        <li><strong>Two milled aluminium pods</strong>, one per side on the frame's rails, each about 82 × 150 × 380 mm. The lid seals with an O-ring, each pod has a pressure-relief valve, and a window shows the pack's display (<a href="https://org.osu.edu/osu-uwrt/files/2023/06/TDR_THEOhioStateUniversity_RS2023.pdf">2023 report</a>).</li>
+        <li><strong>Swapped without tools.</strong> Compliant clips snap the pods onto indexed rails, and each has its own SubConns, so changing one never opens the main hull and its pressure test still holds. What's inside: <a href="electrical.html#batteries">Power and wiring</a>.</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="media-grid mx-grid2">
+        <figure><img class="media mx-light" src="/media/cad/ctx-battery-pods-iso.webp" width="1600" height="1759" loading="lazy" alt="CAD render of Talos in grey with the two battery pods in orange, one on each side of the main hull."><figcaption>The two pods on the robot.</figcaption></figure>
+        <figure><img class="media mx-light" src="/media/cad/sub-battery-pod-iso.webp" width="1600" height="1179" loading="lazy" alt="CAD render of one battery pod: a long black box with a ribbed lid, a window at one end and two connectors at the other."><figcaption>One pod: window end and connector end.</figcaption></figure>
+      </div>
+      <figcaption><b>The smart battery pods</b>, from the CAD.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="outside" data-short="Outside the hull">Sensors and tools outside the hull</h2>
+      <p>Anything that has to touch the water, or can be waterproofed on its own, mounts outside.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel mx-out" id="mx-out">
+        <div class="mx-out-pic"><img id="mx-out-img" class="media mx-light" src="/media/cad/ctx-dvl-below.webp" width="1600" height="1594" alt="" loading="lazy"></div>
+        <ul class="mx-out-list" id="mx-out-list" role="group" aria-label="Sensors and tools"></ul>
+      </div>
+      <figcaption><b>Where each one sits</b>, in orange on the CAD (the down camera on its own, in its red mount). Tap a row.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="trim">Buoyancy and trim</h2>
+      <p>Weight pulls down at the <span class="term">centre of mass</span> (COM); buoyancy, the weight of the water displaced, pushes up at the <span class="term">centre of buoyancy</span> (COB). From the MPC's model (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml#L17-L42"><code>models/talos.yaml</code></a>; volume and COB identified in the pool, mass from the newer CAD):</p>
+      <dl class="spec">
+        <dt>Weight</dt><dd>34.307 kg × g = 336.4 N, at the COM</dd>
+        <dt>Buoyancy</dt><dd>34.5 L × 998.2 kg/m³ × g = 338.1 N, at the COB</dd>
+        <dt>Net</dt><dd><b>+1.63 N up</b>. RoboSub wants at least 0.5 % of the mass (1.68 N) so a killed robot surfaces; the model is just under, the untethered fit of 2026-10-26 right on it (<a href="pool-test.html#trim">at the pool</a>).</dd>
+        <dt>COB</dt><dd>22.5 mm above the COM, 8.2 mm ahead of it and 2.3 mm to starboard.</dd>
+      </dl>
+      <ul>
+        <li><strong>Barely positive,</strong> because the thrusters hold every extra newton of float down for the whole run.</li>
+        <li><strong>COB above COM,</strong> so a tilt makes a couple that turns Talos back; the higher the COB, the stiffer.</li>
+        <li><strong>The float</strong> is mostly the air in the main hull, plus Blue Robotics R-3312 foam (one block per corner module, one between the tubes) and the two bottles added in 2024 when new mechanisms made Talos heavier.</li>
+      </ul>
+      <p>Because the COB is also 8 mm ahead of the COM, the model says Talos would hang nose-up with the thrusters off. With them on, the MPC holds it level and pays for that offset all the time. Try adding a part:</p>
+    </div>
+    <figure class="fig">
+      <div class="panel mx-trim">
+        <div class="controls mx-trim-controls">
+          <label>Added weight in water <input type="range" id="mx-trim-w" min="-400" max="400" step="10" value="150"><output id="mx-trim-wo"></output></label>
+          <div class="seg" role="group" aria-label="Thrusters" id="mx-trim-mode"><button data-v="on" aria-pressed="true">Thrusters holding level</button><button data-v="off" aria-pressed="false">Thrusters off</button></div>
+        </div>
+        <div class="mx-trim-body">
+          <div class="mx-trim-pic" id="mx-trim-pic">
+            <div class="mx-trim-rot" id="mx-trim-rot">
+              <img src="/media/cad/talos-side-port.webp" width="1600" height="1618" alt="Talos from the port side (CAD), bow to the left." loading="lazy">
+              <svg id="mx-trim-svg" viewBox="0 0 1600 1618" aria-hidden="true"></svg>
+            </div>
+            <svg class="mx-trim-top" id="mx-trim-top" viewBox="0 0 1600 1618" aria-label="Drag the orange dot to place the part"></svg>
+          </div>
+          <div class="mx-trim-out" id="mx-trim-out" aria-live="polite"></div>
+        </div>
+      </div>
+      <figcaption><b>Adding a part, from the side.</b> Drag the orange dot to where the part goes and set its weight in water: its weight minus the water it displaces (100 g of aluminium weighs 63 g in water; foam is negative). COM (blue) and COB (green) are the model's. <em>Thrusters off</em> tilts the picture to where the model says Talos would hang.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>The MPC doesn't know you added anything: it learns the unexplained force and torque as a <em>disturbance</em>, so Talos still flies, but the identification is off. The model file's rule: "Change the body and re-identify." Weigh the robot, update the mass in <code>talos.yaml</code> and the model file, and run <a href="control/identify.html">pool identification</a> again, untethered.</p>
+
+      <h2 id="service">Opening Talos up</h2>
+      <ul>
+        <li><strong>Into the hull:</strong> release a stern lid's latches; that tube's cage slides out on its rails.</li>
+        <li><strong>Batteries:</strong> clip the pods off their rails; the main hull stays sealed.</li>
+        <li><strong>The frame:</strong> slacken the turnbuckles to free the cables before unbolting modules.</li>
+        <li><strong>Carrying it:</strong> handles on every corner module, crane hooks on the upper two. The claw arm's hinged mount locks with retaining pins; rotate it up for transport so Talos can rest on a flat surface (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">2026 report</a>).</li>
+        <li><strong>The tether</strong> is Ethernet to the switch in the computer cage (<a href="computers.html#lan">the robot LAN and the tether</a>).</li>
+      </ul>
+      <div class="callout safety"><span class="label">Every time the hull is opened</span>
+        <ul>
+          <li>Inspect and clean the O-ring sealing surfaces inside both lids before closing (the first sign-off in <code>pretest bench</code>).</li>
+          <li>Redo the pressure test, and put the green SubConn cover back on only when it passes.</li>
+          <li>Before a pool test, once the checks are done, nobody opens Talos or swaps a part (<a href="pool-test.html#pvt">pool test</a>).</li>
+        </ul>
+      </div>
+
+      <h2 id="software">From CAD to code</h2>
+      <p>The software never reads the CAD. The geometry reaches it through a few hand-kept files:</p>
+    </div>
+    <figure class="fig">
+      <div class="panel" id="mx-graph"></div>
+      <div class="graph-note" id="mx-graph-note">Tap or hover a box.</div>
+      <figcaption><b>Where Talos's geometry lives.</b> Solid arrows are read by code; dashed ones are copied by a person. Tap or hover a box for the file and what it holds.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>All positions in <code>talos.yaml</code> are measured from one point, the <code>origin</code> frame: "the farthest-port screw on the front of the camera cage". In metres (x forward, y to port, z up):</p>
+      <table class="params">
+        <thead><tr><th>Point</th><th>x, y, z</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td><code>base_link</code></td><td>−0.14, 0.03, −0.09</td><td>The robot's position for TF, the EKF and the trees ("must be near center"), 9 cm below the tubes' axis</td></tr>
+          <tr><td>COM, <code>talos.yaml</code></td><td>−0.150, 0.037, −0.013</td><td>Measured dry, everything on</td></tr>
+          <tr><td>COM, MPC and Nereus</td><td>−0.150, 0.041, −0.016</td><td>From the post-pool wet weigh-in</td></tr>
+          <tr><td>COB</td><td>−0.142, 0.039, 0.007</td><td>Identified in the pool (MPC model)</td></tr>
+        </tbody>
+      </table>
+      <ul>
+        <li><strong>Into TF:</strong> <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py#L44-L70"><code>navigation.launch.py</code></a> runs xacro on <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/robots/talos.xacro"><code>talos.xacro</code></a>, which reads <code>talos.yaml</code>; <code>robot_state_publisher</code> publishes the <code>talos/…</code> frames (<a href="perception/frames.html">how TF works</a>).</li>
+        <li><strong>Into the MPC:</strong> poses from <code>talos.yaml</code>, the body from its model file (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/launch/mpc_controller.launch.py#L47"><code>mpc_controller.launch.py</code></a>). At start-up it warns if its IMU and DVL mounts differ from TF (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L620-L649"><code>mpc_controller_node.cpp</code></a>).</li>
+        <li><strong>Into Nereus:</strong> its own copy of the frames, body and meshes in <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml"><code>robots/talos/robot.yaml</code></a>, kept in step with the MPC model by hand. Right now it still has the 2026-10-03 body (34.084 kg) and the old torpedo and dropper poses.</li>
+        <li><strong>Moved or added something?</strong> Update <code>talos.yaml</code> and Nereus's copy, weigh the robot, re-identify.</li>
+      </ul>
+
+      <h2 id="gallery">Every side of Talos</h2>
+    </div>
+    <figure class="fig">
+      <div class="panel mx-gallery" id="mx-gallery">
+        <div class="mx-gal-main"><img id="mx-gal-img" class="media mx-light" src="/media/cad/talos-iso.webp" width="1600" height="1759" alt="" loading="lazy"></div>
+        <div class="mx-gal-side">
+          <p class="mx-gal-cap" id="mx-gal-cap"></p>
+          <div class="mx-legend" id="mx-legend" hidden></div>
+          <div class="mx-thumbs" id="mx-thumbs" role="group" aria-label="Views"></div>
+        </div>
+      </div>
+      <figcaption><b>The CAD renders, for when you need to point at something.</b> Tap a thumbnail. The systems views use the 3D model's colours.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="limits">What the CAD doesn't show</h2>
+      <ul>
+        <li><strong>Anything after July 2026.</strong> <code>talos.yaml</code> notes the robot's down camera is rolled 180° from the CAD, and gives the torpedo pose "as deployed 2026-10-03". The launcher here is the V8. The newer "TalosMostlyGood" assembly (2026-10-24, new external buoyancy; <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos_untuned.yaml#L8-L12"><code>talos_untuned.yaml</code></a>) isn't shown here.</li>
+        <li><strong>A true mass</strong> (<a href="#numbers">above</a>), the tether, or any cables but the thruster, battery and DVL ones.</li>
+        <li><strong>The config's origin.</strong> Shifting the CAD's camera positions by about (−0.14, +0.035, 0) m lands them within 6 mm of the <code>ffc</code> and <code>dfc</code> poses, which <code>talos.yaml</code> took from this CAD; the thrusters differ by 3–5 mm sideways. Treat CAD positions as ±5 mm.</li>
+      </ul>
+      <p class="src-list">Sources: the CAD data and pictures in <code>public/data/cad/</code> and <code>public/media/cad/</code> (how they were made: <code>docs/media/cad.md</code>); the chapter's numbers in <code>public/data/mechanical/mechanical.json</code>, built by <code>tools/mechanical/build_data.py</code> from the configs above.</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

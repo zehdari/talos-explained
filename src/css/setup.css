@@ -57,11 +57,11 @@ ol.steps .body p { margin: 0 0 0.4rem; }
 .sub .src a { color: var(--ink-2); }
 @media (max-width: 640px) {
   .sub-head { display: none; }
-  .sub > summary { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'name name' 'pin site' 'trk trk'; gap: 0.15rem 0.6rem; }
+  .sub > summary { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'name name' 'pin trk' 'site site'; gap: 0.15rem 0.6rem; }
   .sub .name { grid-area: name; }
-  .sub .pin { grid-area: pin; }
+  .sub .pin { grid-area: pin; white-space: nowrap; }
   .sub .trk { grid-area: trk; }
-  .sub .site { grid-area: site; justify-self: end; }
+  .sub .site { grid-area: site; }
   .sub .pin::before, .sub .trk::before, .sub .site::before { content: attr(data-l) ' '; color: var(--muted); font-size: 0.74rem; }
 }
 

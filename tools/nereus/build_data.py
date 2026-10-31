@@ -94,6 +94,7 @@ KEYS = {
         "water_optics": "Water colour, absorption and scattering the simulated cameras see.",
         "lighting": "Indoor or outdoor light, sun direction, glare.",
         "fixtures": "Raised or recessed fittings: stairs, grates, vents.",
+        "surface": "Floor and wall finish the viewer and cameras see: tile colour and tile size.",
     },
     "tasks": {
         "assets": "Every mesh and texture the task files use.",

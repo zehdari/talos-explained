@@ -96,6 +96,7 @@ while order:
             ports.append({'port': k, 'key': v, 'value': vals.get(v)})
         unmapped = [p for p in declared if p not in e.attrib]
         calls.append({'parent': tid, 'child': child, 'line': e.sourceline, 'shared': shared,
+                      'shared_attr': e.get('__shared_blackboard'),  # as written; None if left out (v3 then isolates)
                       'ports': ports, 'unmapped': unmapped})
         order.append(child)
 json.dump({'source': {'commit': commit, 'file': TREE}, 'main': main, 'calls': calls,

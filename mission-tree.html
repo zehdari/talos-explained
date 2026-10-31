@@ -40,6 +40,7 @@
         <li><strong>Every subtree has its own blackboard</strong> (<code>__shared_blackboard="false"</code>). Each attribute on a <code>SubTree</code> maps one of its ports to a <em>key</em> of the caller, never a value. That is why the file is full of lines like <code>&lt;SetBlackboard output_key="1" value="1"/&gt;</code>: to pass the number 1, the caller first stores it under the key <code>"1"</code>.</li>
         <li><strong>Who runs it.</strong> <code>doTask</code> ticks the tree every 30 ms until it returns SUCCESS or FAILURE, then disables the controller and sets the LEDs to pulsing green or red (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp"><code>DoTask.cpp</code></a>). You start it from the autonomy panel of the <a href="viewer.html">Nereus viewer</a>, in the sim and on the robot alike.</li>
         <li><strong>One step can end the mission early</strong>: the dive. Everything after it is inside a <code>ForceSuccess</code> or can't fail.</li>
+        <li><strong>The "error" number.</strong> Every convergence check compares mapping's <em>error</em> for an object with a threshold: the root of the summed squared variances, the angular ones divided by 2π (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_conditions/MapConverged.btcondition.hpp#L70-L80"><code>MapConverged</code></a>, <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/getCovariance.btaction.hpp#L73-L85"><code>getCovariance</code></a>). It is in m², not metres. With the same spread σ in x, y and z (and the angle terms left out) it is √3·σ², so σ = √(error/√3): 0.0005 is about 1.7 cm, 0.0025 about 4 cm, 0.02 about 11 cm, 0.3 about 42 cm. The σ values on this page are worked out that way (<a href="perception/frames.html#trees">Tree nodes that talk to mapping</a>).</li>
         <li><strong>One dead block.</strong> Right after the pinger, a <code>ForceSuccess</code> sets <code>target_image</code> to <code>buoy</code> or <code>compass</code>. No subtree is passed that key, so nothing reads it; the table picks its own image.</li>
       </ul>
 
@@ -85,16 +86,16 @@
     </figure>
 
     <div class="prose">
-      <p>Two things to try: search <code>FollowPath</code> to see every move the mission makes, and search <code>0.0005</code> to see every place it waits for a 2 cm estimate. Each task section below has a link that jumps the explorer there.</p>
+      <p>Two things to try: search <code>FollowPath</code> to see every move the mission makes, and search <code>0.0005</code> to see every place it waits for a 2 cm estimate. Each task section below has a link that jumps the explorer there. Its "In Nereus" line gives times on the replay's clock, in m:ss as the explorer shows them; a task's time doesn't include the transit to it (that is under <a href="#transit">Between tasks</a>).</p>
 
       <h2 id="start">Before the gate</h2>
       <p>Nothing moves until the kill switch is in, and nothing the cameras see moves the map until a task asks for it.</p>
       <dl class="spec">
-        <dt>Kill switch</dt><dd><code>WaitForKillSwitch</code>: LEDs solid red, read <code>state/kill</code> until it says not killed, then blink blue and wait 5 s.</dd>
+        <dt>Kill switch</dt><dd><code>WaitForKillSwitch</code>: LEDs solid red, wait 5 s, then read <code>state/kill</code> until it says not killed (with a 1 s wait after the read that says so). Then blink blue and wait 5 s more (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L3086-L3103">XML</a>). It runs once, at the start.</dd>
         <dt>Prep</dt><dd><code>PrepForRun</code>: lock the map with no target, reload the actuators (<code>command/actuator/notify_reload</code>), disarm.</dd>
         <dt>Dive</dt><dd>Hold the heading and ask for −0.56 m, which <code>PrimitiveMovePosition</code> pushes down to its −0.75 m minimum depth. It counts as done within 25 cm, with 60 s to get there; then level (15 s).</dd>
         <dt>If it fails</dt><dd>The dive is the one step with no <code>ForceSuccess</code>: if Talos isn't at depth after 60 s, the whole mission ends with FAILURE.</dd>
-        <dt>In Nereus</dt><dd>Kill switch at 33.8 s on the run's clock, dive done at 41.6 s, at about −0.52 m.</dd>
+        <dt>In Nereus</dt><dd>Kill switch in at 0:33, dive done at 0:41, at about −0.52 m. That counts: −0.52 m is within 25 cm of −0.75 m. Nereus spawns Talos at about −0.33 m, so the dive takes 2 s.</dd>
       </dl>
       <p class="src"><a class="mt-jump" href="#explorer" data-seg="Kill switch" data-node="WaitForKillSwitch">Open in the explorer ↑</a></p>
 
@@ -104,7 +105,7 @@
         <dt>Side</dt><dd>Repair goes through <code>gate_repair</code>. Where <code>gate_rescue</code> sits in that frame decides the slalom side: positive y sets <code>sla_pass_on_left</code> = 1.</dd>
         <dt>Moves</dt><dd>One <code>FollowPath</code>: 1 m in front of <code>gate_repair_frame</code>, then through it, 1.1 m below the frame (−1.35 m in Nereus), 60 s. After the flip, 1 m out the back (30 s).</dd>
         <dt>Flip</dt><dd><code>FlipTree</code> is the pre-MPC flip. It first disables the controller, then fails to set <code>controller__stunt__safe_mode</code> (the MPC has no such parameter) and gives up after 10 s. <code>FlipTreeMpc</code>, the MPC version (a path, with the DVL spoofed as still), is in the file but never called, and untested in the mission.</dd>
-        <dt>In Nereus</dt><dd>41.6 to 64.8 s. During the 10 s with the thrusters off, Talos floated up from −1.35 m to −1.03 m.</dd>
+        <dt>In Nereus</dt><dd>0:41 to 1:04. During the 10 s with the thrusters off, Talos floated up from −1.35 m to −1.03 m.</dd>
       </dl>
       <p class="src"><a class="mt-jump" href="#explorer" data-seg="Gate" data-node="GateTreeMpc">Open in the explorer ↑</a></p>
 
@@ -115,7 +116,7 @@
         <dt>Target</dt><dd><code>slalom_parent</code>, by <code>MiniSearchMpc</code>: forward camera 2.5 m in front, wait 5 s, then check the error every second until it is under 0.3 (σ ≈ 42 cm) or 15 s pass. Then lock the map.</dd>
         <dt>Moves</dt><dd>One <code>FollowPath</code> (180 s). For the front, middle and back sets: 0.75 m before, level with it, 0.375 m after, all 0.8 m to the side (a quarter of the 3.2 m row) on the side the gate chose. Then on to <code>pre_torpedo_pose_frame</code>, holding the slalom's heading.</dd>
         <dt>Why one path</dt><dd>The MPC flies through waypoints without stopping and settles only on the last. Each waypoint stays in its pole set's frame, so the path moves if mapping moves the frames.</dd>
-        <dt>In Nereus</dt><dd>64.8 to 99.3 s. The first check already read 0.00018.</dd>
+        <dt>In Nereus</dt><dd>1:04 to 1:39. The first check already read 0.00018.</dd>
       </dl>
       <p class="src"><a class="mt-jump" href="#explorer" data-seg="Slalom" data-node="SlalomPathMpc">Open in the explorer ↑</a></p>
 
@@ -125,7 +126,7 @@
         <dt>Listen</dt><dd>Lock the map. Move to <code>pre_torpedo_pose_frame</code>, sample the hydrophone 10 s (<code>/talos/acoustics/start_sample</code>, <code>stop_sample</code>), move to <code>pre_table_pose_frame</code>, sample 10 s. These moves use the older point-to-point <code>Move</code> subtree, not <code>FollowPath</code>.</dd>
         <dt>Decide</dt><dd><a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_acoustics/src/Acoustics.cpp"><code>riptide_acoustics</code></a> compares the two windows' pinger amplitude and publishes <code>buffer_0_closer</code>: true when the first stop (the torpedo's) was louder. The tree reads it as <code>pinger_is_table</code>. True: table, then torpedo. False: torpedo, then table.</dd>
         <dt>If it fails</dt><dd>If a service call fails, the read never happens, <code>pinger_is_table</code> stays empty, and <code>CompareNums</code> reads an empty port as 0: torpedo first. If the services work but no answer is published within 3 s, <code>GetBoolTopic</code> writes false and fails: torpedo first too.</dd>
-        <dt>In Nereus</dt><dd>99.3 to 132.1 s. The sim has no pinger, so the second <code>stop_sample</code> fails ("Cannot compare, buffer 0 has 0 samples"), its two retries get "Not sampling", <code>GetBoolTopic</code> never runs, and the run goes torpedo first.</dd>
+        <dt>In Nereus</dt><dd>1:39 to 2:12. The sim has no pinger, so the second <code>stop_sample</code> fails ("Cannot compare, buffer 0 has 0 samples"), its two retries get "Not sampling", <code>GetBoolTopic</code> never runs, and the run goes torpedo first.</dd>
       </dl>
       <p class="src"><a class="mt-jump" href="#explorer" data-seg="Pinger" data-node="RandomPingerTree">Open in the explorer ↑</a></p>
 
@@ -148,7 +149,7 @@
             <li>After the torpedo: <code>pre_torpedo</code> → <code>pre_bin</code> → <code>post_bin</code>, holding <code>pre_torpedo</code>'s heading, 120 s.</li>
           </ol></dd>
         <dt>If it fails</dt><dd>Each transit has its own <code>ForceSuccess</code>: if the path times out, the next task starts from wherever Talos stopped.</dd>
-        <dt>In Nereus</dt><dd>To the torpedo 132.1 to 144.9 s, to the table 165.9 to 182.5 s, to the bins 378.5 to 395.7 s.</dd>
+        <dt>In Nereus</dt><dd>To the torpedo 2:12 to 2:24, to the table 2:45 to 3:02, to the bins 6:18 to 6:35.</dd>
       </dl>
       <p class="src"><a class="mt-jump" href="#explorer" data-seg="To table" data-node="Path: leave torpedo, straight to the table">Open in the explorer ↑</a></p>
 
@@ -158,10 +159,10 @@
         <dt>On the way</dt><dd>Target <code>torpedo</code> (map unlocked), then a <code>FollowPath</code> to <code>pre_torpedo_pose_frame</code> that keeps facing <code>torpedo_frame</code> (60 s).</dd>
         <dt>Search</dt><dd>Forward camera. <code>SearchMpc</code> until the board's error is under 0.0025 (σ ≈ 4 cm) or 100 s (<a href="#search">below</a>). Even if it times out, Talos shoots.</dd>
         <dt>Holes</dt><dd>Arm. Stand off 1.5 m in front of the board, target <code>fire_hole_large</code> and <code>fire_hole_small</code> together, hold up to 30 s until both are under 0.0005 (σ ≈ 1.7 cm), lock the map.</dd>
-        <dt>Shot 1</dt><dd>Put <code>torpedo_0_link</code> 1.1 m, then 0.6 m from the large hole as one path, wait for the controller to settle, fire.</dd>
-        <dt>Shot 2</dt><dd>Slide <code>torpedo_1_link</code> to 0.6 m from the small hole, wait, fire. Disarm.</dd>
+        <dt>Shot 1</dt><dd>Put <code>torpedo_0_link</code> 1.1 m, then 0.6 m from the large hole as one path, wait for the controller to settle, fire. Path and wait get two tries, each up to 60 s of path and 60 s of settling, so a shot can come up to about 4 minutes late, but it always comes.</dd>
+        <dt>Shot 2</dt><dd>Slide <code>torpedo_1_link</code> to 0.6 m from the small hole, wait (two tries again), fire. Disarm.</dd>
         <dt>Settled means</dt><dd><code>WaitForController</code>: the MPC's <code>controller/scale/trust</code> above 0.985 on every axis, and the launcher's y offset in the hole's frame under 1 cm, within 60 s. Trust rises toward 1 while Talos sits within 2 cm and 2° of its setpoint and nearly still (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/include/riptide_mpc/settle_trust.hpp"><code>settle_trust.hpp</code></a>).</dd>
-        <dt>In Nereus</dt><dd>132.1 to 165.9 s. The board was centred 2.8 s after the search began; both holes converged 1.5 s after being targeted.</dd>
+        <dt>In Nereus</dt><dd>2:24 to 2:45. The board was centred 2.8 s after the search began; both holes converged 1.5 s after being targeted.</dd>
       </dl>
       <p class="src"><a class="mt-jump" href="#explorer" data-seg="Torpedo" data-node="TorpedoTreeMpc">Open in the explorer ↑</a></p>
 
@@ -173,10 +174,10 @@
         <dt>Four sorts</dt><dd><code>bandage</code> and <code>pill</code> into <code>helmet</code>, <code>nut_and_bolt</code> and <code>plug</code> into <code>warning</code>. Each is a pickup, a surface and a drop.</dd>
         <dt>Pickup</dt><dd>Search the item to 0.5 (just "seen"), 180 s. Hover the camera 1.5 m above it for up to 5 s until 0.0005. Lock the map, open the claw, bring <code>claw_link</code> 2 m above, then 15 cm, then onto the item (22 mm higher for the shorter bandage and plug), waiting for the controller (trust 0.95, 1 cm) at the last two. Close, and 2 s later back up.</dd>
         <dt>Surface</dt><dd><code>SurfaceTree</code>: over the table's centre, command z −0.3 m until above −0.35 m (15 s), then back down.</dd>
-        <dt>Drop</dt><dd>Claw 2 m above the basket, then 15 cm, wait, lock, open for 0.3 s, back up, close.</dd>
-        <dt>Finish</dt><dd>Go 1.5 m above the midpoint of the baskets, face the <code>hammer_and_wrench</code> image (rescue: <code>sos</code>), spin one full turn per item sorted, face it again and surface. Disarm, clear the background targets, forward camera.</dd>
+        <dt>Drop</dt><dd>Claw over the basket at its current height, then 2 m above it, then 15 cm. Wait for the controller, lock, open for 0.3 s, back up to 2 m, close.</dd>
+        <dt>Finish</dt><dd>Go over the midpoint of the baskets (the tree asks for 1.5 m above it, but <code>Move</code> keeps to the −0.75 m minimum depth, as for the dive; in Nereus the request was z −0.02 m and Talos held −0.75 m), face the <code>hammer_and_wrench</code> image (rescue: <code>sos</code>), spin one full turn per item sorted, face it again and surface. Disarm, clear the background targets, forward camera.</dd>
         <dt>Claw moves</dt><dd>The claw and surface moves use the older <code>Move</code> subtree (point-to-point setpoints), not <code>FollowPath</code>. The claw itself is <code>command/actuator/claw_move_s</code>: seconds to run it, + opens, − closes.</dd>
-        <dt>In Nereus</dt><dd>182.5 to 378.5 s, all four items. The table moved 5 cm and turned 0.6° to fit the baskets. Each sort took about 34 s.</dd>
+        <dt>In Nereus</dt><dd>3:02 to 6:18, all four items. The table moved 5 cm and turned 0.6° to fit the baskets. Each sort took about 34 s.</dd>
       </dl>
       <p class="src"><a class="mt-jump" href="#explorer" data-seg="Table" data-node="NewTableTreeMpc">Open in the explorer ↑</a></p>
 
@@ -187,7 +188,9 @@
         <dt>Target 1</dt><dd><code>DownwardSearchMpc</code> to 0.02 (σ ≈ 11 cm), 120 s, camera 2.15 m above. Arm.</dd>
         <dt>Drop 1</dt><dd><code>ShootDownwardObjectMpc</code>: hover the camera over it up to 3 s until 0.0005, freeze the classifier's buffer, lock, put <code>droppers_link</code> 1 m above, wait (trust 0.90, 1 cm, 30 s), fire the dropper (it checks one is left first).</dd>
         <dt>Target 2</dt><dd><code>start_binary_classifier_second</code>, then the same search and drop for <code>bin_target2</code>. Stop the classifier, disarm.</dd>
-        <dt>In Nereus</dt><dd>395.7 to 427.3 s. The second target needed the spiral: 8 s to come into view.</dd>
+        <dt>Freeze refused</dt><dd>The buffer freeze before the second drop is refused: by then the classifier is on the second vinyl, and mapping only freezes while tracking the <em>first</em> ("Can only lock the buffer while tracking the first instance"; <a href="perception/frames.html#binary">binary classifier</a>). The call is wrapped, so the drop goes ahead on the unfrozen estimate.</dd>
+        <dt>One difference</dt><dd>Here the search and the drop share one sequence: if <code>bin_target2</code> isn't under 0.02 after 120 s, the second marker is never dropped. The first drop happens whatever its search found.</dd>
+        <dt>In Nereus</dt><dd>6:35 to 7:07. The second target needed the spiral: 8 s to come into view.</dd>
       </dl>
       <p class="src"><a class="mt-jump" href="#explorer" data-seg="Bins" data-node="BinTreeMpc">Open in the explorer ↑</a></p>
 
@@ -199,7 +202,7 @@
         <dt>Look</dt><dd>Forward camera. Path to 1 m off magnet 1, facing it, at −0.8 m. <code>MiniSearchMpc</code> to 1.25 (a loose "seen" check), 20 s.</dd>
         <dt>Touch</dt><dd>Freeze the buffer, lock. <code>ActivateMagnetMpc</code>: <code>magnet_link</code> to 0.7 m off the magnet frame's +x side, turned and at depth in one move, then straight in; wait (trust 0.8, 1 cm, 20 s); hold 2 s.</dd>
         <dt>Magnet 2</dt><dd>Back out and on to magnet 2's search spot in one path, then the same. Finally back out again.</dd>
-        <dt>In Nereus</dt><dd>427.3 to 492.6 s.</dd>
+        <dt>In Nereus</dt><dd>7:07 to 8:12.</dd>
       </dl>
       <p class="src"><a class="mt-jump" href="#explorer" data-seg="Magnets" data-node="MagnetTreeMpc">Open in the explorer ↑</a></p>
 
@@ -207,7 +210,7 @@
       <dl class="spec">
         <dt>Moves</dt><dd>Log <code>WINNING TIME</code>, then one <code>FollowPath</code> (240 s): out of the bins, to <code>pre_return_home_frame</code>, then 1 m before, through and 1 m past <code>gate_frame</code>, 0.7 m below it, holding the heading. The gate is again the prior.</dd>
         <dt>Stop</dt><dd><code>KillController</code> sends DISABLED on <code>controller/linear</code> and <code>controller/angular</code> five times. <code>doTask</code> does it once more and pulses the LEDs green.</dd>
-        <dt>In Nereus</dt><dd>492.6 to 549.9 s, then "Tree ended with status SUCCESS".</dd>
+        <dt>In Nereus</dt><dd>8:12 to 9:09, then "Tree ended with status SUCCESS".</dd>
       </dl>
       <p class="src"><a class="mt-jump" href="#explorer" data-seg="Home" data-node="Path: leave bins, straight home through the gate">Open in the explorer ↑</a></p>
 
@@ -221,7 +224,7 @@
     </div>
     <figure class="fig">
       <div class="panel">
-        <div class="controls"><span class="seg" id="srch-pick" role="group" aria-label="Search pattern"><button data-s="0" aria-pressed="true">Torpedo: first sweep</button><button data-s="1" aria-pressed="false">Wider, farther</button><button data-s="2" aria-pressed="false">Wider, closer</button><button data-s="spiral" aria-pressed="false">Down: spiral</button></span></div>
+        <div class="controls"><span class="seg" id="srch-pick" role="group" aria-label="Search pattern"><button data-s="0" aria-pressed="true">First sweep</button><button data-s="1" aria-pressed="false">Wider, farther</button><button data-s="2" aria-pressed="false">Wider, closer</button><button data-s="spiral" aria-pressed="false">Spiral</button></span></div>
         <div id="srch-fig"></div>
         <div class="graph-note" id="srch-note"></div>
       </div>
@@ -234,7 +237,7 @@
         <thead><tr><th>What goes wrong</th><th>What the tree does</th></tr></thead>
         <tbody>
           <tr><td>A whole task fails</td><td>Its <code>ForceSuccess</code> turns it into a success; the next task starts.</td></tr>
-          <tr><td>A search times out</td><td>Searches are wrapped too: Talos shoots, grabs or drops on the estimate it has.</td></tr>
+          <tr><td>A search times out</td><td>Searches are wrapped too: Talos shoots, grabs or drops on the estimate it has. One exception: the second bin target, whose drop is skipped.</td></tr>
           <tr><td>The controller won't settle</td><td>Every <code>WaitForController</code> before a shot, grab or touch is wrapped: it acts anyway.</td></tr>
           <tr><td>A <code>FollowPath</code> times out, or makes no progress for 10 s</td><td>The rest of that sequence is skipped. A gate approach that times out skips the flip and the exit.</td></tr>
           <tr><td>An actuator call fails</td><td>Arming, torpedoes and droppers are all inside a <code>ForceSuccess</code> named "REMOVE ME": they can't fail the tree, so nothing retries them.</td></tr>
@@ -242,9 +245,35 @@
           <tr><td>A camera switch fails</td><td>The sequence it starts is skipped: the torpedo search, the bins, or that one table item.</td></tr>
           <tr><td>A classifier won't start</td><td>The bins (or the magnets) are skipped.</td></tr>
           <tr><td>The dive doesn't reach depth</td><td>The mission ends with FAILURE after 60 s.</td></tr>
-          <tr><td>The kill switch is pulled</td><td>The thrusters stop, but <code>doTask</code> keeps ticking: its kill check is commented out. Stop the tree from the viewer.</td></tr>
+          <tr><td>The kill switch is pulled</td><td>The thrusters stop, but the tree keeps running (below).</td></tr>
         </tbody>
       </table>
+
+      <div class="callout safety"><span class="label">The kill switch does not stop the mission</span>
+        <ul>
+          <li><strong>The tree keeps running.</strong> <code>doTask</code>'s kill check is commented out (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L235"><code>DoTask.cpp</code></a>), and <code>WaitForKillSwitch</code> only runs at the start.</li>
+          <li><strong>It hurries on while killed.</strong> The MPC cuts thrust and aborts the path it was flying ("vehicle killed"), and aborts every new path the same way (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1324-L1334"><code>mpc_controller_node.cpp</code></a>). Settle waits run out their time with trust at 0. The <code>ForceSuccess</code> wrappers move the mission on from task to task.</li>
+          <li><strong>Putting the switch back in resumes the run</strong> at whatever step the tree has reached, possibly several tasks later, and Talos flies whatever the tree commands next.</li>
+          <li><strong>To end a run, stop the tree</strong>: Stop or KILL in the viewer's autonomy panel (<a href="viewer.html#autonomy">Running a tree</a>). That needs the tether; untethered, keep the switch out until you can stop the tree.</li>
+        </ul>
+      </div>
+
+      <h2 id="leds">What the LEDs say</h2>
+      <p>In the pool the LEDs are often the only sign of what the tree is doing. The tree sets them with <code>SetStatus</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/SetStatus.btaction.hpp#L73-L145"><code>SetStatus.btaction.hpp</code></a>); <code>doTask</code> sets the last one when the tree ends (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L276-L283"><code>DoTask.cpp</code></a>).</p>
+      <table class="params mt-leds">
+        <thead><tr><th>LEDs</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><i class="mt-led" style="--c:#ff0000"></i>Solid red</td><td><code>waiting</code>: waiting for the kill switch.</td></tr>
+          <tr><td><i class="mt-led" style="--c:#0000ff"></i>Slow blue flash</td><td><code>starting</code>: switch in, 5 s to go.</td></tr>
+          <tr><td><i class="mt-led" style="--c:#ff6400"></i>Solid orange</td><td><code>searching</code>: a search is running.</td></tr>
+          <tr><td><i class="mt-led" style="--c:#ff00ff"></i>Slow magenta flash</td><td><code>aligning</code>: moving into place for a task's action.</td></tr>
+          <tr><td><i class="mt-led" style="--c:#0000ff"></i>Fast blue flash</td><td><code>performing</code>: doing it: the gate pass, a shot, a drop, the claw, a magnet touch.</td></tr>
+          <tr><td><i class="mt-led" style="--c:#00ff00"></i>Breathing green</td><td>The tree ended with SUCCESS.</td></tr>
+          <tr><td><i class="mt-led" style="--c:#ff0000"></i>Breathing red</td><td>The tree ended with FAILURE, or was stopped.</td></tr>
+          <tr><td><i class="mt-led" style="--c:#ff0000"></i>Fast red flash</td><td>An error while ticking the tree aborted it (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L319-L326"><code>DoTask.cpp</code></a>).</td></tr>
+        </tbody>
+      </table>
+      <p>The mission never sets <code>moving</code> (solid green); only the old <code>BuoyTree</code> subtree does. Between tasks the LEDs keep whatever the last task left.</p>
 
       <h2 id="watch">Things to watch</h2>
       <ul>

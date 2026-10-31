@@ -1,0 +1,467 @@
+{
+ "source": "public/data/rosgraph/rosgraph.json (Nereus full stack, 2026-10-30 21:30:14)",
+ "entries": [
+  "hardware",
+  "navigation",
+  "zed",
+  "tensorrt",
+  "mapping",
+  "autonomy",
+  "control_system",
+  "viewer"
+ ],
+ "links": [
+  {
+   "from": "hardware",
+   "to": "navigation",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "dvl_twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "kind": "topic",
+     "name": "gyro/twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "kind": "topic",
+     "name": "state/depth/raw",
+     "type": "riptide_msgs2/msg/Depth"
+    },
+    {
+     "kind": "topic",
+     "name": "vectornav/imu",
+     "type": "sensor_msgs/msg/Imu"
+    }
+   ]
+  },
+  {
+   "from": "hardware",
+   "to": "autonomy",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "state/actuator/busy",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "kind": "topic",
+     "name": "state/actuator/cmd_status",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "kind": "topic",
+     "name": "state/actuator/status",
+     "type": "riptide_msgs2/msg/ActuatorStatus"
+    },
+    {
+     "kind": "topic",
+     "name": "state/kill",
+     "type": "std_msgs/msg/Bool"
+    }
+   ]
+  },
+  {
+   "from": "hardware",
+   "to": "control_system",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "dvl_twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "kind": "topic",
+     "name": "gyro/twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "kind": "topic",
+     "name": "state/kill",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "kind": "topic",
+     "name": "state/thrusters/telemetry",
+     "type": "riptide_msgs2/msg/DshotPartialTelemetry"
+    },
+    {
+     "kind": "topic",
+     "name": "vectornav/imu",
+     "type": "sensor_msgs/msg/Imu"
+    }
+   ]
+  },
+  {
+   "from": "hardware",
+   "to": "viewer",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "dvl_twist",
+     "type": "geometry_msgs/msg/TwistWithCovarianceStamped"
+    },
+    {
+     "kind": "topic",
+     "name": "state/actuator/status",
+     "type": "riptide_msgs2/msg/ActuatorStatus"
+    },
+    {
+     "kind": "topic",
+     "name": "state/kill",
+     "type": "std_msgs/msg/Bool"
+    }
+   ]
+  },
+  {
+   "from": "navigation",
+   "to": "mapping",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "odometry/filtered",
+     "type": "nav_msgs/msg/Odometry"
+    }
+   ]
+  },
+  {
+   "from": "navigation",
+   "to": "autonomy",
+   "items": [
+    {
+     "kind": "service",
+     "name": "set_pose",
+     "type": "robot_localization/srv/SetPose"
+    },
+    {
+     "kind": "topic",
+     "name": "odometry/filtered",
+     "type": "nav_msgs/msg/Odometry"
+    }
+   ]
+  },
+  {
+   "from": "navigation",
+   "to": "control_system",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "depth/pose",
+     "type": "geometry_msgs/msg/PoseWithCovarianceStamped"
+    },
+    {
+     "kind": "topic",
+     "name": "odometry/filtered",
+     "type": "nav_msgs/msg/Odometry"
+    }
+   ]
+  },
+  {
+   "from": "zed",
+   "to": "hardware",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "ffc/zed_node/rgb/camera_info",
+     "type": "sensor_msgs/msg/CameraInfo"
+    },
+    {
+     "kind": "topic",
+     "name": "ffc/zed_node/rgb/image_rect_color/compressed",
+     "type": "sensor_msgs/msg/CompressedImage"
+    }
+   ]
+  },
+  {
+   "from": "zed",
+   "to": "tensorrt",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "ffc/zed_node/depth/depth_registered",
+     "type": "sensor_msgs/msg/Image"
+    },
+    {
+     "kind": "topic",
+     "name": "ffc/zed_node/rgb/camera_info",
+     "type": "sensor_msgs/msg/CameraInfo"
+    },
+    {
+     "kind": "topic",
+     "name": "ffc/zed_node/rgb/image_rect_color/compressed",
+     "type": "sensor_msgs/msg/CompressedImage"
+    }
+   ]
+  },
+  {
+   "from": "zed",
+   "to": "viewer",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "dfc/zed_node/rgb/image_rect_color/compressed",
+     "type": "sensor_msgs/msg/CompressedImage"
+    },
+    {
+     "kind": "topic",
+     "name": "ffc/zed_node/rgb/image_rect_color/compressed",
+     "type": "sensor_msgs/msg/CompressedImage"
+    }
+   ]
+  },
+  {
+   "from": "tensorrt",
+   "to": "mapping",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "detected_objects",
+     "type": "vision_msgs/msg/Detection3DArray"
+    }
+   ]
+  },
+  {
+   "from": "tensorrt",
+   "to": "autonomy",
+   "items": [
+    {
+     "kind": "service",
+     "name": "set_slalom_type",
+     "type": "riptide_msgs2/srv/SetString"
+    },
+    {
+     "kind": "topic",
+     "name": "detected_objects",
+     "type": "vision_msgs/msg/Detection3DArray"
+    }
+   ]
+  },
+  {
+   "from": "tensorrt",
+   "to": "viewer",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "yolo_orientation/visualization_marker_array",
+     "type": "visualization_msgs/msg/MarkerArray"
+    }
+   ]
+  },
+  {
+   "from": "mapping",
+   "to": "autonomy",
+   "items": [
+    {
+     "kind": "service",
+     "name": "mapping_target",
+     "type": "riptide_msgs2/srv/MappingTarget"
+    },
+    {
+     "kind": "topic",
+     "name": "mapping/fused",
+     "type": "std_msgs/msg/String"
+    }
+   ]
+  },
+  {
+   "from": "mapping",
+   "to": "viewer",
+   "items": [
+    {
+     "kind": "action",
+     "name": "map/model_tf",
+     "type": "chameleon_tf_msgs/action/ModelFrame"
+    },
+    {
+     "kind": "service",
+     "name": "mapping/reset_mapping",
+     "type": "std_srvs/srv/Trigger"
+    },
+    {
+     "kind": "service",
+     "name": "mapping_target",
+     "type": "riptide_msgs2/srv/MappingTarget"
+    },
+    {
+     "kind": "topic",
+     "name": "command/led",
+     "type": "riptide_msgs2/msg/LedCommand"
+    },
+    {
+     "kind": "topic",
+     "name": "state/mapping",
+     "type": "riptide_msgs2/msg/MappingTargetInfo"
+    }
+   ]
+  },
+  {
+   "from": "autonomy",
+   "to": "hardware",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "command/actuator/arm",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "kind": "topic",
+     "name": "command/actuator/dropper",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "kind": "topic",
+     "name": "command/actuator/notify_reload",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "kind": "topic",
+     "name": "command/actuator/torpedo",
+     "type": "std_msgs/msg/Empty"
+    }
+   ]
+  },
+  {
+   "from": "autonomy",
+   "to": "control_system",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "controller/angular",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    },
+    {
+     "kind": "topic",
+     "name": "controller/linear",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    }
+   ]
+  },
+  {
+   "from": "autonomy",
+   "to": "viewer",
+   "items": [
+    {
+     "kind": "action",
+     "name": "autonomy/run_tree",
+     "type": "riptide_msgs2/action/ExecuteTree"
+    },
+    {
+     "kind": "service",
+     "name": "autonomy/list_trees",
+     "type": "riptide_msgs2/srv/ListTrees"
+    },
+    {
+     "kind": "topic",
+     "name": "autonomy/tree_stack",
+     "type": "riptide_msgs2/msg/TreeStack"
+    },
+    {
+     "kind": "topic",
+     "name": "command/led",
+     "type": "riptide_msgs2/msg/LedCommand"
+    },
+    {
+     "kind": "topic",
+     "name": "controller/angular",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    },
+    {
+     "kind": "topic",
+     "name": "controller/linear",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    }
+   ]
+  },
+  {
+   "from": "control_system",
+   "to": "autonomy",
+   "items": [
+    {
+     "kind": "action",
+     "name": "follow_path",
+     "type": "riptide_msgs2/action/FollowPath"
+    }
+   ]
+  },
+  {
+   "from": "control_system",
+   "to": "viewer",
+   "items": [
+    {
+     "kind": "service",
+     "name": "setTeleop",
+     "type": "std_srvs/srv/SetBool"
+    },
+    {
+     "kind": "topic",
+     "name": "controller/mpc/planned_path",
+     "type": "nav_msgs/msg/Path"
+    },
+    {
+     "kind": "topic",
+     "name": "controller/mpc/predicted_path",
+     "type": "nav_msgs/msg/Path"
+    }
+   ]
+  },
+  {
+   "from": "viewer",
+   "to": "hardware",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "command/actuator/arm",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "kind": "topic",
+     "name": "command/actuator/claw",
+     "type": "std_msgs/msg/Bool"
+    },
+    {
+     "kind": "topic",
+     "name": "command/actuator/claw_move_s",
+     "type": "std_msgs/msg/Float32"
+    },
+    {
+     "kind": "topic",
+     "name": "command/actuator/dropper",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "kind": "topic",
+     "name": "command/actuator/notify_reload",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "kind": "topic",
+     "name": "command/actuator/torpedo",
+     "type": "std_msgs/msg/Empty"
+    },
+    {
+     "kind": "topic",
+     "name": "command/software_kill",
+     "type": "riptide_msgs2/msg/KillSwitchReport"
+    }
+   ]
+  },
+  {
+   "from": "viewer",
+   "to": "control_system",
+   "items": [
+    {
+     "kind": "topic",
+     "name": "controller/angular",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    },
+    {
+     "kind": "topic",
+     "name": "controller/linear",
+     "type": "riptide_msgs2/msg/ControllerCommand"
+    }
+   ]
+  }
+ ]
+}

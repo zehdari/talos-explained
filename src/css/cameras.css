@@ -55,3 +55,6 @@ table.cam-trees td:first-child { white-space: normal; }
 /* Bandwidth bars: values keep a paper halo where they cross the reference lines. */
 svg.chart text.bw-val { font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; fill: var(--ink); paint-order: stroke; stroke: var(--paper-2); stroke-width: 4px; stroke-linejoin: round; }
 svg.chart text.bw-val.in { fill: #fff; stroke: none; }
+
+/* Settings table: keep each setting name on one line where there is room (layout.js adds <wbr> after each _). */
+@media (min-width: 700px) { table.cam-settings td:first-child wbr { display: none; } }

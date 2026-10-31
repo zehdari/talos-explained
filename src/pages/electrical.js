@@ -96,6 +96,7 @@ const POWER_TREE = [
       ]],
     ]],
     ['reg5', 'Vreg', 'rail', [
+      ['mcu', '5 V, for its 3.3 V regulator', 'rail'],
       ['ccbb', '5 V on the camera-cage cable', 'rail', [
         ['sw', '5 V', 'rail'], ['depth', '5 V', 'rail'], ['fans', 'switched 5 V', 'rail'],
       ]],
@@ -113,8 +114,8 @@ const DATA_TREE = [
         ]],
         ['depth', 'I2C', 'i2c'],
       ]],
-      ['bat_p', 'external CAN (can1), 250 kbit/s', 'can2'],
-      ['bat_s', 'external CAN (can1), 250 kbit/s', 'can2'],
+      ['bat_p', 'external CAN (can1), 250 kbit/s, through the cage board', 'can2'],
+      ['bat_s', 'external CAN (can1), 250 kbit/s, through the cage board', 'can2'],
       ['imu', 'RS-232', 'serial'],
     ]],
     ['sw', 'Ethernet', 'eth', [['dvl', 'Ethernet, through the cage board', 'eth'], ['tether', 'Ethernet', 'eth']]],
@@ -145,6 +146,12 @@ async function systemDiagram() {
     { label: 'BOARD STACK', points: [[510, 28], [640, 28], [640, 290], [510, 290]], lx: 515, ly: 22 },
     { label: 'CAMERA CAGE', points: [[680, 270], [1084, 270], [1084, 600], [680, 600]], lx: 1000, ly: 264 },
   ];
+  // reg5 -> mcu runs straight up the regulator column, through reg12 and reg15: route it up the gap to their left.
+  const routeUp = (e) => {
+    const a = graph.nodes.get(e.from), b = graph.nodes.get(e.to);
+    const ax = a.x - a.w / 2 - 2, bx = b.x - b.w / 2 - 2, gx = Math.min(ax, bx) - 22, r = 12;
+    e.path.setAttribute('d', `M${ax},${a.y} H${gx + r} Q${gx},${a.y} ${gx},${a.y - r} V${b.y + r} Q${gx},${b.y} ${gx + r},${b.y} H${bx}`);
+  };
   let mode = 'power', selected = null;
   const hint = '<span class="el-hint">Tap or hover a block.</span>';
   const wide = document.createElement('div');
@@ -155,6 +162,8 @@ async function systemDiagram() {
     width: 1090, height: 640, nodes, edges, bands, arrows: false,
     info: (n) => { applyMode(); if (n) { selected = n.id; showCard(selected); } }, // the card keeps the last block shown, so its links stay clickable
   });
+
+  graph.edges.filter((e) => e.from === 'reg5' && e.to === 'mcu').forEach(routeUp);
 
   function showCard(id) {
     if (!id) { card.innerHTML = hint; return; }
@@ -212,6 +221,7 @@ async function systemDiagram() {
     const narrow = host.clientWidth < 640;
     wide.hidden = narrow;
     tree.hidden = !narrow;
+    host.closest('.el-sys').classList.toggle('el-narrow', narrow); // the phone tree greys nothing out
     if (!narrow && card.parentElement !== home) { home.insertBefore(card, homeNext); card.style.marginLeft = card.style.width = ''; }
     card.hidden = narrow && !tree.contains(card);
   };
@@ -230,7 +240,8 @@ async function systemDiagram() {
   function legend() {
     const items = Object.values(KIND).filter((k) => k.name && (mode === 'both' || k.layer === mode));
     document.getElementById('sys-legend').innerHTML = items.map((k) => `<span><i style="background:${k.color};height:${Math.min(k.width, 3)}px"></i>${k.name}</span>`).join('')
-      + (mode !== 'power' ? '<span><i class="dash" style="color:var(--state)"></i>external CAN</span>' : '');
+      + (mode !== 'power' ? '<span><i class="dash" style="color:var(--state)"></i>external CAN</span>' : '')
+      + (mode !== 'both' ? `<span class="el-greyed"><i></i>no ${mode} link drawn</span>` : '');
   }
   legend();
   drawTree();
@@ -280,7 +291,7 @@ async function voltLadder(pool) {
         const c = m.id === 'warn' ? 'var(--s4)' : 'var(--s8)';
         el('line', { x1: x, x2: x, y1: ly + 5, y2: y - 6, stroke: c, 'stroke-width': 1.5 }, g);
         el('circle', { cx: x, cy: y, r: 5, fill: c, stroke: 'var(--paper-2)', 'stroke-width': 2 }, g);
-        const t = el('text', { x: x + (i === marks.length - 1 ? 0 : 0), y: ly, 'text-anchor': i === 0 ? 'start' : x > W - 140 ? 'end' : 'middle', class: 'mlabel' }, g);
+        const t = el('text', { x, y: ly, 'text-anchor': i === 0 ? 'start' : x > W - 140 ? 'end' : 'middle', class: 'mlabel' }, g);
         t.textContent = `${m.label} ${m.pack_v} V`;
         el('rect', { x: x - 30, y: ly - 14, width: 60, height: y - ly + 22, fill: 'transparent' }, g);
         bind(g, m);
@@ -331,7 +342,6 @@ async function voltLadder(pool) {
   });
   new ResizeObserver(draw).observe(host);
   draw();
-  note.insertAdjacentHTML('afterend', '');
 }
 
 // ---------------------------------------------------------------- 3. power budget explorer

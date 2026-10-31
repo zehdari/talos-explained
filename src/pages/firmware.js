@@ -9,6 +9,8 @@ setup();
 const BASE = import.meta.env.BASE_URL;
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+// Line breaks after / and _ only, so long topic and fault names never split mid-word on a phone.
+const brk = (s) => esc(s).replace(/([/_])/g, '$1<wbr>');
 const hex = (v, n) => v.toString(16).toUpperCase().padStart(n, '0');
 
 // Segmented buttons: items [{id, label}], calls onPick(id); returns a setter.
@@ -32,7 +34,9 @@ const SHORT = { poac: 'POAC', esc: 'ESC', ccbb: 'Camera cage', led: 'LED', ivc: 
 Promise.all([
   fetch(BASE + 'data/firmware/firmware.json').then((r) => r.json()),
   fetch(BASE + 'data/firmware/pool_esc.json').then((r) => r.json()),
-]).then(([fw, pool]) => {
+  fetch(BASE + 'data/firmware/esc_spots.json').then((r) => r.json()),
+]).then(([fw, pool, spots]) => {
+  escBoard(spots);
   libList(fw);
   lifeGraph(fw);
   timerList(fw);
@@ -41,6 +45,67 @@ Promise.all([
   poolChart(pool);
   decoder(fw);
 });
+
+// ===================================================================== the ESC board, as the firmware sees it
+function escBoard(data) {
+  const TF = 'https://github.com/osu-uwrt/titan_firmware/blob/master/';
+  const a = (path, text) => `<a href="${TF}${path}">${text}</a>`;
+  // Parts in the order they are numbered. zoom: drawn on the close-up of the microcontroller corner, else on the whole board.
+  const PARTS = [
+    { refs: ['U1R'], zoom: true, t: 'RP2040 microcontroller', body: `Two Cortex-M0+ cores. Core 0 runs the main loop; core 1 runs the thruster loop. The PIO blocks make the DShot signals (PIO 0) and read the ESCs' telemetry lines (PIO 1) (${a('talos/ESCBoard/include/dshot.h#L53-L56', 'dshot.h')}).` },
+    { refs: ['U2R'], zoom: true, t: 'Flash, 16 MB', body: `Holds the bootloader (first 16 kB) and the application after it. Builds assume 2 MB (<code>PICO_FLASH_SIZE_BYTES</code>, ${a('lib/titan_boards/include/boards/mk2/blocks/rp2040_uwrt_block.h#L23', 'rp2040_uwrt_block.h')}), so most of the chip goes unused.` },
+    { refs: ['Y1R'], zoom: true, t: '12 MHz crystal', body: `The RP2040's clock. The CAN chip gets its own: the RP2040 divides its 48 MHz USB clock to 4 MHz on GPIO 21, and the CAN chip multiplies that to 40 MHz (${a('lib/driver_canbus/src/can_mcp251XFD.c#L53-L54', 'can_mcp251XFD.c')}).` },
+    { refs: ['U1C'], zoom: true, t: 'MCP2517FD CAN controller', body: `On SPI 0 (GPIO 17–20) at 20 MHz, interrupt on GPIO 22, driven by <code>driver_canbus</code>. It can do CAN FD; Talos runs it as classic CAN.` },
+    { refs: ['U2C'], zoom: true, t: 'CAN transceiver', body: 'Turns the controller\'s logic levels into the two-wire bus. No firmware of its own.' },
+    { refs: ['SW1C'], zoom: true, t: 'Termination switch', body: 'Puts the 120 Ω terminator across the bus. The firmware reads its position through the CAN chip and reports it in every CAN heartbeat. Only the two boards at the ends of the bus should have it on.' },
+    { refs: ['D1C'], zoom: true, t: 'Status LED', body: 'RGB, on GPIO 13–15 (red is also the fault LED). Blue enabled, green killed, yellow no agent, red no CAN, flashing red a fault; the bootloader adds white and cyan.' },
+    { refs: ['J1R'], zoom: true, t: 'Tag-Connect debug pad', body: 'SWD for flashing and GDB, plus the debug UART (TX on GPIO 16, 115200 baud), through a Pico running Picoprobe. It can also power the board, but only when nothing else is plugged in (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/docs/02_Testing_Firmware.md#connection-setup-1">testing docs, SWD</a>).' },
+    { refs: ['SW1R'], zoom: true, t: 'RESET button', body: 'Restarts the RP2040, into the bootloader\'s boot delay like any reset.' },
+    { refs: ['SW2R'], zoom: true, t: 'BOOT button', body: 'Held during a reset, it starts the RP2040\'s built-in USB loader instead (an <code>RPI-RP2</code> drive). The testing docs warn that some Mark 2 boards have damaged BOOT buttons.' },
+    { refs: ['J11'], zoom: true, t: 'USB', body: 'On this board, only for the RP2040\'s built-in USB loader: the ESC firmware has no USB console. On most Mark 2 boards USB doesn\'t power the board, so power it first.' },
+    { refs: ['SB1'], zoom: true, t: 'Board ID jumper', body: `Read on GPIO 29 at boot, by the bootloader and the application. Open: board 0, CAN client 2, thrusters 1–4 on the silk (0–3 in code). Bridged: board 1, client 3, thrusters 5–8 (${a('talos/ESCBoard/src/main.c#L36-L49', 'main.c')}).` },
+    { refs: ['J12'], zoom: true, t: 'Signal breakout', body: 'The DShot and telemetry line of every ESC on one header, for a scope or logic analyser. ESC 1 is on GPIO 6 and 7, ESC 2 on 4 and 5, ESC 3 on 2 and 3, ESC 4 on 0 and 1.' },
+    { refs: ['M1', 'M2', 'M3', 'M4'], t: 'APD 80F3 ESCs', body: 'One per thruster; "ESC 1/5" is slot 1 on board 0 and slot 5 on board 1. Each gets DShot600 on its signal pin and answers on the same wire with its RPM. A second, one-way line sends temperature, voltage, current and RPM as serial data. The ESCs run APD\'s own firmware, patched by the team for reversible DShot.' },
+    { refs: ['J7', 'J8', 'J9', 'J10'], t: 'FLASH CONN headers', body: `5 V, RX, TX and GND into each ESC. Not for the RP2040: the ESCs' own firmware and settings (<code>Talos_Config.cfg</code>) are loaded with APD's tools (${a('talos/ESCBoard/esc_firmware_patching/README.md', 'README')}).` },
+    { refs: ['J6'], t: 'Stack link', body: 'CAN high and low (two pins each), 5 V and ground: the board\'s bus and its logic power.' },
+    { refs: ['R3'], t: 'Supply sense', body: `R3 and R4 divide the thruster supply by 11 into the ADC on GPIO 28. Under 9 V the firmware sets <code>ESC_BOARD_OFF</code>; when power returns it holds <code>ESC_POWERON_DELAY</code> for 5 s while the ESCs start (${a('talos/ESCBoard/include/dshot.h#L28-L39', 'dshot.h')}).` },
+  ];
+  PARTS.forEach((p, i) => { p.n = i + 1; });
+  const S = data.spots;
+  const img = BASE + data.image;
+  const [IW, IH] = data.image_px;
+  // close-up window, as fractions of the image
+  const Z = { x0: 0.005, x1: 0.17, y0: 0.215, y1: 0.715 };
+  const pct = (v) => (v * 100).toFixed(3) + '%';
+  const marker = (p, ref, x, y) => `<button type="button" class="escx-m" data-n="${p.n}" style="left:${pct(x)};top:${pct(y)}" aria-label="${p.n}: ${esc(p.t)}${p.refs.length > 1 ? ' (' + ref + ')' : ''}">${p.n}</button>`;
+  const whole = $('#escx-whole');
+  whole.innerHTML = `<div class="escx-pic" style="aspect-ratio:${IW}/${IH}"><img src="${img}" width="${IW}" height="${IH}" alt="Render of the ESC MK II board: the microcontroller corner on the left, four APD ESC modules across the middle, the thruster connector on the right and the power terminals along the bottom." loading="lazy">
+    <span class="escx-box" style="left:${pct(Z.x0)};top:${pct(Z.y0)};width:${pct(Z.x1 - Z.x0)};height:${pct(Z.y1 - Z.y0)}"></span>
+    ${PARTS.filter((p) => !p.zoom).flatMap((p) => p.refs.filter((r) => S[r]).map((r) => marker(p, r, S[r].x, S[r].y))).join('')}</div>`;
+  const zw = Z.x1 - Z.x0, zh = Z.y1 - Z.y0;
+  $('#escx-zoom').innerHTML = `<div class="escx-pic zoomed" style="aspect-ratio:${(zw * IW).toFixed(1)}/${(zh * IH).toFixed(1)}">
+    <img src="${img}" alt="Close-up of the microcontroller corner of the ESC board." loading="lazy" style="width:${pct(1 / zw)};left:${pct(-Z.x0 / zw)};top:${pct(-Z.y0 / zh)}">
+    ${PARTS.filter((p) => p.zoom).flatMap((p) => p.refs.filter((r) => S[r]).map((r) => marker(p, r, (S[r].x - Z.x0) / zw, (S[r].y - Z.y0) / zh))).join('')}</div>`;
+  const list = $('#escx-list');
+  list.innerHTML = PARTS.map((p) => `<button type="button" data-n="${p.n}"><b>${p.n}</b>${esc(p.t)}</button>`).join('');
+  const note = $('#escx-note');
+  const fig = $('#escx');
+  const pick = (n) => {
+    const p = PARTS[n - 1];
+    fig.querySelectorAll('[data-n]').forEach((b) => b.classList.toggle('on', +b.dataset.n === n));
+    list.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.n === n)));
+    note.innerHTML = `<b>${p.n} · ${esc(p.t)}</b> <span class="ref">${p.refs.join(', ')}</span><br>${p.body}`;
+  };
+  fig.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-n]');
+    if (b) pick(+b.dataset.n);
+  });
+  fig.addEventListener('mouseover', (e) => {
+    const b = e.target.closest('.escx-m');
+    if (b && matchMedia('(hover: hover)').matches) pick(+b.dataset.n);
+  });
+  pick(1);
+}
 
 // ===================================================================== libraries
 function libList(fw) {
@@ -155,6 +220,19 @@ function timerList(fw) {
     esc: [['Thruster loop on core 1', 'never faster than this; 2376 Hz measured', 'bg', fw.esc.dshot_min_frame_time_us / 1000]],
     ccbb: [['Depth sensor poll', '<code>state/depth/raw</code> on each new reading', 'bg', fw.depth.polling_ms]],
   };
+  // What a board does with each subscription, where the name doesn't say (read from each board's ros.c on master).
+  const SUBNOTE = {
+    'state/kill': 'its kill slot: true, or 500 ms of silence, kills the board',
+    'poac:command/software_kill': 'the three software kill slots',
+    'sbh:command/software_kill': 'only to notice whether a slot-1 sender (once RViz) is around',
+    'sbh:state/leak': 'its leak shutdown is commented out',
+    'state/physkill_notify': 'flashes red when the hull switch comes out, blue when it goes in',
+    'command/thruster_rpm': 'eight RPMs, four per board; the MPC uses raw CAN instead',
+    'poac:command/electrical': 'acts on ENABLE_FANS, DISABLE_FANS',
+    'ccbb:command/electrical': 'acts on CYCLE_COMPUTER, fans, LEDs, CLEAR_DEPTH',
+    'sbh:command/electrical': 'acts on CYCLE_ROBOT, KILL_ROBOT_POWER',
+    'led:state/depth/raw': 'from the camera cage board: full brightness only underwater',
+  };
   const host = $('#timer-list');
   const draw = (id) => {
     const p = fw.projects.find((q) => q.id === id);
@@ -169,7 +247,9 @@ function timerList(fw) {
       <span class="what">${r.what}${r.sub ? `<small>${r.sub}</small>` : ''}</span>
       <span class="every">${r.ms < 1 ? (r.ms * 1000).toFixed(0) + ' µs' : r.ms >= 1000 ? r.ms / 1000 + ' s' : r.ms + ' ms'}</span>
       <span class="bar"><i style="width:${(lg(r.ms) * 100).toFixed(1)}%"></i></span></div>`).join('')}</div>
-      <div class="tm-legend"><span><i style="background:var(--state)"></i>ROS task (only while connected)</span><span><i style="background:var(--muted)"></i>background, always</span><span>bar length: rate, log scale</span></div>`;
+      <div class="tm-legend"><span><i style="background:var(--state)"></i>ROS task (only while connected)</span><span><i style="background:var(--muted)"></i>background, always</span><span>bar length: rate, log scale</span></div>
+      ${id === 'sbh' ? '<p class="tm-off">No agent on <code>can1</code> since 27 Oct 2026 (<a href="https://github.com/osu-uwrt/riptide_core/commit/720bdd9">720bdd9</a>): none of these arrive for now, and the housings\' ROS tasks don\'t run.</p>' : ''}
+      <div class="tm-subs"><span class="lbl">Listens to</span>${p.subscribes.map((t) => `<span class="tm-sub"><code>${esc(t.topic).replace(/\//g, '/<wbr>')}</code><small>${esc(t.type)}</small>${(SUBNOTE[id + ':' + t.topic] || SUBNOTE[t.topic]) ? `<em>${SUBNOTE[id + ':' + t.topic] || SUBNOTE[t.topic]}</em>` : ''}</span>`).join('')}</div>`;
   };
   seg($('#timer-pick'), fw.projects.map((p) => ({ id: p.id, label: SHORT[p.id] })), 'poac', draw);
   draw('poac');
@@ -501,16 +581,18 @@ function killGraph() {
     { from: 'poac', to: 'ivc', dash: true },
     { from: 'poac', to: 'sbh', dash: true, opacity: 0.4 },
   ];
+  // Phone layout: the POAC board in the middle, its inputs on the left, everything it feeds fanned out
+  // clockwise from thruster power, so no two lines cross.
   const narrow = {
-    below: 560, width: 360, height: 480,
+    below: 560, width: 360, height: 365,
     nodes: {
-      sw: { x: 85, y: 35 }, pwr: { x: 270, y: 35 }, viewer: { x: 288, y: 108 }, top: { x: 288, y: 163 }, dbg: { x: 288, y: 218 },
-      poac: { x: 105, y: 163 }, escs: { x: 85, y: 285 }, ccbb: { x: 275, y: 290 }, led: { x: 275, y: 345 }, ivc: { x: 275, y: 400 },
-      sbh: { x: 150, y: 448 },
+      sw: { x: 70, y: 35 }, pwr: { x: 285, y: 35 }, viewer: { x: 58, y: 115 }, top: { x: 58, y: 165 }, dbg: { x: 58, y: 215 },
+      poac: { x: 178, y: 175 }, escs: { x: 298, y: 118 }, sbh: { x: 302, y: 228, label: 'Batteries' },
+      ivc: { x: 290, y: 325 }, led: { x: 180, y: 325 }, ccbb: { x: 68, y: 310 },
     },
     edges: {
       'sw>pwr': { label: '' }, 'sw>poac': { label: '', bend: 0 }, 'dbg>poac': { label: '' }, 'poac>pwr': { label: '' },
-      'pwr>escs': { label: '', bend: 0, via: [195, 125] }, 'poac>escs': { label: '' }, 'poac>sbh': { via: [190, 340] },
+      'pwr>escs': { label: '' }, 'poac>escs': { label: '' },
     },
   };
   const note = $('#kill-note');
@@ -571,10 +653,12 @@ function decoder(fw) {
     ...(id === 'esc' ? [{ id: 'flags', label: 'disabled_flags' }] : []),
     ...(id === 'poac' ? [{ id: 'kill', label: 'kill_switches_*' }] : []),
   ];
+  // A sensible example per field: two faults, a killed ESC board with its power cut, the viewer slot asserting kill.
+  const EXAMPLE = { faults: '0x14', flags: '0x3', kill: '0x2' };
   const setField = () => {
     const fs = fieldsFor(board);
-    if (!fs.find((f) => f.id === field)) field = 'faults';
-    seg($('#dec-field'), fs, field, (id) => { field = id; draw(); });
+    if (!fs.find((f) => f.id === field)) { field = 'faults'; $('#dec-val').value = EXAMPLE.faults; }
+    seg($('#dec-field'), fs, field, (id) => { field = id; $('#dec-val').value = EXAMPLE[id]; draw(); });
   };
   const draw = () => {
     const p = fw.projects.find((q) => q.id === board);
@@ -595,12 +679,13 @@ function decoder(fw) {
       const unknown = [];
       for (let b = 0; b < 32; b++) if (Math.floor(v / 2 ** b) % 2 === 1 && !rows.find((r) => r.bit === b)) unknown.push(b);
       rows.forEach((r) => (r.on = set.includes(r)));
-      ver.className = 'verdict' + (set.length || unknown.length ? ' bad' : '');
-      ver.innerHTML = (set.length ? `Set: ${set.map((r) => `<code>${esc(r.name)}</code>`).join(', ')}.` : 'Nothing set.') +
-        (unknown.length ? ` Bits ${unknown.join(', ')} aren't defined for this board.` : '') +
-        (field === 'kill' && v ? ' Read it against the field it came from: enabled, asserting kill, needs update or timed out.' : '');
+      ver.className = 'verdict' + (set.length ? ' bad' : '');
+      const list = (a) => (a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : String(a[0]));
+      ver.innerHTML = (set.length ? `Set: ${set.map((r) => `<code>${brk(r.name)}</code>`).join(', ')}.` : 'Nothing set.') +
+        (unknown.length ? ` <span class="unk">${unknown.length > 1 ? 'Bits' : 'Bit'} ${list(unknown)} ${unknown.length > 1 ? 'aren\'t' : 'isn\'t'} defined for this ${field === 'faults' ? 'board' : 'field'}.</span>` : '') +
+        (field === 'kill' && v ? ' <span class="unk">Read it against the field it came from: enabled, asserting kill, needs update or timed out.</span>' : '');
     }
-    $('#dec-table').innerHTML = rows.map((r) => `<tr class="${r.on ? 'on' : ''}${r.quiet ? ' quiet' : ''}"><td class="bit">${r.bit}</td><td class="nm">${esc(r.name)}</td><td>${esc(r.desc)}</td></tr>`).join('');
+    $('#dec-table').innerHTML = rows.map((r) => `<tr class="${r.on ? 'on' : ''}${r.quiet ? ' quiet' : ''}"><td class="bit">${r.bit}</td><td class="nm">${brk(r.name)}</td><td>${esc(r.desc)}</td></tr>`).join('');
   };
   $('#dec-board').addEventListener('change', (e) => { board = e.target.value; setField(); draw(); });
   $('#dec-val').addEventListener('input', draw);

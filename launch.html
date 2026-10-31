@@ -4,32 +4,279 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Launching the stack · How Talos works</title>
-<meta name="description" content="One or two sentences on what this chapter explains.">
+<meta name="description" content="How Talos's software starts: the remote launcher on the Orin and its launch lists, every launch file and node they start, the order and why, sim.launch.py in Nereus, hardware in the loop, scripting the launcher, logs, and the controller safety rule.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Running Talos</div>
+    <div class="kicker">Running Talos · Chapter 1</div>
     <h1>Launching the stack</h1>
-    <p class="lede">One or two sentences: what this is and why a new member should care.</p>
+    <p class="lede">About thirty programs make Talos work. Nobody starts them by hand: on the robot a web page on the Orin starts them from a list, and in the simulator one command starts everything. This chapter shows what starts, in what order, and why.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Three to five bullets a reader can stop after.</li>
+      <li>On the Orin, the <code>ros_launcher</code> service serves a page at <code>http://orin2:8080</code>. You load a list (a YAML file) and press Start on each entry. Each entry is one ROS 2 launch file.</li>
+      <li>The pool list, <code>talos_launch_mpc.yaml</code>, starts 27 processes in use: board link and sensor drivers, the EKF, both cameras, the detector, mapping, the behaviour trees and the MPC.</li>
+      <li>In Nereus, <code>ros2 launch nereus sim.launch.py</code> starts the simulator, the same launch files with the simulator standing in for hardware, and the viewer.</li>
+      <li>Nothing enforces the order. Start sensors first and <code>control_system</code> last, with Talos killed. Never start it on the bench.</li>
+      <li>Node output appears on the launcher page; <code>journalctl -u ros_launcher</code> only holds the launcher's own messages.</li>
     </ul></aside>
+
     <div class="prose">
-      <p>Opening paragraph.</p>
-      <h2 id="first-section">First section</h2>
-      <p>Coming soon.</p>
+      <h2 id="ways">Four ways to start Talos</h2>
+      <p>The same launch files run in every setup. What changes is which list is loaded and who stands in for the hardware.</p>
+      <table class="params ways">
+        <thead><tr><th>Where</th><th>On the Orin</th><th>On the laptop</th></tr></thead>
+        <tbody>
+          <tr><td><b>Pool test</b></td><td>Launcher, <code>talos_launch_mpc.yaml</code></td><td>Viewer only: <code>robot.launch.py</code></td></tr>
+          <tr><td><b>Bench</b></td><td>Launcher, <code>talos_launch_bench_mpc.yaml</code>, no controller</td><td>Viewer only, or <a href="pool-test.html#pretest"><code>pretest bench</code></a></td></tr>
+          <tr><td><b>Simulation</b></td><td>Nothing</td><td><code>sim.launch.py</code>: everything</td></tr>
+          <tr><td><b>Hardware in the loop</b></td><td>Launcher, <code>talos_launch_sim_hil_mpc.yaml</code></td><td><code>sim.launch.py stack:=false</code></td></tr>
+        </tbody>
+      </table>
+      <p>Why a web page and not <code>ros2 launch</code> over SSH? The <a href="https://github.com/osu-uwrt/riptide_launch/tree/newsim#readme">README</a> gives the reasons: it starts the vehicle "without the need for an active SSH connection", and it lets GUIs control each subsystem.</p>
+      <ul>
+        <li><strong>No laptop has to stay connected.</strong> The nodes are children of a system service, not of anyone's terminal.</li>
+        <li><strong>Each piece is separate.</strong> Any browser or script can start, stop and watch one entry without touching the others.</li>
+        <li><strong>Nothing gets lost.</strong> The service keeps track of every process it started (<a href="#launcher">below</a>).</li>
+      </ul>
+
+      <h2 id="explorer" data-short="The launch explorer">Every process, from the real files</h2>
+      <p>The explorer below was made by running each list and launch file through the ROS 2 launch library itself, the same code <code>ros2 launch</code> uses, without starting anything (<a href="https://github.com/zehdari/talos-explained/blob/main/tools/launch/build_tree.py"><code>tools/launch/build_tree.py</code></a>). Includes, conditions, namespaces and arguments resolve exactly as they would on the Orin. A launch file is a Python script that lists nodes and includes other launch files; <a href="ros2.html#launch">ROS 2, the Talos way</a> explains one.</p>
+    </div>
+    <figure class="fig wide" id="explorer-fig">
+      <div class="panel lx">
+        <div class="lx-top">
+          <div class="seg lx-modes" role="group" aria-label="Setup" id="lx-modes"></div>
+          <label class="lx-older">Older lists <select id="lx-older" aria-label="Older launch lists"><option value="">choose…</option></select></label>
+        </div>
+        <p class="lx-desc" id="lx-desc"></p>
+        <div class="lx-bar" id="lx-bar" aria-label="Processes by subsystem"></div>
+        <div class="lx-cols" id="lx-cols"></div>
+      </div>
+      <figcaption><b>What each setup starts, entry by entry.</b> Numbered rows are the launcher's entries in list order; indented file names are the launch files they include; the coloured rows are the programs that run. Tap an entry's name for its arguments and the topics the launcher waits for; tap a program for what it does, its parameters and the line that starts it. The bar counts processes (a container counts once, however many components it holds).</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="entries" data-short="The pool list">The pool list, entry by entry</h2>
+      <p><a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml"><code>talos_launch_mpc.yaml</code></a> has nine entries. Every one passes <code>robot:=talos</code>: most launch files default it to <code>tempest</code>, an older robot, and nodes started without it land under <code>/tempest/</code> and talk to nobody.</p>
+      <ol class="entry-notes">
+        <li><b>hardware</b> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/hardware.launch.py">riptide_hardware2</a>): the link to the boards (the micro-ROS agent on <code>can0</code>) and the sensor drivers: DVL, IMU on <code>/dev/ttyTHS1</code>, fibre-optic gyro on <code>/dev/ttyTHS2</code>. Also the AprilTag detector, acoustics and three small helpers. Everything else reads its topics.</li>
+        <li><b>navigation</b> (riptide_hardware2): the <a href="localization.html">EKF</a>, the depth converter and the robot model, which publishes every sensor and thruster frame.</li>
+        <li><b>navigation</b> (riptide_navigation): an alternative, a navigation node built from a Simulink model. Its package isn't in the release sources (the commit that added it is titled "Add simulink nav to launches"; Simulink packages are generated and shared with riptide_simulink, unconfirmed for this one). Start one navigation or the other, not both, and use riptide_hardware2's when you need the cameras: it publishes the ZED camera frames <code>zed</code> needs.</li>
+        <li><b>control_system</b> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/launch/control_system.launch.py">riptide_controllers2</a>): <code>active_control_model:=mpc</code> picks <a href="control/index.html">riptide_mpc</a>; anything else, including leaving it out, starts the legacy <code>complete_controller</code>. Also the controller overseer and a drag-calibration server.</li>
+        <li><b>zed</b>: both ZED X Mini cameras as two components in one container process, plus a calibration-photo taker (<a href="cameras.html">The cameras</a>).</li>
+        <li><b>tensorrt</b>: the YOLO detector (<a href="perception/detector.html">The detector, frame by frame</a>).</li>
+        <li><b>mapping</b>: the course map and <code>chameleon_tf</code>, which publishes <code>world → map</code> (<a href="perception/map.html">The course map</a>).</li>
+        <li><b>autonomy</b>: <code>doTask</code>, which runs behaviour trees when the viewer asks, and the actuator service translator (<a href="bt.html">Behaviour trees</a>).</li>
+        <li><b>diagnostics</b>: monitors and an aggregator. The team no longer uses them; the viewer's CPU chip stays grey without them.</li>
+      </ol>
+      <p><strong>The list order is not the start order.</strong> <code>control_system</code> is fourth in the file; start it last.</p>
+      <p>The pool and bench lists also keep a commented-out <code>copro_agent</code> entry: the micro-ROS agent now comes with <code>hardware</code>, which includes <code>copro_agent.launch.py</code> itself.</p>
+
+      <h2 id="order">Why the order matters</h2>
+      <p>Most ROS nodes simply wait for their inputs, so a wrong order rarely crashes anything. It matters for three reasons:</p>
+      <ul>
+        <li><strong>The page waits for topics.</strong> An entry shows <i>Running</i> only after every topic in its list has published once. Start <code>navigation</code> before <code>hardware</code> and it sits at <i>2/4 completed</i>: no sensors, so no <code>odometry/filtered</code> and no <code>depth/pose</code> (screenshot below; <a href="#stuck">what to check</a>).</li>
+        <li><strong>The boards need the agent.</strong> Until the micro-ROS agent in <code>hardware</code> runs, the boards can't reach ROS at all: no kill state, no depth, no thruster telemetry (<a href="firmware.html">Firmware on the boards</a>).</li>
+        <li><strong>The controller acts.</strong> Started last with Talos killed, it has its inputs and does nothing until someone enables. Killed, or without fresh odometry, the MPC publishes zero thrust (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1324-L1334"><code>mpc_controller_node.cpp</code></a>).</li>
+      </ul>
+      <p>The start order follows the data. <a href="https://github.com/zehdari/talos-explained/blob/main/tools/launch/build_deps.py">A script</a> assigned every node in the <a href="interfaces.html">Nereus graph capture</a> to the entry that starts it on the robot and collected what crosses between entries:</p>
     </div>
     <figure class="fig">
-      <div class="panel" id="some-figure"></div>
-      <figcaption><b>Bold lead-in.</b> What to look at. Tap or hover … (if interactive).</figcaption>
+      <div class="panel deps">
+        <div class="deps-svg" id="deps-svg"></div>
+        <div class="deps-note graph-note" id="deps-note"></div>
+      </div>
+      <figcaption><b>Who feeds whom, in start order.</b> Arcs on the right carry data down the order, from an entry to one started after it. Arcs on the left go back up: commands (autonomy to the actuators) or a subscriber started early that simply waits (the AprilTag detector in <code>hardware</code> reads the camera). Thicker arcs carry more topics. Tap or hover an entry to list them; it starts on <code>control_system</code>. In Nereus the simulator stands in for <code>hardware</code> and <code>zed</code>, so topics only the simulator reads are left out, as are TF and the clock, which every node uses. Thrust has no arc: on the robot the MPC sends RPM to the ESC boards over CAN, not as a ROS topic.</figcaption>
     </figure>
     <div class="prose">
-      <h2 id="second-section">Second section</h2>
-      <p>Coming soon.</p>
+      <p>The start order the <a href="pool-test.html#deck">pool test</a> uses, and the order <code>pretest_checks</code> starts the bench entries in: <b>hardware</b>, <b>navigation</b> (riptide_hardware2's), <b>zed</b>, <b>tensorrt</b>, <b>mapping</b>, <b>autonomy</b>, then, at the pool only, <b>control_system</b>.</p>
+      <div class="callout safety"><span class="label">The controller rule</span>
+        <ul>
+          <li><strong>Never start <code>control_system</code> on the bench as a plain launch.</strong> With the controller up, the thrusters spin as soon as the robot is enabled, and the MPC writes RPM to the ESCs over CAN itself. <code>pretest_checks</code> lists it as forbidden on the bench and stops it before its own thruster test.</li>
+          <li><strong>At the pool, start it last, with Talos killed</strong> (physical kill switch out), and only after the viewer is up: the viewer keeps a kill asserted until someone presses Enable (<a href="commanding.html#kill">The kill system</a>).</li>
+          <li><strong>Stopping <code>navigation</code> while the controller runs</strong> cuts its odometry: the MPC logs <code>No fresh odometry; thrusters off</code> and stops thrusting, wherever Talos is.</li>
+        </ul>
+      </div>
+
+      <h2 id="launcher" data-short="The launcher, inside">The remote launcher, inside</h2>
+      <p><code>remote_launch</code> is one Python file, <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py"><code>launcher.py</code></a>, run as a systemd service by <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/ros_launcher.service"><code>ros_launcher.service</code></a> as user <code>ros</code>. The service sources <code>~/colcon_deploy/install/setup.bash</code> and the Zenoh settings, then runs <code>launcher --systemd --start-discovery-server</code>. Tap a box:</p>
+    </div>
+    <figure class="fig">
+      <div class="panel" id="inside-graph"></div>
+      <div class="graph-note" id="inside-note"></div>
+      <figcaption><b>The processes behind one Start button.</b> The launcher itself never imports ROS: every ROS process is a child it can kill as a group, so taking the network down never leaves a half-dead node inside the server (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py#L1145-L1150">comment in launcher.py</a>).</figcaption>
+    </figure>
+    <div class="prose">
+      <dl class="spec">
+        <dt>Port</dt><dd>8080 (env <code>SERVER_PORT</code>): <code>http://orin2:8080</code>, or <code>http://192.168.1.24:8080</code> on the robot LAN if your laptop can't resolve <code>orin2</code> (<a href="computers.html">Computers and networks</a>). Page at <code>/</code>, websocket at <code>/ws</code>. No login: anyone who can reach the port can start and stop launches.</dd>
+        <dt>Zenoh router</dt><dd>Started first: <code>rmw_zenohd</code> with <code>zenoh_router_test.json5</code>, after killing any old router. If it dies, the launcher stops everything and exits.</dd>
+        <dt>Restarts</dt><dd><code>Restart=always</code> after 500 ms; systemd gives up after 5 restarts in 15 s.</dd>
+        <dt>Stopping</dt><dd>SIGINT to each launch's process group; systemd allows 15 s, then SIGKILL.</dd>
+        <dt>Status</dt><dd>Broadcast to every page at least every 1.5 s, and on every change.</dd>
+        <dt>Lists</dt><dd>Read from <code>share/remote_launch/launches/</code> of the deployed install. Edit them in <code>riptide_launch</code> and deploy (<a href="setup.html#deploy">colcon deploy</a>).</dd>
+      </dl>
+      <ul>
+        <li><strong>After a boot no list is loaded.</strong> The first page to connect sends the list its browser used last, and the launcher loads it.</li>
+        <li><strong>Loading a different list</strong> marks every entry of the old one <i>abandoned</i> and stops the ones running.</li>
+        <li><strong>Orphans.</strong> In <code>--systemd</code> mode every child stays in the service's cgroup, so the page can also list processes that belong to no entry, for example a node that survived its launch.</li>
+      </ul>
+    </div>
+    <figure class="fig narrow">
+      <picture>
+        <source media="(max-width: 560px)" data-srcset="img/launch/launcher-running-phone.webp" width="640" height="270">
+        <img class="media" data-src="img/launch/launcher-running.webp" width="1200" height="1059" loading="lazy" alt="The launcher page with talos_launch_mpc.yaml loaded. The first navigation entry is expanded: its progress bar reads 2/4 completed, with /talos/joint_states and /tf marked Present and /talos/odometry/filtered and /talos/depth/pose marked Not Present. The mapping entry's bar reads Running; every other entry is Stopped. Below, the Launch Log pane shows navigation's output in cyan.">
+      </picture>
+      <figcaption><b>An entry started too early.</b> The real <code>launcher.py</code> and <code>talos_launch_mpc.yaml</code>, run on a desk computer with no sensors (so the Zenoh line reads "None", not "Self Hosted (OK)" as on the Orin). <code>navigation</code> started but waits at 2/4: the EKF has no measurements to publish from. <code>mapping</code> waits for no topics, so it shows <i>Running</i> at once. The log pane colours each line by its entry's state: cyan while starting, green while running, orange while stopping. On a narrow screen only the expanded <code>navigation</code> entry and two log lines are shown.</figcaption>
+    </figure>
+    <div class="prose">
+      <h3 id="states">An entry's states</h3>
+      <div class="table-scroll"><table class="params states">
+        <thead><tr><th>State</th><th>Page shows</th><th>Means</th></tr></thead>
+        <tbody>
+          <tr><td>stopped</td><td>Stopped</td><td>Not running. Start is enabled.</td></tr>
+          <tr><td>starting</td><td>Starting...</td><td>A moment while the processes are forked.</td></tr>
+          <tr><td>running, topics missing</td><td><i>k</i>/<i>n</i> completed</td><td>Processes up; the monitor has seen <i>k</i> of the <i>n</i> listed topics.</td></tr>
+          <tr><td>running</td><td>Running</td><td>Every listed topic has published once. The monitor then exits; later silence isn't noticed.</td></tr>
+          <tr><td>stopping</td><td>Stopping…</td><td>SIGINT sent to the launch's process group.</td></tr>
+          <tr><td>stopping_error</td><td>ERROR (Cleaning Up...)</td><td>The launch exited by itself, or the monitor died early.</td></tr>
+          <tr><td>error</td><td>ERROR!</td><td>Cleaned up after a failure. Start is enabled again.</td></tr>
+        </tbody>
+      </table></div>
+      <h3 id="stuck" data-short="Stuck at k/n">An entry stuck at <i>k</i>/<i>n</i></h3>
+      <p>Expand the entry: the page marks each listed topic <i>Present</i> or <i>Not Present</i>. Each missing topic points at one device or node (topics from <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml"><code>talos_launch_mpc.yaml</code></a>, all under <code>/talos/</code>):</p>
+      <div class="table-scroll"><table class="params stuck">
+        <thead><tr><th>Not present</th><th>Comes from, what to check</th></tr></thead>
+        <tbody>
+          <tr><td><code>dvl/<wbr>status</code></td><td>The DVL driver (<code>dvl.launch.py</code>). It looks up the DVL's host name, <code>uwrt-dvl</code>, and prints "Failed to look up hostname" if it can't. On the bench, <code>fake_dvl.py</code> replaces it.</td></tr>
+          <tr><td><code>vectornav/<wbr>imu</code></td><td>The IMU on <code>/dev/ttyTHS1</code>. The viewer's Electrical panel has <b>Cycle IMU</b>, which power-cycles it (<a href="boards.html">Circuit boards</a>).</td></tr>
+          <tr><td><code>gyro/<wbr>raw</code></td><td>The fibre-optic gyro on <code>/dev/ttyTHS2</code>.</td></tr>
+          <tr><td><code>state/<wbr>firmware</code>, <code>state/<wbr>depth/<wbr>raw</code></td><td>The boards, through the micro-ROS agent on <code>can0</code>. Depth comes from the camera cage board. Check the robot is powered and the boards are up (<a href="firmware.html">Firmware on the boards</a>).</td></tr>
+          <tr><td><code>odometry/<wbr>filtered</code>, <code>depth/<wbr>pose</code></td><td>navigation, but it needs <code>hardware</code>'s sensors first. Start <code>hardware</code>, or fix its missing topics.</td></tr>
+          <tr><td><code>ffc/<wbr>…/<wbr>camera_info</code>, <code>dfc/<wbr>…/<wbr>camera_info</code></td><td>The ZED container in <code>zed</code> (<a href="cameras.html">The cameras</a>).</td></tr>
+          <tr><td><code>yolo_orientation/<wbr>annotated/<wbr>compressed</code></td><td>The detector, which publishes only after it gets camera images: check <code>zed</code> first.</td></tr>
+          <tr><td><code>controller/<wbr>mpc/<wbr>solve_time_ms</code></td><td>Normal while Talos is killed: the MPC only solves once enabled with fresh odometry, so <code>control_system</code> sits at <i>3/4</i> until then.</td></tr>
+        </tbody>
+      </table></div>
+      <p>For anything past start-up, see <a href="debugging.html#chain">Debugging: work down the chain</a>.</p>
+
+      <p><i>Running</i> means "each topic was seen once", not "healthy now". A node that crashes later and is respawned by launch (the micro-ROS agent, DVL, IMU, acoustics, both mapping nodes and the actuator translator have <code>respawn=True</code>) never changes the state; a node that crashes without respawn only shows in its log.</p>
+
+      <h3 id="buttons">The other buttons</h3>
+      <ul>
+        <li><strong>Log</strong> (per entry) and <strong>Log by Default</strong> choose which entries' output this browser receives.</li>
+        <li><strong>Shut Down Launcher</strong> stops every launch cleanly and exits. As a service it comes straight back, so the button reads <i>Restart Launcher</i> there.</li>
+        <li><strong>Force Reset</strong> (service only) exits at once without cleanup; systemd then kills every leftover process in the service and restarts it. Its confirm box warns that it kills all running nodes without cleanup: the last resort.</li>
+      </ul>
+
+      <h2 id="scripting" data-short="Scripting the launcher">Driving the launcher from a script</h2>
+      <p>The page is one client of a small JSON protocol over the websocket. Anything else can use it too. Each command is a JSON object with a <code>cmd</code> field plus the fields listed:</p>
+      <dl class="spec proto">
+        <dt><code>connect</code></dt><dd>First message, always. Fields <code>logging_enable_default</code> and, optionally, <code>last_launchfile</code>. Answer: <code>first_connect</code> with the list files, <code>systemd_mode</code>, the status and this client's <code>log_enrollment</code>.</dd>
+        <dt><code>load_launch</code></dt><dd><code>file</code>: load a list (stops everything running).</dd>
+        <dt><code>start_launch</code>, <code>stop_launch</code></dt><dd><code>id</code>: start or stop one entry.</dd>
+        <dt><code>set_logenable</code>, <code>set_logdefault</code></dt><dd><code>enable</code> (and <code>id</code> for one entry): receive one entry's output, or every entry's. Answer: <code>log_enrollment</code>.</dd>
+        <dt><code>stop_server</code>, <code>kill_server_now</code></dt><dd>The two shutdown buttons.</dd>
+      </dl>
+      <p>The server pushes <code>status</code> (the list, every entry's <code>id</code>, <code>state</code>, monitored topics and process tree), <code>log</code> lines and <code>error</code>, and sends <code>log_enrollment</code> in answer to the two log commands. Every message has a <code>type</code> field. Entry ids are fresh random UUIDs every time a list loads, so look them up by package and file each time. A complete client (tested against <code>launcher.py</code>):</p>
+<pre class="cmd" data-where="your laptop"><code><span class="k">import</span> asyncio, json, websockets   <span class="c"># websockets is what the launcher itself uses</span>
+
+<span class="k">async def</span> main():
+    <span class="k">async with</span> websockets.connect(<span class="s">"ws://orin2:8080/ws"</span>) <span class="k">as</span> ws:
+        <span class="k">await</span> ws.send(json.dumps({<span class="s">"cmd"</span>: <span class="s">"connect"</span>, <span class="s">"logging_enable_default"</span>: False}))
+        status = json.loads(<span class="k">await</span> ws.recv())[<span class="s">"status"</span>]   <span class="c"># the first_connect message</span>
+        print(status[<span class="s">"current_launchfile"</span>], status[<span class="s">"discovery_status"</span>])
+        <span class="k">for</span> l <span class="k">in</span> status[<span class="s">"launches"</span>]:
+            print(f<span class="s">'{l["package"]}/{l["file"]}: {l["state"]}'</span>)
+        <span class="c"># to start one: {"cmd": "start_launch", "id": l["id"]}</span>
+
+asyncio.run(main())</code></pre>
+      <ul>
+        <li><strong><code>pretest_checks</code></strong> (<a href="pool-test.html#pretest">Pool test day</a>) has its own client. Its bench stage fails unless <code>talos_launch_bench_mpc.yaml</code> is loaded, starts any stopped bench entries in order, and warns if <code>control_system</code> is running.</li>
+        <li><strong><code>launcher_ctl.py</code></strong>, a member's command-line client, does <code>status</code>, <code>load</code>, <code>start</code> and <code>stop</code> by file name. It refuses to load a list while launches run unless given <code>--force</code>, and needs <code>--package</code> for the two <code>navigation.launch.py</code> entries.</li>
+        <li><strong>The Nereus viewer doesn't talk to the launcher.</strong> It is an ordinary ROS client: it sees whatever the launched nodes publish. Its Bagging panel does borrow the launcher's setup: it runs <code>ros2 bag record</code> on the Orin over SSH after sourcing the same files as the service, so the recorder joins the running stack.</li>
+      </ul>
+      <p><a href="https://github.com/osu-uwrt/riptide_launch/tree/newsim/launch_msgs"><code>launch_msgs</code></a>, in the same repo, defines ROS messages for launching and bagging (<code>BringupStart</code> with topic-count feedback, <code>StartBag</code>, <code>WhoIs</code>). The current launcher doesn't use them; only the old RViz Bagging panel includes them.</p>
+
+      <h2 id="sim" data-short="In the simulator">In the simulator: sim.launch.py</h2>
+      <p>On a laptop there is no launcher. With a Zenoh router running (<a href="nereus.html#run">Nereus: running it</a>):</p>
+<pre class="cmd" data-where="your laptop"><code>ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim</code></pre>
+      <ul>
+        <li><strong>Always pass <code>active_control_model:=mpc</code>.</strong> Without it, bringup uses its default, <code>hybrid</code> (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/riptide_bringup/launch/bringup.launch.py#L10"><code>bringup.launch.py</code></a>), and <code>control_system</code> starts the legacy <code>complete_controller</code>, not the MPC. A plain <code>ros2 launch nereus sim.launch.py</code> does that.</li>
+        <li><strong><code>mpc_model:=sim</code></strong> gives the MPC this run's exact plant: a perfect-model baseline (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/launch/mpc_controller.launch.py#L16-L25"><code>mpc_controller.launch.py</code></a>). Leave it out to use <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml"><code>config/models/talos.yaml</code></a>, the same estimate of the vehicle as on the robot; the simulator keeps its own plant, so the two differ, as they do in the pool.</li>
+      </ul>
+      <p><a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py"><code>sim.launch.py</code></a> starts three things, all under one <code>ros2 launch</code>:</p>
+      <ol>
+        <li><strong>The simulator</strong>, as <code>sim_supervisor.py</code> running <code>nereus-sim</code>, so the viewer can switch pools without restarting the stack.</li>
+        <li><strong>The stack</strong>, through <a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/acceptance/mission_stack.launch.py"><code>mission_stack.launch.py</code></a>: riptide_bringup2's <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/riptide_bringup/launch/bringup.launch.py"><code>bringup.launch.py</code></a> with <code>hardware:=none</code>, plus the AprilTag detector. Every node is put on sim time except the YOLO detector (<code>yolo_orientation</code>), whose <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/launch/tensorrt.launch.py#L19-L37"><code>tensorrt.launch.py</code></a> passes <code>use_sim_time</code> (default false) as its own node parameter, which overrides the global one.</li>
+        <li><strong>The viewer.</strong> Closing it ends the whole launch, unless <code>close_with_viewer:=false</code>.</li>
+      </ol>
+      <p><code>bringup.launch.py</code> includes the same files as the pool list (control_system, navigation, tensorrt, mapping, autonomy) but, with <code>hardware:=none</code>, swaps <code>hardware</code> for acoustics alone and has no <code>zed</code>: the simulator publishes the sensor topics and camera images. (<code>hardware:=real</code> or <code>fake</code> would start the whole robot stack as one launch, but on the robot the team uses the launcher's separate entries.) The launch's first lines say which branches it took (<a href="https://github.com/zehdari/talos-explained/blob/main/public/data/rosgraph/launch_log.txt">full log</a>):</p>
+<pre class="cmd" data-where="launch output"><code>MPC model: this run's plant (/tmp/nmedia/run/sim.mpc)
+Launching with NO hardware                       <span class="c"># bringup.launch.py</span>
+I'm running on a development laptop              <span class="c"># control_system.launch.py</span>
+zed_wrapper not found. Launching without zed TF  <span class="c"># navigation.launch.py</span>
+...
+[mpc_controller-5] ... Hardware output disabled (the model has no hardware section); publishing thruster_forces only</code></pre>
+      <p>Each line comes from the launch file named beside it. Compared with the robot:</p>
+      <ul>
+        <li><strong>18 processes</strong> in that run. The explorer's <i>Simulation</i> tab marks two more, navigation's camera-frame publishers, which only start when <code>zed_wrapper</code> is installed.</li>
+        <li><strong>Acoustics runs as <code>/riptide_acoustics</code></strong>, without the robot namespace that <code>hardware.launch.py</code> pushes.</li>
+        <li><strong><code>control_system</code> checks for <code>/home/ros/colcon_deploy</code></strong> to decide it's on the Orin.</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <img class="media" data-src="media/nereus/viewer-startup-killed.webp" width="1600" height="1000" loading="lazy" alt="The Nereus viewer right after sim.launch.py: a green Enable button and 'Robot: killed' in the command bar, the Motion panel with dashes for the commanded values, and a top-down pool view with Talos at its start pose by the AprilTag board.">
+      <figcaption><b>What you see when the launch finishes.</b> The viewer opens with Talos killed: green Enable, "Robot: killed", nothing commanded. Every node is up; nothing moves until you press Enable (<a href="viewer.html#enable">The Nereus viewer</a>).</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="hil">Hardware in the loop</h2>
+      <p>In hardware-in-the-loop (HIL) testing the Orin runs the stack while a desk computer simulates the world, so you test the real computer, its build and its load. <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_sim_hil_mpc.yaml"><code>talos_launch_sim_hil_mpc.yaml</code></a> (added in October 2026, "nereus provides the sim and viewer") is the pool list without <code>hardware</code>, <code>zed</code> and <code>diagnostics</code>. On the desk computer, <code>sim.launch.py stack:=false</code> starts just the simulator and the viewer. Both sides must share one Zenoh network.</p>
+      <ul>
+        <li><strong>Camera traffic crosses the network.</strong> The detector on the Orin subscribes to the simulator's images, including the depth image. The old simulator's HIL launch halved camera resolution because full-size raw depth, about 9 MB a frame, saturates gigabit Ethernet (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/riptide_bringup/launch/simulation_hil.launch.py#L34-L41"><code>simulation_hil.launch.py</code></a>). <code>sim.launch.py</code> has no such option.</li>
+        <li><strong>No AprilTag detector, acoustics or board link.</strong> All three live in <code>hardware.launch.py</code>, which the HIL list drops, and <code>stack:=false</code> also skips <code>mission_stack</code>, which adds the detector in pure simulation. Tag calibration and pinger tasks don't work in HIL, and with no micro-ROS agent the boards get no ROS messages at all.</li>
+        <li><strong>The older <code>talos_launch_sim_hil.yaml</code></strong> ran the old simulator (<code>c_simulator</code>) and RViz on the Orin with the legacy controller. Both are replaced.</li>
+      </ul>
+      <div class="callout safety"><span class="label">HIL and the thrusters</span>
+        <p>The MPC sends RPM to the ESCs over CAN whenever it runs on wall time, <code>can0</code> exists and its model has a hardware section (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L681-L702"><code>configureHardwareOutput</code></a>). The HIL list doesn't change any of that, so on Talos's Orin the MPC logs <code>Hardware output ENABLED</code> and sends the simulated run's RPM commands to the real ESCs over CAN. If the ESC boards are powered and not killed, the thrusters can spin. Keep the physical kill switch out for the whole session. HIL with Nereus hasn't been confirmed end to end yet.</p>
+      </div>
+
+      <h2 id="logs" data-short="Logs">Logs: the page, the journal and the disk</h2>
+      <p>A launched node has no terminal. Its output goes to the launcher, which forwards each line to the pages that asked for it and then drops it (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py#L365-L397"><code>launcher.py</code></a>). It is never written to the journal.</p>
+      <ul>
+        <li><strong>Watching a start-up:</strong> the launcher page's Launch Log.</li>
+        <li><strong>"Why did everything stop?":</strong> the journal, which holds the launcher's own lines and the Zenoh router's crash output.</li>
+        <li><strong>After the fact:</strong> each node's ROS log file under <code>~/.ros/log/</code> on the Orin, and <code>/rosout</code> live (<a href="debugging.html#logs">Debugging: where the logs are</a>).</li>
+      </ul>
+<pre class="cmd" data-where="orin, over ssh"><code>journalctl -u ros_launcher -f -o cat            <span class="c"># follow</span>
+journalctl -u ros_launcher --since "10 min ago"
+systemctl status ros_launcher                   <span class="c"># list loaded, launches active</span></code></pre>
+      <p>What the journal holds, from the desk run above:</p>
+<pre class="cmd" data-where="journal"><code>[remote_launch] Loading launch definition 'talos_launch_mpc.yaml'
+[remote_launch.navigation] Launch Starting
+[remote_launch.mapping] Launch Starting
+[remote_launch.navigation] Launch Stopping...
+[Launch Monitor-1444434] Interrupted before all topics seen
+Traceback (most recent call last):
+  ...
+rclpy._rclpy_pybind11.RCLError: failed to shutdown: rcl_shutdown already called on the given context
+[remote_launch.navigation] Launch Cleaned Up</code></pre>
+      <p>The traceback is harmless: it appears whenever an entry is stopped before all its topics were seen, because the monitor shuts ROS down twice. <code>Launch died</code> is the line to look for: an entry's launch exited by itself.</p>
+
+      <h2 id="yourself" data-short="One piece by hand">Running one piece by hand</h2>
+      <p>Any entry is an ordinary launch file, so you can run it on your laptop (sourced release workspace, <a href="setup.html">Setting up your machine</a>) against the simulator or a bag:</p>
+<pre class="cmd" data-where="your laptop"><code>ros2 launch riptide_mapping2 mapping.launch.py robot:=talos
+ros2 launch riptide_controllers2 control_system.launch.py robot:=talos active_control_model:=mpc
+ros2 launch nereus robot.launch.py pool:=rpac      <span class="c"># the viewer against the real robot</span></code></pre>
+      <ul>
+        <li><strong>Don't run a second copy</strong> of a node that's already running on the robot or in the sim: two MPCs or two EKFs publish on the same topics. Stop it in the launcher (or give your sim its own <code>ROS_DOMAIN_ID</code>) first.</li>
+        <li><strong>Launch arguments</strong> are listed with <code>ros2 launch &lt;package&gt; &lt;file&gt; --show-args</code>.</li>
+        <li><strong>To change what the robot starts</strong>, edit the list or the launch file in its repo, merge it, and deploy. Don't edit files on the Orin.</li>
+      </ul>
+      <p class="src">Where this lives: <a href="https://github.com/osu-uwrt/riptide_launch/tree/newsim">riptide_launch</a> (<code>remote_launch</code>: launcher, service, lists, page; <code>riptide_bringup</code>: <code>bringup.launch.py</code>), each subsystem's <code>launch/</code> folder in riptide_core, riptide_control, riptide_perception and riptide_autonomy, and <a href="https://github.com/osu-uwrt/nereus/tree/main/integrations/uwrt/launch">nereus/integrations/uwrt/launch</a>. Data on this page: <a href="https://github.com/zehdari/talos-explained/tree/main/tools/launch">tools/launch</a>.</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

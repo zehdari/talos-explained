@@ -88,7 +88,7 @@ def candidates(stack):
     exact = best[0] == len(stack)
     return best[1], exact
 
-prev, chosen, ambiguous, missing, cache = (), [], 0, 0, {}
+prev, chosen, ambiguous, missing, cache, guessed = (), [], 0, 0, {}, set()
 for t, stack in msgs:
     if not stack: chosen.append((t, None)); continue
     k = tuple(stack)
@@ -99,6 +99,7 @@ for t, stack in msgs:
     if not cs: chosen.append((t, None)); continue
     if len(cs) > 1:
         ambiguous += 1
+        guessed.add(len(chosen))
         def score(p):
             k = 0
             while k < min(len(p), len(prev)) and p[k] == prev[k]: k += 1
@@ -112,10 +113,14 @@ print('ambiguous', ambiguous, 'matched only in part', missing, 'unique stacks', 
 # ---- per node: when it was running (merged spans); per 0.2 s step: the stack that held longest ----
 END = hero['duration']
 key = lambda p: '.'.join(map(str, p))
+# A stack that held for no time and fits more than one node is a guess that adds nothing: its nodes show up in the
+# stacks around it if they ran. Left in, a bare [..., 'COMP', 'ForceSuccess'] stack as the tree ended was matched to
+# the bins' ForceSuccess and gave BinTreeMpc a second, empty run at the very end.
 spans = {}
 for i, (t, p) in enumerate(chosen):
     if p is None: continue
     t1 = chosen[i + 1][0] if i + 1 < len(chosen) else END
+    if t1 <= t and i in guessed: continue
     for d in range(len(p) + 1):
         k = key(p[:d])
         s = spans.setdefault(k, [])

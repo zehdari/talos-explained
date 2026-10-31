@@ -143,6 +143,7 @@ ol.bt-history a { color: var(--ink-2); font-size: 0.82rem; white-space: nowrap; 
   .bt-clock { flex-basis: 100%; margin-left: 0; }
   ol.bt-history li { grid-template-columns: 2.8rem 1fr; gap: 0.5rem; }
   #wfk-graph .seg button { padding: 0.3rem 0.55rem; font-size: 0.8rem; }
+  #decorator-table td:nth-child(2) code { white-space: normal; overflow-wrap: anywhere; }
 }
 
 /* ---------- WaitForKillSwitch tree ---------- */

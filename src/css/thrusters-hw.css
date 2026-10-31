@@ -1,0 +1,92 @@
+/* Thrusters and ESCs (thrusters-hw.html) */
+
+/* Front view with thruster markers */
+.th-front { position: relative; max-width: 48rem; margin: 0 auto; aspect-ratio: 1600 / 1090; overflow: hidden; }
+.th-front-img { display: block; width: 100%; height: auto; mix-blend-mode: multiply; }
+.th-front svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; font-family: var(--sans); }
+.th-front .tm { cursor: pointer; outline: none; }
+.th-front .tm .ring { fill: rgba(243, 247, 247, 0.55); stroke: var(--ink-2); }
+.th-front .tm.sel .ring { stroke: var(--accent); fill: rgba(253, 233, 223, 0.75); }
+.th-front .tm.idle { opacity: 0.45; }
+.th-front .tm .hit { fill: transparent; }
+.th-front .tm-label { fill: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.th-front .tm.sel .tm-label { fill: #a8360a; }
+.th-front .tm-side { fill: var(--muted); font-weight: 650; letter-spacing: 0.08em; }
+.th-front text.halo { paint-order: stroke; stroke: rgba(243, 247, 247, 0.92); stroke-linejoin: round; }
+.th-note { min-height: 4.5em; max-width: 48rem; margin-left: auto; margin-right: auto; }
+.th-note code { font-size: 0.82em; }
+
+/* Photos */
+.th-photo { object-fit: contain; }
+.th-board { background: transparent !important; }
+
+/* One command, step by step */
+.th-steps { list-style: none; counter-reset: st; padding: 0; margin: 0; display: grid; gap: 0.45rem; font-family: var(--sans); font-size: 0.88rem; line-height: 1.45; color: var(--ink-2); }
+.th-steps li { counter-increment: st; display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: 0.9rem; background: var(--paper); border-radius: 8px; padding: 0.55rem 0.8rem; }
+.th-steps li b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.th-step { font-weight: 650; color: var(--ink); }
+.th-step::before { content: counter(st) '. '; color: var(--accent); }
+.th-bytes, .th-bits { display: flex; flex-wrap: wrap; gap: 3px; margin: 0.35rem 0; font-family: var(--mono); font-size: 0.8rem; }
+.th-bytes span { padding: 0.1rem 0.35rem; border-radius: 4px; background: var(--paper-3); color: var(--muted); }
+.th-bytes span.on { background: var(--ink); color: var(--paper); }
+.th-bits span { width: 1.35em; text-align: center; padding: 0.1rem 0; border-radius: 3px; color: var(--ink); }
+.th-bits span.v { background: #d5e4f6; }
+.th-bits span.t { background: var(--paper-3); }
+.th-bits span.c { background: #fde0cf; }
+@media (max-width: 640px) {
+  .th-steps li { grid-template-columns: 1fr; gap: 0.15rem; }
+  .th-bits span { width: 1.15em; }
+}
+.th-follow .controls output { min-width: 4.4em; }
+
+/* T200 readout under the curve chart */
+.th-readout { display: flex; flex-wrap: wrap; gap: 0.3rem 1.4rem; font-family: var(--sans); font-size: 0.84rem; color: var(--ink-2); margin-top: 0.5rem; }
+.th-readout b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.controls label.chk { gap: 0.35rem; }
+
+/* Force gauge: photo beside the chart */
+.th-gauge { display: grid; grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.38fr); gap: 1rem; align-items: start; }
+.th-gauge > figure { margin: 0; }
+.th-gauge .media { background: var(--paper-2); }
+@media (max-width: 760px) {
+  .th-gauge { grid-template-columns: 1fr; }
+  .th-gauge > figure { max-width: 22rem; margin: 0 auto; }
+  .th-gauge > figure .media { max-height: 45vh; width: 100%; object-fit: cover; object-position: center 40%; }
+}
+
+/* Motion buttons: two even rows of three on phones */
+@media (max-width: 640px) {
+  .th-layout #lay-motion { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .th-layout #lay-motion button { padding-left: 0.4rem; padding-right: 0.4rem; }
+}
+
+/* Pool usage histogram rows */
+svg.th-use .use-row { cursor: pointer; outline: none; }
+svg.th-use .use-bg { fill: transparent; }
+svg.th-use .use-row.sel .use-bg { fill: rgba(217, 72, 15, 0.08); }
+svg.th-use .use-row.sel .label { fill: #a8360a; font-weight: 650; }
+
+/* Tables */
+table.th-cfg td:first-child, table.th-fail td:first-child { white-space: normal; min-width: 7rem; }
+table.th-fail td { font-size: 0.84rem; }
+
+/* Phones: the three-column tables become one card per row, so nothing scrolls sideways. */
+@media (max-width: 640px) {
+  table.th-fail thead, table.th-cfg thead { display: none; }
+  table.th-fail, table.th-fail tbody, table.th-fail tr, table.th-fail td,
+  table.th-cfg, table.th-cfg tbody, table.th-cfg tr, table.th-cfg td { display: block; width: auto; }
+  table.th-fail tr, table.th-cfg tr { border-bottom: 1px solid var(--rule); padding: 0.45rem 0; }
+  table.th-fail td, table.th-cfg td { border: 0; padding: 0.12rem 0; }
+  table.th-fail td:first-child, table.th-cfg td:first-child { font-weight: 650; color: var(--ink); }
+  table.th-fail td:nth-child(2)::before { content: 'You see: '; color: var(--muted); }
+  table.th-fail td:nth-child(3)::before { content: 'Check: '; color: var(--muted); }
+  table.th-cfg td:nth-child(-n+2) { display: inline; }
+  table.th-cfg td:first-child::after { content: ': '; }
+  table.th-cfg td:nth-child(2) { color: var(--ink); }
+  table.th-cfg td:nth-child(3) { color: var(--ink-2); }
+  table.th-cfg td:nth-child(3):empty { display: none; }
+}
+@media (max-width: 640px) {
+  #rev-m { display: grid; grid-template-columns: repeat(3, 1fr); }
+  #rev-m button { padding-left: 0.4rem; padding-right: 0.4rem; }
+}

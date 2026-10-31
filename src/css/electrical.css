@@ -16,6 +16,8 @@
 .el-sys-bar .legend i.dash { width: 18px; height: 2px; }
 .el-sys svg.graph .node.off { opacity: 0.32; }
 .el-sys svg.graph .node.off.hot { opacity: 1; }
+.el-sys-bar .legend .el-greyed i { width: 16px; height: 11px; background: var(--paper); border: 1.5px solid var(--ink); border-radius: 3px; opacity: 0.32; }
+.el-narrow .el-greyed { display: none !important; }
 .el-sys svg.graph .edge { stroke-linecap: round; }
 .el-sys svg.graph .edge.hot { filter: drop-shadow(0 0 1.5px var(--paper)); }
 .el-sys svg.graph .band-label { font-size: 10px; }
@@ -53,7 +55,7 @@
 /* battery voltage ladder */
 svg.el-ladder .axisv { fill: var(--ink-2); font-size: 12px; }
 svg.el-ladder .axisc { fill: var(--muted); font-size: 10.5px; }
-svg.el-ladder .mlabel { fill: var(--ink); font-size: 12px; }
+svg.el-ladder .mlabel { fill: var(--ink); font-size: 12px; paint-order: stroke; stroke: var(--paper-2); stroke-width: 4px; stroke-linejoin: round; }
 svg.el-ladder .mark { cursor: pointer; outline: none; touch-action: manipulation; }
 svg.el-ladder .mark.on .mlabel { fill: var(--accent); font-weight: 650; }
 svg.el-ladder .mark.on circle { r: 7; }

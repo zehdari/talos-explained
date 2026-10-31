@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30",
+ "generated": "2026-10-31",
  "msgs": {
   "ControllerCommand": {
    "text": "uint8 POSITION = 3\nuint8 VELOCITY = 2\nuint8 FEEDFORWARD = 1\nuint8 DISABLED = 0\n\nuint8 mode\ngeometry_msgs/Vector3 setpoint_vect\ngeometry_msgs/Quaternion setpoint_quat\n",
@@ -84,6 +84,14 @@
   "esc_telemetry_ms": {
    "value": 500,
    "url": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/main.c#L23"
+  },
+  "ros_heartbeat_ms": {
+   "value": 100,
+   "url": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/main.c#L31"
+  },
+  "ros_max_missed_heartbeats": {
+   "value": 7,
+   "url": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L31"
   },
   "esc_flags": [
    {

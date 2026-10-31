@@ -50,10 +50,10 @@
         <tbody>
           <tr><td><code>V+</code> (battery)</td><td>Ideal-diode OR of the two packs</td><td>Kill MOSFETs, regulators, LED drivers, IVC amplifier</td></tr>
           <tr><td><code>MOTOR_PWR</code></td><td>V+ through the kill MOSFETs</td><td>Two ESC boards, eight thrusters</td></tr>
-          <tr><td>15 V</td><td>TDK-Lambda module PS1</td><td>Orin, DVL, Peltier, external CAN, 12 V LDO</td></tr>
-          <tr><td>5 V</td><td>TDK-Lambda module PS2</td><td>Board logic, network switch, fans, depth sensor, LED strip</td></tr>
+          <tr><td>15 V</td><td>TDK-Lambda module PS1</td><td>Orin, DVL, Peltier output (if fitted), external CAN, 12 V LDO</td></tr>
+          <tr><td>5 V</td><td>TDK-Lambda module PS2</td><td>Board logic (3.3 V LDOs), network switch, fans, depth sensor, LED strip</td></tr>
           <tr><td>12 V</td><td>MIC29300-12 LDO from 15 V</td><td>Actuator servo only</td></tr>
-          <tr><td>3.3 V</td><td>LM1117 LDO on every board</td><td>That board's RP2040 and CAN chip</td></tr>
+          <tr><td>3.3 V</td><td>LM1117 LDO on each stack and cage board, from 5 V</td><td>That board's RP2040 and CAN chip</td></tr>
         </tbody>
       </table>
 
@@ -63,15 +63,15 @@
         <dt>Pack</dt><dd>MaxAmps LiPo 8000 mAh 5S2P, 18.5 V (design reports; the gas-gauge notes are <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L4">written for this pack</a>)</dd>
         <dt>Cells</dt><dd>5 in series, 2 in parallel: 3.7 V nominal per cell</dd>
         <dt>Energy</dt><dd>148 Wh per pack, 296 Wh for both</dd>
-        <dt>Usable range</dt><dd>About 20.75 V charged (4.15 V per cell) down to 16 V (3.2 V per cell). A swap alert fires at 17.5 V.</dd>
+        <dt>Usable range</dt><dd>About 20.75 V charged (4.15 V per cell) down to 16 V (3.2 V per cell). Swap by 17.5 V (3.5 V per cell, MaxAmps' landing voltage).</dd>
         <dt>Current</dt><dd>45 A for 5 s, or 80 A for 2 s, then the BMS cuts out. A 45 A self-control fuse sits in series.</dd>
         <dt>Housing</dt><dd>CNC-milled aluminium, o-ring lid, a pressure-relief valve, a window for the display, and two SubConns: power and telemetry (<a href="https://org.osu.edu/osu-uwrt/files/2023/06/TDR_THEOhioStateUniversity_RS2023.pdf">2023 report</a>)</dd>
       </dl>
     </div>
     <figure class="fig">
       <div class="media-grid el-two">
-        <figure><img class="media el-light" src="img/electrical/tdr23-smart-battery.webp" width="900" height="871" loading="lazy" alt="Exploded render of a smart battery housing: lid with isogrid pocketing, o-ring, the LiPo pack, the microcontroller board with its display, the battery-management board, the milled aluminium housing and a SubConn connector."></figure>
-        <figure><img class="media" src="img/electrical/tdr23-battery-bench.webp" width="1200" height="962" loading="lazy" alt="Bench test of the smart battery electronics: a battery-management board on the bench wired to three bench power supplies standing in for cells, next to a LiPo pack."></figure>
+        <figure><img class="media el-light" src="/img/electrical/tdr23-smart-battery.webp" width="900" height="871" loading="lazy" alt="Exploded render of a smart battery housing: lid with isogrid pocketing, o-ring, the LiPo pack, the microcontroller board with its display, the battery-management board, the milled aluminium housing and a SubConn connector."></figure>
+        <figure><img class="media" src="/img/electrical/tdr23-battery-bench.webp" width="1200" height="962" loading="lazy" alt="Bench test of the smart battery electronics: a battery-management board on the bench wired to three bench power supplies standing in for cells, next to a LiPo pack."></figure>
       </div>
       <figcaption><b>A smart battery housing, exploded, and its electronics on the bench</b> (2023 design report, figures 4 and 9). For bring-up, bench supplies stand in for the cells so each protection can be tripped safely before a real pack goes in.</figcaption>
     </figure>
@@ -81,7 +81,7 @@
         <li><strong>Protection.</strong> A TI <strong>BQ40Z80</strong> gas gauge watches every cell. It opens two 80 V, 100 A MOSFETs on undervoltage, overvoltage, overcurrent or temperature, and balances the cells while charging.</li>
         <li><strong>A dead connector until it's plugged in.</strong> The output stays off until the cable ties the housing's <code>DETECT</code> pin to pack negative. The 2023 bring-up test checks exactly this. A housing on the table has no voltage on its pins.</li>
         <li><strong>Display.</strong> A 128×32 OLED behind the window shows the state of charge. A magnet on the reed switch wakes it, so the pack can sleep while it is stored.</li>
-        <li><strong>Telemetry.</strong> The microcontroller publishes <code>state/battery</code> (<code>BatteryStatus</code>: pack voltage, current, average current, time to empty, state of charge, side) on the external CAN bus. The Orin's agent for that bus (<code>can1</code>) is commented out in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/copro_agent.launch.py#L32-L42"><code>copro_agent.launch.py</code></a>, so it isn't clear the Orin receives this today.</li>
+        <li><strong>Telemetry.</strong> The microcontroller publishes <code>state/battery</code> (<code>BatteryStatus</code>: pack voltage, current, average current, time to empty, state of charge, side) on the external CAN bus. On 2026-10-27 the team commented out the Orin's agent for that bus (<code>can1</code>) in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/copro_agent.launch.py#L32-L42"><code>copro_agent.launch.py</code></a>, "until poac/batteries happy", so battery telemetry doesn't reach ROS at the moment.</li>
         <li><strong>Remote power-off.</strong> On <code>command/electrical</code>, <code>CYCLE_ROBOT</code> and <code>KILL_ROBOT_POWER</code> make the housings switch their output off, briefly or latched (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/src/ros.c#L69-L83"><code>ros.c</code></a>). These only work while that bus is connected.</li>
         <li><strong>Self shut-off.</strong> The microcontroller turns itself off when the pack is idle and the display is off. The gauge ships itself after a week untouched.</li>
       </ul>
@@ -96,7 +96,8 @@
     </figure>
     <div class="prose">
       <ul>
-        <li><strong>A quirk in the gauge config.</strong> The exported gauge settings (<code>sbh_bms_config.gg.csv</code>) say 2000 mAh and 37 Wh. That isn't a different pack. The team scales every current by ¼ so the gauge can report up to 80 A. Capacities scale the same way, and 2000 × 4 = 8000 mAh.</li>
+        <li><strong>A quirk in the gauge config.</strong> The exported gauge settings (<code>sbh_bms_config.gg.csv</code>) say 2000 mAh and 37 Wh. That isn't a different pack. The team set the gauge's <code>Scale Factor</code> to 4 so it can report up to 80 A, and every current and capacity in the export is stored divided by 4 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L274-L276">notes</a>; the <a href="https://org.osu.edu/osu-uwrt/files/2023/06/TDR_THEOhioStateUniversity_RS2023.pdf">2023 report</a>'s bring-up steps say bqStudio shows "the actual current / 4"): 2000 mAh × 4 = 8000 mAh, 37 Wh × 4 = 148 Wh, and the 11.25 A overcurrent limit × 4 = 45 A.</li>
+        <li><strong>Two configs, and they differ.</strong> The export is from January 2024. The notes are from August 2024 (committed as notes "from changing battery 5"), and most voltage limits changed in between: the export has undervoltage at 3.0 V per cell (notes 3.2 V), permanent failure at 2.2 V for 5 s (notes 3.0 V for 10 s), no charging below 2.2 V (notes 2.9 V), 4.2 V charging (notes 4.15 V) and auto-ship after one day (notes one week). The limits on this page are the notes' values. Which config is on each pack isn't recorded: check in bqStudio.</li>
         <li><strong>The chemical fuse is off.</strong> The gauge can blow a fuse as a last resort, but <code>FUSE_EN</code> is 0 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L281">line 281</a>). The notes record that a permanent-failure lockout fired at RoboSub 2024 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L10">line 10</a>), so they are cautious.</li>
         <li><strong>Battery IDs.</strong> Each housing uses its own serial number (1 to 5) as its CAN ID. The pre-test tool expects IDs 1 and 2, which is only right if housings 1 and 2 are the ones fitted.</li>
       </ul>
@@ -105,10 +106,10 @@
     </div>
     <div class="prose">
       <div class="callout safety"><span class="label">LiPo safety</span><ul>
-        <li>Charge at no more than <strong>5 A</strong>: the BMS limits charge current to that, set by the fuse on its charge path.</li>
+        <li>Charge at no more than <strong>5 A</strong>. The charge path has a 5 A fuse, and the BMS cuts charging if the current stays over 5 A for 5 s.</li>
         <li>Charge only between <strong>0 and 50 °C</strong>. Discharge only between 0 and 60 °C. The BMS refuses outside these ranges.</li>
         <li>A pack that read below <strong>2.9 V per cell</strong> won't charge at all, and one below <strong>3.0 V per cell</strong> for 10 s is locked out for good. Never force-charge a pack the BMS refuses. Charging a deeply flat LiPo is what makes it dangerous.</li>
-        <li>Swap at the <strong>17.5 V</strong> alert. Don't run it down to the 16 V cutoff on purpose.</li>
+        <li>Swap by <strong>17.5 V</strong>. The gauge sets an alarm flag there, but nothing on Talos reads or shows it: watch <code>balanced_voltage</code> in <code>state/electrical</code> or the voltage in the ESC telemetry. Don't run the packs down to the 16 V cutoff on purpose.</li>
       </ul></div>
       <p>How the team charges today isn't recorded in the repos. The <a href="https://org.osu.edu/osu-uwrt/files/2024/06/TDR_THEOhioStateUniversity_RS2024.pdf">2024 report</a> describes the manual procedure: power and data cables on each housing, swapped in a set order. It also describes a custom smart-battery charger the team designed to replace that procedure (<code>SBH_Charger</code> in electric_boogaloo), with fuses on the main rails, overcharge protection and USB-C or barrel-jack input. Ask an electrical lead which one is in use before you charge.</p>
 
@@ -140,20 +141,20 @@
       </ul></div>
 
       <h2 id="rails">Regulators and rails</h2>
-      <p>Everything except the thrusters runs from two identical <strong>TDK-Lambda i6A4W020A033V</strong> modules on the POAC board. Each is a non-isolated DC-DC converter rated 9 to 53 V in and 20 A out, set to its output voltage by one trim resistor. The team's own figure for the pair is "up to 250 W".</p>
+      <p>Everything except the thrusters runs from two identical <strong>TDK-Lambda i6A4W020A033V</strong> modules on the POAC board. Each is a non-isolated DC-DC converter rated 9 to 53 V in and 20 A out, set to its output voltage by one trim resistor. The team's <a href="https://github.com/osu-uwrt/uwrt.org/blob/main/docs/content/legacy-site.md">old website</a> says the pair are "capable of providing up to 250W of power".</p>
       <ul>
         <li><strong>Vreg.</strong> The modules don't take <code>V+</code> directly. It first passes a Schottky diode (MBRB2545CT), which the 2024 report calls a diode "to prevent back-flow current".</li>
         <li><strong>15 V</strong> (PS1, trim 1.24 kΩ) feeds the Orin, the DVL and the 12 V servo regulator.</li>
         <li><strong>5 V</strong> (PS2, trim 8.56 kΩ) feeds board logic and small loads.</li>
         <li><strong>12 V</strong>: a 3 A linear regulator (MIC29300-12) from 15 V, for the servo only.</li>
-        <li><strong>3.3 V</strong>: an LM1117 on every board, from 5 V. A fault on one board's 3.3 V stays on that board.</li>
+        <li><strong>3.3 V</strong>: an LM1117 on each board in the stack and the camera cage, from 5 V. A fault on one board's 3.3 V stays on that board. The battery housings make their own 3.3 V from the pack with buck converters.</li>
       </ul>
       <p>Pre-built modules save designing and laying out a 20 A switching converter on a team board.</p>
     </div>
     <figure class="fig">
       <div class="media-grid el-sch">
-        <figure><a href="media/boards/poac-sch-battery-or.webp" target="_blank" rel="noopener"><img class="media el-sheet" src="media/boards/poac-sch-battery-or.webp" width="1470" height="630" loading="lazy" alt="Schematic: the port battery input goes through two P-channel MOSFETs controlled by an LTC4412 ideal-diode controller onto V+; the controller's STAT pin becomes PORT_STAT."></a></figure>
-        <figure><a href="media/boards/poac-sch-regulators.webp" target="_blank" rel="noopener"><img class="media el-sheet" src="media/boards/poac-sch-regulators.webp" width="1466" height="1250" loading="lazy" alt="Schematic: two TDK-Lambda modules PS1 and PS2 take Vreg and make 15 V and 5 V, each set by a trim resistor (1.24 k and 8.56 k) with input and output capacitors."></a></figure>
+        <figure><a href="media/boards/poac-sch-battery-or.webp" target="_blank" rel="noopener"><img class="media el-sheet" src="/media/boards/poac-sch-battery-or.webp" width="1470" height="630" loading="lazy" alt="Schematic: the port battery input goes through two P-channel MOSFETs controlled by an LTC4412 ideal-diode controller onto V+; the controller's STAT pin becomes PORT_STAT."></a></figure>
+        <figure><a href="media/boards/poac-sch-regulators.webp" target="_blank" rel="noopener"><img class="media el-sheet" src="/media/boards/poac-sch-regulators.webp" width="1466" height="1250" loading="lazy" alt="Schematic: two TDK-Lambda modules PS1 and PS2 take Vreg and make 15 V and 5 V, each set by a trim resistor (1.24 k and 8.56 k) with input and output capacitors."></a></figure>
       </div>
       <figcaption><b>The POAC's battery input and regulators</b>, from the exported schematic (<a href="https://github.com/osu-uwrt/electric_boogaloo/releases/tag/talos_boards">talos_boards release</a>, page 5). Left: one half of the ideal-diode OR. Right: the 15 V and 5 V modules, identical but for the trim resistor. Tap a sheet to open it full size.</figcaption>
     </figure>
@@ -260,8 +261,8 @@
     </div>
     <figure class="fig">
       <div class="media-grid el-two">
-        <figure><img class="media el-light" src="img/electrical/tdr23-cages.webp" width="1029" height="621" loading="lazy" alt="Photo of Talos's two red electronics cages: the camera cage with the camera cage breakout board, fan and stereo camera, and the board stack cage holding, from top, the actuator board, two ESC boards and the power board."></figure>
-        <figure><img class="media el-light" src="img/electrical/tdr24-board-cage.webp" width="748" height="1180" loading="lazy" alt="Exploded render of the 2024 board cage: printed top frame, aluminium LED PCB, LED control PCB, acoustics board, two ESC PCBs, a fan block carrying the Hall-effect kill and AUX switches, the POAC PCB and the printed base."></figure>
+        <figure><img class="media el-light" src="/img/electrical/tdr23-cages.webp" width="1029" height="621" loading="lazy" alt="Photo of Talos's two red electronics cages: the camera cage with the camera cage breakout board, fan and stereo camera, and the board stack cage holding, from top, the actuator board, two ESC boards and the power board."></figure>
+        <figure><img class="media el-light" src="/img/electrical/tdr24-board-cage.webp" width="748" height="1180" loading="lazy" alt="Exploded render of the 2024 board cage: printed top frame, aluminium LED PCB, LED control PCB, acoustics board, two ESC PCBs, a fan block carrying the Hall-effect kill and AUX switches, the POAC PCB and the printed base."></figure>
       </div>
       <figcaption><b>The cages.</b> Left: the Mark 2 cages in 2023, when separate power and actuator boards were still in the stack (2023 report, figure 5). Right: the 2024 stack, with the combined POAC board at the bottom and the Hall-effect kill and AUX switches on the fan block (2024 report, figure 17). The 2026 report shows the IVC board on the stack link where the 2024 acoustics board was.</figcaption>
     </figure>
@@ -283,10 +284,15 @@
         <li><strong>Ethernet</strong> joins the Orin, the DVL and the tether through a 5 V switch in the camera cage. Addresses and the tether are in <a href="computers.html">Computers and networks</a>.</li>
       </ul>
       <h3 id="why-can">Why CAN</h3>
-      <p>Tempest's Mark 1 electronics routed everything through one microcontroller, and some sensors hung off a shared I2C bus. In fall 2021, an adapter stretched that bus to about three feet to reach the depth sensor, and it began to fail. A comment in <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/tools/DeviceList.jsonc#L267-L279"><code>DeviceList.jsonc</code></a> tells the story. The failure helped "convince us to not have a common i2c bus (as we planned in the original mark 2 spec) and instead throw an RP2040 on every board", linked by CAN. CAN is differential, built for long cables in noisy machines, and has error detection and many nodes on one pair of wires (<a href="https://org.osu.edu/osu-uwrt/files/2023/06/TDR_THEOhioStateUniversity_RS2023.pdf">2023 report</a>). I2C now only runs a few centimetres on each board, plus the cable from the camera cage board to the depth sensor.</p>
+      <ul>
+        <li><strong>Mark 1 was a hub.</strong> Its electronics "forwarded all control signals between the electronics boards and the primary computer through a single microcontroller" (<a href="https://org.osu.edu/osu-uwrt/files/2023/06/TDR_THEOhioStateUniversity_RS2023.pdf">2023 report</a>).</li>
+        <li><strong>What broke.</strong> At a pool test in fall 2021, an adapter stretched the I2C bus to about three feet to reach the depth sensor on the other side of the vehicle, and it started causing signal issues (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/tools/DeviceList.jsonc#L267-L279"><code>DeviceList.jsonc</code></a>).</li>
+        <li><strong>What the team decided.</strong> The failure helped "convince us to not have a common i2c bus (as we planned in the original mark 2 spec) and instead throw an RP2040 on every board", linked by CAN. I2C now runs only a few centimetres on each board, plus the cable from the camera cage board to the depth sensor.</li>
+        <li><strong>Why CAN.</strong> It is differential, so the signal holds up over longer cables. It detects errors, and many nodes share one pair of wires (2023 report).</li>
+      </ul>
     </div>
     <figure class="fig">
-      <a href="img/electrical/tdr26-architecture.webp" target="_blank" rel="noopener"><img class="media el-light el-arch" src="img/electrical/tdr26-architecture.webp" width="1228" height="758" loading="lazy" alt="The team's Talos electrical architecture diagram: custom boards in red (LED control, IVC, two ESC boards, PoActuator, camera cage breakout, Orin HAT, FOG board), linked by data and power arrows to thrusters, kill switch, smart battery packs, depth sensor, DVL, network switch, Orin AGX, cameras, IMU and gyro."></a>
+      <a href="img/electrical/tdr26-architecture.webp" target="_blank" rel="noopener"><img class="media el-light el-arch" src="/img/electrical/tdr26-architecture.webp" width="1228" height="758" loading="lazy" alt="The team's Talos electrical architecture diagram: custom boards in red (LED control, IVC, two ESC boards, PoActuator, camera cage breakout, Orin HAT, FOG board), linked by data and power arrows to thrusters, kill switch, smart battery packs, depth sensor, DVL, network switch, Orin AGX, cameras, IMU and gyro."></a>
       <figcaption><b>The team's own diagram</b> (2026 design report, figure 15), which the interactive figure above follows. Black arrows are data, red are power, grey are control signals. Its "ESC Board 2" drives thrusters 0 to 3, which the firmware calls board 0. Tap to open full size.</figcaption>
     </figure>
 
@@ -298,7 +304,7 @@
         <li><strong>Isolated supplies for analog.</strong> The IVC board's transmit amplifier runs from an isolated ±24 V converter (TRACO THN 15-2425N) and its hydrophone receiver from an isolated ±5 V converter. The usual reason for this is to keep a small analog signal off the ground that the motors share.</li>
         <li><strong>Differential where it's long.</strong> CAN between boards, Ethernet to the DVL (routed as 100 Ω pairs) and RS-422 to the gyro are all differential, so noise picked up equally on both wires cancels.</li>
         <li><strong>Magnets near the IMU.</strong> The torpedo launcher dropped electromagnets for a spring and cam because they disturbed the IMU's magnetometer (<a href="https://org.osu.edu/osu-uwrt/files/2023/06/TDR_THEOhioStateUniversity_RS2023.pdf">2023 report</a>). Keep motors, magnets and high-current cables away from the camera cage.</li>
-        <li><strong>Copper.</strong> Mark 2 boards moved to 2 oz copper for "higher power designs" (2023 report).</li>
+        <li><strong>Copper.</strong> The 2023 report says Mark 2 moved to 2 oz copper for "higher power designs". The team's JLCPCB 4-layer stackup file below is 1 oz outside and 0.5 oz inside, and the repo doesn't record which boards are ordered with 2 oz.</li>
       </ul>
 
       <h2 id="workflow">Designing a board</h2>
@@ -328,6 +334,17 @@
         <li>Reverse-polarity protection on any input a person plugs in by hand. The ESC and camera cage boards both have it.</li>
       </ul>
 
+      <h2 id="power-up">Power-up, step by step</h2>
+      <p>The order things come alive once the packs go in:</p>
+      <ol>
+        <li><strong>Plug in the packs.</strong> A housing's output switches on only once its cable ties <code>DETECT</code> to pack negative (<a href="#smart">above</a>).</li>
+        <li><strong><code>V+</code> comes up</strong> through the ideal-diode OR. The 15 V and 5 V modules start, and every board boots on its own 3.3 V.</li>
+        <li><strong>The Orin and fans switch on.</strong> As soon as its firmware starts, the camera cage board turns on the fans and the Orin's 15 V (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/CameraCageBB/src/main.c#L176-L187"><code>main.c</code></a>). The Orin then boots.</li>
+        <li><strong>The thrusters stay off.</strong> The POAC holds <code>SOFTWARE_KILL</code> at "kill": a resistor while it boots, then its firmware ("Default to kill since safety is not initialized", <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L96"><code>safety_interface.c</code></a>). <code>MOTOR_PWR</code> comes on only when the kill switch is in <em>and</em> the software kill allows it, for example when someone enables Talos from the viewer (<a href="commanding.html#kill">Commanding Talos</a>).</li>
+        <li><strong>The ESCs wait.</strong> Once <code>MOTOR_PWR</code> is on, the ESC boards hold the thrusters off for 5 s (<code>ESC_POWERUP_DELAY_MS</code> in <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/include/dshot.h#L29"><code>dshot.h</code></a>) while the ESCs start.</li>
+      </ol>
+      <p>The repos don't record a power-down order. Ask an electrical lead before you unplug packs with the Orin running.</p>
+
       <h2 id="checking" data-short="Checking power">Checking power from a laptop</h2>
       <p>With ROS connected to the robot (see <a href="computers.html">Computers and networks</a>):</p>
 <pre class="cmd" data-where="laptop"><code>ros2 topic echo /talos/state/electrical          <span class="c"># rails, once a second</span>
@@ -345,6 +362,10 @@ ros2 topic echo /talos/state/batteries_balanced  <span class="c"># both packs su
           <tr><td>ESC <code>current</code> stuck near 0.04 A</td><td>Don't use that field (see the pool run).</td></tr>
         </tbody>
       </table>
+      <ul>
+        <li><strong>Bench tests run on a power supply</strong>, not the packs. The team's pre-test tool assumes this by default (<code>--power supply</code>) and then skips the battery boards and the battery voltage. How the supply is wired in isn't in the repos: ask an electrical lead.</li>
+        <li><strong>The pre-test tool checks these same rails.</strong> Its step B4 reads <code>state/electrical</code> and checks <code>twelve_volt_voltage</code>, <code>five_volt_voltage</code> and <code>three_volt_voltage</code> against the ranges in the table <a href="#measured">above</a>. With <code>--power battery</code> it also fails a bus under 18.5 V, and it expects battery housings 1 and 2 on the external bus (<a href="#smart">battery IDs</a>).</li>
+      </ul>
 
       <h2 id="sources">Where this lives</h2>
       <ul class="src-list">

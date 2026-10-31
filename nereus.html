@@ -12,42 +12,42 @@
   <header class="page-head">
     <div class="kicker">Running Talos · Chapter 2</div>
     <h1>Nereus, the simulator</h1>
-    <p class="lede">A pool, a course and a Talos that exist only in software, close enough to the real ones that the robot's own code can't tell the difference. Where you test a tree, a controller change or a new detector before anyone gets wet.</p>
+    <p class="lede">A pool, a course and a Talos that exist only in software, close enough that the robot's own code runs on it unchanged. Where you test a tree, a controller change or a new detector before anyone gets wet.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Nereus pretends to be the hardware: it publishes Talos's sensor and camera topics, takes the controller's thruster forces and moves a simulated Talos. The robot stack runs <strong>unchanged</strong>.</li>
-      <li>Nothing about Talos is in the code. The robot, pool, course and ROS wiring are YAML <span class="term">packs</span>, merged into one <code>resolved.json</code> per run.</li>
-      <li>The physics is the same Fossen model, with the same numbers, that the MPC uses. Sensor noise comes from real pool bags. Cameras are rendered on the GPU with depth and point clouds.</li>
+      <li>Nereus plays the hardware: it publishes Talos's sensor and camera topics, takes the controller's thruster forces and moves a simulated Talos. The robot stack runs <strong>unchanged</strong>.</li>
+      <li>Nothing about Talos is in the code: the robot, pool, course and ROS wiring are YAML <span class="term">packs</span>, merged into one <code>resolved.json</code> per run.</li>
+      <li>The physics is the same Fossen code the MPC uses, with the numbers from the MPC's 2026-10-03 pool fit; <code>mpc_model:=sim</code> gives the MPC exactly this plant. Sensor noise comes from real pool bags. Cameras are rendered on the GPU with depth and point clouds.</li>
       <li>One command starts it all: <code>ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim</code>.</li>
       <li>It also renders labelled training images for YOLO. It doesn't simulate acoustics, sensor failures or a real pool's mess, so the pool still has the last word.</li>
     </ul></aside>
 
     <figure class="fig">
-      <video class="media nx-video" id="run-video" data-src="media/nereus/tree-run-behind.mp4" data-poster="media/nereus/tree-run-behind.jpg" controls muted playsinline preload="metadata" aria-label="Talos running the competition tree in the Nereus viewer"></video>
+      <video class="media nx-video" id="run-video" src="/media/nereus/tree-run-behind.mp4" poster="/media/nereus/tree-run-behind.jpg" width="1280" height="800" controls muted playsinline preload="metadata" aria-label="Talos running the competition tree in the Nereus viewer"></video>
       <div class="nx-chapters" id="run-chapters" role="group" aria-label="Jump to a task"></div>
-      <figcaption><b>Talos's full software stack running the competition tree in Nereus</b>, at 6× speed: kill switch, dive, gate, slalom, the pinger step (skipped: no acoustics), torpedo into the large fire hole, then the table. Only the pool, the props and the robot's body are simulated; the detector, mapping, the tree and the MPC are the robot's own code. Tap a task to jump.</figcaption>
+      <figcaption><b>The full stack runs the competition tree.</b> The viewer's screen, sped up 6×: kill switch, dive, gate, slalom, the pinger step (skipped: no acoustics), torpedo, table. Only the pool, the props and Talos's hardware are simulated; the detector, mapping, the tree and the MPC are the robot's own code. Tap a task to jump.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="what">What Nereus is</h2>
-      <p><a href="https://github.com/osu-uwrt/nereus">Nereus</a> is the team's simulator and operator interface. It has three parts:</p>
+      <p><a href="https://github.com/osu-uwrt/nereus">Nereus</a> is the team's simulator and operator interface, in three parts:</p>
       <ul>
-        <li><strong><code>nereus-sim</code></strong>, the simulator. C++: physics, sensors, cameras, mechanisms, props, scoring, and a ROS 2 bridge.</li>
-        <li><strong><code>nereus-viewer</code></strong>, the pool viewer. The 3D pool and the operator panels. The same program drives the real robot at the pool, so it has its own chapter: <a href="viewer.html">The Nereus viewer</a>.</li>
-        <li><strong>Packs</strong>: YAML files in <a href="https://github.com/osu-uwrt/nereus/tree/main/content/packs"><code>content/packs/</code></a> that describe the robot, pool, course and ROS topics.</li>
+        <li><strong><code>nereus-sim</code></strong>: C++ physics, sensors, cameras, mechanisms, props, scoring and a ROS 2 bridge.</li>
+        <li><strong><code>nereus-viewer</code></strong>: the 3D pool and operator panels. It also drives the real robot, so it has its own chapter (<a href="viewer.html">The Nereus viewer</a>).</li>
+        <li><strong>Packs</strong>: YAML in <a href="https://github.com/osu-uwrt/nereus/tree/main/content/packs"><code>content/packs/</code></a> describing the robot, pool, course and ROS topics.</li>
       </ul>
-      <p>The simulator, the robot stack and the viewer share no code. They only talk over ROS 2 topics. That is the whole design: if the stack sees the same topics, with the same names, types, frames and timing as on Talos, it behaves the same way. Nothing in the stack has an "if simulation" branch except the clock.</p>
+      <p>The three share no code, only ROS 2 topics. That is the whole design: if the stack sees the same topics, types, frames and timing as on Talos, it behaves the same way. It runs as on Talos minus the hardware drivers (<code>hardware:=none</code>), on the simulator's clock.</p>
     </div>
     <figure class="fig">
       <div class="panel" id="arch-graph"></div>
       <div class="graph-note" id="arch-note">Tap or hover a box.</div>
-      <figcaption><b>One simulated run.</b> The packs are resolved once, then the simulator plays the hardware: everything to the right of the bridge is the robot's own software. Tap or hover a box to see what it does; arrows show which way data flows.</figcaption>
+      <figcaption><b>One simulated run.</b> The packs are resolved once, then the simulator plays the hardware; everything right of the bridge is the robot's own software. Tap or hover a box.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="packs">Everything is a pack</h2>
-      <p>A pack is a folder with one YAML file and its meshes. Every number about Talos, the pool or the course lives in a pack, so changing the robot or laying out a new course is an edit, not a rebuild.</p>
+      <p>A pack is a folder of YAML (usually one file; the course has one per task) plus its meshes. Every number about Talos, the pool or the course lives in one, so a new course is an edit, not a rebuild.</p>
       <table class="params">
         <thead><tr><th>Pack</th><th>Says</th></tr></thead>
         <tbody>
@@ -59,7 +59,7 @@
           <tr><td><code>scenarios/…</code></td><td>Picks one of each and places everything</td></tr>
         </tbody>
       </table>
-      <p>Before a run, <code>python -m nereus.packs resolve</code> checks every pack against a JSON schema and cross-checks them (does the bridge name real sensors? does the robot have a claw for the table task?), then writes one <code>resolved.json</code>. The simulator and the viewer only ever read that file. Errors name the file and the key.</p>
+      <p>Before a run, <code>python -m nereus.packs resolve</code> checks every pack against a JSON schema, cross-checks them (does the bridge name real sensors? does the robot have a claw for the table?) and writes <code>resolved.json</code>, the only file the simulator and viewer read. Errors name the file and the key.</p>
     </div>
     <figure class="fig">
       <div class="panel flush nx-packs" id="pack-explorer">
@@ -69,17 +69,17 @@
         </div>
         <div class="nx-packs-body" id="pack-body" aria-live="polite"></div>
       </div>
-      <figcaption><b>The real packs, key by key.</b> Pick a pack, then tap a key to see its YAML as committed, with a link to the line on GitHub. Each key's grey line is what it holds in this file.</figcaption>
+      <figcaption><b>The real packs, key by key.</b> Pick a pack, then tap a key for its committed YAML and a link to the line on GitHub.</figcaption>
     </figure>
     <div class="prose">
       <p>Check a pack after editing, from the <code>nereus</code> folder:</p>
       <pre class="cmd" data-where="your computer"><code>uv run nereus-packs validate content/packs/scenarios/talos_uwrt</code></pre>
       <div class="callout"><span class="label">Gotcha: pack paths are relative</span>
-        <p>A scenario names its robot, pool, course and bridge as folders <em>relative to the scenario file</em> (<code>robot: ../../robots/talos</code>). The schema rejects absolute paths. If you copy a scenario somewhere else to try a variant, fix those paths so they still point at <code>content/packs/</code> from the new place.</p>
+        <p>A scenario names its packs by paths <em>relative to the scenario file</em> (<code>robot: ../../robots/talos</code>); the schema rejects absolute ones. Copy a scenario elsewhere and you must fix them.</p>
       </div>
 
       <h2 id="course">The course and scenarios</h2>
-      <p>The scenario is the file you edit most. It places the pool, the AprilTag board and each task in the world, sets the robot's start, the random seed and the 2 ms physics step. Its world is the robot's <code>map</code> frame: the task poses in <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/scenarios/talos_uwrt/scenario.yaml#L31-L39"><code>talos_uwrt</code></a> are copied from riptide_mapping's prior map, so before any detection the simulated course and the robot's map agree (<a href="perception/map.html">how the map works</a>).</p>
+      <p>The scenario is the file you edit most. It places the pool, the AprilTag board and each task, and sets the robot's start, the random seed and the 2 ms physics step. Its world is the robot's <code>map</code> frame: the task poses in <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/scenarios/talos_uwrt/scenario.yaml#L31-L39"><code>talos_uwrt</code></a> are copied from riptide_mapping's prior map, so the simulated course and the robot's map start out agreeing (<a href="perception/map.html">the map</a>).</p>
     </div>
     <figure class="fig">
       <div class="panel nx-course">
@@ -87,25 +87,25 @@
         <div id="course-map" class="nx-map"></div>
         <div class="graph-note" id="course-note">Tap a prop.</div>
       </div>
-      <figcaption><b>Both UWRT scenarios from above</b>, drawn at the same scale from the resolved scenarios. The map origin is the AprilTag board (orange square); Talos starts at the white dot. The course is the same in both, in map coordinates: in the RPAC dive well the bins land outside the pool. Tap a prop for its pose and its named frames.</figcaption>
+      <figcaption><b>Both UWRT scenarios from above.</b> Same scale, from the resolved scenarios. The map origin is the AprilTag board (orange bar); Talos starts at the white dot. The course has the same map coordinates in both, so in the RPAC dive well the bins land outside the pool. Tap a prop for its pose and frames.</figcaption>
     </figure>
     <div class="prose">
       <ul>
         <li><strong><code>talos_uwrt</code></strong> (the default, <code>pool:=robosub</code>): the RoboSub 2026 pool, 50 × 22.86 m and 2.13 m deep.</li>
-        <li><strong><code>talos_uwrt_rpac</code></strong> (<code>pool:=rpac</code>): Ohio State's RPAC dive well, 25.23 × 17.07 m, 5.18 m deep with a sloped floor. Here the scenario hangs the board on the deep-end wall and places the <em>world</em> from the tag, the way the stack does it (<code>world_placement</code>). Move the board and the map and course move with it.</li>
+        <li><strong><code>talos_uwrt_rpac</code></strong> (<code>pool:=rpac</code>): Ohio State's RPAC dive well, 25.23 × 17.07 m, 5.18 m deep with a sloped floor. The board hangs on the deep-end wall and the <em>world</em> is placed from the tag, as the stack does it (<code>world_placement</code>): move the board and the map and course follow.</li>
+        <li><strong>A moved course.</strong> Real props are never exactly where the prior map says. Move tasks in the simulator but not the map: edit <code>task_placements</code> in a copy of a scenario, or use the viewer's <em>Edit map → Sim course</em> (saved by <code>nereus.packs set-course</code>). <a href="perception/mission.html">One mission in Nereus</a> moves the course 72 cm, the torpedo 1.27 m more.</li>
       </ul>
-      <p><strong>Moving the course.</strong> Real props are never exactly where the prior map says. To test that, move the tasks in the simulator but not in the map: edit <code>task_placements</code> in a copy of the scenario, or use the viewer's <em>Edit map → Sim course</em>, which saves through <code>nereus.packs set-course</code> (comments kept) and restarts the simulator. <a href="perception/mission.html">One mission in Nereus</a> runs the tree on a course moved 72 cm, the torpedo 1.27 m more, to see whether mapping finds the props.</p>
 
-      <h2 id="physics">Physics: the model the MPC flies</h2>
-      <p>The simulator advances in fixed 2 ms <span class="term">ticks</span>. Each tick runs in the same order (<a href="https://github.com/osu-uwrt/nereus/blob/main/libraries/session/src/session.cpp#L323">session.cpp</a>):</p>
+      <h2 id="physics">Physics: the MPC's own model</h2>
+      <p>The simulator advances in fixed 2 ms <span class="term">ticks</span>, each in the same order (<a href="https://github.com/osu-uwrt/nereus/blob/main/libraries/session/src/session.cpp#L323">session.cpp</a>):</p>
       <ol>
-        <li>Take any new commands from ROS (thrust, kill, actuators).</li>
-        <li><strong>Plant</strong>: thrusters, then one RK4 step of the 6-DOF body, then contacts with the pool and course.</li>
+        <li>Take new commands from ROS (thrust, kill, actuators).</li>
+        <li><strong>Plant</strong>: thrusters, one RK4 step of the 6-DOF body, contacts. Every sensor that is due takes a sample.</li>
         <li><strong>Mechanisms</strong>, <strong>payloads</strong> in flight, <strong>prop physics</strong> (the table objects).</li>
-        <li><strong>Tasks</strong> watch the robot and the payloads and report events.</li>
-        <li>Sensors that are due take a sample; the bridge publishes them, <code>/clock</code> and the TF.</li>
+        <li><strong>Tasks</strong> watch the robot and payloads and report events.</li>
+        <li>The bridge publishes what is due: sensors, <code>/clock</code>, TF, simulator state.</li>
       </ol>
-      <p>The body is a Fossen model (<a href="control/model.html">The Fossen model</a>): rigid-body and added mass, Coriolis, linear and quadratic drag, and buoyancy from an ellipsoid, so it changes as Talos breaks the surface. Its class, <a href="https://github.com/osu-uwrt/nereus/blob/main/libraries/simulation/src/detail/marine_dynamics.hpp"><code>MarineDynamics</code></a>, is the same code riptide_mpc carries a copy of (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/include/riptide_mpc/marine_dynamics.hpp"><code>marine_dynamics.hpp</code></a>; apart from comments the equations are identical). Both came from the old simulator.</p>
+      <p>The body is a Fossen model (<a href="control/model.html">The Fossen model</a>): rigid-body and added mass, Coriolis, linear and quadratic drag, and buoyancy from an ellipsoid, so it changes as Talos breaks the surface. Its class, <a href="https://github.com/osu-uwrt/nereus/blob/main/libraries/simulation/src/detail/marine_dynamics.hpp"><code>MarineDynamics</code></a>, has the same equations as riptide_mpc's copy (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/include/riptide_mpc/marine_dynamics.hpp"><code>marine_dynamics.hpp</code></a>).</p>
     </div>
     <figure class="fig narrow">
       <div class="panel">
@@ -119,31 +119,29 @@
           <dt>Contacts</dt><dd>Two hull boxes against the pool walls, floor and course structures</dd>
         </dl>
       </div>
-      <figcaption><b>The Talos plant</b>, from <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L28-L54"><code>robot.yaml</code></a>. Its body was copied from riptide_mpc's pool-identified model of 2026-10-03. The thruster model is the one in <a href="control/thrusters.html#dynamics">Thrusters and allocation</a>.</figcaption>
+      <figcaption><b>The Talos plant.</b> From <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L28-L54"><code>robot.yaml</code></a>: riptide_mpc's pool-identified model of 2026-10-03, and the thruster model of <a href="control/thrusters.html#dynamics">Thrusters and allocation</a>.</figcaption>
     </figure>
     <div class="prose">
       <h3 id="mpc-model">Which model the MPC gets</h3>
-      <p>The MPC needs its own model of the vehicle. In simulation you choose how good that model is with <code>mpc_model</code>:</p>
+      <p>The MPC predicts with its own model of the vehicle. In simulation, <code>mpc_model</code> picks how good it is:</p>
       <table class="params">
         <thead><tr><th><code>mpc_model</code></th><th>The MPC's model</th><th>Use it to</th></tr></thead>
         <tbody>
-          <tr><td>empty (default)</td><td>riptide_mpc's <code>models/talos.yaml</code>, the estimate of the <em>real</em> Talos</td><td>Fly with model error, as on the robot. The real model has been re-fitted since 2026-10-03, so it no longer matches the plant.</td></tr>
-          <tr><td><code>sim</code></td><td>Written for this run from the plant by <a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/mpc_sim_model.py"><code>mpc_sim_model.py</code></a></td><td>Remove model error: test trees, perception and paths without fighting the controller</td></tr>
+          <tr><td>empty (default)</td><td>riptide_mpc's <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml"><code>config/models/talos.yaml</code></a>, the estimate of the <em>real</em> Talos</td><td>Fly with model error, as on the robot: it was re-fitted after 2026-10-03 (surge drag 224 against the plant's 124, for one)</td></tr>
+          <tr><td><code>sim</code></td><td>The plant itself, written into <code>&lt;run&gt;.mpc/</code> by <a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/mpc_sim_model.py"><code>mpc_sim_model.py</code></a></td><td>Remove model error: test trees, perception and paths without fighting the controller</td></tr>
         </tbody>
       </table>
-      <p>With <code>mpc_model:=sim</code> the launch writes <code>vehicle.yaml</code>, <code>hydrodynamics.yaml</code> and <code>mpc.yaml</code> into <code>&lt;run&gt;.mpc/</code>. It also sets the MPC's DVL latency to 0, because the simulator stamps each reading when it is taken.</p>
 
       <h3 id="mechanisms">Mechanisms and props</h3>
       <ul>
-        <li><strong>Torpedoes</strong>: two finned projectiles that turn under drag and buoyancy. A 0.047 J spring launches them at about 2.5 m/s plus Talos's own speed. A miss is removed after 30 s.</li>
-        <li><strong>Droppers</strong>: two markers released nose-down, same spring. Torpedoes and droppers share a 0.5 s cooldown.</li>
-        <li><strong>Claw</strong>: two jaws, 0 to 14 cm gap, 3.3 cm/s each, 12 N hold. Grasps are real contacts: the table's objects are rigid bodies in a <a href="https://pybullet.org/">Bullet</a> physics world (<a href="https://github.com/osu-uwrt/nereus/blob/main/libraries/session/src/prop_world.cpp">prop_world.cpp</a>), so a bad grip slips.</li>
-        <li><strong>Magnet</strong>: passive. The course judges whether its tip dwells near a magnet light.</li>
-        <li><strong>Safety</strong>: Talos starts killed. While killed, thruster commands become zero and the mechanisms disarm; arming is refused.</li>
+        <li><strong>Torpedoes and droppers</strong>: two finned projectiles flying under drag and buoyancy, launched by a 0.047 J spring at about 2.5 m/s plus Talos's speed, and two markers released nose-down. They share a 0.5 s cooldown.</li>
+        <li><strong>Claw</strong>: two jaws, 1 mm to 14 cm gap, 3.3 cm/s each, 12 N hold. The table's objects are rigid bodies in a <a href="https://pybullet.org/">Bullet</a> world (<a href="https://github.com/osu-uwrt/nereus/blob/main/libraries/session/src/prop_world.cpp">prop_world.cpp</a>), so a bad grip slips.</li>
+        <li><strong>Magnet</strong>: passive; the course judges whether its tip dwells near a magnet light.</li>
+        <li><strong>Safety</strong>: Talos starts killed. While killed, thrust is zero, the mechanisms disarm and arming is refused.</li>
       </ul>
 
       <h2 id="sensors">Sensors and their noise</h2>
-      <p>Each sensor in <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L157-L203"><code>robot.yaml</code></a> is sampled from the true motion at its mount point, then noise is added. The noise levels were measured in the 2026-10-03 pool bags. The <a href="sensors.html">Navigation sensors</a> chapter covers the real ones.</p>
+      <p>Each sensor in <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L158-L203"><code>robot.yaml</code></a> samples the true motion at its mount, plus noise measured in the 2026-10-03 pool bags (the real sensors: <a href="sensors.html">Navigation sensors</a>).</p>
       <table class="params">
         <thead><tr><th>Sensor</th><th>Rate</th><th>Noise (1σ, per sample)</th></tr></thead>
         <tbody>
@@ -153,15 +151,15 @@
           <tr><td>Depth</td><td>20 Hz</td><td>0.7 mm</td></tr>
         </tbody>
       </table>
-      <p>These are idealised on purpose. The models are white noise only, with no bias or drift, although the sensor library can add both. The DVL never loses bottom lock and has no range output, and depth is the robot's height, not a pressure. Every reading is reproducible from the scenario's <code>seed</code>.</p>
+      <p>Idealised on purpose: white noise only, no bias or drift (the sensor library can add both). The DVL never loses bottom lock and has no range output. Depth is <code>base_link</code>'s true z in the world, not a pressure reading. Every reading is reproducible from the scenario's <code>seed</code>.</p>
 
       <h2 id="cameras">Cameras, depth and point clouds</h2>
-      <p>Both ZED X Minis are simulated as stereo cameras at the real calibration: 1920 × 1200, 15 Hz, the rectified intrinsics and baselines (49.8 and 50.3 mm). Each frame is rendered offscreen with OpenGL through EGL, so no window is needed. The water colour, absorption and scattering come from the pool pack.</p>
+      <p>Both ZED X Minis are simulated as stereo cameras at the real calibration: 1920 × 1200, 15 Hz, the rectified intrinsics and baselines (49.8 and 50.3 mm). Frames are rendered offscreen (OpenGL through EGL, no window), with the pool pack's water colour, absorption and scattering.</p>
       <ul>
-        <li><strong>Colour</strong> is published as JPEG (quality 93) on the same topics as the ZED wrapper, so the detector reads it unchanged.</li>
-        <li><strong>Depth</strong> is the true distance from the render, then degraded on the CPU with a stereo-style noise model (below).</li>
-        <li><strong>Point clouds</strong> come from the noisy depth and colour, every 8th pixel, on every 3rd frame (5 Hz).</li>
-        <li><strong>Only when wanted.</strong> The bridge checks for subscribers every 500 ms and renders a camera output only while someone listens (<code>always_cameras:=true</code> renders everything).</li>
+        <li><strong>Colour</strong>: JPEG (quality 93) on the ZED wrapper's topics, so the detector reads it unchanged.</li>
+        <li><strong>Depth</strong>: the true depth from the render (z along the optical axis), degraded on the CPU with a stereo-style noise model (below).</li>
+        <li><strong>Point clouds</strong>: from the noisy depth and colour, every 8th pixel, every 3rd frame (5 Hz).</li>
+        <li><strong>Only when wanted</strong>: the bridge checks for subscribers every 500 ms and renders an output only while someone listens (<code>always_cameras:=true</code> renders all).</li>
       </ul>
     </div>
     <figure class="fig">
@@ -171,59 +169,56 @@
           <div id="depth-drop"></div>
         </div>
       </div>
-      <figcaption><b>The depth-noise model</b> with Talos's numbers (<a href="https://github.com/osu-uwrt/nereus/blob/main/libraries/cameras/src/depth_noise.cpp">depth_noise.cpp</a>). Left: the error grows with the square of range, from 2 mm close up to 2.6 cm at the 4 m limit; half of it is shared across 8-pixel patches, so surfaces look wavy, not speckled. Right: the chance a pixel has no depth, much higher at edges. 0.2 % of pixels are outliers off by up to 25 %. Tap or hover to read values.</figcaption>
+      <figcaption><b>The depth-noise model.</b> Talos's numbers in <a href="https://github.com/osu-uwrt/nereus/blob/main/libraries/cameras/src/depth_noise.cpp">depth_noise.cpp</a>. Left: the error grows with range squared, 2 mm close up to 2.6 cm at the 4 m limit; half its variance is shared across 8-pixel patches, so surfaces look wavy, not speckled. Right: the chance a pixel has no depth, higher at edges. 0.2 % of pixels are outliers, off by up to 25 %. Tap or hover to read values.</figcaption>
     </figure>
     <figure class="fig">
       <div class="media-grid nx-two">
-        <figure><img class="media" data-src="media/nereus/viewer-point-clouds-close.webp" alt="The Nereus viewer with the forward camera's point cloud drawn as a white sheet on the torpedo board" loading="lazy" width="1600" height="1000"><figcaption><b>The forward camera's point cloud</b> (white) lying on the torpedo board, with the YOLO detections cloud in colour.</figcaption></figure>
-        <figure><img class="media" data-src="media/nereus/yolo-ffc-torpedo.webp" alt="Simulated forward-camera image of the torpedo board with YOLO boxes: fire 0.97, fire_engine 0.97, circle 0.96 and 0.97, blood 0.96" loading="lazy" width="1280" height="800"><figcaption><b>What the detector sees.</b> The real YOLO model on a simulated frame: fire 0.97, fire_engine 0.97, both circles, blood 0.96.</figcaption></figure>
+        <figure><img class="media" src="/img/nereus/point-cloud-close.webp" alt="The Nereus pool view from above and to the side: Talos holding position about 2.7 m from the torpedo board, with the forward camera's point cloud as white dots covering the board, gaps where its holes are, and a sheet of dots on the pool floor in front of it" loading="lazy" width="760" height="475"><figcaption><b>The forward camera's point cloud.</b> Talos holds 2.7 m from the torpedo board: white dots cover the board (gaps at the holes) and the floor in front of it. The viewer's pool view, from above and to the side.</figcaption></figure>
+        <figure><img class="media" src="/media/nereus/yolo-ffc-torpedo.webp" alt="Simulated forward-camera image of the torpedo board with YOLO boxes: fire 0.97, fire_engine 0.97, circle 0.96 and 0.97, blood 0.96" loading="lazy" width="1280" height="800"><figcaption><b>What the detector sees.</b> The real YOLO model on a simulated frame of the same board: fire 0.97, fire_engine 0.97, both circles, blood 0.96.</figcaption></figure>
       </div>
     </figure>
     <figure class="fig">
-      <video class="media nx-video" id="cam-video" data-src="media/nereus/cameras-yolo.mp4" data-poster="media/nereus/cameras-yolo.jpg" controls muted playsinline preload="metadata" aria-label="The detector's annotated stream beside the raw simulated forward and down camera images"></video>
+      <video class="media nx-video" id="cam-video" src="/media/nereus/cameras-yolo.mp4" poster="/media/nereus/cameras-yolo.jpg" width="1280" height="600" controls muted playsinline preload="metadata" aria-label="The detector's annotated stream beside the raw simulated forward and down camera images"></video>
       <div class="nx-chapters" id="cam-chapters" role="group" aria-label="Jump to a task"></div>
-      <figcaption><b>The whole tree run through the cameras</b>, at 10×: left, the detector's annotated stream (it switches between the forward and down cameras as the tree asks); right, the raw simulated images. Recorded from a bag of the run. Tap a task to jump.</figcaption>
+      <figcaption><b>The same run through the cameras.</b> From a bag, sped up 10×. Left, the detector's annotated stream (forward or down camera, as the tree asks); right, the raw simulated images. Tap a task to jump.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="tasks">Tasks and scoring</h2>
-      <p>The course pack turns the RoboSub rules into geometry. Each task file has <strong>props</strong> (what you can hit or grab), <strong>regions</strong> (judged volumes) and <strong>events</strong>:</p>
+      <p>The course pack turns the RoboSub rules into geometry. Each task file has <strong>props</strong> (things to hit or grab), <strong>regions</strong> (judged volumes) and <strong>events</strong>:</p>
       <ul>
-        <li>a gate or slalom row is a <em>portal</em>: crossing it from one side to the other is a pass;</li>
-        <li>the torpedo board is a <em>perforated panel</em>: each torpedo is a hit on a hole, or a miss;</li>
-        <li>bins are <em>open crates</em> that catch markers; baskets catch the table's objects;</li>
-        <li>magnet lights fire when the magnet tip <em>dwells</em> close enough; the octagon reports surfacing and facing.</li>
+        <li>a gate or slalom row is a <em>portal</em>: crossing it is a pass;</li>
+        <li>the torpedo board is a <em>perforated panel</em>: a hit on a hole, or a miss;</li>
+        <li>bins and baskets are <em>open crates</em> that catch markers and objects;</li>
+        <li>magnet lights fire when the magnet tip <em>dwells</em> close; the octagon reports surfacing.</li>
       </ul>
-      <p>Turning events into points is code, not YAML: a C++ rules class (<a href="https://github.com/osu-uwrt/nereus/tree/main/extensions/rules/robosub_2026"><code>robosub_2026</code></a>), with every point value in <code>tasks.yaml</code>. Scoring waits for <em>Start run</em> in the viewer's scorecard. These are the simulator's events from the run in the video:</p>
+      <p>Points come from a C++ rules class (<a href="https://github.com/osu-uwrt/nereus/tree/main/extensions/rules/robosub_2026"><code>robosub_2026</code></a>) with every value in <code>tasks.yaml</code>. Scoring waits for <em>Start run</em> in the viewer's scorecard.</p>
     </div>
     <figure class="fig narrow">
       <div class="panel"><ol class="nx-events" id="events"></ol></div>
-      <figcaption><b>Task events from the tree run</b>, as published on <code>simulator/task_events</code>, in simulated seconds after the kill switch. The "tasks reset" was the operator pressing <em>Start run</em> after the gate, which is also why that run's scorecard shows 0 points. Tap an event to jump the video above (up to the table).</figcaption>
+      <figcaption><b>Task events from the tree run.</b> From <code>simulator/task_events</code>, in simulated seconds after the kill switch. The "tasks reset" at 127.8 s is the operator pressing <em>Start run</em>, after the gate and the torpedo hit, so neither counted. Scoring then ended when Talos broke the surface outside the octagon, so that run's scorecard shows 0 points. Tap an event to play it in the camera video.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="bridge">The ROS bridge</h2>
-      <p>The bridge is the ROS node <code>/talos/physics_simulator</code>. Its pack, <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/bridges/uwrt_talos/bridge.yaml"><code>bridge.yaml</code></a>, lists every topic as a <span class="term">stream</span>: direction, ROS type, the simulator value it carries and how each message field is filled. Any message type in your sourced workspace works, so adding a topic needs no C++.</p>
+      <p>The bridge is the ROS node <code>/talos/physics_simulator</code>. Its pack, <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/bridges/uwrt_talos/bridge.yaml"><code>bridge.yaml</code></a>, lists each topic as a <span class="term">stream</span>: direction, ROS type, the simulator value it carries and how each field is filled. Any message type in your sourced workspace works, so a new topic needs no C++.</p>
     </div>
     <figure class="fig">
       <div class="panel nx-bridge">
         <div class="controls"><span class="seg" role="group" aria-label="Filter streams" id="bridge-filter"></span></div>
         <div id="bridge-list" class="nx-bridge-list"></div>
       </div>
-      <figcaption><b>Every stream in the Talos bridge.</b> The rate is what the bridge is set to publish; "measured" is what one loaded desktop delivered in the media run (a second pass, each topic alone for 3 s), not a robot spec. 0 Hz means "on each event". Tap a row for its fields, its simulator source and who listened.</figcaption>
+      <figcaption><b>Every stream in the Talos bridge.</b> The rate is what the bridge is set to publish. "Measured" and "listened to by" come from one run on 2026-10-30, on a desktop busy with a Windows VM, a compile and GPU jobs, each topic alone for 3 s: not robot specs. Pick a group, then tap a row.</figcaption>
     </figure>
     <div class="prose">
-      <p>A few entries matter more than the rest:</p>
       <ul>
-        <li><strong>Thrust in.</strong> <code>thruster_forces</code> (8 floats, newtons) is mapped onto the thrusters in the order <code>VUS VUP HUS HUP HLS HLP VLS VLP</code>. A message of the wrong length or with a NaN is dropped whole.</li>
-        <li><strong>Kill.</strong> Only <code>command/software_kill</code> messages with <code>kill_switch_id</code> 1 count (the viewer's slot). The simulator then publishes <code>state/kill</code>, as the firmware would. There is no heartbeat timeout in the simulator, unlike the real firmware (<a href="commanding.html">Commanding Talos</a>).</li>
-        <li><strong>Firmware stand-ins.</strong> Thruster telemetry is published at 2 Hz with every ESC "ready", only so <code>controller_overseer</code> doesn't time out. Actuator status and command replies copy the firmware's messages.</li>
-        <li><strong>Truth beside the estimate.</strong> The simulator publishes its true pose as its own TF branch, <code>world → simulator/talos/base_link</code> (100 Hz), plus <code>simulator/ground_truth</code>. It never publishes <code>talos/base_link</code>, <code>odom</code> or <code>map</code>; those belong to the EKF and mapping, as on the robot. So the viewer can draw both, and you can compare them (<a href="perception/frames.html">frames</a>).</li>
-        <li><strong>Moving the robot by hand.</strong> <code>set_sim_pose</code>, <code>sync_sim_to_estimate</code> and three resets (<code>reset_sim_to_start</code>, <code>simulator/reset_tasks</code>, <code>simulator/reset_scenario</code>). After a reset or placement the bridge calls the EKF's <code>set_pose</code> so the estimate jumps with the truth. It never does this during a run.</li>
+        <li><strong>Thrust in.</strong> <code>thruster_forces</code>: 8 floats in newtons, in the order <code>VUS VUP HUS HUP HLS HLP VLS VLP</code>. A wrong length or a NaN drops the whole message.</li>
+        <li><strong>Kill.</strong> Only <code>kill_switch_id</code> 1 (the viewer's slot) counts, and unlike the firmware there is no heartbeat timeout (<a href="commanding.html">Commanding Talos</a>).</li>
+        <li><strong>Truth beside the estimate.</strong> The true pose is its own TF branch, <code>world → simulator/talos/base_link</code>. The simulator never publishes <code>talos/base_link</code>, <code>odom</code> or <code>map</code>; those belong to the EKF and mapping, as on the robot (<a href="perception/frames.html">frames</a>). At startup, after <code>set_sim_pose</code> or <em>Sync sim</em>, and after a robot or full reset, the bridge calls <code>/talos/set_pose</code> so the estimate jumps to the truth.</li>
       </ul>
 
       <h2 id="time">Sim time</h2>
-      <p>The simulator owns time. It publishes <code>/clock</code> on every 2 ms tick, starting at the wall-clock time (so ROS time is never 0) and never going backwards, even across resets. Every stack node runs with <code>use_sim_time: true</code>. In the media run the detector was the exception (<code>use_sim_time</code> false); its annotated images carry a zero timestamp.</p>
+      <p>The simulator owns time. It publishes <code>/clock</code> every 2 ms tick, starting at the wall-clock time (so ROS time is never 0) and never going backwards, even across resets. Every stack node runs on <code>/clock</code> except the YOLO detector: <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/launch/tensorrt.launch.py#L19-L23"><code>tensorrt.launch.py</code></a> sets its <code>use_sim_time</code> from its own default (false), and bringup doesn't forward it. Its annotated image stream carries a zero timestamp.</p>
     </div>
     <figure class="fig">
       <div class="panel">
@@ -231,60 +226,70 @@
         <div id="sched"></div>
         <div class="graph-note" id="sched-note">Tap or hover a row.</div>
       </div>
-      <figcaption><b>When each sensor fires</b>, computed with the simulator's own rule: a sample is taken on the first 2 ms tick at or after it is due. So the 400 Hz IMU alternates 2 and 4 ms gaps and the DVL comes at 126, 250, 376, 500 ms. The MPC's 20 Hz output is the stack's, on the same clock. Zoom in to see single ticks.</figcaption>
+      <figcaption><b>When each sensor fires.</b> The simulator's own rule: each sample is taken on the first 2 ms tick at or after it is due, the first one period after the start. So the 400 Hz IMU repeats gaps of 2, 2, 2, 4 ms, and the DVL comes at 126, 250, 376, 500 ms. The MPC row is the stack, on the same clock. Tap a row; zoom in to see single ticks.</figcaption>
     </figure>
     <div class="prose">
-      <p><strong>Real-time factor.</strong> The node parameter <code>real_time_factor</code> (default 1) sets the speed. The loop owes the simulator <em>wall time × factor</em> and pays it back in ticks. If it falls behind, it catches up at most 20 ticks at a time, then drops the backlog and logs <code>falling behind wall time</code>. The viewer's Simulation window sets it from 0 (pause) to 10×.</p>
-      <ul>
-        <li>On a loaded desktop in the media run, an average tick took 1.73 ms of its 2 ms budget, and the run went at about 0.95× real time.</li>
-        <li>Faster than real time only helps if the stack keeps up. The MPC must still solve in its 50 ms of <em>sim</em> time; when the machine is busy it logs <code>MPC solve … exceeds the control period</code>.</li>
-        <li>Pausing (factor 0) stops ticks and <code>/clock</code>. The stack freezes with it.</li>
-      </ul>
+      <p><strong>Real-time factor.</strong> <code>real_time_factor</code> (default 1; the viewer's Simulation window sets 0 to 10×) is how much sim time the loop owes per second of wall time, paid back in ticks. Falling behind, it catches up at most 20 ticks at a time, then drops the backlog and logs <code>falling behind wall time</code>. Faster only helps if the stack keeps up: the MPC must still solve within 50 ms of <em>sim</em> time, or it logs <code>MPC solve … exceeds the control period</code>. Factor 0 stops ticks and <code>/clock</code>, and the stack freezes with it.</p>
     </div>
     <figure class="fig narrow">
-      <img class="media nx-shot" data-src="media/nereus/viewer-simulation-window.webp" alt="The viewer's Simulation window: Simulation running, Selected speed 1.00x, Apply, Pause, 1x, Speed range >0 to 10x, Sync sim, Reset sim" loading="lazy" width="346" height="268">
-      <figcaption><b>The Simulation window</b> in the viewer: speed, pause, <em>Sync sim</em> (move the simulated Talos to where the EKF thinks it is) and <em>Reset sim</em>.</figcaption>
+      <img class="media nx-shot" src="/media/nereus/viewer-simulation-window.webp" alt="The viewer's Simulation window: Simulation running, Selected speed 1.00x, Apply, Pause, 1x, Speed range >0 to 10x, Sync sim, Reset sim" loading="lazy" width="346" height="268">
+      <figcaption><b>The Simulation window.</b> Speed, pause, <em>Sync sim</em> (move the simulated Talos to where the EKF thinks it is) and <em>Reset sim</em>.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="run">Running it</h2>
-      <p>Build Nereus once (<a href="https://github.com/osu-uwrt/nereus#setup">README</a>: <code>./setup.sh</code>, then <code>./build.sh</code> with ROS and the workspace sourced; <a href="setup.html">Setting up your machine</a>). Then, with a Zenoh router running:</p>
+      <p>Build once (<a href="https://github.com/osu-uwrt/nereus#setup">README</a>: <code>./setup.sh</code>, then <code>./build.sh</code> with ROS and the workspace sourced; <a href="setup.html#nereus">Setting up your machine</a>). That registers a <code>nereus</code> ROS package (<code>source build/ros-viewer/ros/setup.bash</code>, or let <code>./setup.sh</code> add it to <code>~/.bashrc</code>). Then:</p>
       <pre class="cmd" data-where="terminal 1"><code>ros2 run rmw_zenoh_cpp rmw_zenohd</code></pre>
       <pre class="cmd" data-where="terminal 2"><code>export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim</code></pre>
-      <p>That one launch (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py">sim.launch.py</a>) resolves the scenario, starts the simulator under <code>sim_supervisor.py</code>, brings up the UWRT stack exactly as on the robot but with <code>hardware:=none</code> (plus the AprilTag detector), and opens the viewer. Talos starts killed: press <strong>Enable</strong> in the viewer, then drive it or run a tree (<a href="viewer.html">The Nereus viewer</a>).</p>
+      <p><a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py">sim.launch.py</a> resolves the scenario, starts the simulator under <code>sim_supervisor.py</code>, brings up the UWRT stack as on the robot with <code>hardware:=none</code> (plus the AprilTag detector), and opens the viewer. Talos starts killed: press <strong>Enable</strong>, then drive it or run a tree (<a href="viewer.html">The Nereus viewer</a>).</p>
       <table class="params wrap-first">
         <thead><tr><th>Argument</th><th>Does</th></tr></thead>
         <tbody>
-          <tr><td><code>active_control_model:=mpc</code></td><td>Run riptide_mpc (anything else: the legacy controller)</td></tr>
-          <tr><td><code>mpc_model:=sim</code></td><td>Give the MPC this run's exact plant (above); empty = the real-vehicle model</td></tr>
+          <tr><td><code>active_control_model:=mpc</code></td><td>Run riptide_mpc. Leave it out and you get the legacy controller (the default is <code>hybrid</code>, <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/launch/control_system.launch.py#L65"><code>control_system.launch.py</code></a>)</td></tr>
+          <tr><td><code>mpc_model:=sim</code></td><td>Give the MPC the exact plant (above)</td></tr>
           <tr><td><code>pool:=rpac</code></td><td>The RPAC dive well instead of the RoboSub pool</td></tr>
           <tr><td><code>scenario:=&lt;folder&gt;</code></td><td>Any scenario pack, such as a moved course (not with <code>pool:=</code>)</td></tr>
-          <tr><td><code>mpc_odom_topic:=simulator/ground_truth</code></td><td>Feed the MPC the truth instead of its estimator: rules out estimation</td></tr>
+          <tr><td><code>mpc_odom_topic:=simulator/ground_truth</code></td><td>Feed the MPC the truth: rules out estimation</td></tr>
           <tr><td><code>stack:=false</code> · <code>viewer:=false</code></td><td>Leave out the robot stack or the viewer</td></tr>
           <tr><td><code>cameras:=false</code></td><td>No rendering: much lighter, but no detections</td></tr>
-          <tr><td><code>close_with_viewer:=false</code></td><td>Keep the sim and stack running if the viewer closes</td></tr>
           <tr><td><code>rmw:=rmw_zenoh_cpp</code></td><td>Set the RMW for every process (default: your shell's)</td></tr>
         </tbody>
       </table>
-      <p><strong>Why Zenoh.</strong> UWRT runs <code>rmw_zenoh_cpp</code> on the robot too. With FastDDS the simulator's <code>/tf</code> stalled for 0.4 to 0.9 s under full load with camera traffic; Zenoh delivered the same run without stalls (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py#L232-L234">comment in sim.launch.py</a>).</p>
-      <p><strong>Run records.</strong> Each run writes to <code>/tmp/nereus_sim/&lt;timestamp&gt;/</code>: <code>resolved.json</code> (exactly what ran), <code>execution.json</code>, <code>summary.json</code> (messages published per stream, camera frames dropped, tick timing) and <code>tasks.json</code> (every task event and the score). Switching pools in the viewer (File → Switch pool) restarts only the simulator, into <code>&lt;run&gt;-2</code>, <code>-3</code>…; the stack keeps running.</p>
+      <ul>
+        <li><strong>Why Zenoh.</strong> The robot runs <code>rmw_zenoh_cpp</code> too, and with FastDDS the simulator's <code>/tf</code> stalled for 0.4 to 0.9 s under full camera load (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/sim.launch.py#L232-L234">sim.launch.py</a>).</li>
+        <li><strong>Run records</strong> go to <code>/tmp/nereus_sim/&lt;timestamp&gt;/</code>: <code>resolved.json</code> (exactly what ran), <code>execution.json</code>, <code>summary.json</code> (messages per stream, dropped frames, tick timing) and <code>tasks.json</code> (events and score). <em>File → Switch pool</em> restarts only the simulator, into <code>&lt;run&gt;-2</code>…; the stack keeps running.</li>
+      </ul>
       <div class="callout"><span class="label">Gotchas</span>
         <ul>
-          <li><strong>Two simulations on one computer.</strong> Give each its own <code>ROS_DOMAIN_ID</code>. Even then, two <code>doTask</code>s clash: each opens the Groot monitor ports 1666/1667, even with <code>enable_zmq</code> false, and the second fails every tree with "Address already in use". Restart your doTask once the other is gone.</li>
+          <li><strong>Two simulations on one computer.</strong> Give each its own <code>ROS_DOMAIN_ID</code>. Even then both <code>doTask</code>s open the Groot ports 1666/1667 (even with <code>enable_zmq</code> false), and the second fails every tree with "Address already in use".</li>
           <li><strong>Nothing moves.</strong> Talos is killed until you press Enable, and a tree waits for the kill switch.</li>
-          <li><strong>Slow machine.</strong> Watch for <code>falling behind wall time</code>. Try <code>cameras:=false</code> if you don't need detections, or close other GPU jobs.</li>
+          <li><strong>Slow machine.</strong> Watch for <code>falling behind wall time</code>; try <code>cameras:=false</code> or close other GPU jobs.</li>
         </ul>
       </div>
 
+      <h3 id="code">Where the code lives</h3>
+      <table class="params wrap-first">
+        <thead><tr><th>Folder</th><th>Holds</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://github.com/osu-uwrt/nereus/tree/main/content/packs"><code>content/packs/</code></a></td><td>The packs: the config you edit</td></tr>
+          <tr><td><a href="https://github.com/osu-uwrt/nereus/tree/main/libraries"><code>libraries/</code></a></td><td>C++: <code>simulation</code> (physics), <code>sensors</code>, <code>session</code> (the tick, mechanisms, tasks, props), <code>cameras</code>, <code>rendering</code>, <code>datasets</code></td></tr>
+          <tr><td><a href="https://github.com/osu-uwrt/nereus/tree/main/integrations/ros2"><code>integrations/ros2/</code></a></td><td>The ROS bridge and the viewer</td></tr>
+          <tr><td><a href="https://github.com/osu-uwrt/nereus/tree/main/integrations/uwrt"><code>integrations/uwrt/</code></a></td><td>UWRT launch files and acceptance scripts</td></tr>
+          <tr><td><a href="https://github.com/osu-uwrt/nereus/tree/main/extensions/rules"><code>extensions/rules/</code></a></td><td>Competition scoring rules (C++)</td></tr>
+          <tr><td><a href="https://github.com/osu-uwrt/nereus/tree/main/python"><code>python/</code></a></td><td>Pack tools (validate, resolve, set-course) and datasets</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Go deeper</strong>, in Nereus's own guides: <a href="https://github.com/osu-uwrt/nereus/blob/main/docs/guides/robot.md">adding a robot</a>, <a href="https://github.com/osu-uwrt/nereus/blob/main/docs/guides/course.md">pool and course layout</a>, <a href="https://github.com/osu-uwrt/nereus/blob/main/docs/guides/tasks.md">tasks and scoring</a>, <a href="https://github.com/osu-uwrt/nereus/blob/main/docs/guides/bridge.md">wiring your ROS stack</a>, <a href="https://github.com/osu-uwrt/nereus/blob/main/docs/guides/datasets.md">synthetic datasets</a> and <a href="https://github.com/osu-uwrt/nereus/blob/main/docs/viewer.md">using the viewer</a>.</p>
+
       <h2 id="datasets">Synthetic training data</h2>
-      <p>Nereus can also render labelled images straight from the course, with no simulation running, for training the detector (<a href="perception/training.html">Training the detector</a>). Images come through Talos's own camera models, and every pixel is labelled exactly because the renderer knows which part of which prop it drew.</p>
+      <p>Nereus also renders labelled images straight from the course, with no simulation running, to train the detector (<a href="perception/training.html#synthetic">Training the detector</a>). They come through Talos's camera models, and every pixel is labelled exactly: the renderer knows which part of which prop it drew.</p>
       <ul>
         <li>The course pack names the pieces of the artwork (<code>parts.yaml</code>: the fire icon, a ring, a red pole).</li>
-        <li>The team's <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/labels/uwrt/labels.yaml">label pack</a> maps parts to classes, in the same class order as the deployed models: 11 forward classes, 8 down.</li>
-        <li>A dataset spec says how many images of each task, where the camera may be, and how to vary the water and light. <code>nereus-dataset generate</code> plans, renders and exports YOLO segmentation labels.</li>
+        <li>The <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/labels/uwrt/labels.yaml">label pack</a> maps parts to classes in the deployed models' order: 11 forward, 8 down.</li>
+        <li>A dataset spec sets images per task, camera placement, water and light. <code>nereus-dataset generate</code> plans, renders and exports YOLO segmentation labels.</li>
       </ul>
-      <p>On 2026-10-19 this made 10,250 forward-camera and 7,350 down-camera images, at about 30 images a second with 4 workers on an RTX 3090. A third were drawn in a "RPAC look" pool (RoboSub geometry with RPAC water and indoor light). Magnet lights were always red, because green lights, even unlabelled, would teach the model the wrong thing.</p>
+      <p>On 2026-10-19 this made 10,250 forward and 7,350 down-camera images, about 30 a second with 4 workers on an RTX 3090; a third in an "RPAC look" pool (RoboSub geometry, RPAC water and light). Magnet lights were always red: green ones, even unlabelled, would teach the model the wrong thing. The larger specs and the RPAC-look pool aren't in the repository yet; the pack explorer shows the smaller committed specs.</p>
     </div>
     <figure class="fig">
       <div class="panel flush nx-samples">
@@ -295,19 +300,16 @@ ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim</code>
         <div class="nx-sample-stage" id="sample-stage"></div>
         <div class="nx-sample-meta" id="sample-meta"></div>
       </div>
-      <figcaption><b>Real samples from the training sets</b> with their exported segmentation masks. Each image has a named look: nominal, clear, murky or overcast. Pick a sample; turn labels off to see the raw render. The white poles and the fire truck's ladder are unlabelled on purpose, as the labelling guide says.</figcaption>
+      <figcaption><b>Real samples from the training sets.</b> With their exported masks; each has a named look (nominal, clear, murky, overcast). Turn labels off for the raw render. White slalom poles are unlabelled on purpose: the labelling guide labels only the red ones.</figcaption>
     </figure>
 
     <div class="prose">
-      <h2 id="hil">Hardware in the loop</h2>
-      <p>In <span class="term">hardware-in-the-loop</span> (HIL) testing, the simulator runs on a desk computer while the robot's own computer runs the stack, so you test the real Orin, its build and its load. The team's HIL launch file, <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/riptide_bringup/launch/simulation_hil.launch.py"><code>simulation_hil.launch.py</code></a>, was written for the old simulator. It shrinks the camera images to half size by default, because full-size raw depth (about 9 MB a frame) saturates gigabit Ethernet. Nereus has no HIL launch file yet. The pieces exist (<code>stack:=false</code> on the desk computer, the stack on the Orin, one Zenoh network), but this setup has not been tried with Nereus.</p>
-
       <h2 id="tests">Tests</h2>
-      <p>Nereus has about 400 C++ tests and over 200 Python tests. The C++ ones run with <code>ctest --test-dir build/ros-viewer -j2</code>, the Python ones with <code>uv run pytest tests/python -q</code>. Tests never read the live robot configs; they use frozen copies, so a pack edit can't silently change what they check.</p>
+      <p>About 400 C++ tests (<code>ctest --test-dir build/ros-viewer -LE live -j2</code>) and over 200 Python tests (<code>uv run pytest tests/python -q</code>). They check values against frozen copies of the resolved scenarios and only check the live packs are valid (<a href="https://github.com/osu-uwrt/nereus/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>), so retuning Talos or moving the course never breaks a test.</p>
     </div>
     <figure class="fig narrow">
       <div class="panel"><div id="tests-chart"></div></div>
-      <figcaption><b>Tests per part</b>, counted in the source. The most important are the reference tests: <code>TalosReference</code> steps the Talos plant through scripted thrust and compares 27 state values per tick with recordings from the old simulator (to 1e-9 on ARM, 1e-2 elsewhere); the box-contact tests do the same for collisions. Tap or hover a bar.</figcaption>
+      <figcaption><b>Tests per part.</b> Counted in the source. The key ones: <code>TalosReference</code> steps the Talos plant through scripted thrust and compares 27 state values per tick with the old simulator's recordings (to 1e-9 on ARM, 1e-2 elsewhere); box-contact tests do the same for collisions. Tap or hover a row.</figcaption>
     </figure>
 
     <div class="prose">
@@ -318,11 +320,12 @@ ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim</code>
         <li><strong>Clean depth.</strong> Detections scatter far less than on the robot (<a href="perception/mission.html">One mission in Nereus</a>).</li>
         <li><strong>A model of Talos, not Talos.</strong> Controller gains tuned here don't carry over to the pool. Tune them in the water (<a href="control/identify.html">System identification</a>).</li>
         <li><strong>No failures.</strong> Leaks, brownouts, CAN errors, a stuck ESC: none of it is simulated (<a href="debugging.html">Debugging</a>).</li>
+        <li><strong>Not the Orin's load.</strong> <span class="term">Hardware in the loop</span> (simulator on a desk computer, stack on the Orin) would test that, but Nereus has no HIL launch file or guide yet. The old simulator's <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/riptide_bringup/launch/simulation_hil.launch.py">HIL launch</a> halved the camera images: full-size raw depth (about 9 MB a frame) saturates gigabit Ethernet.</li>
       </ul>
       <p>Use the simulator for logic: trees, mapping, paths, launch files, the operator's workflow. Use the pool for anything physical.</p>
 
       <h2 id="history">Before Nereus</h2>
-      <p>From 2021 the team simulated Talos with <a href="https://github.com/osu-uwrt/riptide_simulator/tree/newsim"><code>riptide_simulator</code></a>: <code>c_simulator</code> for physics and tasks, <code>camera_faker</code> for images, with RViz as the GUI. In September 2026 a plan to make it reusable became a fresh project instead. Nereus started on 2026-09-24 and replaced it within weeks: packs instead of hard-coded robots, a viewer that also drives the real robot, and datasets. The old simulator's dynamics live on twice: as the MPC's copy of <code>MarineDynamics</code> (its parity test compares the two) and as the recordings Nereus's reference tests check against.</p>
+      <p>The team used to simulate Talos with <a href="https://github.com/osu-uwrt/riptide_simulator/tree/newsim"><code>riptide_simulator</code></a> (<code>c_simulator</code>, <code>camera_faker</code>, RViz as the GUI). On 2026-09-24 a <a href="https://github.com/osu-uwrt/riptide_simulator/blob/newsim/docs/REUSABILITY_PLAN.md">plan</a> chose "a complete refactor in a new folder"; Nereus started that day and replaced it within weeks. Its dynamics live on in the MPC's <code>MarineDynamics</code> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/test/test_dynamics_parity.cpp">parity test</a>) and in the recordings behind Nereus's reference tests.</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

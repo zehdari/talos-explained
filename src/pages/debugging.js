@@ -100,8 +100,15 @@ function diagnose(S, B, finder) {
     ['/talos/depth/pose', 'depth'], ['/talos/dvl_twist', 'DVL (bottom lock)'], ['/talos/controller/mpc/state', 'MPC tick'],
     ['/talos/command/requested_rpm', 'RPM command (copy of what goes over CAN)'], ['/talos/state/thrusters/telemetry', 'ESC telemetry'],
   ];
+  // Camera streams weren't in the pool bag: these are the pre-test checks' minimums (pretest_checks robots/talos/robot.yaml)
+  const MIN = [
+    ['ffc/zed_node/rgb/image_rect_color/compressed', 8, 'front camera'],
+    ['dfc/zed_node/rgb/image_rect_color/compressed', 8, 'down camera'],
+    ['yolo_orientation/annotated/compressed', 3, 'detector image'],
+  ];
   const rateTable = `<table class="dx-rates"><tbody>${rows.map(([t, n]) =>
-    `<tr><td><code>${t.replace('/talos/', '')}</code></td><td>${rate(t)} Hz</td><td>${n}</td></tr>`).join('')}</tbody></table>`;
+    `<tr><td><code>${t.replace('/talos/', '')}</code></td><td>${rate(t)} Hz</td><td>${n}</td></tr>`).join('')}${MIN.map(([t, v, n]) =>
+    `<tr><td><code>${t}</code></td><td>≥ ${v} Hz</td><td>${n} (pre-test minimum)</td></tr>`).join('')}</tbody></table>`;
 
   const STEPS = [
     {
@@ -112,20 +119,20 @@ function diagnose(S, B, finder) {
     },
     {
       q: 'Are the launches you need running?',
-      cmd: 'open http://orin2:8080',
+      cmd: '# in a browser\nhttp://orin2:8080',
       ok: 'The right file is loaded (<code>talos_launch_mpc.yaml</code> in the pool, <code>talos_launch_bench_mpc.yaml</code> on the bench, whose DVL is fake). Every launch you need says <b>Running</b>, not <i>3/4 completed</i> or <i>ERROR!</i>. Nothing under <i>Abandoned Launches</i>.',
       no: ['launch-pending', 'launch-died', 'cameras-wrong-nav', 'abandoned', 'fake-dvl'],
     },
     {
       q: 'Is the topic publishing at its normal rate?',
       cmd: 'ros2 topic hz /talos/<topic>',
-      ok: `Close to these (measured on the Orin in a pool session; over the tether, expect a little less):${rateTable}`,
+      ok: `Close to these (measured on the Orin in a pool session; over the tether, expect a little less). The cameras weren't in that bag: <b>≥</b> rows are the pre-test checks' minimums, measured one stream at a time.${rateTable}`,
       no: ['no-firmware', 'dvl-lock', 'hz-over-link', 'type-unknown'],
     },
     {
       q: 'Is Talos enabled all the way down?',
-      cmd: 'ros2 topic echo /talos/state/kill --once\nros2 topic echo /talos/state/thrusters/telemetry --field disabled_flags\nros2 topic echo /talos/controller/motion_enabled --once',
-      ok: '<code>state/kill</code> false, <code>disabled_flags</code> 0, <code>motion_enabled</code> true. Allow 5 s after Enable.',
+      cmd: 'ros2 topic echo /talos/state/kill --once\nros2 topic echo /talos/state/thrusters/telemetry --no-arr\nros2 topic echo /talos/controller/motion_enabled --once',
+      ok: '<code>state/kill</code> false; <code>disabled_flags</code> 0 on both ESC boards (<code>start_thruster_num</code> 0 and 4: telemetry alternates between them); <code>motion_enabled</code> true. Allow 5 s after Enable.',
       no: ['esc-delay', 'viewer-kills', 'competing-operator', 'killed-mystery', 'rpm-stale', 'enabled-forever'],
     },
     {
@@ -137,7 +144,7 @@ function diagnose(S, B, finder) {
     {
       q: 'Is the node saying anything?',
       cmd: 'ros2 topic echo /rosout --field msg',
-      ok: 'No repeating warnings. The launcher page shows each launch\'s full output.',
+      ok: 'No repeating warnings. The launcher page shows each launch\'s output while it is open; earlier lines are only in <code>~/.ros/log</code> on the Orin.',
       no: ['stale-sensors', 'no-fresh-odom', 'solve-slow', 'disturbance', 'sim-offset-prior'],
     },
   ];
@@ -189,12 +196,18 @@ function budget(B) {
   const kb = (bps) => (bps >= 1e5 ? `${(bps / 1e6).toFixed(2)} MB/s` : `${(bps / 1e3).toFixed(1)} kB/s`);
   const size = (b) => (b >= 1e9 ? `${(b / 1e9).toFixed(1)} GB` : b >= 1e6 ? `${Math.round(b / 1e6)} MB` : `${Math.max(1, Math.round(b / 1e3))} kB`);
 
+  // Which topics each row holds, shown under its label (readable on a phone, unlike a tooltip)
+  const topicsOf = (g) => {
+    const t = g.topics.map((x) => x.replace('/talos/', ''));
+    return t.length > 6 ? `${t[0].split('/')[0]}/… (${t.length} topics, one per object)` : t.join(', ');
+  };
   list.innerHTML = G.map((g, i) => `
-    <label class="bb-row" title="${g.topics.length > 3 ? g.topics.length + ' topics' : g.topics.join(', ')}">
+    <label class="bb-row">
       <input type="checkbox" data-i="${i}" ${g.on ? 'checked' : ''}>
       <i style="background:${g.color}"></i>
       <span class="bb-name">${g.label}${g.src === 'sim' ? ' <small>sim</small>' : ''}</span>
       <span class="bb-rate">${kb(g.bps)}</span>
+      <span class="bb-topics">${topicsOf(g)}</span>
     </label>`).join('');
   const boxes = [...list.querySelectorAll('input')];
 
@@ -231,7 +244,7 @@ function ages(B) {
     '/talos/odometry/filtered': 'The EKF stamps its output with the time of the update. These 2 ms are delivery, not the filter\'s lag behind the sensors, which is a separate problem (see the EKF symptom).',
     '/talos/depth/pose': 'Keeps the stamp of the raw reading, which crosses CAN and micro-ROS from the camera cage board before the converter republishes it. Hence 3 to 29 ms.',
     '/talos/controller/mpc/reference': 'Stamped at the start of the MPC tick and published after the solve, so its age is mostly solve time (median 30 ms in this session).',
-    '/talos/dvl_twist': 'Back-dated on purpose: the driver subtracts the DVL\'s dt2, the time since the echo it measured. The stamp says when the water moved past.',
+    '/talos/dvl_twist': 'Back-dated on purpose: the driver subtracts the DVL\'s dt2, the time since the echo it measured. The stamp says when the water moved past. About a fifth of the messages are roughly 50 ms older (the second cluster near 175 ms). That is unexplained: the bag doesn\'t hold the DVL\'s dt2, so it can\'t say whether the stamp or the delivery is the later one.',
   };
   let which = 'pool', sel = '/talos/dvl_twist';
 

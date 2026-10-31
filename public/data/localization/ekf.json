@@ -1,0 +1,211 @@
+{
+ "source": "Built by tools/localization/build_data.py from riptide_core followpath-speed, titan_firmware and nortek_dvl",
+ "state": [
+  "x",
+  "y",
+  "z",
+  "roll",
+  "pitch",
+  "yaw",
+  "vx",
+  "vy",
+  "vz",
+  "vroll",
+  "vpitch",
+  "vyaw",
+  "ax",
+  "ay",
+  "az"
+ ],
+ "sensors": [
+  {
+   "key": "imu0",
+   "name": "IMU",
+   "topic": "vectornav/imu",
+   "config": [
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true
+   ],
+   "queue": 14,
+   "link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L35-L39"
+  },
+  {
+   "key": "twist1",
+   "name": "FOG",
+   "topic": "gyro/twist",
+   "config": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false
+   ],
+   "queue": 17,
+   "link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L66-L70"
+  },
+  {
+   "key": "twist0",
+   "name": "DVL",
+   "topic": "dvl_twist",
+   "config": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "queue": null,
+   "link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L59-L63"
+  },
+  {
+   "key": "pose0",
+   "name": "Depth",
+   "topic": "depth/pose",
+   "config": [
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "queue": null,
+   "link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L74-L78"
+  }
+ ],
+ "process_noise": {
+  "diag": [
+   5e-05,
+   5e-05,
+   6e-05,
+   3e-05,
+   3e-05,
+   6e-05,
+   2.5e-05,
+   2.5e-05,
+   4e-05,
+   1e-05,
+   1e-05,
+   2e-05,
+   1e-05,
+   1e-05,
+   1.5e-05
+  ],
+  "link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L83-L97"
+ },
+ "params": {
+  "frequency": 30.0,
+  "world_frame": "odom",
+  "odom_frame": "odom",
+  "base_link_frame": "talos/base_link",
+  "publish_acceleration": true,
+  "predict_to_current_time": true,
+  "gravitational_acceleration": 9.755455,
+  "imu0_remove_gravitational_acceleration": true
+ },
+ "param_links": {
+  "frequency": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L19",
+  "world_frame": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L4",
+  "predict_to_current_time": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L12",
+  "publish_acceleration": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L9",
+  "gravitational_acceleration": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L44"
+ },
+ "reported": {
+  "imu_orientation": {
+   "value": [
+    5e-05,
+    1e-05,
+    0.01
+   ],
+   "link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_imu/config/vectornav.yaml#L24"
+  },
+  "imu_rate": {
+   "value": 0.01,
+   "link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_imu/config/vectornav.yaml#L27"
+  },
+  "imu_accel": {
+   "value": 0.01,
+   "link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_imu/config/vectornav.yaml#L30"
+  },
+  "fog_rate": {
+   "value": 0.0001,
+   "link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_gyro/config/gyro_config.yaml#L20"
+  },
+  "depth": {
+   "value": 0.003,
+   "link": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/CameraCageBB/src/ros.c#L77"
+  },
+  "dvl": {
+   "value": "fom\u00b2",
+   "link": "https://github.com/osu-uwrt/nortek_dvl/blob/DvlWaterTrackFallback/nortek_dvl/src/dvl_driver.cpp#L167-L169"
+  }
+ },
+ "poses": {
+  "talos/base_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L5",
+  "talos/base_inertia": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L13",
+  "talos/imu_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L345",
+  "talos/dvl_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L332",
+  "talos/pressure_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L337",
+  "talos/fog_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L348",
+  "talos/claw_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L364",
+  "talos/magnet_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L367",
+  "talos/torpedo_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L354",
+  "talos/droppers_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L358",
+  "talos/poker_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L351",
+  "talos/hitch_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L361",
+  "talos/acoustics_port_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L323",
+  "talos/acoustics_starboard_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L325",
+  "talos/ffc_base_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L377",
+  "talos/dfc_base_link": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L388",
+  "talos/thruster_0": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L401",
+  "talos/thruster_1": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L406",
+  "talos/thruster_2": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L411",
+  "talos/thruster_3": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L416",
+  "talos/thruster_4": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L421",
+  "talos/thruster_5": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L426",
+  "talos/thruster_6": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L431",
+  "talos/thruster_7": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L436"
+ }
+}

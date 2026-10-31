@@ -55,6 +55,8 @@ const PHASE_COLOR = {
   Table: '--prediction', Bins: '--s4', Magnets: '--s5', Home: '--s6',
 };
 const t0 = phases[0][1];
+const PHASE_LABEL = { Table: 'Octagon' };
+const pl = (n) => PHASE_LABEL[n] || n;
 
 const TASKS = [
   {
@@ -65,7 +67,7 @@ const TASKS = [
     ],
     points: [['Heading coin flip (scored with the gate)', P.heading]],
     talos: [
-      `${tl('WaitForKillSwitch')} waits until the kill switch is in (<code>state/kill</code> false), then 5 s. ${tl('PrepForRun')} locks the map and disarms the actuators; ${tl('Dive')} goes down in place to 0.56 m holding the starting heading.`,
+      `${tl('WaitForKillSwitch')} waits until the kill switch is in (<code>state/kill</code> false), then 5 s. ${tl('PrepForRun')} locks the map and disarms the actuators; ${tl('Dive')} goes down in place holding the starting heading: it asks for 0.56 m, which <code>PrimitiveMovePosition</code> raises to its 0.75 m minimum.`,
       'Before the run, the AprilTag board on the wall sets where the <code>map</code> frame is. Every later move is a position in that map, so the tree itself does not care which way Talos starts facing.',
     ],
     read: [['commanding.html', 'Commanding Talos'], ['perception/frames.html', 'Frames, targets and the mission tree'], ['pool-test.html', 'Pool test day']],
@@ -113,10 +115,9 @@ const TASKS = [
     points: [['First pinger task scored', P.pinger_first], ['Second pinger task scored', P.pinger_second]],
     camera: 'none', mech: 'acoustics',
     talos: [
-      `${tl('RandomPingerTree')} stops at <code>pre_torpedo_pose</code> and listens for 10 s, then at <code>pre_table_pose</code> for another 10 s.`,
-      `<a href="${GH}/riptide_core/blob/followpath-speed/riptide_acoustics/src/Acoustics.cpp"><code>riptide_acoustics</code></a> compares the loudest amplitude at the pinger frequency (streamed by the IVC board) in the two windows, falling back to the average when the peaks are within 1000 of each other (<a href="${GH}/riptide_core/blob/followpath-speed/riptide_acoustics/launch/acoustics.launch.py">launch default</a> <code>mode:=max</code>). It publishes <code>buffer_0_closer</code>: no direction finding, just "was the first stop louder".`,
-      'The tree stores that as <code>is_table</code>: true (first stop, <code>pre_torpedo</code>, louder) means table first. That looks backwards against the rule, which rewards going first to the task the active pinger marks; see the note under <a href="#tree">One tree for the whole run</a>.',
-      'Nereus has no acoustics yet: no answer arrived, the 3 s timeout posted false, and Talos went to the torpedo first.',
+      `${tl('RandomPingerTree')} listens for 10 s at <code>pre_torpedo_pose</code>, then 10 s at <code>pre_table_pose</code>. <a href="${GH}/riptide_core/blob/followpath-speed/riptide_acoustics/src/Acoustics.cpp"><code>riptide_acoustics</code></a> only answers "was the first stop louder" (<code>buffer_0_closer</code>); true means table first, which looks inverted against the rule.`,
+      'Nereus has no pinger, so the second <code>stop_sample</code> fails ("Cannot compare, buffer 0 has 0 samples"), the answer is never read, and the missing <code>pinger_is_table</code> counts as 0: torpedo first.',
+      'Details in <a href="mission-tree.html#pinger">The pinger picks the order</a>.',
     ],
     read: [['boards.html', 'The circuit boards'], ['sensors.html', 'Navigation sensors'], ['mission-tree.html', 'The competition mission']],
   },
@@ -137,7 +138,7 @@ const TASKS = [
     img: ['cam_torpedo.webp', "The forward camera at the board: the detector finds the openings ('circle') and the role images."],
   },
   {
-    id: 'table', chip: 'Octagon', title: 'Task 5 · Restore (octagon and table)', phases: ['Table'],
+    id: 'table', chip: 'Octagon', title: 'Task 5 · Restore (octagon, table)', phases: ['Table'],
     rules: [
       'A 2.7 m PVC octagon floats on the surface. Images hang inside it: compass, hammer and wrench, buoy, SOS. You may surface inside it and dive again.',
       'Below it is a table with two items per role and two baskets: warning (Survey &amp; Repair) and helmet (Search &amp; Rescue).',
@@ -159,7 +160,7 @@ const TASKS = [
   {
     id: 'bins', chip: 'Bins', title: 'Task 3 · Recon (bins and lights)', phases: ['Bins', 'Magnets'],
     rules: [
-      'A PVC pipeline on the pool floor with four bins: two marked fire (Survey &amp; Repair), two blood (Search &amp; Rescue).',
+      'A 3D PVC pipeline raised off the pool floor, with four bins along its sides: two marked fire (Survey &amp; Repair), two blood (Search &amp; Rescue).',
       'Drop up to two markers. Most points for one in each of your role\'s two bins.',
       'A light with a magnetic sensor sits near each bin and is on at the start. Bring a magnet close to a sensor to turn its light off; up to two score (Nereus models two).',
     ],
@@ -197,7 +198,9 @@ const map = (() => {
   const poolX = Math.max(...data.pool.corners.map((c) => c[0]));
   const vx1 = Math.max(vx1raw, poolX + 0.9);
   const W = vx1 - vx0, H = vy1 - vy0;
-  const svg = svgEl('svg', { viewBox: `${vx0} ${-vy1} ${W} ${H}`, class: 'rs-svg', role: 'img', 'aria-label': 'Top-down map of the RoboSub 2026 course' }, host);
+  const HOME = [vx0, -vy1, W, H];
+  let vb = HOME.slice();
+  const svg = svgEl('svg', { viewBox: vb.join(' '), class: 'rs-svg', role: 'img', 'aria-label': 'Top-down map of the RoboSub 2026 course' }, host);
   const P2 = ([x, y]) => `${x},${-y}`;
   const pts = (a) => a.map(P2).join(' ');
   const layers = {};
@@ -280,8 +283,8 @@ const map = (() => {
   const wpG = svgEl('g', { class: 'waypoints' }, layers.way);
   const wpEls = {};
   for (const [k, p] of Object.entries(data.waypoints)) {
-    const d = 0.32;
-    wpEls[k] = svgEl('polygon', { points: `${p[0]},${-p[1] - d} ${p[0] + d},${-p[1]} ${p[0]},${-p[1] + d} ${p[0] - d},${-p[1]}`, class: 'wp' }, wpG);
+    wpEls[k] = svgEl('polygon', { class: 'wp' }, wpG);
+    wpEls[k].p = p;
   }
 
   // path, one polyline per phase
@@ -326,7 +329,7 @@ const map = (() => {
   svgEl('line', { x1: sbx, y1: -sby, x2: sbx + 5, y2: -sby }, sb);
   svgEl('line', { x1: sbx, y1: -sby - 0.25, x2: sbx, y2: -sby + 0.25 }, sb);
   svgEl('line', { x1: sbx + 5, y1: -sby - 0.25, x2: sbx + 5, y2: -sby + 0.25 }, sb);
-  label('5 m', [sbx + 2.5, sby + 0.35], 'small');
+  label('5 m', [sbx + 2.5, sby + 0.35], 'small sbl');
 
   // hit areas
   const hits = {
@@ -347,11 +350,13 @@ const map = (() => {
   }
 
   function resize() {
-    const k = svg.getBoundingClientRect().width / W; // px per m
+    const k = svg.getBoundingClientRect().width / vb[2]; // px per m
     if (!k) return;
     const fs = 12.5 * TS / k, fsSmall = 10.5 * TS / k;
     for (const t of labels) t.setAttribute('font-size', t.classList.contains('small') ? fsSmall : fs);
     svg.classList.toggle('compact', k < 20); // phone: waypoint names only when selected
+    const d = 6.5 / k; // waypoint diamonds keep the same size on screen at any zoom
+    for (const e of Object.values(wpEls)) { const [x, y] = e.p; e.setAttribute('points', `${x},${-y - d} ${x + d},${-y} ${x},${-y + d} ${x - d},${-y}`); }
   }
   new ResizeObserver(resize).observe(host);
   resize();
@@ -365,7 +370,57 @@ const map = (() => {
     const wpSel = { pinger: ['pre_torpedo', 'pre_table'], torpedo: ['pre_torpedo'], table: ['pre_table'], bins: ['pre_bin'], home: ['pre_return_home'] }[id] || [];
     for (const [k, e] of Object.entries(wpEls)) { e.classList.toggle('sel', wpSel.includes(k)); wpLabels[k].classList.toggle('sel', wpSel.includes(k)); }
   }
-  return { show, svg, layers };
+  // Close-up: animate the view box to the selected task (props are only a few pixels wide on a phone).
+  let zoomed = false, current = 'gate', raf = 0;
+  const box = (els) => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const e of els) {
+      const b = e.getBBox();
+      x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.width); y1 = Math.max(y1, b.y + b.height);
+    }
+    return [x0, y0, x1, y1];
+  };
+  const focusEls = {
+    start: () => [groups.start, groups.gate], gate: () => [groups.gate], slalom: () => [groups.slalom],
+    pinger: () => [wpEls.pre_torpedo, wpEls.pre_table], torpedo: () => [groups.torpedo, wpEls.pre_torpedo],
+    table: () => [groups.table, wpEls.pre_table], bins: () => [groups.bins, wpEls.pre_bin],
+    home: () => [groups.gate, wpEls.pre_return_home],
+  };
+  function target(id) {
+    if (!zoomed) return HOME.slice();
+    const [x0, y0, x1, y1] = box(focusEls[id]());
+    const m = 1.6, aspect = W / H;
+    let w = Math.max(x1 - x0 + 2 * m, 5), hh = Math.max(y1 - y0 + 2 * m, 5 / aspect);
+    if (w / hh > aspect) hh = w / aspect; else w = hh * aspect;
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    // keep the close-up inside the whole-course view where it fits
+    const x = Math.min(Math.max(cx - w / 2, HOME[0]), HOME[0] + HOME[2] - w);
+    const y = Math.min(Math.max(cy - hh / 2, HOME[1]), HOME[1] + HOME[3] - hh);
+    return [x, y, w, hh];
+  }
+  function animateTo(to) {
+    cancelAnimationFrame(raf);
+    const from = vb.slice(), t0 = performance.now(), T = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 380;
+    const step = (now) => {
+      const u = T ? Math.min((now - t0) / T, 1) : 1, e = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
+      vb = from.map((v, i) => v + (to[i] - v) * e);
+      svg.setAttribute('viewBox', vb.join(' '));
+      resize();
+      if (u < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+  }
+  const zbtn = h('button', { type: 'button', class: 'rs-zoom', 'aria-pressed': 'false' }, 'Zoom to task');
+  zbtn.addEventListener('click', () => {
+    zoomed = !zoomed;
+    zbtn.setAttribute('aria-pressed', String(zoomed));
+    zbtn.textContent = zoomed ? 'Whole course' : 'Zoom to task';
+    svg.classList.toggle('zoomed', zoomed);
+    animateTo(target(current));
+  });
+  host.appendChild(zbtn);
+  const show2 = (id) => { current = id; show(id); if (zoomed) animateTo(target(id)); };
+  return { show: show2, svg, layers };
 })();
 
 // toggles
@@ -403,7 +458,7 @@ const timeline = (() => {
   const bar = h('div', { class: 'bar' });
   const segs = {};
   for (const [name, a, b] of phases) {
-    const s = h('button', { type: 'button', class: 'seg-t', title: `${name}: ${mmss(a - t0)}–${mmss(b - t0)}`, 'aria-label': `${name}, ${mmss(a - t0)} to ${mmss(b - t0)}` });
+    const s = h('button', { type: 'button', class: 'seg-t', title: `${pl(name)}: ${mmss(a - t0)}–${mmss(b - t0)}`, 'aria-label': `${pl(name)}, ${mmss(a - t0)} to ${mmss(b - t0)}` });
     s.style.flex = `${b - a} 0 0`;
     s.style.background = `var(${PHASE_COLOR[name]})`;
     s.addEventListener('click', () => select(phaseTask[name], true));
@@ -413,7 +468,7 @@ const timeline = (() => {
   host.appendChild(h('div', { class: 'cap' }, `<span>The Nereus run, ${mmss(span)} from start to home</span><span>tap a task</span>`));
   host.appendChild(bar);
   const legend = h('div', { class: 'legend' });
-  for (const [name] of phases) legend.appendChild(h('span', {}, `<i style="background:var(${PHASE_COLOR[name]})"></i>${name}`));
+  for (const [name] of phases) legend.appendChild(h('span', {}, `<i style="background:var(${PHASE_COLOR[name]})"></i>${pl(name)}`));
   host.appendChild(legend);
   return {
     show(id) { for (const [name, s] of Object.entries(segs)) s.classList.toggle('sel', byId[id].phases.includes(name)); },
@@ -440,7 +495,7 @@ function card(id) {
   const runs = phases.filter((p) => t.phases.includes(p[0]));
   const runText = runs.map(([n, a, b]) => `${t.phases.length > 1 ? n.toLowerCase() + ' ' : ''}${mmss(a - t0)}–${mmss(b - t0)}`).join(', ');
   const total = t.points.reduce((s, r) => s + r[1], 0);
-  const img = (im) => im ? `<figure class="rs-shot"><img src="${IMG(im[0])}" alt="${im[1].replace(/<[^>]+>/g, '')}" width="800" height="345"><figcaption>${im[1]}</figcaption></figure>` : '';
+  const img = (im) => im ? `<figure class="rs-shot"><img src="${IMG(im[0])}" alt="${im[1].replace(/<[^>]+>/g, '')}" ${im[0].startsWith('cam_') ? 'width="1120" height="700"' : 'width="996" height="430"'}><figcaption>${im[1]}</figcaption></figure>` : '';
   host.innerHTML = `
     <h3>${t.title}</h3>
     ${img(t.img)}
@@ -452,10 +507,30 @@ function card(id) {
     ${t.camera ? `<p class="kit"><span><b>Camera</b> ${t.camera}</span><span><b>Uses</b> ${t.mech}</span></p>` : ''}
     <ul>${t.talos.map((r) => `<li>${r}</li>`).join('')}</ul>
     ${img(t.img2)}
-    <p class="run">In the Nereus run: <b>${runText}</b></p>
+    <p class="run">In the Nereus run: <b>${runText}</b> <button type="button" class="btn rs-watch">Watch this task</button></p>
     <p class="readmore"><b>Read more:</b> ${t.read.map(([href, title]) => `<a href="${href}">${title}</a>`).join(' · ')}</p>`;
   host.scrollTop = 0;
+  host.querySelector('.rs-watch').addEventListener('click', () => video.play(runs[0][1]));
 }
+
+// the viewer video of the same run (8x): run time -> video time from the Gate chapter of mission_video.json
+const video = (() => {
+  const v = document.getElementById('run-video');
+  v.poster = `${BASE}video/mission_8x.jpg`;
+  v.src = `${BASE}video/mission_8x.mp4`; // set here: Vite would prefix the base again on an HTML src
+  let vd = null;
+  fetch(`${BASE}data/mission_video.json`).then((r) => r.json()).then((d) => { vd = d; });
+  return {
+    play(runT) {
+      if (!vd) return;
+      const gate = vd.chapters.find((c) => c[1] === 'Gate');
+      const off = data.run.phases[0][1] - gate[0] * vd.speed;
+      const go = () => { v.currentTime = Math.max(0, (runT - off) / vd.speed); v.play().catch(() => {}); };
+      if (v.readyState >= 1) go(); else { v.preload = 'auto'; v.addEventListener('loadedmetadata', go, { once: true }); v.load(); }
+      v.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    },
+  };
+})();
 
 function select(id, reveal = false) {
   map.show(id);
@@ -496,9 +571,9 @@ select('gate');
       [`Style, ${P.max_style_quarters} quarter turns of roll or pitch`, P.style_rp * P.max_style_quarters, 'FlipTree fails under the MPC, so no style points.'],
     ] },
     { task: 'Slalom', color: '--s8', rows: [['3 rows on the same side as the gate', 3 * P.slalom_same], ['3 rows within the pipes\' height', 3 * P.slalom_depth]] },
-    { task: 'Bins and lights', color: '--s4', rows: [['2 markers in a bin', 2 * P.bin], ['…each in a different bin of your role', 2 * P.bin_class], ['2 lights turned off', P.light * P.max_lights]] },
+    { task: 'Bins, lights', color: '--s4', rows: [['2 markers in a bin', 2 * P.bin], ['…each in a different bin of your role', 2 * P.bin_class], ['2 lights turned off', P.light * P.max_lights]] },
     { task: 'Torpedoes', color: '--s7', rows: [['2 torpedoes through', 2 * P.torpedo], ['Large then small, your role', P.sequence], ['Both from ≥ 0.46 m', 2 * P.distance_far]] },
-    { task: 'Octagon and table', color: '--prediction', rows: [['Surface inside', P.surface], ['Face the right image', P.facing_count], ['Surface holding each of 4 objects', 4 * P.object_surface], ['Release 4 objects', 4 * P.object_drop], ['4 objects in their baskets', 4 * P.basket_correct], ['Turns = objects in baskets', P.basket_count]] },
+    { task: 'Octagon, table', color: '--prediction', rows: [['Surface inside', P.surface], ['Face the right image', P.facing_count], ['Surface holding each of 4 objects', 4 * P.object_surface], ['Release 4 objects', 4 * P.object_drop], ['4 objects in their baskets', 4 * P.basket_correct], ['Turns = objects in baskets', P.basket_count]] },
     { task: 'Return home', color: '--s6', rows: [['Back through the gate', P.home]] },
     { task: 'Random pinger', color: '--muted', rows: [['First pinger task', P.pinger_first, 'The tree\'s pinger order looks inverted (see One tree for the whole run), so this is not counted.', 'judged'], ['Second pinger task', P.pinger_second, 'Comes after the first pinger task, so not counted either.', 'judged']] },
     { task: 'Inter-vehicle comms', color: '--muted', rows: [['Two vehicles talking, by level', 1000, 'Not part of this tree: it needs Talos and Triton working together.', 'judged']] },
@@ -552,7 +627,7 @@ select('gate');
 
 // ---------------------------------------------------------------- prequalification path
 {
-  const host = document.getElementById('prequal');
+  const host = document.getElementById('pq-map');
   // Map frame: prequal_gate (4, 0) yaw 180, prequal_pole (14, 0); the tree's path in the gate frame mapped to map.
   const gate = [4, 0], pole = [14, 0], R = 3;
   const g2m = ([x, y]) => [gate[0] - x, gate[1] - y]; // gate frame (yaw 180) -> map
@@ -619,6 +694,8 @@ select('gate');
 // ---------------------------------------------------------------- the robots
 {
   const robots = [
+    ['Riptide 1.0', '2016', null, 'The first AUV, built 2015–16: one main hull in a minimal aluminium chassis. The whole software stack is named after it.', 'robot_riptide1.webp'],
+    ['Riptide 2.0', '2017', null, 'The same main hull in a slightly redesigned chassis, with upgraded sensors and better manoeuvrability.', 'robot_riptide2.webp'],
     ['Maelstrom', '2018', null, 'Riptide\'s main hull in a new aluminium chassis. 10th of 47 at RoboSub 2018.', 'robot_maelstrom.webp'],
     ['Puddles', '2019, 2020', 'puddles', '11th of 55 in 2019, 10th of 33 in 2020.', 'robot_puddles.webp'],
     ['Tempest', '2022', 'tempest', 'Started in 2020 for 2021; the pandemic moved its only competition to 2022. First-generation (Mark 1) electronics.', 'robot_tempest.webp'],

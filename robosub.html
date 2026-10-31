@@ -71,7 +71,7 @@
         <dt>Shrouded props</dt><dd>Commercial shrouded thrusters count; Talos's are Blue Robotics T200s (<a href="thrusters-hw.html">Thrusters and ESCs</a>).</dd>
         <dt>Floats when killed</dt><dd>Positively buoyant by at least 0.5 % of its mass with the kill switch pulled (<a href="mechanical.html">Hull, frame and layout</a>).</dd>
         <dt>Size</dt><dd>Fits in a 0.9 × 0.9 × 1.8 m box.</dd>
-        <dt>Weight</dt><dd>Over 60 kg is disqualified; over 38 kg costs points; under 38 kg earns 4.4 points per kg below 38. Talos's <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L10">config</a> gives 32.4 kg dry, about +24 points (the official number is the competition's own scale).</dd>
+        <dt>Weight</dt><dd>Over 60 kg is disqualified; over 38 kg costs points; under 38 kg earns 4.4 points per kg below 38. Talos's <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L10">config</a> gives 32.4 kg dry (weighed for the October 2026 pool tests, claw fitted), about +24 points (the official number is the competition's own scale).</dd>
         <dt>Batteries</dt><dd>Sealed, at most 60 V open-circuit, never charged inside a sealed housing (<a href="electrical.html">Power and wiring</a>).</dd>
         <dt>Markers, torpedoes</dt><dd>At most two of each, each within 51 × 51 × 152 mm and 0.91 kg, marked with the team's name or emblem (<a href="actuators.html">Torpedoes, dropper and claw</a>).</dd>
       </dl>
@@ -84,6 +84,7 @@
         <li><strong>Start.</strong> The vehicle starts on the surface and must submerge before it leaves the start zone. For extra points the team can ask for a coin flip that decides which way it faces.</li>
         <li><strong>Gate first.</strong> Every other task needs the gate passed first. After that tasks can be done in any order, and a row's score only goes up: revisiting a task keeps the better result.</li>
         <li><strong>Breaching.</strong> Surfacing inside the octagon is a task. Breaking the surface anywhere else ends the run.</li>
+        <li><strong>Several courses.</strong> The pool holds practice courses A, B1, B2, C1, C2 and D. Semi-finals run on A and D; the finals combine A, B1 and B2. Task positions differ between courses, and no three elements are ever in a line.</li>
         <li><strong>Attempts.</strong> Each task has an imaginary 3 m radius sphere around it. Entering it starts an attempt; leaving ends it.</li>
         <li><strong>Time bonus.</strong> A vehicle that passes one slalom row, drops one marker in a bin (or fires one torpedo through the board) and surfaces fully in the octagon earns 100 points per minute left on the clock.</li>
       </ul>
@@ -112,7 +113,12 @@
         </div>
         <div class="rs-card" id="task-card"><div class="rs-card-body" id="task-card-body" aria-live="polite"></div></div>
       </div>
-      <figcaption><b>The RoboSub 2026 course from above, in Talos's map frame.</b> Tap a task on the map, a button above it or a segment of the timeline to see what Talos must do, how it scores, and which chapters explain the parts. The coloured line is Talos's true path in the full-stack <a href="nereus.html">Nereus</a> run of <a href="perception/mission.html">One mission in Nereus</a>, coloured by task; diamonds are the waypoints the tree flies between.</figcaption>
+      <figcaption><b>The RoboSub 2026 course from above, in Talos's map frame.</b> Tap a task on the map, a button above it or a segment of the timeline to see what Talos must do, how it scores, and which chapters explain the parts; <i>Zoom to task</i> shows its props close up. The coloured line is Talos's true path in the full-stack <a href="nereus.html">Nereus</a> run of <a href="perception/mission.html">One mission in Nereus</a>, coloured by task; diamonds are the waypoints the tree flies between. This is one course as modelled in Nereus, not a fixed layout: on each real course the priors must be set to where its props are (<a href="perception/map.html">The course map</a>).</figcaption>
+    </figure>
+
+    <figure class="fig">
+      <video class="rs-video" id="run-video" controls muted playsinline preload="none"></video>
+      <figcaption><b>The same Nereus run in the viewer,</b> at 8× speed, the camera behind Talos. <i>Watch this task</i> on a task card jumps here. More on this run in <a href="perception/mission.html">One mission in Nereus</a>.</figcaption>
     </figure>
 
     <div class="prose">
@@ -130,25 +136,20 @@
       <p>On competition day the operator starts one behaviour tree, <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a> (about <span id="tree-len">4&#8239;100</span> lines). Its root sets <code>repair_mission = 1</code> and runs <code>CompMissionTreeMpc</code>; <code>RescueCompMpcTree.xml</code> is the same mission for the other role. In order:</p>
       <ol>
         <li><strong>Wait</strong> for the kill switch to be inserted, then 5 s more. Lock the map, reload and disarm the actuators.</li>
-        <li><strong>Dive</strong> in place to 0.56 m and hold the starting heading.</li>
+        <li><strong>Dive</strong> in place to 0.75 m and hold the starting heading (the tree asks for 0.56 m; <code>PrimitiveMovePosition</code> never goes shallower than 0.75 m).</li>
         <li><strong>Gate, slalom, pinger.</strong> The pinger check sets <code>pinger_is_table</code>: true means table first, false means torpedo first.</li>
         <li><strong>Torpedo and table</strong>, in that order or the other.</li>
         <li><strong>Bins</strong>, which ends with the magnet lights.</li>
         <li><strong>Home</strong> through the gate, then stop the controller.</li>
       </ol>
       <div class="callout"><span class="label">The pinger order looks backwards</span>
-        <p><code>RandomPingerTree</code> listens at <code>pre_torpedo_pose</code> first (window 0), then at <code>pre_table_pose</code>. <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_acoustics/src/Acoustics.cpp#L157"><code>Acoustics.cpp</code></a> publishes <code>buffer_0_closer</code>, true when the torpedo stop was louder, and the tree stores it as <code>is_table</code>. So a louder torpedo pinger sends Talos to the table first, while the rule rewards scoring first at the task the active pinger marks. Two more things decide the order in practice:</p>
-        <ul>
-          <li>In the launch default <code>mode:=max</code>, the node only updates its answer when the two peaks are within 1000 of each other (it then compares the averages). When the peaks differ by more, it keeps its old answer: false after a restart.</li>
-          <li>If no answer arrives within 3 s, <code>GetBoolTopic</code> posts false. That is what happened in Nereus, so Talos went torpedo first.</li>
-        </ul>
-        <p>The inverted order and the stale answer in max mode look like bugs, not intent. Until they are confirmed and fixed, don't count on the pinger bonus.</p>
+        <p>The tree listens at the torpedo stop, then at the table stop. As written, a louder torpedo pinger sends Talos to the table first, which looks inverted against the rule (unconfirmed: it may be a bug). Until it is settled, don't count on the pinger bonus. Details in <a href="mission-tree.html#pinger">The pinger picks the order</a>.</p>
       </div>
-      <p>Three design choices run through it:</p>
+      <p>Four design choices run through it:</p>
       <ul>
-        <li><strong>The role is chosen by the operator, not detected.</strong> <code>RepairCompMpcTree</code> sets <code>repair_mission = 1</code> and <code>RescueCompMpcTree</code> sets it to 0; otherwise the two files are identical (both 4&#8239;122 lines). For the role coin flip, the team starts the tree that matches the flip.</li>
+        <li><strong>The role is chosen by the operator, not detected.</strong> <code>RepairCompMpcTree</code> sets <code>repair_mission = 1</code> and <code>RescueCompMpcTree</code> sets it to 0; that is the only behavioural difference between the two files. For the role coin flip, the team starts the tree that matches the flip.</li>
         <li><strong>Every task is wrapped in <code>ForceSuccess</code>.</strong> A task that times out or fails a check doesn't end the run; the tree moves on to the next one. Points only go up, so giving up on a task costs nothing but the time spent.</li>
-        <li><strong>Transits are paths, not searches.</strong> Between tasks the tree builds a list of waypoints (<code>pre_torpedo_pose</code>, <code>pre_bin_pose</code>, …) and hands it to the MPC with <code>FollowPath</code>, between 0.75 m and 2.5 m deep. Those waypoints are priors in the mapping config, measured before the run (<a href="perception/frames.html">Frames, targets and the mission tree</a>, <a href="control/reference.html">Where to go: profiles and paths</a>).</li>
+        <li><strong>Transits are paths, not searches.</strong> Between tasks the tree builds a list of waypoints (<code>pre_torpedo_pose</code>, <code>pre_bin_pose</code>, …) and hands it to the MPC with <code>FollowPath</code>, between 0.75 m and 2.5 m deep. Those waypoints are priors in the mapping config, measured before the run (<a href="perception/frames.html">Frames, targets and the mission tree</a>, <a href="control/reference.html">Where to go: profiles and paths</a>). The map above uses the competition layout from the built (installed) config; the branch's <code>config.yaml</code> currently has the table moved for pool testing.</li>
         <li><strong>The cameras refine, the map decides.</strong> Each task starts from its prior position, looks with the camera that task needs, and lets mapping move the prop before Talos commits to a shot, drop or grab (<a href="perception/map.html">The course map</a>).</li>
       </ul>
       <p>The tree's nodes and how to write one are in <a href="bt.html">Behaviour trees</a> and <a href="mission-tree.html">The competition mission</a>.</p>
@@ -174,18 +175,18 @@
     <figure class="fig narrow">
       <div class="panel">
         <div class="controls"><button type="button" class="btn primary" id="pq-play">Play</button></div>
-        <div id="prequal"></div>
+        <div id="pq-map"></div>
       </div>
       <figcaption><b>The prequalification path</b> built by <code>PreQualMpcTree</code>, in the map frame. Talos faces along the path except round the pole, where it turns to face the pole. Press Play.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="history" data-short="The team's robots">The team's robots, and their names in the code</h2>
-      <p>UWRT started with ROVs and switched to AUVs for RoboSub in 2015; the software subteam was founded then. The stack is still called <strong>Riptide</strong> after the first AUV, which is why every package is <code>riptide_*</code> (team website). Riptide 1.0 (RoboSub 2016) had a single main hull in a minimal aluminium chassis; Riptide 2.0 (2017) kept that hull with a redesigned chassis and upgraded sensors.</p>
+      <p>UWRT started with ROVs and switched to AUVs for RoboSub in 2015; the software subteam was founded then. The stack is still called <strong>Riptide</strong> after the first AUV, which is why every package is <code>riptide_*</code> (team website). Every AUV since is below; from 2025 the team also built a second, smaller vehicle beside the main one.</p>
     </div>
     <figure class="fig">
       <div class="media-grid rs-robots" id="robots"></div>
-      <figcaption><b>Recent UWRT vehicles.</b> Photos from the team website. The code names in brackets are the files in <a href="https://github.com/osu-uwrt/riptide_core/tree/followpath-speed/riptide_descriptions/config"><code>riptide_descriptions/config</code></a>.</figcaption>
+      <figcaption><b>UWRT's AUVs, from Riptide to Triton.</b> Photos and placings from the team website. The code names in brackets are the files in <a href="https://github.com/osu-uwrt/riptide_core/tree/followpath-speed/riptide_descriptions/config"><code>riptide_descriptions/config</code></a>.</figcaption>
     </figure>
     <div class="prose">
       <p>Old names survive in the code. You will meet them in:</p>

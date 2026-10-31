@@ -23,8 +23,9 @@
     - id: charge
       t: Charge both battery housings
       why: >-
-        Talos runs on two smart battery housings, port and starboard, ORed onto one bus. Each is five Li-ion cells
-        in series. Full is about 20.7 V; the viewer turns a pack amber below 50 % and red below 20 %.
+        Talos runs on two smart battery housings, port and starboard, ORed onto one bus. Each holds a MaxAmps
+        8000 mAh 5S2P LiPo, charged to at most 4.15 V a cell (20.75 V). On the bench Talos runs from a power
+        supply, so the packs are only tested once they're in.
       refs: [["#batteries", "Batteries"]]
 
 - id: bench
@@ -39,7 +40,7 @@
       t: Bench-test every new or changed piece of software on the robot itself
       why: >-
         "Integration is hell": a new YOLO model is tested on the ZED and the Orin, not only on a laptop. This is
-        the part of the day that takes hours.
+        the part that takes longest.
     - id: pin
       t: Commit and push every submodule, then commit release with the new pins
       checks: R1, R2
@@ -91,9 +92,15 @@
       why: >-
         Nereus renders the cameras and the stack's own YOLO detector runs on them, so a tree is tested end to end
         before it costs pool time. The tool's <code>sim</code> stage is planned, not built: run it by hand.
+        <strong>Keep it off the robot's graph.</strong> A shell that sourced <code>config_rmw.bash</code> uses the
+        team Zenoh config, which connects to <code>orin2</code>: with Talos powered on the LAN, the sim joins the
+        real robot's ROS graph (its viewer, kill slot 1, MPC topics). Drop the team config as below in both
+        terminals, or run it with Talos off or op-top off the robot LAN. The planned S0 check exists for this.
       cmd: |-
-        ros2 run rmw_zenoh_cpp rmw_zenohd                 # terminal 1
-        ros2 launch nereus sim.launch.py pool:=rpac active_control_model:=mpc   # terminal 2
+        unset ZENOH_ROUTER_CONFIG_URI ZENOH_SESSION_CONFIG_URI   # both terminals: no team config
+        export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+        ros2 run rmw_zenoh_cpp rmw_zenohd        # terminal 1
+        ros2 launch nereus sim.launch.py pool:=rpac active_control_model:=mpc mpc_model:=sim   # terminal 2
       where: op-top
       refs: [["bt-workflow.html", "Writing and testing trees"], ["nereus.html", "Nereus"]]
     - id: benchrun
@@ -143,8 +150,8 @@
       safety: true
       checks: G6
       why: >-
-        The hull is pumped down by hand (0.05 bar in the 2025 design report) and watched for at least 5 minutes.
-        The green cover says Talos is sealed and tested. Open it again and the test has to be repeated.
+        The hull is pumped down by hand (0.05 bar below ambient in the 2025 design report) and watched for at least
+        5 minutes. The green cover says Talos is sealed and tested. Open it again and the test has to be repeated.
     - id: handsoff
       t: Tell the team nobody opens Talos or swaps parts until the test
       why: >-
@@ -210,9 +217,23 @@
       checks: B3–B7
       why: >-
         Catches what the drive over changed. <code>pretest dayof</code> is planned for this; until then, run the
-        bench checks that don't start anything. In the viewer: FOG and CPU temperatures, PORT and STBD charge.
+        bench checks that don't start anything. In the viewer: the FOG temperature and the PORT and STBD charge.
       cmd: ./pretest bench --only B3,B4,B5,B6,B7 --power battery
       where: op-top
+    - id: retest
+      t: Hull opened or anything rewired since the bench? Rerun the thruster test on the stand
+      safety: true
+      checks: G4
+      why: >-
+        Any internal change voids the bench's thruster test. Run it again before control_system starts (the two
+        would both command the thrusters over CAN): killed first, then Enable, one full cycle, pull the switch,
+        Ctrl-C. Talos on its stand, props clear, someone at the switch.
+      cmd: |-
+        ssh ros@orin2
+        source ~/colcon_deploy/install/setup.bash
+        ros2 run riptide_controllers2 thruster_test_canbus
+      where: Orin
+      refs: [["#thruster-test", "The thruster test"]]
     - id: controller
       t: Start control_system last, with Talos killed
       safety: true
@@ -233,8 +254,9 @@
     - id: buoyancy
       t: "Killed, Talos floats: rises slowly and settles at the surface"
       why: >-
-        The MPC model has Talos about 1.7 N positive, close to RoboSub's minimum of 0.5 % of its mass. A robot that
-        sinks or rises fast has changed since it was weighed.
+        The MPC model has Talos 1.63 N positive, just under RoboSub's minimum of 0.5 % of its mass (1.68 N); the
+        untethered fit was right on it. A robot that sinks or hangs needs buoyancy added before flying; one that
+        rises fast has changed since it was weighed.
       refs: [["#trim", "Buoyancy and trim"]]
     - id: enable
       t: Switch in, Enable in the viewer, wait for the ESCs, Dive in place
@@ -282,8 +304,17 @@
     - id: ident
       t: Identification runs, untethered, from the committed model
       why: >-
-        A tethered run fits the tether's pull as buoyancy. Leave 3 m clear ahead and to port, and 2.5 m below.
-      cmd: ros2 launch riptide_mpc pool_identify.launch.py wait_for_trigger:=true max_iterations:=1
+        A tethered run fits the tether's pull as buoyancy. <code>IdentificationTree</code> first flies to the map
+        origin facing map +x at 0.85 m, so map and calibrate first; leave 3 m clear ahead (map +x) and to port
+        (map +y) of the origin, and 2.5 m below. Red breath right after the blue fast flash: pool_identify wasn't
+        launched.
+      cmd: |-
+        ssh ros@orin2
+        tmux new -s ident
+        source ~/colcon_deploy/install/setup.bash
+        source ~/uwrt_config/source/zenoh_server.bash
+        export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+        ros2 launch riptide_mpc pool_identify.launch.py wait_for_trigger:=true max_iterations:=1
       where: Orin
       refs: [["#ident", "Identification"], ["control/identify.html", "System identification"]]
 
