@@ -18,7 +18,7 @@ groups = json.load(open(os.path.join(here, 'glb_groups.json')))
 asm = json.load(open(os.path.join(here, '../../public/data/cad/assembly.json')))
 BUDGET = {'hull': 45000, 'frame': 30000, 'electronics': 30000, 'batteries': 14000, 'thrusters': 24000,
           'thruster_guards': 8000, 'foam': 6000, 'dvl': 6000, 'down_camera': 4000, 'launcher': 12000,
-          'claw': 8000, 'magnet_poker': 2000, 'acoustics': 6000, 'kill_switch': 4000, 'cables': 14000}
+          'claw': 8000, 'magnet_poker': 2000, 'acoustics': 6000, 'kill_switch': 4000, 'cables': 14000, 'subconns': 8000}
 
 
 def decimate(m, target):

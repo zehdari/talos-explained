@@ -9,7 +9,10 @@
    "^Mirrored_Taco-5/",
    "Holy L Bar",
    "Battery Mounting Rail",
-   "Cable",
+   "Side Cable",
+   "Top Cable",
+   "Bottom Cable",
+   "Thimble",
    "Turnbuckle"
   ]
  },
@@ -68,11 +71,31 @@
   ]
  },
  {
+  "group": "cables",
+  "colour": "#8fb3bf",
+  "patterns": [
+   "Thruster Cable",
+   "Battery Data Cable",
+   "Macoroni",
+   "DVL Cable",
+   "Straight Battery Cable"
+  ]
+ },
+ {
+  "group": "subconns",
+  "colour": "#0f2633",
+  "patterns": [
+   "mcbh",
+   "mcil",
+   "mcdc",
+   "^Subconn Cover"
+  ]
+ },
+ {
   "group": "switch",
   "colour": "#e34948",
   "patterns": [
-   "^Kill Switch",
-   "^Subconn Cover"
+   "^Kill Switch"
   ]
  }
 ]

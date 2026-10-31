@@ -142,14 +142,19 @@ elif phase == 'sys':
     def rgb(h):
         return ','.join(f'{int(h[i:i + 2], 16) / 255:.3f}' for i in (1, 3, 5))
     groups = [
-        ('frame', ['^Dorito-2/', '^MirroredDorito-3/', '^Taco-2/', '^Mirrored_Taco-5/', 'Holy L Bar', 'Battery Mounting Rail', 'Cable', 'Turnbuckle'], '#7d8f99'),
+        ('frame', ['^Dorito-2/', '^MirroredDorito-3/', '^Taco-2/', '^Mirrored_Taco-5/', 'Holy L Bar', 'Battery Mounting Rail', 'Side Cable', 'Top Cable', 'Bottom Cable', 'Thimble', 'Turnbuckle'], '#7d8f99'),
         ('housings', ['^Talos Main Housing'], '#2a78d6'),
         ('buoyancy', ['Foam', 'Buoyancy Assembly'], '#e87ba4'),
         ('thrusters', ['T200'], '#d9480f'),
         ('batteries', ['Smart Battery Housing Assembly'], '#eda100'),
         ('sensors', ['^DVL Assembly', '^ZEDX_Mini', '^DFC Mount', '^Acoustics Pods', '^Acoustic_Mount', '^Transducer-2', 'BAR30'], '#1baf7a'),
         ('actuators', ['Torpedoes + Markers V8', '^Torpservoholder', '^ServoHousing', '^mounting', '^EMERGENCYCLAWASSEMBLY', '^Magnet poker'], '#6250d6'),
-        ('switch', ['^Kill Switch', '^Subconn Cover'], '#e34948'),
+        # Modelled cables (thruster, battery, DVL): not frame.
+        ('cables', ['Thruster Cable', 'Battery Data Cable', 'Macoroni', 'DVL Cable', 'Straight Battery Cable'], '#8fb3bf'),
+        # SubConn wet-mate connectors (bulkhead mcbh/mcdc, inline plugs mcil) and the SubConn cover: their own system.
+        # Listed after the housings, sensors and cables so it overrides their colour on the connectors.
+        ('subconns', ['mcbh', 'mcil', 'mcdc', 'hpbh', 'hpil', 'dbh8', 'dil8', '^Subconn Cover'], '#0f2633'),
+        ('switch', ['^Kill Switch'], '#e34948'),
     ]
     for g, pats, col in groups:
         out.append(f'color|{",".join(pats)}|{rgb(col)}')

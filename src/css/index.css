@@ -47,6 +47,7 @@
 .th-chip i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .th-chip:hover { border-color: var(--ink-2); }
 .th-chip[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.th-chip[aria-pressed='true'] i { box-shadow: 0 0 0 1.5px var(--paper); } /* keeps a dark dot (SubConns) visible on the dark chip */
 
 .th-card {
   width: 23rem; max-width: 100%; background: rgba(243, 247, 247, 0.93); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);

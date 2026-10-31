@@ -2,7 +2,8 @@
 
 usage: python3 make_stl_args.py > args.txt   (then swjob shots.cs; fetch C:\\talos\\explainer_cad\\_stl\\*.stl)
 Each group: vis|saved (the team's saved visibility), show only its top-level components, hide leaves outside
-its include patterns. Groups are written to glb_groups.json for build_glb.py.
+its include patterns. Groups are written to glb_groups.json for build_glb.py. After fetching, run split_subconns.py: it moves the
+SubConn connectors and cover into their own subconns.stl (then add the subconns group back to glb_groups.json).
 """
 import json, os
 D = r'C:\talos\explainer_cad\_stl'
@@ -23,9 +24,9 @@ GROUPS = [
     ('claw', 'Claw', ['^EMERGENCYCLAWASSEMBLY'], ['/'], [], '#6250d6'),
     ('magnet_poker', 'Magnet poker', ['^Magnet poker'], ['/'], [], '#6250d6'),
     ('acoustics', 'Hydrophone pods and transducer', ['^Acoustics Pods', '^Acoustic_Mount', '^Transducer-2'], ['Acoustic', 'Transducer'], [], '#1baf7a'),
-    ('kill_switch', 'Kill switch and SubConn cover', ['^Kill Switch', '^Subconn Cover'], ['Kill Switch', 'Subconn Cover'], [], '#e34948'),
+    ('kill_switch', 'Kill switch', ['^Kill Switch', '^Subconn Cover'], ['Kill Switch', 'Subconn Cover'], [], '#e34948'),  # split_subconns.py moves the cover out
     ('cables', 'Modelled cables', FRAME_TOP + ['Thruster', 'Battery Data Cable', 'Macoroni', 'DVL Cable', 'Straight Battery Cable'],
-     ['Cable'], ['Side Cable', 'Top Cable', 'Bottom Cable', 'Thimble'], '#3f5b67'),
+     ['Cable'], ['Side Cable', 'Top Cable', 'Bottom Cable', 'Thimble'], '#8fb3bf'),
 ]
 out = ['doc|Talos.SLDASM', 'freeze|none', 'mode|shaded']
 for gid, label, top, inc, exc, col in GROUPS:

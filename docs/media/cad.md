@@ -177,13 +177,14 @@ compression, so no decoder is needed.
 | `thruster_guards` | The 8 white thruster guards (`Thruster Protector`) | `#b8c0c7` |
 | `thruster <CAD part name>` (8 nodes) | One T200 each, e.g. `thruster T200 Thruster-1` (port upper outer). Match to `assembly.json` → `thrusters[].part` | `#d9480f` |
 | `foam` | Module foam blocks, Nalgene bottles, centre foam | `#e87ba4` |
-| `hull` | Both hull tubes, end rings, viewports, lids, latches, seals, bulkhead connectors. Opaque: make it transparent to see inside | `#2a78d6` |
+| `hull` | Both hull tubes, end rings, viewports, lids, latches, seals (connectors are in `subconns`). Opaque: make it transparent to see inside | `#2a78d6` |
 | `electronics` | Both cages with everything in them (Orin, boards, forward camera, IMU, fans) | `#008300` |
 | `batteries` | Both battery housings | `#eda100` |
 | `dvl`, `down_camera`, `acoustics` | Sensors outside the hull | `#1baf7a` |
 | `launcher`, `claw`, `magnet_poker` | Actuators | `#6250d6` |
-| `kill_switch` | Kill switch and SubConn cover | `#e34948` |
-| `cables` | Modelled thruster, battery and DVL cables | `#3f5b67` |
+| `kill_switch` | The kill switch only (handle on the port bow window) | `#e34948` |
+| `cables` | Modelled thruster, battery and DVL cables | `#8fb3bf` |
+| `subconns` | Every SubConn connector (MCBH/MCIL/MCDC/HPBH/HPIL/DBH/DIL: lids, battery pods, hydrophone pod, DVL) and the SubConn cover on the port lid; split out of the other groups by `tools/cad/split_subconns.py` | `#0f2633` |
 
 Decimation: board-level pieces smaller than 4 mm (resistors, pins) were dropped before decimating.
 Round edges are faceted at close range. Not exported: the

@@ -204,14 +204,12 @@
  },
  {
   "id": "kill_switch",
-  "label": "Kill switch and SubConn cover",
+  "label": "Kill switch",
   "top": [
-   "^Kill Switch",
-   "^Subconn Cover"
+   "^Kill Switch"
   ],
   "include": [
-   "Kill Switch",
-   "Subconn Cover"
+   "Kill Switch"
   ],
   "exclude": [],
   "colour": "#e34948"
@@ -239,6 +237,20 @@
    "Bottom Cable",
    "Thimble"
   ],
-  "colour": "#3f5b67"
+  "colour": "#8fb3bf"
+ },
+ {
+  "id": "subconns",
+  "label": "SubConn connectors and cover",
+  "top": [],
+  "include": [
+   "mcbh",
+   "mcil",
+   "mcdc",
+   "Subconn Cover"
+  ],
+  "exclude": [],
+  "colour": "#0f2633",
+  "note": "split out of the other STLs by split_subconns.py"
  }
 ]

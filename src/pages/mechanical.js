@@ -24,15 +24,15 @@ function init(data) {
 // explode: how far the system moves when pulled apart.
 const thrusterNodes = data.groups.filter((g) => g.group === 'thrusters').map((g) => g.node);
 const SYSTEMS = [
-  { id: 'frame', name: 'Frame', nodes: ['frame', 'thruster_guards', 'cables'], anchor: [0.15, -0.205, 0.155], img: 'ctx-frame-iso',
-    text: 'Four triangular corner modules, joined by two cross bars under the hull and braced by stainless cables. Everything else mounts to it. This group also holds the thruster guards and the modelled cables.',
+  { id: 'frame', name: 'Frame', nodes: ['frame', 'thruster_guards'], anchor: [0.15, -0.205, 0.155], img: 'ctx-frame-iso',
+    text: 'Four triangular corner modules, joined by two cross bars under the hull and braced by stainless cables. Everything else mounts to it. This group also holds the thruster guards.',
     facts: [['Size', '805 × 555 × 346 mm, bare'], ['Metal', '6063 C-channel, 5052 plate, 6061 angle'], ['CAD mass', '7.6 kg with thrusters and foam']], link: ['#frame', 'The frame'] },
   { id: 'thrusters', name: 'Thrusters', nodes: thrusterNodes, anchor: [0.406, 0.244, 0.075], img: 'ctx-thrusters-iso',
     text: 'Eight Blue Robotics T200s, all at one fore-aft position. Each orange arrow shows which way that thruster pushes Talos when its command is positive (from talos.yaml).',
     facts: [['Outer four', 'V: push fore and aft'], ['Inner four', 'H: tilted 45°, push up or down and sideways'], ['Limit', '±24 N each, 73 N total']], link: ['#thrusters', 'Eight thrusters in one plane'] },
   { id: 'hull', name: 'Main hull', nodes: ['hull'], anchor: [0.215, 0.07, 0.14], img: 'ctx-main-housing-iso',
     text: 'Two clear polycarbonate tubes between aluminium rings: flat windows at the bow, removable lids with every connector at the stern.',
-    facts: [['Size', '532 × 261 × 403 mm'], ['Seals', 'Static O-rings at the rings and lids'], ['CAD mass', '17.8 kg, with the cages and bottles']], link: ['#hull', 'The main hull'] },
+    facts: [['Size', '513 × 255 × 376 mm, without connectors'], ['Seals', 'Static O-rings at the rings and lids'], ['CAD mass', '17.8 kg, with the cages and bottles']], link: ['#hull', 'The main hull'] },
   { id: 'electronics', name: 'Electronics', nodes: ['electronics'], inside: true, anchor: [0.123, 0.03, 0.06], explode: [0, 0, -0.55], img: 'sub-housing-internals-iso',
     text: 'One cage per tube. Starboard: the Jetson AGX Orin, the forward camera and the IMU. Port: the stack of circuit boards behind a 90 mm fan. Both slide out of the stern.',
     facts: [['Starboard', 'Orin, GMSL2 card, ZED X Mini, VN-100'], ['Port', 'Board stack, kill switch sensor, LED boards']], link: ['#inside', 'Inside the hull'] },
@@ -61,8 +61,11 @@ const SYSTEMS = [
     text: 'A printed rod with a magnet at its tip, held on by zip ties, pointing forward under the starboard side.',
     facts: [], link: ['actuators.html', 'Torpedoes, dropper and claw'] },
   { id: 'kill_switch', name: 'Kill switch', nodes: ['kill_switch'], anchor: [0.123, 0.057, 0.2], explode: [0, 0.05, 0.3], img: 'ctx-kill-switch-iso',
-    text: 'The red handle on the port bow window. Pulling it cuts power to the thrusters and nothing else. This group also holds the SubConn cover over the port lid\'s connectors.',
+    text: 'The red handle on the port bow window. Pulling it cuts power to the thrusters and nothing else.',
     facts: [['Sensor', 'a Hall-effect switch behind the window']], link: ['electrical.html#kill', 'Power and wiring: the kill switch'] },
+  { id: 'subconns', name: 'SubConns', nodes: ['subconns', 'cables'], anchor: [0.14, 0.05, -0.24], explode: [0, 0, -0.25], img: 'ctx-lids-connectors-rear',
+    text: 'SubConn wet-mate connectors carry every cable through the stern lids: thrusters, batteries, DVL, hydrophone. The battery pods, the hydrophone pod and the DVL have their own. The snap-on SubConn cover protects the port lid\'s connectors; it is not the kill switch. The modelled cables (light blue) belong to this group too.',
+    facts: [['Port lid', '17 small bulkheads, 2 battery bulkheads'], ['Starboard lid', '4 bulkheads (2 DBH8F, 2 MCBH4F)'], ['Also on', 'battery pods, hydrophone pod, DVL']], link: ['#hull', 'The main hull'] },
 ];
 // Focus point for each system: halfway between the robot's middle and the system's box centre, so the camera eases, not jumps.
 const boxOf = (nodes) => {
@@ -178,7 +181,7 @@ function responsiveBars(host, rowsFn, opts) {
 const SUB_NAME = {
   main_housing: ['Main hull assembly', '#2a78d6'], frame_thruster_modules: ['Corner modules', '#7d8f99'], battery_pods: ['Battery pods', '#eda100'],
   dvl: ['DVL', '#1baf7a'], torpedo_marker_launcher: ['Launcher', '#6250d6'], claw: ['Claw', '#6250d6'], duplicate_foam: ['Duplicate foam', '#e87ba4'],
-  cables: ['Modelled cables', '#3f5b67'], frame_crossbars_rails: ['Bars, rails, cables', '#7d8f99'], kill_switch_covers: ['Kill switch, cover', '#e34948'],
+  cables: ['Modelled cables', '#8fb3bf'], frame_crossbars_rails: ['Bars, rails, cables', '#7d8f99'], kill_switch_covers: ['Kill switch, SubConn cover', '#e34948'],
   acoustics: ['Acoustics', '#1baf7a'], magnet_poker: ['Magnet poker', '#6250d6'], down_camera: ['Down camera', '#1baf7a'],
 };
 const massRows = () => [...data.cad_mass.subsystems].sort((a, b) => b.kg - a.kg).map((s) => {
@@ -535,7 +538,7 @@ const matRows = () => [...data.materials].sort((a, b) => b.kg - a.kg).filter((m)
   const SIZES = { 'talos-iso': [1600, 1759], 'talos-iso-rear': [1600, 1637], 'talos-iso-below': [1600, 1594], 'talos-front': [1600, 1265], 'talos-back': [1600, 1265],
     'talos-side-port': [1600, 1618], 'talos-side-starboard': [1600, 1618], 'talos-top': [1600, 1251], 'talos-bottom': [1600, 1251], 'talos-hull-hidden-iso': [1600, 1759],
     'talos-hull-hidden-top': [1600, 2045], 'talos-systems-iso': [1600, 1759], 'talos-systems-front': [1600, 1265], 'talos-systems-port': [1600, 1618], 'talos-systems-top': [1600, 1251], 'talos-systems-below': [1600, 1594] };
-  const LEGEND = [['Frame', '#7d8f99'], ['Main hull', '#2a78d6'], ['Buoyancy', '#e87ba4'], ['Thrusters', '#d9480f'], ['Batteries', '#eda100'], ['Sensors outside', '#1baf7a'], ['Tools', '#6250d6'], ['Kill switch, cover', '#e34948']];
+  const LEGEND = [['Frame', '#7d8f99'], ['Main hull', '#2a78d6'], ['Buoyancy', '#e87ba4'], ['Thrusters', '#d9480f'], ['Batteries', '#eda100'], ['Sensors outside', '#1baf7a'], ['Tools', '#6250d6'], ['Cables', '#8fb3bf'], ['SubConns', '#0f2633'], ['Kill switch', '#e34948']];
   const img = document.getElementById('mx-gal-img');
   const cap = document.getElementById('mx-gal-cap');
   const legend = document.getElementById('mx-legend');

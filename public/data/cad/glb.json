@@ -7,7 +7,7 @@
    "group": "frame",
    "label": "Frame: corner modules, cross bars, battery rails, tension cables",
    "colour": "#7d8f99",
-   "tris_in": 2387410,
+   "tris_in": 2387466,
    "tris_out": 29998,
    "bbox_m": {
     "min": [
@@ -282,23 +282,23 @@
    "group": "hull",
    "label": "Main housing: hull tubes, lids, viewports, latches",
    "colour": "#2a78d6",
-   "tris_in": 386640,
+   "tris_in": 203832,
    "tris_out": 45000,
    "bbox_m": {
     "min": [
      -0.2564,
      -0.1276,
-     -0.2601
+     -0.233
     ],
     "max": [
-     0.2751,
-     0.1332,
+     0.2564,
+     0.1276,
      0.1429
     ],
     "size": [
-     0.5316,
-     0.2608,
-     0.403
+     0.5128,
+     0.2552,
+     0.3759
     ]
    }
   },
@@ -332,13 +332,13 @@
    "group": "batteries",
    "label": "Smart battery housings (2)",
    "colour": "#eda100",
-   "tris_in": 733782,
-   "tris_out": 13998,
+   "tris_in": 699378,
+   "tris_out": 13999,
    "bbox_m": {
     "min": [
      -0.3149,
      -0.075,
-     -0.1486
+     -0.0454
     ],
     "max": [
      0.3149,
@@ -348,7 +348,7 @@
     "size": [
      0.6298,
      0.1502,
-     0.3973
+     0.2941
     ]
    }
   },
@@ -357,13 +357,13 @@
    "group": "dvl",
    "label": "DVL and mount",
    "colour": "#1baf7a",
-   "tris_in": 107714,
-   "tris_out": 5998,
+   "tris_in": 103706,
+   "tris_out": 6000,
    "bbox_m": {
     "min": [
      -0.057,
      -0.2498,
-     -0.1209
+     -0.0765
     ],
     "max": [
      0.057,
@@ -373,7 +373,7 @@
     "size": [
      0.114,
      0.1777,
-     0.2014
+     0.157
     ]
    }
   },
@@ -407,8 +407,8 @@
    "group": "launcher",
    "label": "Torpedo and marker launcher",
    "colour": "#6250d6",
-   "tris_in": 135872,
-   "tris_out": 11998,
+   "tris_in": 135894,
+   "tris_out": 11999,
    "bbox_m": {
     "min": [
      0.0413,
@@ -457,7 +457,7 @@
    "group": "magnet_poker",
    "label": "Magnet poker",
    "colour": "#6250d6",
-   "tris_in": 2786,
+   "tris_in": 2790,
    "tris_out": 2000,
    "bbox_m": {
     "min": [
@@ -482,8 +482,8 @@
    "group": "acoustics",
    "label": "Hydrophone pods and transducer",
    "colour": "#1baf7a",
-   "tris_in": 94076,
-   "tris_out": 5998,
+   "tris_in": 84994,
+   "tris_out": 6000,
    "bbox_m": {
     "min": [
      -0.1711,
@@ -505,25 +505,25 @@
   {
    "node": "kill_switch",
    "group": "kill_switch",
-   "label": "Kill switch and SubConn cover",
+   "label": "Kill switch",
    "colour": "#e34948",
-   "tris_in": 27780,
+   "tris_in": 10756,
    "tris_out": 4000,
    "bbox_m": {
     "min": [
-     0.0206,
-     -0.0498,
-     -0.2499
+     0.0469,
+     0.0375,
+     0.1393
     ],
     "max": [
-     0.2098,
+     0.1993,
      0.0756,
      0.2111
     ],
     "size": [
-     0.1892,
-     0.1253,
-     0.461
+     0.1524,
+     0.0381,
+     0.0718
     ]
    }
   },
@@ -531,7 +531,7 @@
    "node": "cables",
    "group": "cables",
    "label": "Modelled cables",
-   "colour": "#3f5b67",
+   "colour": "#8fb3bf",
    "tris_in": 41464,
    "tris_out": 14000,
    "bbox_m": {
@@ -549,6 +549,31 @@
      0.786,
      0.4618,
      0.4385
+    ]
+   }
+  },
+  {
+   "node": "subconns",
+   "group": "subconns",
+   "label": "SubConn connectors and cover",
+   "colour": "#0f2633",
+   "tris_in": 248146,
+   "tris_out": 7999,
+   "bbox_m": {
+    "min": [
+     -0.2854,
+     -0.2515,
+     -0.2601
+    ],
+    "max": [
+     0.2854,
+     0.1332,
+     0.0464
+    ],
+    "size": [
+     0.5708,
+     0.3847,
+     0.3065
     ]
    }
   }
