@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracking one object · How Talos sees</title>
+<meta name="description" content="How riptide_mapping turns a stream of detections of one object into an estimate: a three-state Kalman filter, a chi-squared gate against lookalikes, acquisition by agreement, and the confirm and verify rules autonomy's covariance checks depend on.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
+</head>
+<body>
+<main>
+  <header class="page-head">
+    <div class="kicker">Mapping · Chapter 7</div>
+    <h1>Tracking one object</h1>
+    <p class="lede">Each mapping object has its own small filter. It starts at the layout's guess, waits for a few detections to agree, then averages in the ones that fit and refuses the rest.</p>
+  </header>
+  <article>
+    <aside class="short"><span class="label">The short version</span><ul>
+      <li>Each prop has its own <span class="term">Kalman filter</span>: a best guess of where it is plus a covariance for how sure it is.</li>
+      <li>The first detections are held back until 4 agree within 4 s, so one stray detection can't move anything.</li>
+      <li>After 10 detections, any detection more than about 4σ off is rejected. 30 rejections in a row and mapping starts over.</li>
+      <li>Until a prop is freshly seen while targeted, mapping publishes a huge covariance, so the behavior tree waits.</li>
+    </ul></aside>
+    <div class="prose">
+      <p>This chapter follows one object's <strong>track</strong>, the estimate built from its own detections. For a child object (a torpedo hole in <code>torpedo_frame</code>, a table item in <code>table_frame</code>) the track is the estimate. For a course prop in <code>map</code>, the track becomes a <strong>fix</strong> that the course map solves with (Chapter 8). The code is <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/map_estimator.py#L316"><code>MapEstimator.observe</code></a>.</p>
+      <p>Mapping only fuses classes in its <strong>target list</strong> (set by autonomy via the <code>mapping_target</code> service) plus any <strong>background targets</strong>. With no target set, it fuses only the closest object more than 1 m away. Detections under 0.2 confidence are dropped first.</p>
+
+      <h2 id="update">The update</h2>
+      <p>Objects don't move, so there is no motion model. The state is a position <span class="m">\hat\bx</span> with covariance <span class="m">\P</span>. A detection <span class="m">\bz</span> measures it directly, with covariance <span class="m">\Rm</span> from Chapter 6:</p>
+      <div class="M" data-narrow="\begin{aligned} \boldsymbol\nu &amp;= \bz - \hat\bx, \quad \mathbf S = \P + \Rm, \quad \K = \P\mathbf S^{-1} \\ \hat\bx &amp;\leftarrow \hat\bx + \K\boldsymbol\nu \\ \P &amp;\leftarrow (I - \K)\,\P\,(I - \K)^\top + \K\Rm\K^\top \end{aligned}">\boldsymbol\nu = \bz - \hat\bx, \quad \mathbf S = \P + \Rm, \quad \K = \P\mathbf S^{-1}, \qquad \hat\bx \leftarrow \hat\bx + \K\boldsymbol\nu, \qquad \P \leftarrow (I - \K)\,\P\,(I - \K)^\top + \K\Rm\K^\top</div>
+      <ul>
+        <li>The gain <span class="m">\K</span> (how far one detection moves the estimate) is near <span class="m">I</span> when the track knows little, near zero when it knows a lot. It works per direction.</li>
+        <li>The <strong>Joseph form</strong> of the covariance update stays symmetric and positive definite under rounding (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/map_estimator.py#L436"><code>_update_position</code></a>).</li>
+        <li>Odometry drifts, so before each new sighting a course prop's covariance grows by 0.002 m² per metre travelled horizontally.</li>
+      </ul>
+
+      <h3 id="yaw" data-short="Yaw">Yaw</h3>
+      <p>Heading uses the same update in 1D, with the innovation wrapped to <span class="m">(-\pi, \pi]</span> (179° and −179° are 2° apart). Prior 30°, each detection 3°. Its own gate is <span class="m">\nu^2/S</span> &gt; 10.83 (χ² 1-DOF, 99.9 %); a rejected yaw is skipped while the position still counts.</p>
+    </div>
+
+    <div class="prose">
+      <h2 id="gating">Gating</h2>
+      <p>The <strong>Mahalanobis distance</strong> is how many standard deviations a detection missed by, measured along the direction of the miss. Its square <span class="m">d^2 = \boldsymbol\nu^\top \mathbf S^{-1} \boldsymbol\nu</span> follows a <strong>χ² distribution</strong> (a known "how often by chance" curve) with 3 degrees of freedom, and exceeds 16.27 only 0.1 % of the time:</p>
+      <div class="M">\boldsymbol\nu^\top (\P + \Rm)^{-1} \boldsymbol\nu \;>\; 16.27 \;=\; \chi^2_3(0.999) \quad\Rightarrow\quad \text{reject}</div>
+      <ul>
+        <li>The gate turns on after 10 accepted detections (<code>gate_min_updates</code>). Before that, the agreement rule protects the track.</li>
+        <li>It stops lookalikes of the same class and bad depth readings. A rejected detection changes nothing.</li>
+        <li>30 rejections in a row (<code>gate_max_rejects</code>, 3 s at 10 Hz) means the track locked onto the wrong thing or the prop moved. Mapping drops the track and reacquires from the prior.</li>
+      </ul>
+      <p><strong>In Nereus:</strong> after the claw carried off the pill, mapping logged <code>pill: 30 rejections in a row (last 36.7 sigma), reacquiring</code>, and half a second later <code>pill 4 detections agree</code> started a new track where the pill really was.</p>
+
+      <h2 id="agreement">Acquisition by agreement</h2>
+      <p>A fresh track moves most of the way to whatever it sees first, so one false detection could drag it off. So detections are <strong>held back until enough agree</strong> (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/map_estimator.py#L390"><code>_agree</code></a>):</p>
+      <ul>
+        <li>With no accepted detection yet, detections are held for up to 4 s (<code>acquire_window_s</code>).</li>
+        <li>Two agree if within <span class="m">\max(0.3\text{ m},\ 3\sqrt{\lambda_\text{max}(\Rm_a + \Rm_b)})</span> of each other.</li>
+        <li>The biggest group of mutually close detections wins. At 4 members (<code>acquire_detections</code>) they are fused in time order and the rest dropped.</li>
+        <li>A group whose mean is <span class="m">d^2</span> &gt; 16.27 from the map's estimate is <strong>far</strong> and needs 12 members over at least 2 s. This only bites once another prop has pinned the offset (Chapter 8).</li>
+        <li>Bin detections named by the binary classifier (Chapter 9) skip the hold; they arrive pre-clustered.</li>
+      </ul>
+      <p><strong>It can stall.</strong> A prop seen only two or three frames at a time, more than 4 s apart, never reaches four agreeing detections. That is why the searches aim at the raw detection until mapping has acquired it (Chapter 9).</p>
+    </div>
+    <figure class="fig">
+      <div class="panel trk-panel">
+        <div class="controls trk-controls" id="trk-controls"></div>
+        <div class="trk-views">
+          <div class="trk-view"><canvas id="trk-scene" aria-label="Top-down view of Talos, the prop and its detections"></canvas><div class="trk-tag">Pool, from above · drag Talos</div></div>
+          <div class="trk-view"><canvas id="trk-zoom" aria-label="Zoomed view around the prop"></canvas><div class="trk-tag" id="trk-zoom-tag">Around the prop, 80 cm across</div></div>
+        </div>
+        <div class="trk-status" id="trk-status"></div>
+        <ol class="trk-log" id="trk-log" aria-live="polite"></ol>
+      </div>
+      <figcaption><b>One prop, tracked live.</b> The browser's <code>MapEstimator</code> fusing torpedo detections at 10 Hz; the prior sits 40 cm from the real prop. Hollow dots are held, filled fused, crosses gated, grey dropped. Try a stray detection, the lookalike, then moving the prop.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="confirm">Targeted, established, confirmed</h2>
+      <p>Behavior trees wait for a published variance (say of <code>mapping/torpedo</code>) to fall under a threshold before acting. Three flags per track decide what gets published:</p>
+      <ul>
+        <li><strong>Targeted.</strong> Only detections while the object is in the target list can confirm it. Background targets improve but never confirm.</li>
+        <li><strong>Established.</strong> 10 accepted detections while targeted since the last full reset (<code>confirm_detections</code>).</li>
+        <li><strong>Confirmed.</strong> Established, and not asked to re-check since.</li>
+      </ul>
+      <p>Setting a target calls <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/mapping.py#L476"><code>reset(target, verify=True)</code></a>, which clears <em>confirmed</em>. Then:</p>
+      <ul>
+        <li><strong>Never established:</strong> full reset to the prior covariance, agreement again, 10 detections to confirm.</li>
+        <li><strong>Established before:</strong> a <strong>verify</strong>. It keeps its estimate (widened by drift) and 3 in-gate detections (<code>verify_detections</code>) confirm it. A detection outside the gate means it moved (<em>"moved 62 cm since it was last seen, finding it again"</em>) and starts a fresh search.</li>
+      </ul>
+
+      <h3 id="published">What gets published</h3>
+      <p>Until confirmed, mapping floors the published position variances at 1.0 m² and angle variances at 0.1 rad² (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/mapping.py#L1003"><code>publish_pose</code></a>), above every tree threshold. That matches the old mapping, so <em>under threshold</em> still means <em>freshly seen while targeted</em>.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel" id="trk-pub-chart"></div>
+      <figcaption><b>Published covariance against detections.</b> Solid: what <code>mapping/torpedo</code> publishes; dashed: the estimator's own. They meet once confirmed: 10th detection on the first visit, 3rd after the retarget.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="limits">What this doesn't do</h2>
+      <ul>
+        <li>One track is one object. Two same-class props in view (the bins' targets) would average together, which is why bins use the binary classifier.</li>
+        <li>Agreement picks the biggest cluster, not the right one. A busier lookalike wins until 30 rejections reacquire.</li>
+        <li>Between agreement (4) and the gate (10), nothing filters the target class. Turn on the lookalike right after <em>"4 detections agree"</em> in the demo to see it.</li>
+        <li>A child object's track is only aged when retargeted; its parent carries most of the drift.</li>
+      </ul>
+    </div>
+    <nav class="next" aria-label="Chapter navigation"></nav>
+  </article>
+</main>
+<script type="module" src="/src/perception/pages/tracking.js"></script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Fossen model · How Talos flies</title>
+<meta name="description" content="The 6-DOF Fossen model riptide_mpc predicts with: frames, quaternion kinematics, mass and added mass, Coriolis, damping and restoring forces, with Talos's identified numbers.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
+</head>
+<body>
+<main>
+  <header class="page-head">
+    <div class="kicker">Chapter 1</div>
+    <h1>The Fossen model</h1>
+    <p class="lede">An MPC is only as good as its prediction. riptide_mpc predicts with Thor Fossen's six-degree-of-freedom model of a rigid body moving through water, the same equations, in the same source file, that the team's simulator runs.</p>
+  </header>
+  <article>
+    <div class="prose">
+      <p>Everything the controller does downstream (the plan, the feedforward thrust, the linearization the solver works on) is a consequence of this one function: given where Talos is, how it is moving and how hard each thruster pushes, how fast does that motion change? This chapter builds it term by term, with Talos's identified numbers from <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml"><code>config/models/talos.yaml</code></a>.</p>
+      <p>The C++ is in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/marine_dynamics.cpp"><code>marine_dynamics.cpp</code></a>. Its header says it is copied from the simulator and must stay identical, and a unit test (<code>test_dynamics_parity</code>) compares the two whenever the simulator is installed. In simulation the controller's model and the plant are literally the same equations, so any tracking error you see in sim is the controller's fault, not the model's.</p>
+
+      <h2 id="frames">Frames and state</h2>
+      <p>Two frames do most of the work. The <strong>world frame</strong> is the odometry frame: x and y on the pool's surface plane, z up, so depth is negative. The <strong>body frame</strong> is fixed to Talos and follows the ROS convention: x forward, y to port (left), z up. The physics is written about the centre of mass (COM), but odometry and every setpoint use <code>base_link</code>, a point a few centimetres away, so the model converts between the two everywhere.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel" id="frame-graph"></div>
+      <figcaption><b>The frame tree</b>, as the URDF builds it. <code>base_link</code> is the root: what odometry reports and setpoints refer to. The <code>origin</code> frame (the farthest-port screw on the front of the camera cage) is a fixed datum 169 mm away, and it's there because every pose in the vehicle YAML, base_link's own included, is measured from it. The model re-expresses all of them relative to the COM when it loads. Tap or hover a frame for its offset.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>The state is 13 numbers, the simulator's own layout:</p>
+      <div class="M" data-narrow="\begin{aligned} x = \big[\; &amp;\underbrace{p}_{\text{COM position, world}} \;\big|\; \underbrace{q}_{\text{attitude } (w,x,y,z)} \;\big| \\[2pt] &amp;\underbrace{v = (u, v, w)}_{\text{body velocity at COM}} \;\big|\; \underbrace{\omega = (p, q, r)}_{\text{body rates}} \;\big] \end{aligned}">x = \big[\; \underbrace{p}_{\text{COM position, world}} \;\big|\; \underbrace{q}_{\text{attitude } (w,x,y,z)} \;\big|\; \underbrace{v = (u, v, w)}_{\text{body velocity at COM}} \;\big|\; \underbrace{\omega = (p, q, r)}_{\text{body rates}} \;\big]</div>
+      <p>Fossen groups these as the pose <span class="m">\boldsymbol\eta = (p, q)</span> and the body twist <span class="m">\boldsymbol\nu = (v, \omega)</span>. Attitude is a unit quaternion rather than roll-pitch-yaw angles so nothing is singular, including with the nose pointing straight down. The kinematics turn body motion into world motion:</p>
+      <div class="M">\dot p = R(q)\, v, \qquad \dot q = \tfrac12\, q \otimes \begin{bmatrix} 0 \\ \omega \end{bmatrix}</div>
+      <p>where <span class="m">R(q)</span> is the rotation matrix of <span class="m">q</span> and <span class="m">\otimes</span> the quaternion product. After each integration step the quaternion is renormalized to unit length.</p>
+
+      <h2 id="eom">The equation of motion</h2>
+      <p>The dynamics is Newton and Euler for a rigid body, plus the water. In Fossen's matrix form, with everything expressed in the body frame at the COM:</p>
+      <div class="M" data-narrow="\begin{aligned} &amp;\mathbf M\,\dot{\boldsymbol\nu} + \mathbf C_{RB}(\boldsymbol\nu)\boldsymbol\nu + \mathbf C_A(\boldsymbol\nu_r)\boldsymbol\nu_r + \mathbf D(\boldsymbol\nu_r)\boldsymbol\nu_r \\ &amp;\quad + \mathbf g(\boldsymbol\eta) = \boldsymbol\tau_{\text{thrust}} + \boldsymbol\tau_{d} \end{aligned} \qquad \mathbf M = \mathbf M_{RB} + \mathbf M_A">\mathbf M\,\dot{\boldsymbol\nu} + \mathbf C_{RB}(\boldsymbol\nu)\boldsymbol\nu + \mathbf C_A(\boldsymbol\nu_r)\boldsymbol\nu_r + \mathbf D(\boldsymbol\nu_r)\boldsymbol\nu_r + \mathbf g(\boldsymbol\eta) = \boldsymbol\tau_{\text{thrust}} + \boldsymbol\tau_{d}, \qquad \mathbf M = \mathbf M_{RB} + \mathbf M_A</div>
+      <p class="eq-note">ν<sub>r</sub> = ν − ν<sub>c</sub> is the velocity relative to the water. The pool has no current, so ν<sub>r</sub> = ν here, but the code keeps the general form.</p>
+      <p>Read left to right: inertia (the body's and the water it drags along), Coriolis and centripetal effects of moving in a rotating frame, hydrodynamic drag, then gravity and buoyancy. On the right are the thrusters and <span class="m">\boldsymbol\tau_d</span>, a disturbance wrench the estimator learns online to absorb model error (Chapter 7). Solving for the acceleration gives what the integrator needs:</p>
+      <div class="M" data-narrow="\begin{aligned} \dot{\boldsymbol\nu} = \mathbf M^{-1}\big(&amp;\boldsymbol\tau_{\text{thrust}} + \boldsymbol\tau_d - \mathbf C_{RB}(\boldsymbol\nu)\boldsymbol\nu \\ &amp;- \mathbf C_A(\boldsymbol\nu)\boldsymbol\nu - \mathbf D(\boldsymbol\nu)\boldsymbol\nu - \mathbf g(\boldsymbol\eta)\big) \end{aligned}">\dot{\boldsymbol\nu} = \mathbf M^{-1}\big(\boldsymbol\tau_{\text{thrust}} + \boldsymbol\tau_d - \mathbf C_{RB}(\boldsymbol\nu)\boldsymbol\nu - \mathbf C_A(\boldsymbol\nu)\boldsymbol\nu - \mathbf D(\boldsymbol\nu)\boldsymbol\nu - \mathbf g(\boldsymbol\eta)\big)</div>
+      <p>Below, every term is evaluated by the browser's copy of the model at whatever motion you dial in. Watch which terms matter at Talos's speeds.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="term-controls"></div>
+        <div id="term-table"></div>
+      </div>
+      <figcaption><b>Every term of the equation, live.</b> Generalized forces in newtons (rows 1–3) and newton-metres (rows 4–6), as they appear on the right-hand side, so each column is the wrench that term applies to the body. Thrust is zero here; the last column is the acceleration that results.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h3 id="mass">Mass and added mass</h3>
+      <p>The rigid-body part is plain mass and inertia about the COM: 34.3 kg and the CAD inertia tensor.</p>
+      <div class="M">\mathbf M_{RB} = \begin{bmatrix} m I_3 & 0 \\ 0 & I_g \end{bmatrix}, \qquad m = 34.307\ \text{kg}</div>
+      <p>Accelerating a body in water also accelerates the water around it, and that water's momentum has to come from somewhere. Fossen models it as <strong>added mass</strong> <span class="m">\mathbf M_A</span>, a symmetric matrix the vehicle carries around as if it were its own. For a frame robot with flat panels it is large: pushing forward, Talos behaves as if it weighed 158 kg, more than four times its own mass.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel" id="mass-chart"></div>
+      <figcaption><b>Effective mass per axis.</b> Rigid mass plus identified added mass. Surge is the heaviest: Talos is only 0.35 m long but 0.83 m wide and 0.55 m tall, so moving forward pushes its biggest face through the water. The rotational axes are in kg·m² and scaled to fit.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>The model checks <span class="m">\mathbf M</span> is symmetric positive definite and factors it once with a Cholesky decomposition, so evaluating <span class="m">\mathbf M^{-1}</span> each step is a stored 6×6 product.</p>
+
+      <h3 id="coriolis">Coriolis and centripetal terms</h3>
+      <p>Because <span class="m">\boldsymbol\nu</span> is measured in a rotating frame, momentum that is constant in the world still changes in body coordinates. riptide_mpc uses the momentum form from Fossen's MSS toolbox (<code>m2c</code>), which works for any symmetric mass matrix including off-diagonal added mass. With the momentum <span class="m">h = \mathbf M \boldsymbol\nu = (h_1, h_2)</span>:</p>
+      <div class="M">\mathbf C(\mathbf M, \boldsymbol\nu) = \begin{bmatrix} 0 & -S(h_1) \\ -S(h_1) & -S(h_2) \end{bmatrix}, \qquad S(a)\,b = a \times b</div>
+      <p>It is applied twice: to <span class="m">\mathbf M_{RB}</span> with the absolute velocity and to <span class="m">\mathbf M_A</span> with the velocity relative to the water. One consequence is worth knowing: the added-mass part produces a yaw moment when Talos moves forward and sideways at once, the <strong>Munk moment</strong>, <span class="m">N = (A_{vv} - A_{uu})\,u\,v \approx -44\,uv</span> N·m. At 0.5 m/s forward with a 0.1 m/s slip that is 2.2 N·m, as much as the yaw drag at 0.5 rad/s. A controller without the model would see it as an unexplained yaw disturbance; the MPC predicts it and counters it before it turns the robot.</p>
+
+      <h3 id="damping">Damping</h3>
+      <p>Drag is modelled per axis as linear plus quadratic in the relative velocity. Both matrices are diagonal for Talos:</p>
+      <div class="M">\mathbf D(\boldsymbol\nu)\boldsymbol\nu = \mathbf D_l\, \boldsymbol\nu + \mathbf D_q\, |\boldsymbol\nu| \circ \boldsymbol\nu</div>
+      <p>The quadratic term dominates above walking pace. By frontal area you would expect surge to have the most drag: moving forward pushes Talos's biggest face (about 0.83 × 0.55 m) through the water, against roughly 0.35 × 0.83 m for heave and 0.35 × 0.55 m for sway. The identified quadratic terms agree on surge over sway (224 against 154), though sway's large linear term brings the two level near 0.5 m/s. Heave looks highest on the chart, but its drag is the shakiest number here. It comes from the oldest session (2026-10-03, flown while an ESC firmware bug needed a 140 rpm offset); every session since has rejected the heave fit (Chapter 8). Treat that curve with suspicion.</p>
+      <p>Drag also explains a limit you will meet later: the thrusters can deliver at most 73 N in total (the power budget), and surge drag reaches 73 N at 0.54 m/s. The controller's speed limit of 0.6 m/s is above what the model can sustain, so on a long straight move the reference governor (Chapter 4) has to slow the reference down.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel" id="drag-chart"></div>
+      <figcaption><b>Drag force against speed</b>, from the model's linear and quadratic coefficients (surge and sway from recent identification; heave only from the 2026-10-03 session). The dashed line is the 73 N total thrust budget: where a curve crosses it is the fastest Talos can go along that axis, about 0.50–0.55 m/s.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>The code applies drag at an optional offset damping centre and maps it back to the COM with the same lever arm on the way in (velocity) and out (force), which keeps the term dissipative. Talos's centre is at the COM.</p>
+
+      <h3 id="restoring">Restoring forces: gravity and buoyancy</h3>
+      <p>Weight acts at the COM; buoyancy acts at the centre of buoyancy (COB) and points straight up in the world. Talos displaces 34.5 litres:</p>
+      <div class="M">W = mg = 336.4\ \text{N}, \qquad B = \rho g \nabla = 338.1\ \text{N}</div>
+      <p>so it is 1.6 N positively buoyant: lose power and it floats up, slowly. In the body frame, with <span class="m">r_b</span> the COB relative to the COM:</p>
+      <div class="M">\mathbf g(\boldsymbol\eta) = -\begin{bmatrix} R(q)^\top \begin{bmatrix}0\\0\\B - W\end{bmatrix} \\[4pt] r_b \times R(q)^\top \begin{bmatrix}0\\0\\B\end{bmatrix} \end{bmatrix}</div>
+      <p>The COB sits 22.5 mm above the COM, so any tilt produces a torque back toward level, like a pendulum. That stiffness, about <span class="m">B\,\overline{BG} \approx 7.6</span> N·m per radian, is what lets the MPC weight roll and pitch heavily without fighting the vehicle: the hull wants to be level anyway.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls"><span>Release Talos from a tilt with the thrusters off:</span>
+          <label>roll <input type="range" id="tilt-roll" min="0" max="45" value="25"><output id="tilt-roll-o">25°</output></label>
+          <label>pitch <input type="range" id="tilt-pitch" min="0" max="45" value="0"><output id="tilt-pitch-o">0°</output></label>
+        </div>
+        <div id="tilt-chart"></div>
+      </div>
+      <figcaption><b>Free response.</b> The model integrated with no thrust. Roll comes back without overshoot (damping ratio ≈ 1.3); pitch, with half the inertia and a third of the damping, overshoots (ζ ≈ 0.53).</figcaption>
+    </figure>
+    <div class="prose">
+      <p>Near the surface the model goes one step further: buoyancy is scaled by how much of an ellipsoid around the COB is still under water, and the wet centre moves with it. The thrusters get the same treatment, a propeller disc half out of the water gives roughly half its thrust. At the depths Talos works these factors are exactly one; they matter for surfacing, where the simulator and controller agree on the physics.</p>
+
+      <h2 id="integration">Integrating it</h2>
+      <p>The MPC never uses a continuous-time model; it uses this one step, run over and over. Within one step of length <span class="m">h</span> the thrusters' realized force evolves for <span class="m">h/2</span>, the body is advanced with classic fourth-order Runge–Kutta holding that force, then the thrusters evolve for the other <span class="m">h/2</span>:</p>
+      <pre><code><span class="c">// fossen_model.cpp, FossenModel::step: one physics_simulator step</span>
+evolveActuators(force, target, h / 2);
+rk4(x, h, [&](const State13d &s) { <span class="k">return</span> derivative(s, force); });
+evolveActuators(force, target, h / 2);</code></pre>
+      <p>The prediction rollout uses <span class="m">h = 2</span> ms, the simulator's own step, so in simulation it reproduces the plant to rounding. The Jacobians use a coarser 25 ms model (two steps per 50 ms stage), which is accurate enough for derivatives and twelve times cheaper. Chapter 6 explains where each is used.</p>
+    </div>
+    <nav class="next" aria-label="Chapter navigation"></nav>
+  </article>
+</main>
+<script type="module" src="/src/control/pages/model.js"></script>
+</body>
+</html>

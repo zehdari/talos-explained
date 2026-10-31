@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frames, targets and the mission tree · How Talos sees</title>
+<meta name="description" content="What riptide_mapping publishes and how Talos's behavior trees use it: the TF tree from the AprilTag calibration to every prop's frame, mapping targets, published covariances, the bins' binary classifier and the table fit.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
+</head>
+<body>
+<main>
+  <header class="page-head">
+    <div class="kicker">Mapping · Chapter 9</div>
+    <h1>Frames, targets and the mission tree</h1>
+    <p class="lede">Mapping publishes TF frames and covariances. Autonomy drives to the frames, waits on the covariances, and tells mapping which props to look for.</p>
+  </header>
+  <article>
+    <aside class="short"><span class="label">The short version</span><ul>
+      <li>Every prop is a TF frame (like <code>torpedo_frame</code>) plus a pose with covariance.</li>
+      <li>The behaviour tree sets a <span class="term">target</span> (the props to update) and can lock the map while Talos shoots or grabs.</li>
+      <li><code>RepairCompMpcTree</code> runs the tasks in order; a failed task just moves on to the next.</li>
+      <li>The gate is flown from its prior. The table is fit to its two baskets only if both converge.</li>
+    </ul></aside>
+    <div class="prose">
+      <p>This chapter is the interface of the mapping node, <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/mapping.py"><code>mapping.py</code></a>: its frames, its services, and how the trees in <code>riptide_autonomy</code> use them. It ends with three prop-specific pieces: the bins' classifier, the table fit and the bin fit.</p>
+
+      <h2 id="tree">The frame tree</h2>
+      <ul>
+        <li><strong><code>odom</code></strong>: where odometry puts Talos. Published identical to <code>world</code> ("until we get SLAM").</li>
+        <li><strong><code>world → map</code></strong>: set once before a run by the <strong>AprilTag calibration</strong>. A <code>chameleon_tf</code> node averages the tag board's pose and adopts it (x, y, yaw free; z, roll, pitch locked). <code>map</code> still drifts with odometry.</li>
+        <li><strong><code>map → offset</code></strong>: published by mapping, a pure translation for where the course sits (Chapter 8).</li>
+        <li>Each map object <code>X</code> gets <code>X_frame</code> under <code>offset</code>; every other object hangs off its parent's frame.</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="panel" id="tf-graph"></div>
+      <figcaption><b>The TF tree around mapping.</b> Orange links are published by mapping. When <code>offset</code> moves, every unseen prop and its children move with it. Tap a frame.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>Each object's parent is <code>init_data.&lt;object&gt;.parent</code>. A parent change applies only at the next <code>mapping/reset_mapping</code>. A prior's pose change applies at once: the object jumps to it and forgets its detections.</p>
+
+      <h2 id="targets">What gets fused</h2>
+      <p>The detector makes mistakes (a gate leg called a slalom pole, one fire symbol for another), so mapping only fuses the objects autonomy asks for (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/mapping.py#L622"><code>vision_callback</code></a>):</p>
+      <ul>
+        <li><strong>Targets</strong>, via <code>mapping_target</code>: one object or a list like <code>"fire_hole_large, fire_hole_small"</code>. The first is the primary. Setting a target resets it (Chapter 7): a well-known object needs 3 agreeing detections to confirm again, anything else 10. Its position is kept.</li>
+        <li><strong>Background targets</strong>, via <code>mapping/set_background_targets</code>: always fused, never reset. Their detections move them but don't confirm them.</li>
+        <li><strong>No target</strong>: only the closest detected object at least 1 m away is fused.</li>
+        <li><strong><code>lock_map</code></strong>: stops all fusion. The tree locks from the start until the slalom, between tasks, and while it shoots, drops or grabs.</li>
+      </ul>
+      <p>Detections must also clear <code>confidence_cutoff</code> = 0.2, which never bites on Talos (the detector already cuts at 0.65 forward, 0.8 down). A detection with no TF yet is retried every 125 ms for up to 2 s. <code>mapping/reset_mapping</code> starts over from <code>init_data</code>.</p>
+
+      <h2 id="published">What is published</h2>
+      <p>After every detection message, and at least every 2 s, mapping publishes for each object a <code>PoseWithCovarianceStamped</code> on <code>mapping/&lt;object&gt;</code> and its TF. It also publishes <code>state/mapping</code> (targets, lock) and <code>mapping/fused</code> (objects just fused, like <code>"bin_target1,helmet"</code>).</p>
+      <p>The covariance is the <strong>uncertainty of the estimate</strong>, including the offset's, so an old sighting grows less certain as Talos travels.</p>
+      <ul>
+        <li><strong>Unconfirmed = "not seen".</strong> Position variances are raised to at least 1.0 m², angles to 0.1 rad², the old mapping's "no data" values.</li>
+        <li><strong>Yaw only.</strong> <code>lock_orientation_to_config</code> keeps the prior yaw; <code>point_yaw_at_parent</code> (table items) faces the table's centre; down-camera objects ignore detected orientation.</li>
+        <li><strong>Output slew is off.</strong> <code>output.max_speed</code> and <code>output.max_yaw_rate_deg</code> are 0 on Talos, because the MPC already smooths frame motion.</li>
+      </ul>
+
+      <h2 id="trees" data-short="Tree nodes">Tree nodes that talk to mapping</h2>
+      <table class="params">
+        <thead><tr><th>Node</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>SetMappingTarget</code></td><td>Calls <code>mapping_target</code> with <code>target_object</code> and <code>lock_map</code>; fails if the call doesn't return within <code>time_limit_secs</code>.</td></tr>
+          <tr><td><code>getCovariance</code></td><td>Waits up to 5 s for the next <code>mapping/&lt;Target&gt;</code> message and outputs its <em>error</em> (below).</td></tr>
+          <tr><td><code>MapConverged</code></td><td>Succeeds once every object in a comma list has an error below <code>target_cov</code>. Answers at once, and only trusts messages received after it started ticking.</td></tr>
+          <tr><td><code>SeenRecently</code></td><td>Succeeds if the object was detected at or above <code>min_score</code> (0.2) within <code>max_age_secs</code>, from the detector's topic or <code>mapping/fused</code>.</td></tr>
+        </tbody>
+      </table>
+      <p>The error is not a distance. It combines the six diagonal <em>variances</em>, angles divided by 2π:</p>
+      <div class="M">e = \sqrt{\sigma_x^4 + \sigma_y^4 + \sigma_z^4 + \frac{\sigma_\phi^4 + \sigma_\theta^4 + \sigma_\psi^4}{2\pi}}</div>
+      <p>Its units are m²; for a round estimate <span class="m">e \approx \sqrt3\,\sigma^2</span>. An unconfirmed object scores <span class="m">\sqrt{3 + 3 \cdot 0.01/2\pi} = 1.73</span>. So 0.0005 means about 1.7 cm of σ, 0.0025 about 4 cm, 0.3 about 42 cm.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel" id="threshold-table"></div>
+      <figcaption><b>Covariance thresholds in the competition tree</b>, as the 1σ position that just passes. The 0.0005 checks before a shot, drop or pickup need under 2 cm.</figcaption>
+    </figure>
+    <div class="prose">
+      <h2 id="mission-tree" data-short="The tree, task by task">RepairCompMpcTree, task by task</h2>
+      <p><a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a> is about 4 100 lines, but simple: tasks run in order, each in <code>ForceSuccess</code>, so a timeout or failed check moves on to the next task. Nothing calls <code>mapping/reset_mapping</code>.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel tasks" id="task-cards"></div>
+      <figcaption><b>What each task asks of perception</b>, in tree order. <i>Target</i> is set with <code>SetMappingTarget</code>; <i>waits for</i> is the check and its 1σ threshold; <i>then</i> is what happens next, even if the check fails.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>Three search subtrees do most of the work:</p>
+      <ul>
+        <li><strong><code>MiniSearchMpc</code></strong> (slalom, magnets): park in front of the prior, set the target, wait 5 s, then poll the covariance once a second until it passes or time runs out.</li>
+        <li><strong><code>SearchMpc</code></strong> (torpedo): sweep arcs around the estimate. When <code>SeenRecently</code> (last 0.5 s) or <code>MapConverged</code> passes, centre the detection and hold until converged or 2 s out of sight. Widen the sweep after 20 s with nothing.</li>
+        <li><strong><code>DownwardSearchMpc</code></strong> (baskets, table items, bins): skip if already converged. Else hover over the estimate, follow detections, and after 3 s without one spiral out from 0.25 m to 2 m.</li>
+      </ul>
+      <p>While a prop is in view, the down-camera search re-aims every 0.5 s at the latest detection itself (<code>LatestDetection</code>), and at mapping's frame only when there is none. A new target's frame only moves once four detections agree (Chapter 7), so aiming at the frame alone can hold a prop at the edge of the view until the search gives up.</p>
+
+      <h2 id="watch">Things to watch</h2>
+      <ul>
+        <li><strong>The table check lasts one second.</strong> Both baskets must pass 0.0005 in a single 1 s window, never retried. Otherwise no table fit.</li>
+        <li><strong>Pickups 2–4 may not refine.</strong> If a background target already brought an item under 0.5, the target isn't set, the map is still locked, and the claw aligns on the older estimate.</li>
+        <li><strong>The bins can block the magnets.</strong> If stopping the bins classifier fails, the magnet task's <code>start_binary_classifier</code> fails with "already running" and is skipped. The magnet classifier is never stopped.</li>
+        <li><strong>The slalom assumes the forward camera.</strong> It relies on the detector starting on <code>ffc</code>.</li>
+        <li><strong>The gate is flown from the prior.</strong> Its searches are disabled (an <code>AlwaysFailure</code>), so a moved course shifts the gate pass, and the return, until another prop is mapped.</li>
+      </ul>
+
+      <h2 id="binary">Two identical targets: the binary classifier</h2>
+      <p>The bin has two fire vinyls that the down camera can't tell apart. The <strong>binary classifier</strong> sorts <code>fire</code> detections into <code>bin_target1</code> and <code>bin_target2</code> before the estimator sees them (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/binary_classifier.py"><code>binary_classifier.py</code></a>).</p>
+      <ol>
+        <li><code>mapping/start_binary_classifier</code> starts <strong>acquire_first</strong>: detections fill a rolling buffer (at most 500, each dropped after 8 s).</li>
+        <li>When a cluster is dense enough, its centroid becomes instance 1 (<strong>track_first</strong>). Detections within 0.2 m are fused into it and nudge it (α = 0.15); others are rejected.</li>
+        <li>Autonomy can <strong>freeze</strong> the buffer during the first target: nothing is added and nothing expires, so detections of the second vinyl survive. Only the buffer freezes: <code>bin_target1</code> keeps tracking and following its detections.</li>
+        <li><code>mapping/start_binary_classifier_second</code> starts <strong>acquire_second</strong>: look for a buffered cluster at least 0.4 m from instance 1, and reject live detections within 0.3 m of it. A match locks as instance 2 (<strong>track_second</strong>) at once.</li>
+        <li><code>mapping/stop_binary_classifier</code> returns to normal fusion.</li>
+      </ol>
+      <p>A cluster is the detection with the most neighbours within 0.15 m, plus those neighbours: at least 6, the farthest 10 % dropped, rejected if its mean squared spread is over 0.02 m². Distances are horizontal only. A locked instance's estimate is seeded on the centroid, and its detections skip Chapter 7's acquisition check.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="bc-controls"></div>
+        <div class="cols frames-bc">
+          <canvas id="bc-canvas" class="frames-canvas" aria-label="Binary classifier, top-down over the bin"></canvas>
+          <div>
+            <div id="bc-graph"></div>
+            <div id="bc-status" class="frames-status"></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>The binary classifier on the bin.</b> Drag the camera view and press the buttons in the order autonomy calls them: blue fused into instance 1, green into instance 2, grey rejected.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>The classifier ignores the bin's layout and can't tell which vinyl is which: instance 1 is just the first dense cluster, usually the one Talos is over.</p>
+
+      <h2 id="table">Fitting the table to its baskets</h2>
+      <p>The table's two baskets, <code>helmet</code> and <code>warning</code>, and its small items are children of <code>table_frame</code>. After mapping both baskets, autonomy calls <code>mapping/center_table_on_baskets</code>. It turns and shifts the table so the measured baskets sit at their config offsets:</p>
+      <ul>
+        <li>Yaw lines up the basket-to-basket axis; a correction over 30° is skipped.</li>
+        <li>Seen items stay where they were seen; unseen items move with the table.</li>
+        <li>Afterwards the baskets are pinned: new detections and retargeting don't move them.</li>
+      </ul>
+      <p>On the exact-course Nereus run it ran: <code>Moved table by (-0.046, 0.026, 0.003) in map to fit the baskets, yawed table 0.6 deg; kept pill, plug, nut_and_bolt, bandage where they were seen</code>. The older combined <code>table</code> detection (<code>set_table_pair_enabled</code>) is switched off by the tree.</p>
+
+      <h2 id="binfit">The bin geometry fit</h2>
+      <p><a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/bin_geometry.py"><code>bin_geometry.py</code></a> is a self-described temporary competition hack. <code>mapping/fit_bin_geometry</code> fits the bin's CAD model to the two classified vinyls: x, y and yaw in closed form (the configured yaw breaks the 180° ambiguity). It refuses if the baseline differs from CAD by over 10 cm or the residual is over 10 cm. Height comes from the vinyls if they agree within 10 cm, else from config. The magnets and drop targets then sit where the CAD puts them, with variance at least 0.0025 m².</p>
+    </div>
+    <nav class="next" aria-label="Chapter navigation"></nav>
+  </article>
+</main>
+<script type="module" src="/src/perception/pages/frames.js"></script>
+</body>
+</html>

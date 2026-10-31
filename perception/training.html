@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Training the detector · How Talos sees</title>
+<meta name="description" content="How the team trains Talos's YOLO segmentation models: recording the props, labelling masks with SAM, synthetic images from Nereus, offline and per-class augmentation, copy-paste onto unrelated images, Ultralytics training, reading the metrics, and putting a model on the robot.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
+</head>
+<body>
+<main>
+  <header class="page-head">
+    <div class="kicker">Vision · Chapter 2</div>
+    <h1>Training the detector</h1>
+    <p class="lede">The network that finds props knows nothing about RoboSub until it sees thousands of labelled pictures. How those pictures are made decides most of what it gets right and wrong.</p>
+  </header>
+  <aside class="short"><span class="label">The short version</span><ul>
+    <li>Talos runs a <span class="term">YOLO segmentation</span> model per camera: for each object, a class, confidence, box and pixel mask.</li>
+    <li>Data: real prop videos labelled with SAM, plus auto-labelled synthetic images from Nereus.</li>
+    <li>Images are <span class="term">augmented</span> (rotated, zoomed, mirrored, pasted onto unrelated photos), per class where needed.</li>
+    <li>The trained <code>.pt</code> becomes a TensorRT engine on the robot, named in <code>yolo_orientation.yaml</code>.</li>
+  </ul></aside>
+  <article>
+    <div class="prose">
+      <h2 id="what">What the network learns</h2>
+      <p>The detector runs <strong>instance segmentation</strong>: it outlines every pixel of each prop. The next step (Chapter 4) samples depth only inside that outline; a box would include the pool wall behind.</p>
+      <p>The models are Ultralytics <strong>YOLO26n-seg</strong> ("nano"), small enough for real time on the Jetson Orin. Training <strong>fine-tunes</strong> (adapts a pre-trained model) <code>yolo26n-seg.pt</code>, already trained on COCO's 80 everyday classes. That is why a few thousand images are enough.</p>
+      <ul>
+        <li><strong>Forward model:</strong> eleven classes (gate signs, slalom pole, torpedo symbols and openings, bin magnets).</li>
+        <li><strong>Downward model:</strong> eight (bin vinyls, the table's items and baskets).</li>
+      </ul>
+      <p>Class lists are in <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/config/yolo_orientation.yaml"><code>yolo_orientation.yaml</code></a>; a dataset's class order must match exactly.</p>
+
+      <h2 id="collect">Recording the props</h2>
+      <p>The team films each prop with the robot's own cameras (ZED <code>.svo</code> files), so lens, colour and water match: near and far, all angles, clear and murky, robot moving. One minute is a thousand frames. <code>svo_processor</code> converts SVO to rectified video.</p>
+      <p>Variety beats quantity: a hundred frames from all around a prop teach more than a thousand from one spot.</p>
+
+      <h2 id="label">Labelling masks with SAM</h2>
+      <p><strong>SAM 3</strong> (Meta's Segment Anything Model): click or describe an object in one frame, and SAM masks it through the video. A person fixes drift and assigns classes, following the team's <a href="https://osu-uwrt-1.gitbook.io/computer-vision-guide/cvat-usage-and-labeling-guide/labeling-guide">labelling guide</a>.</p>
+      <p>Labels use the <strong>YOLO segmentation format</strong>: one text file per image, one line per object: class number, then outline points as fractions of image width and height.</p>
+      <pre><code><span class="c"># labels/train/torpedo_004908.txt: class, then x y pairs (fractions of the image)</span>
+4 0.5099 0.1583 0.5073 0.1725 0.5047 0.1817 0.5036 0.1825 ...
+0 0.6915 0.3958 0.6889 0.4016 ...</code></pre>
+    </div>
+
+    <div class="prose">
+      <h2 id="synthetic">Synthetic images from Nereus</h2>
+      <p><a href="https://github.com/osu-uwrt/nereus">Nereus</a> labels for free: it knows which object every pixel belongs to. <code>nereus-dataset generate</code>:</p>
+      <ul>
+        <li>places the camera with a sampler: <code>approach</code> (range, bearing, elevation, some roll and pitch) or <code>overhead</code> (altitude, for the downward camera);</li>
+        <li>randomizes water and light across four environments (nominal, clear, murky, overcast);</li>
+        <li>renders the image and an object map, converts it to YOLO polygons, and rejects views where a prop is too far, small or fragmented.</li>
+      </ul>
+      <p>The 2026 forward set has 10 250 images (gate 2300, slalom 1500, torpedo 2000, octagon 1200, bins 2000, plus 1250 <em>backgrounds</em> with no prop); the downward set 7350. Backgrounds teach that an empty wall is not a prop. Synthetic data complements real video; it doesn't replace it. Each camera only labels what it can really see: the forward set leaves the bins' fire and blood vinyls unlabelled (from the front camera they are a few pixels), though both classes are labelled on the torpedo board.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="gallery-pick"></div>
+        <div id="gallery-view"></div>
+        <div class="frame-note" id="gallery-note"></div>
+      </div>
+      <figcaption><b>Synthetic training images and their labels</b> from Nereus's 2026 datasets. Note what is <em>not</em> labelled: white slalom poles and the board's frame.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="augment">Augmenting: more variety from the same images</h2>
+      <p><strong>Augmentation</strong> changes training images (and their labels) to fake views the model never saw. The team does most of it offline, producing the <code>*_dataset_Augmented</code> sets:</p>
+      <ul>
+        <li><strong>Rotation</strong>: the robot rolls.</li>
+        <li><strong>Zoom and crop</strong>: nearer, farther, partly out of frame.</li>
+        <li><strong>Mirroring</strong>: free extra views (careful with props whose sides differ).</li>
+        <li><strong>Copy-paste</strong>: cut props out along their masks and paste them onto unrelated photos (e.g. COCO). This is the main defence against <strong>false detections</strong>, like the gate leg called a slalom pole in Chapter 3.</li>
+      </ul>
+      <p>Some are <strong>per class</strong>: slalom poles are never rotated, since in the pool they are always vertical.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="aug-pick"></div>
+        <div class="controls" id="aug-controls"></div>
+        <canvas class="fig-canvas" id="aug-canvas" width="960" height="600"></canvas>
+        <div class="frame-note" id="aug-note"></div>
+      </div>
+      <figcaption><b>An augmentation playground.</b> The label polygons move with the pixels. <em>Copy-paste</em> uses a stand-in scene here; rotation is locked for slalom, as the team's rule says.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="train">Training</h2>
+      <p>One Ultralytics command, pointed at a <code>data.yaml</code> listing image folders and class names in order:</p>
+      <pre><code>yolo segment train model=yolo26n-seg.pt data=data.yaml imgsz=640 epochs=80 close_mosaic=10</code></pre>
+      <p>An <strong>epoch</strong> is one pass over every training image. Ultralytics re-augments each image every pass. The deployed models used its defaults:</p>
+    </div>
+    <div class="prose">
+      <table class="params">
+        <thead><tr><th>Setting</th><th>Value</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>imgsz</code></td><td>640</td><td>images are resized (letterboxed) to 640 × 640, the size the robot runs at</td></tr>
+          <tr><td><code>epochs</code>, <code>close_mosaic</code></td><td>80, 10</td><td>80 passes; the last 10 without mosaic, so the model finishes on whole images</td></tr>
+          <tr><td><code>mosaic</code></td><td>1.0</td><td>every image is part of a 2 × 2 collage of four random training images</td></tr>
+          <tr><td><code>scale</code>, <code>translate</code></td><td>0.5, 0.1</td><td>random zoom ±50 % and shift ±10 %</td></tr>
+          <tr><td><code>fliplr</code>, <code>flipud</code></td><td>0.5, 0</td><td>half the images mirrored left-right; never upside down</td></tr>
+          <tr><td><code>hsv_h</code>, <code>hsv_s</code>, <code>hsv_v</code></td><td>0.015, 0.7, 0.4</td><td>random hue, saturation and brightness: different water and light</td></tr>
+          <tr><td><code>degrees</code>, <code>copy_paste</code></td><td>0, 0</td><td>off: rotation and copy-paste are done offline, where they can be per class</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>Runs are tracked in Weights &amp; Biases. The forward model on the robot, <code>rs26_ffc_finals</code>, trained for 80 epochs.</p>
+
+      <h2 id="metrics">Reading the results</h2>
+      <p>About 80 % of images are for <strong>training</strong>, 20 % held back for <strong>validation</strong> (scoring only). Split by <em>recording</em>, not frame: neighbouring frames are near-duplicates and inflate the score.</p>
+      <ul>
+        <li><strong>Precision</strong>: share of detections that were real. Low means false detections.</li>
+        <li><strong>Recall</strong>: share of real props found. Low means misses.</li>
+        <li><strong>mAP50</strong>: mean over classes of the area under the precision–recall curve, counting a mask right at ≥ 50 % overlap. <strong>mAP50-95</strong> averages 50–95 % overlap, rewarding precise outlines.</li>
+      </ul>
+      <p><code>rs26_ffc_finals</code>: mask precision 0.952, recall 0.968, mAP50 0.948, mAP50-95 0.880. High scores are necessary, not sufficient. If validation improves while the robot gets worse, the model is <strong>overfitting</strong> (memorising training pictures); add varied data and backgrounds, and test on unseen recordings.</p>
+
+      <h2 id="deploy">Putting a model on Talos</h2>
+      <ol class="steps">
+        <li>Copy the <code>.pt</code> into <code>tensor_detector/weights/</code>.</li>
+        <li>In <code>config/yolo_orientation.yaml</code>, set <code>ffc_model</code> or <code>dfc_model</code>, and the camera's <code>class_id_map</code> in the model's order. Classes are named from this map; unlisted ids are dropped.</li>
+        <li>Leave <code>export: true</code>: on first start the node builds a TensorRT <code>.engine</code> next to the <code>.pt</code>, falling back to the <code>.pt</code> if export fails. Rebuild after a GPU or TensorRT upgrade.</li>
+        <li>Check <code>ffc_threshold</code> and <code>ffc_iou</code> against the new confidences, then watch <code>~/annotated/compressed</code> in Nereus, then the pool.</li>
+      </ol>
+    </div>
+    <nav class="next" aria-label="Chapter navigation"></nav>
+  </article>
+</main>
+<script type="module" src="/src/perception/pages/training.js"></script>
+</body>
+</html>

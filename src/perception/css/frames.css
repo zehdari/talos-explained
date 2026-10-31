@@ -1,0 +1,20 @@
+.frames-note { font-family: var(--sans); font-size: 0.86rem; color: var(--ink-2); line-height: 1.45; min-height: 2.9em; margin-top: 0.4rem; }
+.frames-bc { align-items: start; }
+.frames-canvas { display: block; width: 100%; border-radius: 6px; touch-action: pan-y; }
+.frames-status { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 1rem; font-family: var(--sans); font-size: 0.84rem; color: var(--ink-2); margin-top: 0.6rem; font-variant-numeric: tabular-nums; }
+.frames-status small { display: block; color: var(--muted); font-size: 0.76rem; }
+.frames-status b { color: var(--ink); font-weight: 600; }
+.frames-status .wide { grid-column: 1 / -1; min-height: 2.8em; }
+#bc-graph { max-width: 400px; margin: 0 auto; }
+.frames-thr td:first-child { white-space: normal; }
+.frames-thr td small { display: block; color: var(--muted); margin-top: 0.1rem; }
+.frames-thr td small code { font-size: 0.74rem; }
+.frames-thr td:not(:first-child) { white-space: nowrap; }
+.panel.tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr)); gap: 0.7rem; }
+.task { background: var(--paper); border-radius: 8px; padding: 0.6rem 0.75rem 0.5rem; font-family: var(--sans); font-size: 0.8rem; line-height: 1.4; }
+.task h3 { font-size: 0.95rem; margin: 0 0 0.35rem; font-stretch: 105%; }
+.task h3 a { text-decoration: none; }
+.task dl { display: grid; grid-template-columns: 4.6rem 1fr; gap: 0.2rem 0.5rem; margin: 0; }
+.task dt { color: var(--muted); }
+.task dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.task code { font-size: 0.74rem; }

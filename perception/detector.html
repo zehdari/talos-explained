@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The detector, frame by frame · How Talos sees</title>
+<meta name="description" content="Talos's two ZED stereo cameras, pairing colour with depth, the YOLO26n segmentation models, TensorRT, camera switching, and what tensor_detector publishes for every frame.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
+</head>
+<body>
+<main>
+  <header class="page-head">
+    <div class="kicker">Vision · Chapter 3</div>
+    <h1>The detector, frame by frame</h1>
+    <p class="lede">Everything Talos knows about the course starts as a colour image and a depth image from one of two stereo cameras. One node, <code>yolo_orientation</code>, turns each pair into named objects with 3D poses.</p>
+  </header>
+  <aside class="short"><span class="label">The short version</span><ul>
+    <li>About ten times a second, take the newest colour image from the active camera and the depth image from the same moment.</li>
+    <li>Run YOLO (Chapter 2): a class, confidence, box and mask per object.</li>
+    <li>Turn each mask plus depth into a 3D pose (Chapters 4 and 5) and send them all to mapping.</li>
+    <li>The detector is sometimes wrong; mapping, not the detector, filters that out.</li>
+  </ul></aside>
+  <article>
+    <div class="prose">
+      <p>This chapter follows one frame through the <a href="https://github.com/osu-uwrt/riptide_perception/tree/mapping-estimator/tensor_detector"><code>tensor_detector</code></a> node: <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/yolo_orientation.py"><code>yolo_orientation.py</code></a> is the ROS side, <code>yolo_model.py</code> wraps the network and <code>detection.py</code> makes poses. Every frame here comes from a full <a href="https://github.com/osu-uwrt/nereus">Nereus</a> simulator mission, re-run offline through the same code.</p>
+
+      <h2 id="cameras">Two stereo cameras</h2>
+      <p>Talos has two ZED X Mini stereo cameras: <strong>forward</strong> (ffc: gate, slalom, torpedo board) and <strong>downward</strong> (dfc: bins, table). The ZED ROS wrapper publishes under <code>/talos/&lt;camera&gt;/zed_node/</code>:</p>
+      <ul>
+        <li><code>rgb/image_rect_color/compressed</code>: rectified left colour image, 1920×1200, JPEG;</li>
+        <li><code>depth/depth_registered</code>: 32-bit float depth in metres, pixel-aligned with the colour image;</li>
+        <li><code>rgb/camera_info</code>: the intrinsics.</li>
+      </ul>
+      <p>Depth is the <em>z</em> coordinate in the optical frame (x right, y down, z out of the lens), not distance along the ray. Nereus's forward camera has <span class="m">f_x = f_y = 1864</span> px (54.5° × 35.7° view); the robot's calibrated one (Chapter 1) has <span class="m">f_x = 1701.5</span> px, a 59° view. Only one camera is processed at a time.</p>
+
+      <h2 id="sync">Pairing colour with depth</h2>
+      <p>Depth (9.2 MB per frame) arrives well after its colour frame (a few hundred kB). "Newest depth" would pair a frame with an older view while Talos turns.</p>
+      <p>So the node buffers depth (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/yolo_orientation.py#L331-L361"><code>_match_depth</code></a>): up to <code>depth_buffer_size</code> = 15 frames, none older than <code>max_depth_age</code> = 1 s. Each colour frame takes the depth with the nearest stamp, or is skipped if none is within 1 s or camera info hasn't arrived. Colour and depth run in separate callback groups, so slow inference never stalls the buffer.</p>
+      <p>Detections carry the colour image's stamp (<code>use_incoming_timestamp</code>). Mapping looks up the camera pose at that stamp (Chapter 7), so detector latency costs time, not accuracy.</p>
+    </div>
+
+    <div class="prose">
+      <h2 id="model">The network</h2>
+      <p>Each camera has its own Ultralytics <strong>YOLO26n-seg</strong> model ("nano" size, 640×640 input, the frame letterboxed down, stride 32). Per object it returns a class, confidence, box and mask (an outline of its pixels). The forward model knows eleven classes, the downward eight:</p>
+    </div>
+    <figure class="fig">
+      <div class="panel"><div class="cols" id="class-tables"></div></div>
+      <figcaption><b>The two class maps</b>, from <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/config/yolo_orientation.yaml"><code>config/yolo_orientation.yaml</code></a>. The YAML is the source of truth for names (unlisted ids are dropped); swatches are the RViz colours used on these pages.</figcaption>
+    </figure>
+    <div class="prose">
+      <div class="table-scroll"><table class="params">
+        <tr><th>Threshold</th><th>Forward</th><th>Downward</th><th>Effect</th></tr>
+        <tr><td>Confidence</td><td>0.65</td><td>0.8</td><td>drops weak boxes (<code>ffc_threshold</code>, <code>dfc_threshold</code>)</td></tr>
+        <tr><td>IoU</td><td>0.7</td><td>0.9</td><td>same-class boxes overlapping more than this: keep the more confident</td></tr>
+      </table></div>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="det-pick"></div>
+        <div id="det-view"></div>
+        <div class="frame-note" id="det-note"></div>
+      </div>
+      <figcaption><b>What the network returns</b> on Nereus forward and downward frames: masks in class colour, boxes and confidences. The torpedo openings come back as generic <code>circle</code> (Chapter 5 tells them apart); the gate frame's only detection is a mistake. Tap a frame to switch.</figcaption>
+    </figure>
+    <div class="prose">
+      <h3 id="false">The detector is sometimes wrong</h3>
+      <p>On the gate frame the network is 85 % sure the gate's right leg is a slalom pole. The detector can't tell: it has no idea where Talos is on the course.</p>
+      <p>So the system doesn't need a perfect detector. Mapping only fuses its <strong>targets</strong> (objects autonomy asked for, Chapter 9) and rejects detections that disagree with the map (Chapter 7). Through the gate, autonomy also <strong>locks</strong> the map (<code>lock_map</code>), so the fake pole never reaches it.</p>
+    </div>
+
+    <div class="prose">
+      <h2 id="tensorrt">TensorRT, with a way out</h2>
+      <p>On the Jetson Orin the model runs as a TensorRT engine (the network compiled for that GPU, much faster than PyTorch). <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/yolo_model.py#L21-L45"><code>YoloModel._initialize</code></a>:</p>
+      <ul>
+        <li><code>.engine</code> next to the <code>.pt</code> and CUDA: load the engine;</li>
+        <li><code>export: true</code> and CUDA: build the engine, falling back to PyTorch if export fails (usually an Ultralytics/TensorRT version mismatch);</li>
+        <li>no CUDA: warn and run the <code>.pt</code> on the CPU.</li>
+      </ul>
+      <p>An engine is tied to the GPU and TensorRT version that built it; rebuild it on the machine that runs it.</p>
+
+      <h2 id="switching">Switching cameras</h2>
+      <p>Autonomy calls <code>set_camera_is_dfc</code> (a <code>SetBool</code>, true = downward). The switch must replace the model, class map, thresholds, topics, frame id and torpedo logic all at once, or a frame could publish wrong names.</p>
+      <p>So the service only sets a 0.1 s timer. The timer (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/yolo_orientation.py#L220-L258"><code>setup_camera</code></a>) loads the new model, swaps every field under <code>_camera_lock</code>, clears the depth buffer and replaces the subscriptions. Callbacks drop messages from the old camera. An <code>InvalidHandle</code> from rclpy during the swap is caught and the message dropped.</p>
+      <p>Two more services: <code>set_slalom_type</code> renames the slalom detection, and <code>set_table_pair_enabled</code> merges warning + helmet into one table detection (off in the current tree; mapping fits the table from the baskets, Chapter 5).</p>
+    </div>
+
+    <div class="prose">
+      <h2 id="routing">What one frame becomes</h2>
+      <p><a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/detection.py#L160-L230"><code>DetectionProcessor.process</code></a> paints every mask into one full-frame image, then routes each box by class:</p>
+    </div>
+    <figure class="fig">
+      <div class="panel" id="route-graph"></div>
+      <div class="frame-note" id="route-note" style="padding:0 1.2rem"></div>
+      <figcaption><b>The routing in <code>process()</code>.</b> Most classes take the generic path (Chapter 4); torpedo symbols, pairs and slalom poles wait for the whole frame (Chapter 5). Tap a path for details.</figcaption>
+    </figure>
+    <div class="prose">
+      <h2 id="outputs">What gets published</h2>
+      <p>One <code>vision_msgs/Detection3DArray</code> per frame on <code>/talos/detected_objects</code>, stamped with the image stamp and optical frame. Each <code>Detection3D</code> has the class name (<code>"pill"</code>, <code>"torpedo"</code>, ...), confidence, and a pose whose +z axis is the surface normal, pointing back at the camera. Covariance is zero: mapping decides how much to trust it (Chapter 6).</p>
+      <p>Debug outputs, built only when subscribed: the annotated image (<code>~/annotated/compressed</code>), a point cloud of pose samples (<code>~/point_cloud</code>) and normal arrows (<code>~/visualization_marker_array</code>).</p>
+    </div>
+    <nav class="next" aria-label="Chapter navigation"></nav>
+  </article>
+</main>
+<script type="module" src="/src/perception/pages/detector.js"></script>
+</body>
+</html>

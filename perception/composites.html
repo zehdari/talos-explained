@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Props made of several pieces · How Talos sees</title>
+<meta name="description" content="How tensor_detector builds one detection from several boxes: the gate halves from pairs of symbols, the torpedo board and its four labelled openings from one shared plane, and the slalom from the closest pole.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
+</head>
+<body>
+<main>
+  <header class="page-head">
+    <div class="kicker">Vision · Chapter 5</div>
+    <h1>Props made of several pieces</h1>
+    <p class="lede">The network sees symbols, not props. A torpedo board is four symbols and four identical rings; a gate half is two signs. These objects can only be built once the whole frame has been seen.</p>
+  </header>
+  <aside class="short"><span class="label">The short version</span><ul>
+    <li><strong>Gate signs</strong>: two symbols seen together become one <code>gate_repair</code> or <code>gate_rescue</code>.</li>
+    <li><strong>Torpedo board</strong>: one plane through all its symbols; the four openings are named by sorting along the fire→blood axis, at any roll.</li>
+    <li><strong>Slalom</strong>: a pole is too thin for a plane, so its position is one depth sample; only the nearest pole is reported.</li>
+    <li>The table pair exists in code but is off; mapping fits the table to the baskets.</li>
+  </ul></aside>
+  <article>
+    <div class="prose">
+      <p>Three groups skip Chapter 4's one-box-one-detection path and are resolved after the whole frame is routed (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/detection.py#L186-L224"><code>process</code></a>). They publish names the network never outputs (<code>gate_repair</code>, <code>torpedo</code>, <code>fire_hole_large</code>), and those are what mapping tracks.</p>
+
+      <h2 id="pairs">Pairs</h2>
+      <p>Each 2026 gate half has a sign with two symbols. Autonomy needs the half, so the detector merges them (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/detection.py#L38-L47"><code>DETECTION_PAIRS</code></a>):</p>
+      <ul>
+        <li><code>compass</code> + <code>hammer_and_wrench</code> → <code>gate_repair</code></li>
+        <li><code>buoy</code> + <code>sos</code> → <code>gate_rescue</code></li>
+        <li><code>warning</code> + <code>helmet</code> → <code>table</code>, only after <code>set_table_pair_enabled</code>(true); off in the current tree</li>
+      </ul>
+      <p>With both members in the frame, each box is sampled as in Chapter 4, the points are pooled and one plane is fitted. More points over a wider span give a steadier normal. The position is the centre of the <em>union</em> of the boxes at the pooled mean depth; the confidence is the lower member's.</p>
+      <p>A lone member goes down the generic path under its own name (<code>sos</code>, <code>compass</code>), which mapping also knows. In the Nereus gate frames the network found <code>sos</code> and <code>compass</code> in separate frames, each just above 0.65, so no pair formed.</p>
+
+      <h3 id="table">The table pair: switched off</h3>
+      <p><code>warning</code> + <code>helmet</code> (the table's two baskets) can merge into one flat <code>table</code> detection. <code>RepairCompMpcTree</code> turns it off at the table; mapping fits the table to many detections of each basket instead (<code>mapping/center_table_on_baskets</code>, Chapter 9).</p>
+    </div>
+
+    <div class="prose">
+      <h2 id="torpedo">The torpedo board</h2>
+      <p>The board has four symbols (fire, blood, ambulance, fire engine) and four openings: a large and a small one near each of fire and blood. The network sees each opening only as <code>circle</code>, so geometry names them (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/detection.py#L397-L507"><code>process_torpedo_task</code></a>). This runs only on the forward camera (<code>torpedo_task_camera</code>).</p>
+      <p><strong>One plane for the whole board.</strong> Fire and blood are required, or nothing is published. Every visible symbol is sampled as in Chapter 4 and pooled into one SVD plane through the mean of the fire and blood centroids. Pooling matters: a fire symbol cut off by the image edge fit almost 50° off on its own.</p>
+      <p><strong>Every centre on the plane.</strong> Each symbol and circle box centre is placed where its camera ray meets the plane:</p>
+      <div class="M">\mathbf d = \frac{K^{-1}(u, v, 1)^\top}{\lVert K^{-1}(u, v, 1)^\top \rVert}, \qquad t = \frac{\bn \cdot \mathbf a}{\bn \cdot \mathbf d}, \qquad \mathbf p = t\,\mathbf d</div>
+      <p class="eq-note"><span class="m">\mathbf a</span>: anchor point on the plane, <span class="m">\bn</span>: board normal. An opening's middle is open water, so this is the only way to place it.</p>
+      <p><strong>The board centre</strong> is the middle of the projected centres' extent in in-plane coordinates <span class="m">(u_k, v_k)</span>: <span class="m">\big(\tfrac{\min u_k + \max u_k}{2}, \tfrac{\min v_k + \max v_k}{2}\big)</span>. With only part of the board seen it is biased: in the first mission frame (about 2 m out) only fire cleared the threshold, and the detection landed 30 cm from the true centre. Confidence is the lower of fire's and blood's; orientation is the board normal.</p>
+      <p><strong>Naming the openings</strong> needs fire, blood and exactly four circles. Project each opening onto the fire→blood axis, <span class="m">s_k = (\mathbf p_k - \mathbf p_{\text{fire}}) \cdot \hat{\mathbf s}</span>, and sort: the two smallest are fire's, the two largest blood's. In each pair, the one nearer its symbol in 3D is large. Because it uses 3D distances on the board, it works at any roll and viewpoint; image-space rules break under perspective.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="torp-controls"></div>
+        <svg class="diagram" id="torp-diagram" viewBox="410 160 1100 880" style="max-height:34rem" role="img" aria-label="Simulated camera view of the torpedo board with the openings named by the detector's rule"></svg>
+        <div class="frame-note" id="torp-note"></div>
+      </div>
+      <figcaption><b>Naming the openings, at any roll.</b> The board, measured from a Nereus frame, 1.5 m in front of the camera; dashed line = fire→blood axis, ticks = each opening's <span class="m">s</span>. Roll or turn it: the names stay right, while the nearest-symbol-in-image rule (scored below) splits 3–1 at some rolls past 50°.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>Each opening is published with the board's orientation and its circle box's confidence (marker size = box pixels / 150, for RViz only). What the mission published, projected back into the image:</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls" id="torp-pick"></div>
+        <div id="torp-view"></div>
+        <div class="frame-note" id="torp-frame-note"></div>
+      </div>
+      <figcaption><b>The published board, on real frames.</b> Network boxes dashed; the <code>torpedo</code> centre (cross) and four named openings from <code>process_torpedo_task</code>. The oblique views show why the shared plane matters.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="slalom">The slalom</h2>
+      <p>A pole is a thin pipe with no surface to fit, so the slalom path is simple (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/detection.py#L621-L665"><code>_process_slalom</code></a>):</p>
+      <ul>
+        <li>Position: one depth sample at the box centre, back-projected. NaN or zero depth drops the pole.</li>
+        <li>Only the closest pole is kept (<code>slalom_history_size</code> = 1).</li>
+        <li>Orientation is not measured: it comes from <code>slalom_parent_frame</code> in TF (turned −90° about y), and mapping locks it to config anyway (<code>lock_orientation_to_config</code>). Only position counts.</li>
+        <li>The name comes from <code>set_slalom_type</code> (default <code>slalom_front</code>). The mission sets <code>slalom_parent</code>, so the closest pole updates the whole row.</li>
+      </ul>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div id="slalom-view"></div>
+        <div class="frame-note" id="slalom-note"></div>
+      </div>
+      <figcaption><b>Two poles, one detection.</b> Both slalom boxes, the centre pixel each is depth-sampled at, and the one published: the nearer pole.</figcaption>
+    </figure>
+    <nav class="next" aria-label="Chapter navigation"></nav>
+  </article>
+</main>
+<script type="module" src="/src/perception/pages/composites.js"></script>
+</body>
+</html>

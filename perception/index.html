@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Talos sees · Perception and mapping for an AUV, explained</title>
+<meta name="description" content="An interactive explainer for riptide_perception: the YOLO detector, how a segmentation mask becomes a 3D pose, the detection noise model, the per-object filters and the robust course-map solve that tell Talos's autonomy where the props are.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
+</head>
+<body>
+<main>
+  <section class="hero course-hero" aria-label="A Nereus mission replayed from above">
+    <canvas id="hero-canvas" aria-label="Top-down view of the RoboSub course: Talos, its camera's field of view, detections and mapping's estimates of each prop."></canvas>
+    <div class="copy">
+      <h1>How Talos sees</h1>
+      <p class="sub">Perception and mapping for an AUV</p>
+      <p id="hero-blurb">A real run of Talos's competition mission in the Nereus simulator, replayed from above: every detection, every estimate, and what the camera saw.</p>
+    </div>
+    <figure class="cam-inset" id="cam-inset" hidden>
+      <figcaption><span id="cam-when"></span> <span id="cam-text"></span></figcaption>
+    </figure>
+    <div class="dock">
+      <div class="replay">
+        <button class="btn primary" id="play" aria-pressed="false">Play</button>
+        <div class="scrub">
+          <input type="range" id="scrub" min="0" max="1" step="0.1" value="0" aria-label="Mission time">
+          <div class="phases" id="phases"></div>
+        </div>
+        <div class="seg" id="speed" role="group" aria-label="Replay speed"><button data-v="4">4×</button><button data-v="16" aria-pressed="true">16×</button><button data-v="48">48×</button></div>
+      </div>
+      <div class="hud" aria-live="off">
+        <div class="row"><span>Mission time</span><b><span id="phase-name"></span> <span id="hud-t">–</span></b></div>
+        <div class="row"><span>Mapping target</span><b id="hud-target">–</b></div>
+        <div class="row"><span>Map offset</span><b id="hud-offset">–</b></div>
+        <div class="row"><span>Tree is</span><b id="hud-tree">–</b></div>
+        <div class="logline" id="hud-log">&nbsp;</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="page-head">
+    <div class="kicker">riptide_perception, chapter by chapter</div>
+    <p class="lede" style="margin-top:0" id="hero-lede">Talos found every prop in that run with the two halves of <code>riptide_perception</code>: a detector that finds props in each camera image, and a map that turns those detections into where each prop really is.</p>
+  </div>
+
+  <article>
+    <div class="prose">
+      <p>Talos is the Underwater Robotics Team's competition AUV. Every RoboSub task starts with one question: where exactly is the thing? <a href="https://github.com/osu-uwrt/riptide_perception/tree/mapping-estimator"><code>riptide_perception</code></a> answers it. This site explains that code for new team members. You need some Python and high-school vectors; the maths is <a href="math.html">on one page</a>.</p>
+      <ul>
+        <li><strong>Vision</strong> (<code>tensor_detector</code>): looks at one image at a time and says what it sees and where, relative to the camera.</li>
+        <li><strong>Mapping</strong> (<code>riptide_mapping</code>): collects detections over the run into a course map, and publishes each prop as a coordinate frame for the behaviour trees and the <a href="../control/index.html">controller</a>.</li>
+      </ul>
+
+      <h2 id="pipeline">From photons to frames</h2>
+      <p>Tap or hover a stage for what it does and where it lives in the code.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel" id="pipeline-graph"></div>
+      <figcaption><b>The perception pipeline.</b> Vision turns one frame into 3D poses; only props made of several pieces go through composites. Mapping turns the poses into a map published as TF frames. The behaviour tree chooses which props mapping may update.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="run">The run above</h2>
+      <ul>
+        <li><strong>Grey shapes:</strong> props where Nereus put them. <strong>Dashed rings:</strong> where the map has them.</li>
+        <li><strong>Filled dots with ellipses:</strong> confirmed estimates with 2σ uncertainty. <strong>Hollow dots:</strong> unconfirmed.</li>
+        <li><strong>Small dots:</strong> single detections, with a line along the measured surface normal. <strong>Little circles:</strong> objects in another prop's frame (torpedo holes, table items, bin targets).</li>
+        <li><strong>Camera card:</strong> what the camera saw, with YOLO's masks.</li>
+      </ul>
+      <p>This is one run of <code>RepairCompMpcTree</code>, the competition tree, on a course placed exactly where the map says. Talos does gate, slalom, torpedoes, table, bins and magnets, then swims home. Each step waits for a precise enough estimate (thresholds in Chapter 9). <a href="mission.html">Chapter 10</a> has the run as video, and a second run on a moved course where two things go wrong.</p>
+
+      <h2 id="chapters">The chapters</h2>
+      <p class="part-label">Vision</p>
+      <ol class="chapter-list">
+        <li><a href="calibration.html"><strong>Cameras and calibration.</strong></a> Pixels, lenses, and calibrating underwater.</li>
+        <li><a href="training.html"><strong>Training the detector.</strong></a> Recording, labelling, synthetic data, augmentation.</li>
+        <li><a href="detector.html"><strong>The detector, frame by frame.</strong></a> Pairing image and depth, running YOLO.</li>
+        <li><a href="pose.html"><strong>From a mask to a pose.</strong></a> Mask and depth to a 3D point and plane.</li>
+        <li><a href="composites.html"><strong>Props made of several pieces.</strong></a> Torpedo board, gate signs, slalom.</li>
+      </ol>
+      <p class="part-label">Mapping</p>
+      <ol class="chapter-list" start="6">
+        <li><a href="noise.html"><strong>How far to trust a detection.</strong></a> A covariance per detection.</li>
+        <li><a href="tracking.html"><strong>Tracking one object.</strong></a> A Kalman filter per prop.</li>
+        <li><a href="map.html"><strong>The course map.</strong></a> Shared drift offset vs per-prop error.</li>
+        <li><a href="frames.html"><strong>Frames, targets and the mission tree.</strong></a> What the mission tree asks of mapping.</li>
+        <li><a href="mission.html"><strong>One mission in Nereus.</strong></a> The run above, against the truth.</li>
+      </ol>
+      <p class="part-label">Your turn</p>
+      <ol class="chapter-list" start="11">
+        <li><a href="workflow.html"><strong>Working on it yourself.</strong></a> Nereus, bags, tuning, retraining.</li>
+      </ol>
+    </div>
+    <nav class="next" aria-label="Chapter navigation"></nav>
+  </article>
+</main>
+<script type="module" src="/src/perception/pages/index.js"></script>
+</body>
+</html>

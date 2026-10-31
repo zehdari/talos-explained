@@ -1,0 +1,46 @@
+/* Shared by every chapter outside the Perception and Control parts. Chapter-specific styles go in src/css/<chapter>.css. */
+
+/* The plain-language summary under each lede. */
+aside.short { max-width: var(--measure); margin: 0 auto 2rem; background: var(--paper-2); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem 0.6rem; font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; color: var(--ink); }
+aside.short .label { display: block; font-size: 0.78rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.5rem; font-stretch: 100%; }
+aside.short ul { margin: 0; padding-left: 1.1em; }
+aside.short li { margin-bottom: 0.4em; }
+.term { font-weight: 650; }
+.prose p code, .prose li code, aside.short code { overflow-wrap: anywhere; }
+
+/* A boxed note inside the prose. .callout.safety for anything that can hurt people or hardware. */
+.callout { font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; background: var(--paper-2); border-radius: 8px; padding: 0.85rem 1.1rem 0.5rem; margin: 1.3rem 0 1.6rem; }
+.callout .label { display: block; font-size: 0.74rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 0.35rem; }
+.callout.safety { background: #fde9df; box-shadow: inset 3px 0 0 var(--accent); }
+.callout.safety .label { color: #a8360a; }
+.callout ul { padding-left: 1.1em; }
+
+/* A command to type, with an optional "where" tag (which machine runs it). */
+pre.cmd { position: relative; }
+pre.cmd[data-where]::before { content: attr(data-where); position: absolute; top: 0.45rem; right: 0.7rem; font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: #7fa3ad; }
+
+/* Spec sheets: a two-column definition list. */
+dl.spec { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1.2rem; font-family: var(--sans); font-size: 0.93rem; margin: 0 0 1.4rem; }
+dl.spec dt { color: var(--muted); }
+dl.spec dd { margin: 0; color: var(--ink); }
+@media (max-width: 520px) { dl.spec { grid-template-columns: 1fr; gap: 0.1rem; } dl.spec dd { margin-bottom: 0.5rem; } }
+
+/* Photos, renders and screen recordings. */
+.fig .media { display: block; width: 100%; height: auto; border-radius: 6px; background: #0f2633; }
+.fig .media-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.8rem; }
+.fig .media-grid figure { margin: 0; }
+.fig .media-grid figcaption { margin-top: 0.35rem; }
+
+/* Node info under an interactive graph. */
+.graph-note { font-family: var(--sans); font-size: 0.86rem; color: var(--ink-2); min-height: 3.2em; margin-top: 0.4rem; }
+.graph-note b { color: var(--ink); }
+
+/* Lists of chapters on overview pages. */
+.chapter-list { padding-left: 1.4em; }
+.chapter-list li { margin-bottom: 0.7em; }
+.chapter-list a { text-decoration: none; }
+.chapter-list a strong { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 0.18em; }
+.part-label { font-family: var(--sans); font-size: 0.78rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 1.4rem 0 0.4rem; }
+
+/* "Where this lives": repo / package / file pointers at the end of a section. */
+.src-list { font-family: var(--sans); font-size: 0.88rem; color: var(--ink-2); }

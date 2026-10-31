@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One mission in Nereus · How Talos sees</title>
+<meta name="description" content="Talos's full software stack flying the RoboSub 2026 course in the Nereus simulator, twice: once on the course its map describes and once on a course moved off it. Every estimate against the simulator's truth, and what mapping said at each step.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
+</head>
+<body>
+<main>
+  <header class="page-head">
+    <div class="kicker">Mapping · Chapter 10</div>
+    <h1>One mission in Nereus</h1>
+    <p class="lede">Every earlier chapter in one run: Talos's whole software stack swimming the RoboSub 2026 course in the simulator.</p>
+  </header>
+  <article>
+    <aside class="short"><span class="label">The short version</span><ul>
+      <li>The full stack ran the competition tree in Nereus twice: on the mapped course, and with the course moved 72 cm (the torpedo another 1.27 m).</li>
+      <li>On the exact course every prop is confirmed, the table is fit and every task runs.</li>
+      <li>On the moved course the slalom puts the whole map in the right place; the badly placed torpedo is partly explained as odometry drift instead.</li>
+    </ul></aside>
+    <div class="prose">
+      <h2 id="setup">The run</h2>
+      <p><a href="https://github.com/osu-uwrt/nereus">Nereus</a> simulates the pool, props, Talos's dynamics and sensors, and renders both ZED cameras' colour and depth. Everything else is the robot's own software, unchanged: YOLO and <code>tensor_detector</code>, mapping, the EKF, the <a href="../control/index.html">MPC</a> and <code>RepairCompMpcTree</code>. Nothing in the stack knows where the simulator put the props.</p>
+      <p>The map is <code>init_data</code>, the RoboSub 2026 layout as the team measured it. Two runs:</p>
+      <ul>
+        <li><strong>Exact course.</strong> Every prop exactly where the map says.</li>
+        <li><strong>Moved course.</strong> Every prop shifted <span id="shift-text">0.6 m east and 0.4 m south (72 cm)</span> (the offset mapping estimates), and the torpedo another 0.9 m east and 0.9 m north (a 1.27 m layout deviation).</li>
+      </ul>
+      <p>Both ended SUCCESS. The false slalom pole on a gate leg (Chapter 3) is harmless: the map is locked through the gate.</p>
+    </div>
+
+    <figure class="fig">
+      <div class="panel flush replay-panel">
+        <canvas id="replay-canvas" aria-label="Top-down replay of both runs"></canvas>
+        <div class="replay-bar">
+          <button class="btn primary" id="play">Play</button>
+          <input type="range" id="scrub" min="0" max="1" step="0.1" value="0" aria-label="Mission time">
+          <span class="seg" id="run-pick" role="group" aria-label="Run"><button data-run="exact" aria-pressed="true">Exact course</button><button data-run="shifted">Moved course</button></span>
+          <output id="replay-t">0:00</output>
+        </div>
+        <div class="replay-phases" id="phase-jump" aria-label="Jump to a task"></div>
+        <div class="replay-card">
+          <img id="card-img" alt="The camera at the last event, with YOLO's masks">
+          <div><p id="card-text">&nbsp;</p><p class="tree" id="card-tree">&nbsp;</p></div>
+        </div>
+      </div>
+      <figcaption><b>Both runs from above.</b> Grey shapes are the true props, dashed rings the map's priors, filled dots with 2σ ellipses confirmed estimates, hollow dots unconfirmed ones, small dots single detections. Use the task buttons to jump.</figcaption>
+    </figure>
+
+    <figure class="fig">
+      <video class="viewer-clip" id="run-video" src="video/mission_8x.mp4" poster="video/mission_8x.jpg" controls muted playsinline preload="metadata"></video>
+      <div class="vh-chapters" id="run-video-chapters" role="group" aria-label="Jump to a task"></div>
+      <figcaption><b>The exact-course run in the Nereus viewer</b> at 8× speed, the camera behind Talos, with mapping's covariance ellipsoids, both cameras and the current target. Tap a task to jump.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="errors">Every prop against the truth</h2>
+      <p>On the moved course every prior starts 72 cm off (the torpedo 1.58 m). On the exact course errors stay at a few centimetres: the slalom ends 3 cm off, the torpedo 9 cm.</p>
+    </div>
+    <figure class="fig">
+      <div class="panel">
+        <div class="controls"><span class="seg" id="err-run"><button data-run="shifted" aria-pressed="true">Moved course</button><button data-run="exact">Exact course</button></span></div>
+        <div id="error-chart"></div>
+      </div>
+      <figcaption><b>Horizontal error of each published estimate</b> through the run. It never reaches zero: the prop's model origin and the face the detector sees differ by a few cm to 15 cm.</figcaption>
+    </figure>
+    <div class="prose">
+      <table class="params" id="final-table"></table>
+    </div>
+
+    <div class="prose">
+      <h2 id="log">What mapping said</h2>
+      <p>Mapping logs only when something changes. Moved-course lines, with the tree's target changes; tap one to move the replay there.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel"><ol class="maplog" id="maplog"></ol></div>
+      <figcaption><b>Mapping's log, moved course.</b> Mapping-target changes from the tree are in the muted colour.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="sim">What the simulator does and doesn't show</h2>
+      <ul>
+        <li><strong>Depth is clean.</strong> Detections scatter about ten times less than the noise model assumes (Chapter 6). Real stereo depth is noisier.</li>
+        <li><strong>Odometry is good.</strong> The EKF drifted under 15 cm over the 133 m run. On the robot the offset must absorb real drift.</li>
+        <li><strong>The start-time drift is huge.</strong> In simulation the node reads the clock before the first <code>/clock</code> message, so its first <code>predict</code> adds about 1.8 × 10<sup>9</sup> s of drift to the offset's prior (17 900 m² at the start). On the robot it starts at the configured 1 m. The runs here are barely affected, but it is worth fixing in <code>mapping.py</code>: set <code>last_predict_time</code> on the first odometry or detection, not in the constructor.</li>
+        <li><strong>Everything else is real</strong>: models, thresholds, filters, the tree's checks and timing.</li>
+      </ul>
+      <p>Data comes from <code>ros2 bag</code> recordings via <code>tools/bag_to_mission.py</code>.</p>
+    </div>
+    <nav class="next" aria-label="Chapter navigation"></nav>
+  </article>
+</main>
+<script type="module" src="/src/perception/pages/mission.js"></script>
+</body>
+</html>

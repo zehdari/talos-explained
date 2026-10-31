@@ -1,0 +1,178 @@
+import { setup } from '../layout.js';
+import { Graph } from '../viz/graph.js';
+import { CourseView, at } from '../viz/course.js';
+import '../css/index.css';
+
+setup();
+const BASE = import.meta.env.BASE_URL;
+
+// ---------- hero: the mission replay ----------
+{
+  const canvas = document.getElementById('hero-canvas');
+  const play = document.getElementById('play');
+  const scrub = document.getElementById('scrub');
+  const hudT = document.getElementById('hud-t'), hudTarget = document.getElementById('hud-target');
+  const hudOffset = document.getElementById('hud-offset'), hudLog = document.getElementById('hud-log');
+  const inset = document.getElementById('cam-inset');
+  // the detector's annotated image topic (yolo_orientation/annotated/compressed) from the same run, on the mission clock
+  const VIDEO = { src: 'video/cam_exact.mp4', t0: -0.04 };
+  const video = Object.assign(document.createElement('video'), { muted: true, playsInline: true, preload: 'auto', src: `${BASE}${VIDEO.src}` });
+  video.setAttribute('aria-label', "The camera Talos is using, with YOLO's masks and boxes");
+  inset.prepend(video);
+  inset.hidden = false;
+  const camWhen = document.getElementById('cam-when'), camText = document.getElementById('cam-text'), hudTree = document.getElementById('hud-tree');
+  let shownCard = null;
+  const ph = document.getElementById('phases'), phaseName = document.getElementById('phase-name');
+  const phone = matchMedia('(max-width: 720px)');
+  let view, data, speed = 16, playing = false, last = 0, t = 0, end = 1;
+
+  const fmtT = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const insets = () => (phone.matches ? [172, 10, 420, 10] : [40, 30, 120, Math.min(520, innerWidth * 0.36)]);
+
+  function update() {
+    view.o.insets = insets();
+    view.set(t);
+    scrub.value = t;
+    hudT.textContent = fmtT(t);
+    const phase = (data.phases || []).find(([s0, e0]) => t >= s0 && t < e0);
+    ph.querySelectorAll('span').forEach((el) => el.classList.toggle('on', !!phase && el.dataset.name === phase[2]));
+    phaseName.textContent = phase ? phase[2] : '';
+    const tg = at(data.targets, t);
+    hudTarget.textContent = tg ? (tg[1] ? tg[1].replace(/,\s*$/, '') : tg[2] ? 'none, map locked' : 'closest object') : '–';
+    const off = at(data.offset, t);
+    hudOffset.textContent = off ? `${(Math.hypot(off[1], off[2]) * 100).toFixed(0)} cm` : '–';
+    const line = at(data.log, t);
+    hudLog.textContent = line && t - line[0] < 25 ? line[2] : ' ';
+    // the camera: the detector's annotated stream, kept in step with the replay
+    if (video.readyState >= 1) {
+      const vt = Math.min(Math.max(t - VIDEO.t0, 0), video.duration);
+      const rate = playing && speed <= 16 ? speed : 0;
+      if (rate) {
+        if (video.playbackRate !== rate) video.playbackRate = rate;
+        if (video.paused) video.play().catch(() => {});
+      } else if (!video.paused) video.pause();
+      if (!video.seeking && Math.abs(video.currentTime - vt) > (rate ? 2 + rate * 0.2 : 0.3)) video.currentTime = vt;
+    }
+    // under it, the last thing mapping or the tree reported
+    const card = at(data.cards, t);
+    if (card !== shownCard) {
+      shownCard = card;
+      camWhen.textContent = card ? fmtT(card[0]) : '';
+      camText.textContent = card ? (card[3] === 'tree' ? 'Tree: ' : 'Mapping: ') + card[2] : 'Forward camera, YOLO masks';
+    }
+    const tl = at(data.tree_log?.filter((x) => !x[1].startsWith('Message from')), t);
+    hudTree.textContent = !tl ? '–' : /target\s+and\s+locking map/.test(tl[1]) ? 'locking the map'
+      : tl[1].replace(/^Setting mapping to target\s*/, 'targeting ').replace(/,?\s*and (not )?locking map$/, '');
+  }
+
+  function frame(now) {
+    if (!playing) return;
+    const dt = Math.min((now - last) / 1000, 0.1);
+    last = now;
+    t = Math.min(end, t + dt * speed);
+    update();
+    if (t >= end) { setPlaying(false); return; }
+    requestAnimationFrame(frame);
+  }
+  function setPlaying(on) {
+    playing = on;
+    if (!on) video.pause();
+    play.textContent = on ? 'Pause' : t >= end ? 'Replay' : 'Play';
+    play.setAttribute('aria-pressed', String(on));
+    if (on) {
+      if (t >= end) t = 0;
+      last = performance.now();
+      requestAnimationFrame(frame);
+    }
+  }
+  play.onclick = () => setPlaying(!playing);
+  scrub.oninput = () => { t = +scrub.value; update(); };
+  document.querySelectorAll('#speed button').forEach((b) => {
+    b.onclick = () => {
+      speed = +b.dataset.v;
+      document.querySelectorAll('#speed button').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+    };
+  });
+
+  fetch(`${BASE}data/mission_hero_exact.json`).then((r) => r.json()).then((d) => {
+    data = d;
+    end = d.duration;
+    scrub.max = end;
+    view = new CourseView(canvas, d, { insets: insets(), box: d.box });
+    // the mission's phases under the scrubber
+    for (const [s, e, name] of d.phases || []) {
+      const el = document.createElement('span');
+      el.style.left = `${(s / end) * 100}%`;
+      el.style.width = `${((e - s) / end) * 100}%`;
+      el.title = name;
+      el.dataset.name = name;
+      ph.appendChild(el);
+    }
+    t = d.start || 0;
+    update();
+    addEventListener('resize', update);
+    // Start playing once the hero is on screen
+    new IntersectionObserver((es, ob) => {
+      if (es[0].isIntersecting && !matchMedia('(prefers-reduced-motion: reduce)').matches) { setPlaying(true); ob.disconnect(); }
+    }).observe(canvas);
+  });
+}
+
+// ---------- the pipeline graph ----------
+{
+  const SRC = 'https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator';
+  const nodes = [
+    { id: 'cam', label: 'ZED X Mini', sub: 'RGB + depth', x: 85, y: 140, info: 'Two stereo cameras: ffc looks forward, dfc down. Each publishes a compressed colour image and a depth map registered to it, 1920 × 1200.' },
+    { id: 'sync', label: 'Pair by stamp', sub: 'depth ring buffer', x: 250, y: 140, info: 'Depth arrives after the colour frame, so the detector keeps the last 15 depth maps (at most 1 s old) and uses the one taken closest to each image.', href: `${SRC}/tensor_detector/src/yolo_orientation.py` },
+    { id: 'yolo', label: 'YOLO26n-seg', sub: 'TensorRT', x: 415, y: 140, info: 'A segmentation network: for each object, a class, a confidence, a box and a pixel mask. One model per camera, exported to a TensorRT engine on the robot.', href: `${SRC}/tensor_detector/src/yolo_model.py` },
+    { id: 'fit', label: 'Mask → pose', sub: 'sample, gate, SVD', x: 580, y: 140, info: 'Grid-sample the mask, back-project each sample through its depth, drop background and outliers, fit a plane: centroid plus surface normal.', href: `${SRC}/tensor_detector/src/detection.py` },
+    { id: 'comp', label: 'Composites', sub: 'torpedo, pairs, slalom', x: 697, y: 66, info: 'Only for props made of several detections: the torpedo board and its four holes, the gate halves and table from pairs of symbols, the nearest slalom pole. Every other detection goes straight to detected_objects.', href: `${SRC}/tensor_detector/src/detection.py` },
+    { id: 'det', label: 'detected_objects', sub: 'camera frame', x: 815, y: 140, info: 'vision_msgs/Detection3DArray: class, score and pose of each detection, in the camera\'s optical frame, stamped with the image time.' },
+    { id: 'tf', label: 'Into the parent frame', sub: 'TF at the stamp', x: 815, y: 262, info: 'Each detection is transformed into its object\'s parent frame (map, or another prop\'s frame) with TF looked up at the image stamp, and given a covariance from the noise model.', href: `${SRC}/riptide_mapping/riptide_mapping2/mapping.py` },
+    { id: 'track', label: 'Per-object filter', sub: 'agree, gate, update', x: 600, y: 262, info: 'A 3-state Kalman filter per object. New detections wait until a few agree; later ones far from the estimate are rejected.', href: `${SRC}/riptide_mapping/riptide_mapping2/map_estimator.py` },
+    { id: 'solve', label: 'Course map', sub: 'offset + deviations', x: 385, y: 262, info: 'A robust least-squares solve over every sighting: where the course sits in odometry (the offset), how far each prop is from the layout, and the course\'s heading error.', href: `${SRC}/riptide_mapping/riptide_mapping2/map_estimator.py` },
+    { id: 'pub', label: 'TF + covariance', sub: 'mapping/<object>', x: 170, y: 262, info: 'Every object as a TF frame (map → offset → <object>_frame) and a PoseWithCovarianceStamped. Autonomy and the MPC steer by these frames.' },
+    { id: 'auto', label: 'Autonomy', sub: 'behaviour trees', x: 170, y: 370, info: 'The behaviour trees set mapping\'s target (which props it may update), wait for the covariance to shrink, and drive to the frames.' },
+  ];
+  const edges = [['cam', 'sync'], ['sync', 'yolo'], ['yolo', 'fit'], ['fit', 'det'], ['fit', 'comp'], ['comp', 'det'], ['det', 'tf'], ['tf', 'track'], ['track', 'solve'], ['solve', 'pub'], ['pub', 'auto']];
+  const host = document.getElementById('pipeline-graph');
+  const note = document.createElement('div');
+  note.className = 'graph-note';
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  const say = (id) => {
+    const n = byId[id || 'track'];
+    note.innerHTML = `<b>${n.label}.</b> ${n.info}${n.href ? ` <a href="${n.href}">${n.href.split('/').pop()}</a>` : ''}`;
+  };
+  // One picture in three bands: vision (a frame to poses), mapping (poses to a map), autonomy (which props mapping may move).
+  const band = (label, x0, y0, x1, y1) => ({ label, points: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]] });
+  const g = new Graph(host, {
+    width: 900,
+    height: 414,
+    bands: [band('VISION', 12, 12, 888, 180), band('MAPPING', 12, 210, 888, 300), band('AUTONOMY', 12, 322, 888, 400)],
+    nodes: nodes.map((n) => ({ id: n.id, label: n.label, sub: n.sub, x: n.x, y: n.y, w: 140 })),
+    edges: [
+      ...edges.map(([from, to]) => ({ from, to })),
+      { from: 'auto', to: 'track', label: 'target', dash: true, via: [470, 395] },
+    ],
+    onSelect: say,
+    // Phones: two columns, snaking down, in the same three bands.
+    narrow: {
+      width: 340,
+      height: 500,
+      bands: [
+        band('VISION', 8, 8, 332, 236),
+        { label: 'MAPPING', points: [[8, 258], [332, 258], [332, 488], [184, 488], [184, 340], [8, 340]] },
+        band('AUTONOMY', 8, 362, 156, 488),
+      ],
+      nodes: Object.fromEntries(Object.entries({
+        cam: [82, 56], sync: [258, 56], yolo: [258, 130], fit: [82, 130], comp: [82, 204], det: [258, 204],
+        tf: [258, 306], track: [82, 306], solve: [258, 380], pub: [258, 454], auto: [82, 417],
+      }).map(([id, [x, y]]) => [id, { x, y, w: 0 }])),
+      edges: { 'auto>track': { via: null, lx: 92, ly: 372, anchor: 'start' } },
+    },
+  });
+  host.appendChild(note);
+  say(null);
+  g.highlight(null);
+  g.pulse((e) => !e.dash, 2.4);
+}
