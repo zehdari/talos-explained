@@ -1,0 +1,2901 @@
+[
+{
+"slug": "action",
+"name": "Action",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#actions"
+]
+},
+{
+"slug": "action-node",
+"name": "Action node",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-nodes.html#kinds",
+"bt.html#ros"
+]
+},
+{
+"slug": "active-control-model",
+"name": "active_control_model",
+"exp": "",
+"part": "control",
+"links": [
+"commanding.html#legacy",
+"nereus.html#mpc-model"
+]
+},
+{
+"slug": "added-mass",
+"name": "Added mass",
+"exp": "",
+"part": "control",
+"links": [
+"control/model.html#mass",
+"control/identify.html#inertia"
+]
+},
+{
+"slug": "allocation",
+"name": "Allocation",
+"exp": "",
+"part": "control",
+"links": [
+"control/thrusters.html#allocation"
+]
+},
+{
+"slug": "apriltag-calibration",
+"name": "AprilTag calibration",
+"exp": "",
+"part": "perception",
+"links": [
+"localization.html#tag",
+"viewer.html#mapping"
+]
+},
+{
+"slug": "arm",
+"name": "Arm",
+"exp": "",
+"part": "vehicle",
+"links": [
+"actuators.html#poac",
+"actuators.html#trees"
+]
+},
+{
+"slug": "augmentation",
+"name": "Augmentation",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/training.html#augment"
+]
+},
+{
+"slug": "autonomy-challenge",
+"name": "Autonomy Challenge",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#robosub",
+"robosub.html#runs"
+]
+},
+{
+"slug": "auv",
+"name": "AUV",
+"exp": "Autonomous underwater vehicle",
+"part": "start",
+"links": [
+"robosub.html#robosub",
+"robosub.html#rules"
+]
+},
+{
+"slug": "back-projection",
+"name": "Back-projection",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/pose.html#backproject"
+]
+},
+{
+"slug": "bag",
+"name": "Bag",
+"exp": "",
+"part": "start",
+"links": [
+"debugging.html#bags",
+"debugging.html#python"
+]
+},
+{
+"slug": "base-link",
+"name": "base_link",
+"exp": "",
+"part": "vehicle",
+"links": [
+"localization.html#frames",
+"control/model.html#frames"
+]
+},
+{
+"slug": "baseline",
+"name": "Baseline",
+"exp": "",
+"part": "perception",
+"links": [
+"cameras.html#two-cameras"
+]
+},
+{
+"slug": "battery-pods",
+"name": "Battery pods",
+"exp": "",
+"part": "vehicle",
+"links": [
+"mechanical.html#batteries"
+]
+},
+{
+"slug": "behaviortree-cpp",
+"name": "BehaviorTree.CPP",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#ticks",
+"bt-nodes.html#kinds"
+]
+},
+{
+"slug": "behaviour-tree",
+"name": "Behaviour tree",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#ticks",
+"bt.html#why"
+]
+},
+{
+"slug": "bench",
+"name": "Bench",
+"exp": "",
+"part": "ops",
+"links": [
+"pool-test.html#pretest",
+"launch.html#ways",
+"commanding.html#stops"
+]
+},
+{
+"slug": "binary-classifier",
+"name": "Binary classifier",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/frames.html#binary",
+"mission-tree.html#bins"
+]
+},
+{
+"slug": "bins",
+"name": "Bins",
+"exp": "",
+"part": "start",
+"links": [
+"mission-tree.html#bins",
+"perception/frames.html#binfit"
+]
+},
+{
+"slug": "blackboard",
+"name": "Blackboard",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#blackboard",
+"bt-nodes.html#ports"
+]
+},
+{
+"slug": "bms",
+"name": "BMS",
+"exp": "Battery management system",
+"part": "vehicle",
+"links": [
+"boards.html#batteries",
+"electrical.html#smart"
+]
+},
+{
+"slug": "board-stack",
+"name": "Board stack",
+"exp": "",
+"part": "vehicle",
+"links": [
+"boards.html#glance",
+"boards.html#system"
+]
+},
+{
+"slug": "bootloader",
+"name": "Bootloader",
+"exp": "",
+"part": "vehicle",
+"links": [
+"firmware.html#flash"
+]
+},
+{
+"slug": "bottom-lock",
+"name": "Bottom lock",
+"exp": "",
+"part": "vehicle",
+"links": [
+"localization.html#trouble",
+"sensors.html#dvl-driver"
+]
+},
+{
+"slug": "bridge",
+"name": "Bridge",
+"exp": "",
+"part": "ops",
+"links": [
+"nereus.html#bridge"
+]
+},
+{
+"slug": "btassistant-py",
+"name": "btassistant.py",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-workflow.html#assistant"
+]
+},
+{
+"slug": "buoyancy",
+"name": "Buoyancy",
+"exp": "",
+"part": "vehicle",
+"links": [
+"mechanical.html#trim",
+"robosub.html#rules"
+]
+},
+{
+"slug": "cad",
+"name": "CAD",
+"exp": "Computer-aided design",
+"part": "vehicle",
+"links": [
+"mechanical.html#software",
+"mechanical.html#limits"
+]
+},
+{
+"slug": "camera-calibration",
+"name": "Calibration (camera)",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/calibration.html#underwater",
+"perception/calibration.html#procedure"
+]
+},
+{
+"slug": "camera-cage",
+"name": "Camera cage",
+"exp": "",
+"part": "vehicle",
+"links": [
+"mechanical.html#inside",
+"computers.html#orin",
+"boards.html#ccbb"
+]
+},
+{
+"slug": "camera-faker",
+"name": "camera_faker",
+"exp": "",
+"part": "perception",
+"links": [
+"code-map.html#explorer"
+]
+},
+{
+"slug": "can",
+"name": "CAN",
+"exp": "Controller Area Network",
+"part": "vehicle",
+"links": [
+"firmware.html#can",
+"computers.html#can",
+"electrical.html#why-can"
+]
+},
+{
+"slug": "can-fd",
+"name": "CAN FD",
+"exp": "",
+"part": "vehicle",
+"links": [
+"firmware.html#can",
+"boards.html#rp2040",
+"computers.html#can"
+]
+},
+{
+"slug": "canmore",
+"name": "CANmore",
+"exp": "",
+"part": "vehicle",
+"links": [
+"firmware.html#canmore",
+"firmware.html#can"
+]
+},
+{
+"slug": "ccbb",
+"name": "CCBB",
+"exp": "Camera cage breakout board",
+"part": "vehicle",
+"links": [
+"boards.html#ccbb"
+]
+},
+{
+"slug": "chameleon-tf",
+"name": "chameleon_tf",
+"exp": "",
+"part": "perception",
+"links": [
+"localization.html#tag",
+"code-map.html#explorer"
+]
+},
+{
+"slug": "charuco-board",
+"name": "ChArUco board",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/calibration.html#charuco"
+]
+},
+{
+"slug": "checkbt",
+"name": "checkBT",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-workflow.html#checkbt"
+]
+},
+{
+"slug": "chrony",
+"name": "chrony",
+"exp": "",
+"part": "ops",
+"links": [
+"computers.html#time"
+]
+},
+{
+"slug": "class",
+"name": "Class",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/detector.html#model",
+"robosub.html#course"
+]
+},
+{
+"slug": "claw",
+"name": "Claw",
+"exp": "",
+"part": "vehicle",
+"links": [
+"actuators.html#claw"
+]
+},
+{
+"slug": "client-id",
+"name": "Client ID",
+"exp": "",
+"part": "vehicle",
+"links": [
+"boards.html#glance",
+"computers.html#can"
+]
+},
+{
+"slug": "cob",
+"name": "COB",
+"exp": "Centre of buoyancy",
+"part": "vehicle",
+"links": [
+"mechanical.html#trim",
+"control/identify.html#statics"
+]
+},
+{
+"slug": "code-freeze",
+"name": "Code freeze",
+"exp": "",
+"part": "ops",
+"links": [
+"pool-test.html#freeze",
+"code-map.html#pinning"
+]
+},
+{
+"slug": "coin-flip",
+"name": "Coin flip",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#runs",
+"robosub.html#scoring"
+]
+},
+{
+"slug": "colcon",
+"name": "colcon",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#packages",
+"setup.html#build"
+]
+},
+{
+"slug": "colcon-deploy",
+"name": "colcon deploy",
+"exp": "",
+"part": "ops",
+"links": [
+"computers.html#deploy",
+"setup.html#deploy"
+]
+},
+{
+"slug": "colcon-ignore",
+"name": "COLCON_IGNORE",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#explorer"
+]
+},
+{
+"slug": "com",
+"name": "COM",
+"exp": "Centre of mass",
+"part": "vehicle",
+"links": [
+"mechanical.html#trim",
+"control/model.html#restoring"
+]
+},
+{
+"slug": "composite",
+"name": "Composite",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/composites.html#pairs",
+"perception/composites.html#torpedo"
+]
+},
+{
+"slug": "computeframealignment",
+"name": "ComputeFrameAlignment",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-nodes.html#frames"
+]
+},
+{
+"slug": "condensing",
+"name": "Condensing",
+"exp": "",
+"part": "control",
+"links": [
+"control/solver.html#condensing"
+]
+},
+{
+"slug": "confirmed",
+"name": "Confirmed",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/tracking.html#confirm"
+]
+},
+{
+"slug": "control-tick",
+"name": "Control tick",
+"exp": "",
+"part": "control",
+"links": [
+"control/index.html#loop",
+"nereus.html#time"
+]
+},
+{
+"slug": "controller-modes",
+"name": "Controller modes",
+"exp": "",
+"part": "control",
+"links": [
+"commanding.html#modes",
+"control/mpc.html#modes"
+]
+},
+{
+"slug": "controller-overseer",
+"name": "controller_overseer",
+"exp": "",
+"part": "control",
+"links": [
+"commanding.html#stops",
+"commanding.html#senders",
+"commanding.html#goals"
+]
+},
+{
+"slug": "controllercommand",
+"name": "ControllerCommand",
+"exp": "",
+"part": "control",
+"links": [
+"commanding.html#modes",
+"interfaces.html"
+]
+},
+{
+"slug": "copro-agent",
+"name": "copro_agent",
+"exp": "",
+"part": "vehicle",
+"links": [
+"boards.html#system",
+"computers.html#can"
+]
+},
+{
+"slug": "cost",
+"name": "Cost",
+"exp": "",
+"part": "control",
+"links": [
+"control/mpc.html#errors",
+"control/mpc.html#modes"
+]
+},
+{
+"slug": "covariance",
+"name": "Covariance",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/noise.html#model",
+"perception/tracking.html#confirm"
+]
+},
+{
+"slug": "cuda",
+"name": "CUDA",
+"exp": "",
+"part": "perception",
+"links": [
+"setup.html#gpu",
+"perception/detector.html#tensorrt"
+]
+},
+{
+"slug": "damping",
+"name": "Damping",
+"exp": "",
+"part": "control",
+"links": [
+"control/model.html#damping",
+"control/identify.html#drag"
+]
+},
+{
+"slug": "dds",
+"name": "DDS",
+"exp": "Data Distribution Service",
+"part": "start",
+"links": [
+"computers.html#zenoh",
+"ros2.html#zenoh"
+]
+},
+{
+"slug": "decorator",
+"name": "Decorator",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#decorators"
+]
+},
+{
+"slug": "deploy-ignore",
+"name": "DEPLOY_IGNORE",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#explorer",
+"computers.html#deploy"
+]
+},
+{
+"slug": "depressurization-test",
+"name": "Depressurization test",
+"exp": "",
+"part": "vehicle",
+"links": [
+"pool-test.html#pvt",
+"mechanical.html#sealing"
+]
+},
+{
+"slug": "depth-gate",
+"name": "Depth gate",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/pose.html#gate"
+]
+},
+{
+"slug": "depth-image",
+"name": "Depth image",
+"exp": "",
+"part": "perception",
+"links": [
+"cameras.html#topics",
+"perception/pose.html#backproject"
+]
+},
+{
+"slug": "depth-sensor",
+"name": "Depth sensor",
+"exp": "",
+"part": "vehicle",
+"links": [
+"sensors.html#depth",
+"firmware.html#depth"
+]
+},
+{
+"slug": "design-documentation",
+"name": "Design Documentation",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#docs"
+]
+},
+{
+"slug": "detection",
+"name": "Detection",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/detector.html#outputs",
+"perception/noise.html#model"
+]
+},
+{
+"slug": "yolo-orientation",
+"name": "Detector",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/detector.html#model",
+"perception/detector.html#outputs"
+]
+},
+{
+"slug": "development-workspace",
+"name": "Development workspace",
+"exp": "",
+"part": "start",
+"links": [
+"setup.html#workspaces",
+"code-map.html#disk"
+]
+},
+{
+"slug": "deviation",
+"name": "Deviation",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/map.html#model",
+"perception/map.html#robust"
+]
+},
+{
+"slug": "dfc",
+"name": "dfc",
+"exp": "Downward-facing camera",
+"part": "vehicle",
+"links": [
+"cameras.html#two-cameras",
+"cameras.html#topics"
+]
+},
+{
+"slug": "disturbance-estimate",
+"name": "Disturbance estimate",
+"exp": "",
+"part": "control",
+"links": [
+"control/estimation.html#offsetfree"
+]
+},
+{
+"slug": "dof",
+"name": "DOF",
+"exp": "Degrees of freedom",
+"part": "control",
+"links": [
+"control/model.html#frames",
+"thrusters-hw.html#layout"
+]
+},
+{
+"slug": "dotask",
+"name": "doTask",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-nodes.html#dotask",
+"bt-workflow.html#run"
+]
+},
+{
+"slug": "dshot",
+"name": "DShot",
+"exp": "",
+"part": "vehicle",
+"links": [
+"thrusters-hw.html#dshot",
+"firmware.html#thrusters"
+]
+},
+{
+"slug": "dvl",
+"name": "DVL",
+"exp": "Doppler velocity log",
+"part": "vehicle",
+"links": [
+"sensors.html#dvl"
+]
+},
+{
+"slug": "ekf",
+"name": "EKF",
+"exp": "Extended Kalman filter",
+"part": "vehicle",
+"links": [
+"localization.html#ekf",
+"localization.html#fused"
+]
+},
+{
+"slug": "enable",
+"name": "Enable",
+"exp": "",
+"part": "ops",
+"links": [
+"viewer.html#enable",
+"commanding.html#viewer-slot"
+]
+},
+{
+"slug": "entry",
+"name": "Entry",
+"exp": "",
+"part": "ops",
+"links": [
+"launch.html#states",
+"launch.html#stuck"
+]
+},
+{
+"slug": "esc",
+"name": "ESC",
+"exp": "Electronic speed controller",
+"part": "vehicle",
+"links": [
+"thrusters-hw.html#esc",
+"boards.html#esc"
+]
+},
+{
+"slug": "esc-board",
+"name": "ESC board",
+"exp": "",
+"part": "vehicle",
+"links": [
+"boards.html#esc",
+"thrusters-hw.html#rpm-loop",
+"firmware.html#thrusters"
+]
+},
+{
+"slug": "extrinsics",
+"name": "Extrinsics",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/calibration.html#stereo",
+"perception/calibration.html#extrinsics"
+]
+},
+{
+"slug": "fallback",
+"name": "Fallback",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#control"
+]
+},
+{
+"slug": "feature-branch",
+"name": "Feature branch",
+"exp": "",
+"part": "start",
+"links": [
+"setup.html#git",
+"code-map.html#pinning"
+]
+},
+{
+"slug": "feedforward",
+"name": "Feedforward",
+"exp": "",
+"part": "control",
+"links": [
+"control/mpc.html#feedforward"
+]
+},
+{
+"slug": "ffc",
+"name": "ffc",
+"exp": "Forward-facing camera",
+"part": "vehicle",
+"links": [
+"cameras.html#two-cameras",
+"cameras.html#topics"
+]
+},
+{
+"slug": "fix",
+"name": "Fix",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/map.html#fixes"
+]
+},
+{
+"slug": "fog",
+"name": "FOG",
+"exp": "Fibre-optic gyro",
+"part": "vehicle",
+"links": [
+"sensors.html#fog"
+]
+},
+{
+"slug": "follow-path",
+"name": "follow_path",
+"exp": "",
+"part": "control",
+"links": [
+"commanding.html#paths",
+"bt-nodes.html#moving"
+]
+},
+{
+"slug": "followpath",
+"name": "FollowPath",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-nodes.html#moving",
+"bt-nodes.html#waypoints"
+]
+},
+{
+"slug": "force-gauge",
+"name": "Force gauge",
+"exp": "",
+"part": "vehicle",
+"links": [
+"thrusters-hw.html#gauge"
+]
+},
+{
+"slug": "fossen-model",
+"name": "Fossen model",
+"exp": "",
+"part": "control",
+"links": [
+"control/model.html#eom",
+"nereus.html#physics"
+]
+},
+{
+"slug": "frame",
+"name": "Frame",
+"exp": "",
+"part": "start",
+"links": [
+"localization.html#frames",
+"perception/frames.html#tree"
+]
+},
+{
+"slug": "chassis",
+"name": "Frame (mechanical)",
+"exp": "",
+"part": "vehicle",
+"links": [
+"mechanical.html#frame"
+]
+},
+{
+"slug": "gate",
+"name": "Gate",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#runs",
+"mission-tree.html#gate"
+]
+},
+{
+"slug": "gmsl2",
+"name": "GMSL2",
+"exp": "",
+"part": "vehicle",
+"links": [
+"cameras.html#two-cameras"
+]
+},
+{
+"slug": "governor",
+"name": "Governor",
+"exp": "",
+"part": "control",
+"links": [
+"control/reference.html#governor"
+]
+},
+{
+"slug": "groot",
+"name": "Groot",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-workflow.html#editing",
+"bt.html#ticks"
+]
+},
+{
+"slug": "halt",
+"name": "Halt",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#ticks",
+"bt.html#ros"
+]
+},
+{
+"slug": "header-stamp",
+"name": "header.stamp",
+"exp": "",
+"part": "start",
+"links": [
+"debugging.html#time",
+"sensors.html#timing"
+]
+},
+{
+"slug": "hil",
+"name": "HIL",
+"exp": "Hardware in the loop",
+"part": "ops",
+"links": [
+"launch.html#hil"
+]
+},
+{
+"slug": "horizon",
+"name": "Horizon",
+"exp": "",
+"part": "control",
+"links": [
+"control/mpc.html#state",
+"viewer.html#seeing"
+]
+},
+{
+"slug": "humble",
+"name": "Humble",
+"exp": "",
+"part": "start",
+"links": [
+"setup.html#before",
+"computers.html#orin"
+]
+},
+{
+"slug": "hydrophone",
+"name": "Hydrophone",
+"exp": "",
+"part": "vehicle",
+"links": [
+"sensors.html#acoustics",
+"boards.html#led-ivc"
+]
+},
+{
+"slug": "ideal-diode-or",
+"name": "Ideal-diode OR",
+"exp": "",
+"part": "vehicle",
+"links": [
+"electrical.html#two-packs"
+]
+},
+{
+"slug": "ifthenelse",
+"name": "IfThenElse",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#control"
+]
+},
+{
+"slug": "imu",
+"name": "IMU",
+"exp": "Inertial measurement unit",
+"part": "vehicle",
+"links": [
+"sensors.html#imu"
+]
+},
+{
+"slug": "intrinsics",
+"name": "Intrinsics",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/calibration.html#pinhole"
+]
+},
+{
+"slug": "ivc-board",
+"name": "IVC board",
+"exp": "Inter-vehicle communication board",
+"part": "vehicle",
+"links": [
+"boards.html#led-ivc",
+"sensors.html#acoustics"
+]
+},
+{
+"slug": "jacobian",
+"name": "Jacobian",
+"exp": "",
+"part": "control",
+"links": [
+"control/solver.html#jacobians"
+]
+},
+{
+"slug": "jetson-agx-orin",
+"name": "Jetson AGX Orin",
+"exp": "",
+"part": "vehicle",
+"links": [
+"computers.html#orin"
+]
+},
+{
+"slug": "kalman-filter",
+"name": "Kalman filter",
+"exp": "",
+"part": "perception",
+"links": [
+"localization.html#ekf",
+"perception/tracking.html#update"
+]
+},
+{
+"slug": "kill-slot",
+"name": "Kill slot",
+"exp": "",
+"part": "ops",
+"links": [
+"commanding.html#kill",
+"commanding.html#viewer-slot"
+]
+},
+{
+"slug": "kill-switch",
+"name": "Kill switch",
+"exp": "",
+"part": "vehicle",
+"links": [
+"electrical.html#kill",
+"boards.html#kill",
+"commanding.html#kill"
+]
+},
+{
+"slug": "launch-file",
+"name": "Launch file",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#launch",
+"launch.html#explorer"
+]
+},
+{
+"slug": "launch-list",
+"name": "Launch list",
+"exp": "",
+"part": "ops",
+"links": [
+"launch.html#entries",
+"launch.html#ways"
+]
+},
+{
+"slug": "launcher",
+"name": "Launcher",
+"exp": "",
+"part": "vehicle",
+"links": [
+"actuators.html#launcher",
+"actuators.html#shot"
+]
+},
+{
+"slug": "launcher-log",
+"name": "Launcher log",
+"exp": "",
+"part": "ops",
+"links": [
+"launch.html#logs",
+"debugging.html#logs"
+]
+},
+{
+"slug": "led-board",
+"name": "LED board",
+"exp": "",
+"part": "vehicle",
+"links": [
+"boards.html#led-ivc",
+"mission-tree.html#leds"
+]
+},
+{
+"slug": "legacy",
+"name": "Legacy",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#legacy",
+"commanding.html#legacy"
+]
+},
+{
+"slug": "legacy-controller",
+"name": "Legacy controller",
+"exp": "",
+"part": "control",
+"links": [
+"commanding.html#legacy"
+]
+},
+{
+"slug": "lens-distortion",
+"name": "Lens distortion",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/calibration.html#distortion"
+]
+},
+{
+"slug": "lock-map",
+"name": "Lock map",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/frames.html#targets",
+"mission-tree.html#overview"
+]
+},
+{
+"slug": "magnet-poker",
+"name": "Magnet poker",
+"exp": "",
+"part": "vehicle",
+"links": [
+"actuators.html#claw",
+"mission-tree.html#magnets"
+]
+},
+{
+"slug": "magnets",
+"name": "Magnets",
+"exp": "",
+"part": "start",
+"links": [
+"mission-tree.html#magnets"
+]
+},
+{
+"slug": "mahalanobis-distance",
+"name": "Mahalanobis distance",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/tracking.html#gating",
+"perception/math.html#reading"
+]
+},
+{
+"slug": "main-hull",
+"name": "Main hull",
+"exp": "",
+"part": "vehicle",
+"links": [
+"mechanical.html#hull",
+"mechanical.html#inside"
+]
+},
+{
+"slug": "map",
+"name": "map",
+"exp": "",
+"part": "perception",
+"links": [
+"localization.html#drift",
+"perception/frames.html#tree"
+]
+},
+{
+"slug": "riptide-mapping2",
+"name": "Mapping",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/map.html#why",
+"perception/frames.html#published"
+]
+},
+{
+"slug": "mapping-nodes",
+"name": "Mapping nodes",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-nodes.html#perception",
+"perception/frames.html#trees"
+]
+},
+{
+"slug": "mapping-target",
+"name": "Mapping target",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/frames.html#targets",
+"viewer.html#mapping"
+]
+},
+{
+"slug": "mark-2",
+"name": "Mark 1, Mark 2",
+"exp": "",
+"part": "vehicle",
+"links": [
+"boards.html#rp2040",
+"boards.html#history"
+]
+},
+{
+"slug": "mcu",
+"name": "MCU",
+"exp": "Microcontroller unit",
+"part": "vehicle",
+"links": [
+"boards.html#rp2040",
+"firmware.html#boards"
+]
+},
+{
+"slug": "mercury",
+"name": "Mercury",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#legacy"
+]
+},
+{
+"slug": "message",
+"name": "Message",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#topics"
+]
+},
+{
+"slug": "micro-ros",
+"name": "micro-ROS",
+"exp": "",
+"part": "vehicle",
+"links": [
+"firmware.html#microros",
+"boards.html#system"
+]
+},
+{
+"slug": "motion-panel",
+"name": "Motion panel",
+"exp": "",
+"part": "ops",
+"links": [
+"viewer.html#motion"
+]
+},
+{
+"slug": "mpc",
+"name": "MPC",
+"exp": "Model predictive control",
+"part": "control",
+"links": [
+"control/index.html#loop",
+"control/mpc.html#problem"
+]
+},
+{
+"slug": "mpc-state-estimator",
+"name": "MPC state estimator",
+"exp": "",
+"part": "control",
+"links": [
+"control/estimation.html#why",
+"localization.html#users"
+]
+},
+{
+"slug": "namespace",
+"name": "Namespace",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#names"
+]
+},
+{
+"slug": "needs-update",
+"name": "needs_update",
+"exp": "",
+"part": "ops",
+"links": [
+"commanding.html#kill",
+"viewer.html#enable"
+]
+},
+{
+"slug": "nereus",
+"name": "Nereus",
+"exp": "",
+"part": "ops",
+"links": [
+"nereus.html#what",
+"viewer.html#what"
+]
+},
+{
+"slug": "nereus-viewer",
+"name": "Nereus viewer",
+"exp": "",
+"part": "ops",
+"links": [
+"viewer.html#what",
+"viewer.html#tour"
+]
+},
+{
+"slug": "nereus-sim",
+"name": "nereus-sim",
+"exp": "",
+"part": "ops",
+"links": [
+"nereus.html#what",
+"nereus.html#physics"
+]
+},
+{
+"slug": "node",
+"name": "Node",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#graph"
+]
+},
+{
+"slug": "node-status",
+"name": "Node status",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#ticks"
+]
+},
+{
+"slug": "null-space",
+"name": "Null space",
+"exp": "",
+"part": "control",
+"links": [
+"control/thrusters.html#nullspace",
+"control/identify.html#session"
+]
+},
+{
+"slug": "octagon",
+"name": "Octagon",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#runs"
+]
+},
+{
+"slug": "odom",
+"name": "odom",
+"exp": "",
+"part": "vehicle",
+"links": [
+"localization.html#drift",
+"perception/frames.html#tree"
+]
+},
+{
+"slug": "odometry",
+"name": "Odometry",
+"exp": "",
+"part": "vehicle",
+"links": [
+"localization.html#ekf",
+"localization.html#users"
+]
+},
+{
+"slug": "offset",
+"name": "Offset",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/map.html#model",
+"perception/frames.html#tree"
+]
+},
+{
+"slug": "op-top",
+"name": "op-top",
+"exp": "",
+"part": "ops",
+"links": [
+"computers.html#optop"
+]
+},
+{
+"slug": "opbox",
+"name": "Opbox",
+"exp": "",
+"part": "ops",
+"links": [
+"computers.html#opbox"
+]
+},
+{
+"slug": "operator",
+"name": "Operator",
+"exp": "",
+"part": "ops",
+"links": [
+"pool-test.html#roles",
+"pool-test.html#kill"
+]
+},
+{
+"slug": "orin-hat",
+"name": "Orin HAT",
+"exp": "",
+"part": "vehicle",
+"links": [
+"boards.html#orin-side"
+]
+},
+{
+"slug": "overlay",
+"name": "Overlay",
+"exp": "",
+"part": "start",
+"links": [
+"setup.html#sourcing"
+]
+},
+{
+"slug": "pack",
+"name": "Pack",
+"exp": "",
+"part": "ops",
+"links": [
+"nereus.html#packs"
+]
+},
+{
+"slug": "package",
+"name": "Package",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#packages",
+"code-map.html#explorer"
+]
+},
+{
+"slug": "parameter",
+"name": "Parameter",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#params"
+]
+},
+{
+"slug": "path",
+"name": "Path",
+"exp": "",
+"part": "control",
+"links": [
+"control/reference.html#paths",
+"commanding.html#paths"
+]
+},
+{
+"slug": "pcb",
+"name": "PCB",
+"exp": "Printed circuit board",
+"part": "vehicle",
+"links": [
+"boards.html#design",
+"boards.html#explorer"
+]
+},
+{
+"slug": "pico-sdk",
+"name": "Pico SDK",
+"exp": "",
+"part": "vehicle",
+"links": [
+"firmware.html#repo",
+"firmware.html#build"
+]
+},
+{
+"slug": "pin",
+"name": "Pin",
+"exp": "",
+"part": "start",
+"links": [
+"setup.html#workspaces",
+"pool-test.html#freeze"
+]
+},
+{
+"slug": "pinger",
+"name": "Pinger",
+"exp": "",
+"part": "start",
+"links": [
+"mission-tree.html#pinger",
+"sensors.html#acoustics"
+]
+},
+{
+"slug": "pinger-is-table",
+"name": "pinger_is_table",
+"exp": "",
+"part": "autonomy",
+"links": [
+"mission-tree.html#pinger"
+]
+},
+{
+"slug": "plane-fit",
+"name": "Plane fit",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/pose.html#plane"
+]
+},
+{
+"slug": "plots",
+"name": "Plots",
+"exp": "",
+"part": "ops",
+"links": [
+"debugging.html#plots",
+"viewer.html#layouts"
+]
+},
+{
+"slug": "poac",
+"name": "POAC",
+"exp": "Power + actuator board",
+"part": "vehicle",
+"links": [
+"boards.html#poac",
+"electrical.html#rails",
+"actuators.html#poac"
+]
+},
+{
+"slug": "point-cloud",
+"name": "Point cloud",
+"exp": "",
+"part": "perception",
+"links": [
+"nereus.html#cameras",
+"viewer.html#seeing"
+]
+},
+{
+"slug": "pool-test",
+"name": "Pool test",
+"exp": "",
+"part": "ops",
+"links": [
+"pool-test.html#shape"
+]
+},
+{
+"slug": "port",
+"name": "Port",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#blackboard",
+"bt-workflow.html#ports"
+]
+},
+{
+"slug": "power-budget",
+"name": "Power budget",
+"exp": "",
+"part": "control",
+"links": [
+"control/index.html#loop",
+"electrical.html#budget"
+]
+},
+{
+"slug": "prequal",
+"name": "Prequal",
+"exp": "Prequalification",
+"part": "start",
+"links": [
+"robosub.html#prequal"
+]
+},
+{
+"slug": "pretest-checks",
+"name": "pretest_checks",
+"exp": "",
+"part": "ops",
+"links": [
+"pool-test.html#pretest",
+"debugging.html#chain"
+]
+},
+{
+"slug": "prior-map",
+"name": "Prior map",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/map.html#model",
+"viewer.html#mapping"
+]
+},
+{
+"slug": "prior-map-editor",
+"name": "Prior map editor",
+"exp": "",
+"part": "ops",
+"links": [
+"viewer.html#mapping"
+]
+},
+{
+"slug": "process-noise",
+"name": "Process noise",
+"exp": "",
+"part": "vehicle",
+"links": [
+"localization.html#ekf"
+]
+},
+{
+"slug": "projected-newton",
+"name": "Projected Newton",
+"exp": "",
+"part": "control",
+"links": [
+"control/solver.html#qp"
+]
+},
+{
+"slug": "puddles",
+"name": "Puddles",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#history"
+]
+},
+{
+"slug": "pwm",
+"name": "PWM",
+"exp": "Pulse-width modulation",
+"part": "vehicle",
+"links": [
+"thrusters-hw.html#dshot",
+"thrusters-hw.html#curves"
+]
+},
+{
+"slug": "qos",
+"name": "QoS",
+"exp": "Quality of service",
+"part": "start",
+"links": [
+"ros2.html#qos"
+]
+},
+{
+"slug": "qp",
+"name": "QP",
+"exp": "Quadratic program",
+"part": "control",
+"links": [
+"control/solver.html#condensing",
+"control/solver.html#qp"
+]
+},
+{
+"slug": "quaternion",
+"name": "Quaternion",
+"exp": "",
+"part": "control",
+"links": [
+"control/solver.html#manifold",
+"commanding.html#terminal"
+]
+},
+{
+"slug": "rail",
+"name": "Rail",
+"exp": "",
+"part": "vehicle",
+"links": [
+"electrical.html#rails",
+"electrical.html#kill"
+]
+},
+{
+"slug": "receding-horizon",
+"name": "Receding horizon",
+"exp": "",
+"part": "control",
+"links": [
+"control/mpc.html#receding"
+]
+},
+{
+"slug": "rectification",
+"name": "Rectification",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/calibration.html#stereo",
+"cameras.html#pipeline"
+]
+},
+{
+"slug": "reference",
+"name": "Reference",
+"exp": "",
+"part": "control",
+"links": [
+"control/reference.html#why",
+"commanding.html#goals"
+]
+},
+{
+"slug": "release-tag",
+"name": "Release tag",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#pinning",
+"pool-test.html#after"
+]
+},
+{
+"slug": "release-workspace",
+"name": "Release workspace",
+"exp": "",
+"part": "start",
+"links": [
+"setup.html#workspaces",
+"code-map.html#disk"
+]
+},
+{
+"slug": "repair-mission",
+"name": "repair_mission",
+"exp": "",
+"part": "autonomy",
+"links": [
+"robosub.html#tree",
+"bt.html#subtrees"
+]
+},
+{
+"slug": "repaircompmpctree",
+"name": "RepairCompMpcTree",
+"exp": "",
+"part": "autonomy",
+"links": [
+"mission-tree.html#overview",
+"robosub.html#tree"
+]
+},
+{
+"slug": "restoring-forces",
+"name": "Restoring forces",
+"exp": "",
+"part": "control",
+"links": [
+"control/model.html#restoring"
+]
+},
+{
+"slug": "riptide",
+"name": "Riptide",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#history",
+"code-map.html#layers"
+]
+},
+{
+"slug": "riptide-autonomy2",
+"name": "riptide_autonomy2",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#explorer",
+"bt-workflow.html#where"
+]
+},
+{
+"slug": "riptide-control",
+"name": "riptide_control",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#explorer",
+"control/index.html#files"
+]
+},
+{
+"slug": "riptide-core",
+"name": "riptide_core",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#explorer"
+]
+},
+{
+"slug": "riptide-descriptions2",
+"name": "riptide_descriptions2",
+"exp": "",
+"part": "start",
+"links": [
+"localization.html#urdf",
+"code-map.html#explorer"
+]
+},
+{
+"slug": "riptide-hardware2",
+"name": "riptide_hardware2",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#explorer",
+"launch.html#explorer"
+]
+},
+{
+"slug": "riptide-launch",
+"name": "riptide_launch",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#explorer",
+"launch.html#explorer"
+]
+},
+{
+"slug": "riptide-mpc",
+"name": "riptide_mpc",
+"exp": "",
+"part": "control",
+"links": [
+"control/index.html#files",
+"commanding.html#flow"
+]
+},
+{
+"slug": "riptide-msgs2",
+"name": "riptide_msgs2",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#explorer",
+"interfaces.html"
+]
+},
+{
+"slug": "riptide-perception",
+"name": "riptide_perception",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#explorer",
+"perception/index.html#pipeline"
+]
+},
+{
+"slug": "riptide-release",
+"name": "riptide_release",
+"exp": "",
+"part": "start",
+"links": [
+"code-map.html#pinning",
+"setup.html#workspaces"
+]
+},
+{
+"slug": "riptide-setup",
+"name": "riptide_setup",
+"exp": "",
+"part": "start",
+"links": [
+"setup.html#riptide-setup"
+]
+},
+{
+"slug": "rk4",
+"name": "RK4",
+"exp": "Fourth-order Runge\u2013Kutta",
+"part": "control",
+"links": [
+"control/model.html#integration"
+]
+},
+{
+"slug": "rmw",
+"name": "RMW",
+"exp": "ROS middleware",
+"part": "start",
+"links": [
+"computers.html#zenoh",
+"ros2.html#zenoh"
+]
+},
+{
+"slug": "robosub",
+"name": "RoboSub",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#robosub"
+]
+},
+{
+"slug": "robot-lan",
+"name": "Robot LAN",
+"exp": "",
+"part": "ops",
+"links": [
+"computers.html#lan",
+"computers.html#map"
+]
+},
+{
+"slug": "robot-state-publisher",
+"name": "robot_state_publisher",
+"exp": "",
+"part": "start",
+"links": [
+"localization.html#urdf",
+"ros2.html#tf"
+]
+},
+{
+"slug": "ros-2",
+"name": "ROS 2",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#graph",
+"computers.html#orin"
+]
+},
+{
+"slug": "ros-daemon",
+"name": "ROS daemon",
+"exp": "",
+"part": "start",
+"links": [
+"computers.html#zenoh",
+"debugging.html#cli"
+]
+},
+{
+"slug": "ros2-cli",
+"name": "ros2 CLI",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#cli",
+"debugging.html#cli"
+]
+},
+{
+"slug": "ros-domain-id",
+"name": "ROS_DOMAIN_ID",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#zenoh",
+"computers.html#join"
+]
+},
+{
+"slug": "remote-launcher",
+"name": "ros_launcher",
+"exp": "",
+"part": "ops",
+"links": [
+"computers.html#launcher",
+"launch.html#launcher"
+]
+},
+{
+"slug": "rosdep",
+"name": "rosdep",
+"exp": "",
+"part": "start",
+"links": [
+"setup.html#build"
+]
+},
+{
+"slug": "rp2040",
+"name": "RP2040",
+"exp": "",
+"part": "vehicle",
+"links": [
+"boards.html#rp2040",
+"firmware.html#boards"
+]
+},
+{
+"slug": "rpac",
+"name": "RPAC",
+"exp": "",
+"part": "start",
+"links": [
+"pool-test.html#shape",
+"nereus.html#course"
+]
+},
+{
+"slug": "rpm-loop",
+"name": "RPM loop",
+"exp": "",
+"part": "vehicle",
+"links": [
+"thrusters-hw.html#rpm-loop",
+"firmware.html#thrusters"
+]
+},
+{
+"slug": "rti",
+"name": "RTI",
+"exp": "Real-time iteration",
+"part": "control",
+"links": [
+"control/solver.html#rti"
+]
+},
+{
+"slug": "s-curve",
+"name": "S-curve",
+"exp": "",
+"part": "control",
+"links": [
+"control/reference.html#scurve"
+]
+},
+{
+"slug": "sam",
+"name": "SAM",
+"exp": "Segment Anything Model",
+"part": "perception",
+"links": [
+"perception/training.html#label"
+]
+},
+{
+"slug": "scenario",
+"name": "Scenario",
+"exp": "",
+"part": "ops",
+"links": [
+"nereus.html#course",
+"perception/workflow.html#scenario"
+]
+},
+{
+"slug": "scorecard",
+"name": "Scorecard",
+"exp": "",
+"part": "ops",
+"links": [
+"nereus.html#tasks",
+"robosub.html#scoring"
+]
+},
+{
+"slug": "search-subtrees",
+"name": "Search subtrees",
+"exp": "",
+"part": "autonomy",
+"links": [
+"mission-tree.html#search",
+"bt-nodes.html#perception"
+]
+},
+{
+"slug": "segmentation",
+"name": "Segmentation",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/training.html#what",
+"perception/pose.html#sample"
+]
+},
+{
+"slug": "sequence",
+"name": "Sequence",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#control"
+]
+},
+{
+"slug": "service",
+"name": "Service",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#services"
+]
+},
+{
+"slug": "set-camera-is-dfc",
+"name": "set_camera_is_dfc",
+"exp": "",
+"part": "perception",
+"links": [
+"cameras.html#switching",
+"perception/detector.html#switching"
+]
+},
+{
+"slug": "setstatus",
+"name": "SetStatus",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-nodes.html#leds",
+"mission-tree.html#leds"
+]
+},
+{
+"slug": "sim-tick",
+"name": "Sim tick",
+"exp": "",
+"part": "ops",
+"links": [
+"nereus.html#physics",
+"nereus.html#time"
+]
+},
+{
+"slug": "sim-time",
+"name": "Sim time",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#time",
+"nereus.html#time",
+"debugging.html#replay"
+]
+},
+{
+"slug": "sim-launch-py",
+"name": "sim.launch.py",
+"exp": "",
+"part": "ops",
+"links": [
+"launch.html#sim",
+"nereus.html#run"
+]
+},
+{
+"slug": "slalom",
+"name": "Slalom",
+"exp": "",
+"part": "start",
+"links": [
+"mission-tree.html#slalom",
+"perception/composites.html#slalom"
+]
+},
+{
+"slug": "smart-battery-housing",
+"name": "Smart battery housing",
+"exp": "",
+"part": "vehicle",
+"links": [
+"electrical.html#smart",
+"boards.html#batteries"
+]
+},
+{
+"slug": "source",
+"name": "source",
+"exp": "",
+"part": "start",
+"links": [
+"setup.html#sourcing"
+]
+},
+{
+"slug": "ss-flip-barker",
+"name": "SS Flip Barker",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#history"
+]
+},
+{
+"slug": "ssh",
+"name": "SSH",
+"exp": "Secure Shell",
+"part": "ops",
+"links": [
+"computers.html#ssh"
+]
+},
+{
+"slug": "state-machine",
+"name": "State machine",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#why"
+]
+},
+{
+"slug": "state-kill",
+"name": "state/kill",
+"exp": "",
+"part": "ops",
+"links": [
+"commanding.html#stops",
+"firmware.html#kill"
+]
+},
+{
+"slug": "static-transform",
+"name": "Static transform",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#tf",
+"localization.html#urdf"
+]
+},
+{
+"slug": "statics",
+"name": "Statics",
+"exp": "",
+"part": "control",
+"links": [
+"control/identify.html#statics"
+]
+},
+{
+"slug": "stereo-depth",
+"name": "Stereo depth",
+"exp": "",
+"part": "perception",
+"links": [
+"cameras.html#stereo",
+"perception/calibration.html#stereo",
+"perception/noise.html#stereo"
+]
+},
+{
+"slug": "storm-response",
+"name": "Storm Response",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#course"
+]
+},
+{
+"slug": "subconn",
+"name": "SubConn",
+"exp": "",
+"part": "vehicle",
+"links": [
+"electrical.html#connectors",
+"mechanical.html#sealing"
+]
+},
+{
+"slug": "submodule",
+"name": "Submodule",
+"exp": "",
+"part": "start",
+"links": [
+"setup.html#workspaces",
+"code-map.html#pinning"
+]
+},
+{
+"slug": "subtree",
+"name": "Subtree",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#subtrees",
+"bt-workflow.html#new-subtree"
+]
+},
+{
+"slug": "svo2",
+"name": "SVO2",
+"exp": "",
+"part": "ops",
+"links": [
+"cameras.html#try",
+"debugging.html#bags"
+]
+},
+{
+"slug": "swd",
+"name": "SWD",
+"exp": "Serial Wire Debug",
+"part": "vehicle",
+"links": [
+"boards.html#rp2040",
+"firmware.html#debug"
+]
+},
+{
+"slug": "synthetic-data",
+"name": "Synthetic data",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/training.html#synthetic",
+"nereus.html#datasets"
+]
+},
+{
+"slug": "system-identification",
+"name": "System identification",
+"exp": "",
+"part": "control",
+"links": [
+"control/identify.html#premise",
+"pool-test.html#ident"
+]
+},
+{
+"slug": "systemd",
+"name": "systemd",
+"exp": "",
+"part": "ops",
+"links": [
+"computers.html#launcher",
+"launch.html#logs"
+]
+},
+{
+"slug": "t200",
+"name": "T200",
+"exp": "",
+"part": "vehicle",
+"links": [
+"thrusters-hw.html#t200",
+"control/thrusters.html#rpm"
+]
+},
+{
+"slug": "table",
+"name": "Table",
+"exp": "",
+"part": "start",
+"links": [
+"mission-tree.html#table",
+"robosub.html#scoring",
+"perception/frames.html#table"
+]
+},
+{
+"slug": "tailscale",
+"name": "Tailscale",
+"exp": "",
+"part": "ops",
+"links": [
+"computers.html#map",
+"computers.html#join"
+]
+},
+{
+"slug": "talos",
+"name": "Talos",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#history",
+"mechanical.html#numbers"
+]
+},
+{
+"slug": "tare",
+"name": "Tare",
+"exp": "",
+"part": "vehicle",
+"links": [
+"sensors.html#fog-tare",
+"localization.html#trouble"
+]
+},
+{
+"slug": "tdr",
+"name": "TDR",
+"exp": "Technical Design Report",
+"part": "start",
+"links": [
+"robosub.html#docs"
+]
+},
+{
+"slug": "teleop",
+"name": "Teleop",
+"exp": "",
+"part": "control",
+"links": [
+"commanding.html#teleop",
+"viewer.html#motion"
+]
+},
+{
+"slug": "tempest",
+"name": "Tempest",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#history",
+"boards.html#rp2040"
+]
+},
+{
+"slug": "tensorrt",
+"name": "TensorRT",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/detector.html#tensorrt",
+"perception/training.html#deploy"
+]
+},
+{
+"slug": "termination",
+"name": "Termination",
+"exp": "",
+"part": "vehicle",
+"links": [
+"boards.html#rp2040"
+]
+},
+{
+"slug": "tether",
+"name": "Tether",
+"exp": "",
+"part": "ops",
+"links": [
+"computers.html#lan",
+"cameras.html#bandwidth"
+]
+},
+{
+"slug": "tf",
+"name": "TF",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#tf",
+"localization.html#frames"
+]
+},
+{
+"slug": "thruster-dynamics",
+"name": "Thruster dynamics",
+"exp": "",
+"part": "control",
+"links": [
+"control/thrusters.html#dynamics",
+"control/mpc.html#delay"
+]
+},
+{
+"slug": "thruster-matrix",
+"name": "Thruster matrix",
+"exp": "",
+"part": "control",
+"links": [
+"control/thrusters.html#matrix"
+]
+},
+{
+"slug": "thruster-names",
+"name": "Thruster names",
+"exp": "",
+"part": "vehicle",
+"links": [
+"thrusters-hw.html#layout",
+"nereus.html#bridge"
+]
+},
+{
+"slug": "thruster-test",
+"name": "Thruster test",
+"exp": "",
+"part": "ops",
+"links": [
+"thrusters-hw.html#test",
+"pool-test.html#thruster-test"
+]
+},
+{
+"slug": "tick",
+"name": "Tick",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#ticks",
+"bt-nodes.html#dotask"
+]
+},
+{
+"slug": "titan-firmware",
+"name": "titan_firmware",
+"exp": "",
+"part": "start",
+"links": [
+"firmware.html#repo"
+]
+},
+{
+"slug": "topic",
+"name": "Topic",
+"exp": "",
+"part": "start",
+"links": [
+"ros2.html#topics",
+"interfaces.html"
+]
+},
+{
+"slug": "torpedo-board",
+"name": "Torpedo board",
+"exp": "",
+"part": "start",
+"links": [
+"mission-tree.html#torpedo",
+"perception/composites.html#torpedo",
+"actuators.html#shot"
+]
+},
+{
+"slug": "track",
+"name": "Track",
+"exp": "",
+"part": "perception",
+"links": [
+"perception/tracking.html#update",
+"perception/tracking.html#confirm"
+]
+},
+{
+"slug": "tree-stack",
+"name": "tree_stack",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-nodes.html#dotask"
+]
+},
+{
+"slug": "trim",
+"name": "Trim",
+"exp": "",
+"part": "vehicle",
+"links": [
+"mechanical.html#trim",
+"pool-test.html#trim"
+]
+},
+{
+"slug": "triton",
+"name": "Triton",
+"exp": "",
+"part": "start",
+"links": [
+"robosub.html#history",
+"code-map.html#legacy"
+]
+},
+{
+"slug": "trust",
+"name": "Trust",
+"exp": "",
+"part": "control",
+"links": [
+"control/estimation.html#trust",
+"commanding.html#goals"
+]
+},
+{
+"slug": "uart",
+"name": "UART",
+"exp": "Universal asynchronous receiver-transmitter",
+"part": "vehicle",
+"links": [
+"boards.html#orin-side",
+"sensors.html#fog",
+"firmware.html#debug"
+]
+},
+{
+"slug": "urdf",
+"name": "URDF",
+"exp": "Unified Robot Description Format",
+"part": "start",
+"links": [
+"localization.html#urdf",
+"mechanical.html#software"
+]
+},
+{
+"slug": "uwrt",
+"name": "UWRT",
+"exp": "Underwater Robotics Team",
+"part": "start",
+"links": [
+"robosub.html#history"
+]
+},
+{
+"slug": "uwrtbtnode",
+"name": "UwrtBtNode",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-nodes.html#kinds"
+]
+},
+{
+"slug": "waitforcontroller",
+"name": "WaitForController",
+"exp": "",
+"part": "autonomy",
+"links": [
+"commanding.html#senders",
+"bt-nodes.html#moving"
+]
+},
+{
+"slug": "waitforkillswitch",
+"name": "WaitForKillSwitch",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt.html#ticks",
+"robosub.html#tree"
+]
+},
+{
+"slug": "watchdog",
+"name": "Watchdog",
+"exp": "",
+"part": "vehicle",
+"links": [
+"firmware.html#safety"
+]
+},
+{
+"slug": "waypoint-string",
+"name": "Waypoint string",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-nodes.html#waypoints"
+]
+},
+{
+"slug": "workspace",
+"name": "Workspace",
+"exp": "",
+"part": "start",
+"links": [
+"setup.html#workspaces"
+]
+},
+{
+"slug": "workspace-file",
+"name": "Workspace file",
+"exp": "",
+"part": "autonomy",
+"links": [
+"bt-workflow.html#workspace"
+]
+},
+{
+"slug": "wrench",
+"name": "Wrench",
+"exp": "",
+"part": "control",
+"links": [
+"control/thrusters.html#matrix"
+]
+},
+{
+"slug": "xacro",
+"name": "Xacro",
+"exp": "",
+"part": "start",
+"links": [
+"localization.html#urdf",
+"actuators.html#mechanisms"
+]
+},
+{
+"slug": "yolo",
+"name": "YOLO",
+"exp": "You Only Look Once",
+"part": "perception",
+"links": [
+"perception/detector.html#model",
+"perception/training.html#what"
+]
+},
+{
+"slug": "zed-sdk",
+"name": "ZED SDK",
+"exp": "",
+"part": "vehicle",
+"links": [
+"cameras.html#pipeline",
+"cameras.html#launch"
+]
+},
+{
+"slug": "zed-x-mini",
+"name": "ZED X Mini",
+"exp": "",
+"part": "vehicle",
+"links": [
+"cameras.html#two-cameras",
+"cameras.html#settings"
+]
+},
+{
+"slug": "zenoh",
+"name": "Zenoh",
+"exp": "",
+"part": "start",
+"links": [
+"computers.html#zenoh",
+"ros2.html#zenoh"
+]
+},
+{
+"slug": "zenoh-router",
+"name": "Zenoh router",
+"exp": "",
+"part": "start",
+"links": [
+"computers.html#zenoh",
+"computers.html#join"
+]
+}
+]

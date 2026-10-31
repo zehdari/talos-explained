@@ -11,12 +11,19 @@ setup();
   const note = document.getElementById('fg-note');
   let view = 'full';
   const sub = (k) => String(k).split('').map((d) => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
+  const slider = document.getElementById('fg-n');
+  const wideMax = +slider.max;
+  let narrow = null;
   function draw() {
-    const N = +document.getElementById('fg-n').value;
+    // Phones: a 360-wide drawing with at most four stages, so nodes and labels keep their size.
+    narrow = host.clientWidth > 0 && host.clientWidth < 600;
+    slider.max = narrow ? 4 : wideMax;
+    if (+slider.value > +slider.max) slider.value = slider.max;
+    const N = +slider.value;
     document.getElementById('fg-n-o').textContent = `${N}`;
     host.innerHTML = '';
-    const W = 900, sp = (W - 120) / N;
-    const X = (k) => 60 + k * sp;
+    const W = narrow ? 360 : 900, sp = (W - (narrow ? 64 : 120)) / N;
+    const X = (k) => (narrow ? 32 : 60) + k * sp;
     const nodes = [], edges = [];
     if (view === 'full') {
       for (let k = 0; k <= N; k++) {
@@ -77,7 +84,8 @@ setup();
     });
     g.highlight(null);
   }
-  document.getElementById('fg-n').addEventListener('input', draw);
+  slider.addEventListener('input', draw);
+  new ResizeObserver(() => { if (host.clientWidth && (host.clientWidth < 600) !== narrow) draw(); }).observe(host);
   document.querySelectorAll('[data-v]').forEach((b) => b.addEventListener('click', () => {
     view = b.dataset.v;
     document.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
@@ -108,31 +116,55 @@ setup();
 // ---------- timeline ----------
 {
   const host = document.getElementById('timeline');
-  const W = 900, H = 170, t0 = -0.22, t1 = 1.62;
-  const sx = (t) => 30 + ((t - t0) / (t1 - t0)) * (W - 50);
-  const svg = el('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}` }, host);
-  // in-flight
-  el('rect', { x: sx(0), y: 50, width: sx(0.03) - sx(0), height: 36, fill: 'var(--s4)', opacity: 0.35, rx: 2 }, svg);
-  for (let k = 0; k < 30; k++) {
-    const a = sx(0.03 + k * 0.05), b = sx(0.08 + k * 0.05);
-    el('rect', { x: a + 1, y: 50, width: b - a - 2, height: 36, fill: k === 0 ? 'var(--accent)' : 'var(--prediction)', opacity: k === 0 ? 0.95 : 0.18 + 0.5 * (1 - k / 30), rx: 2 }, svg);
-  }
-  const tick = (t, label, y = 30) => {
-    el('line', { x1: sx(t), x2: sx(t), y1: y + 6, y2: 104, stroke: 'var(--ink)', 'stroke-width': 1.2 }, svg);
-    el('text', { class: 'label', x: sx(t), y, 'text-anchor': 'middle' }, svg).textContent = label;
+  const key = document.createElement('ul');
+  key.className = 'tl-key';
+  key.innerHTML = [
+    ['var(--s4)', 0.6, 'In flight: 30 ms of commands already sent'],
+    ['var(--accent)', 0.95, 'u₀: the only command published'],
+    ['var(--prediction)', 0.55, 'u₁ … u₂₉: the rest of the plan (30 stages, 1.5 s)'],
+  ].map(([c, o, txt]) => `<li><i style="background:${c};opacity:${o}"></i>${txt}</li>`).join('');
+  let drawnW = 0;
+  const draw = () => {
+    host.innerHTML = '';
+    // Phones: drawn at the panel's own pixel width with the notes in a key underneath, not inside the bar.
+    const narrow = host.clientWidth > 0 && host.clientWidth < 600;
+    drawnW = host.clientWidth;
+    const W = narrow ? host.clientWidth : 900, H = narrow ? 118 : 170, t0 = narrow ? -0.12 : -0.22, t1 = narrow ? 1.58 : 1.62;
+    const sx = narrow ? (t) => 10 + ((t - t0) / (t1 - t0)) * (W - 22) : (t) => 30 + ((t - t0) / (t1 - t0)) * (W - 50);
+    const y0 = narrow ? 44 : 50, bh = narrow ? 30 : 36, base = narrow ? 88 : 104;
+    const svg = el('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}` }, host);
+    // in flight
+    el('rect', { x: sx(0), y: y0, width: sx(0.03) - sx(0), height: bh, fill: 'var(--s4)', opacity: 0.35, rx: 2 }, svg);
+    for (let k = 0; k < 30; k++) {
+      const a = sx(0.03 + k * 0.05), b = sx(0.08 + k * 0.05), gap = narrow ? 0.5 : 1;
+      el('rect', { x: a + gap, y: y0, width: Math.max(0.5, b - a - 2 * gap), height: bh, fill: k === 0 ? 'var(--accent)' : 'var(--prediction)', opacity: k === 0 ? 0.95 : 0.18 + 0.5 * (1 - k / 30), rx: narrow ? 1 : 2 }, svg);
+    }
+    el('line', { x1: sx(t0), x2: sx(t1), y1: base, y2: base, stroke: 'var(--rule)' }, svg);
+    for (const t of [0, 0.5, 1, 1.5]) el('text', { class: 'label', x: sx(t), y: base + 16, 'text-anchor': 'middle' }, svg).textContent = `${t} s`;
+    if (narrow) {
+      el('line', { x1: sx(0), x2: sx(0), y1: 18, y2: base, stroke: 'var(--ink)', 'stroke-width': 1.2 }, svg);
+      el('text', { class: 'label', x: sx(0) + 5, y: 14 }, svg).textContent = 'tick k: measure x̂';
+      el('line', { x1: sx(0.05), x2: sx(0.05), y1: 34, y2: base, stroke: 'var(--ink)', 'stroke-width': 1.2 }, svg);
+      el('text', { class: 'label', x: sx(0.05) + 5, y: 31 }, svg).textContent = 'tick k+1: plan again';
+      host.appendChild(key);
+      return;
+    }
+    el('line', { x1: sx(0), x2: sx(0), y1: 30, y2: 104, stroke: 'var(--ink)', 'stroke-width': 1.2 }, svg);
+    el('text', { class: 'label', x: sx(0) - 6, y: 26, 'text-anchor': 'end' }, svg).textContent = 'tick k: measure x̂';
+    el('line', { x1: sx(0.05), x2: sx(0.05), y1: 30, y2: 104, stroke: 'var(--ink)', 'stroke-width': 1.2 }, svg);
+    el('text', { class: 'label', x: sx(0.05) + 6, y: 26 }, svg).textContent = 'tick k+1: plan again';
+    const lab = (x, y, t, anchor = 'start') => (el('text', { class: 'label', x, y, 'text-anchor': anchor }, svg).textContent = t);
+    el('line', { x1: sx(0.015), x2: sx(0.015), y1: 88, y2: 142, stroke: 'var(--muted)', 'stroke-dasharray': '2 3' }, svg);
+    lab(sx(0.015) + 6, 142, 'in flight: 30 ms of commands already sent');
+    el('line', { x1: sx(0.055), x2: sx(0.055), y1: 88, y2: 162, stroke: 'var(--muted)', 'stroke-dasharray': '2 3' }, svg);
+    lab(sx(0.055) + 6, 162, 'u₀: the only command published');
+    lab(sx(0.9), 72, 'u₁ … u₂₉: the rest of the plan (30 stages, 1.5 s)', 'middle');
   };
-  el('line', { x1: sx(0), x2: sx(0), y1: 30, y2: 104, stroke: 'var(--ink)', 'stroke-width': 1.2 }, svg);
-  el('text', { class: 'label', x: sx(0) - 6, y: 26, 'text-anchor': 'end' }, svg).textContent = 'tick k: measure x̂';
-  el('line', { x1: sx(0.05), x2: sx(0.05), y1: 30, y2: 104, stroke: 'var(--ink)', 'stroke-width': 1.2 }, svg);
-  el('text', { class: 'label', x: sx(0.05) + 6, y: 26 }, svg).textContent = 'tick k+1: plan again';
-  el('line', { x1: sx(t0), x2: sx(t1), y1: 104, y2: 104, stroke: 'var(--rule)' }, svg);
-  for (const t of [0, 0.5, 1, 1.5]) el('text', { class: 'label', x: sx(t), y: 120, 'text-anchor': 'middle' }, svg).textContent = `${t} s`;
-  const lab = (x, y, t, anchor = 'start') => (el('text', { class: 'label', x, y, 'text-anchor': anchor }, svg).textContent = t);
-  el('line', { x1: sx(0.015), x2: sx(0.015), y1: 88, y2: 142, stroke: 'var(--muted)', 'stroke-dasharray': '2 3' }, svg);
-  lab(sx(0.015) + 6, 142, 'in flight: 30 ms of commands already sent');
-  el('line', { x1: sx(0.055), x2: sx(0.055), y1: 88, y2: 162, stroke: 'var(--muted)', 'stroke-dasharray': '2 3' }, svg);
-  lab(sx(0.055) + 6, 162, 'u₀: the only command published');
-  lab(sx(0.9), 72, 'u₁ … u₂₉: the rest of the plan (30 stages, 1.5 s)', 'middle');
+  draw();
+  new ResizeObserver(() => {
+    const w = host.clientWidth;
+    if (w && Math.abs(w - drawnW) > 4 && (w < 600 || drawnW < 600)) draw();
+  }).observe(host);
 }
 
 // ---------- receding horizon fan ----------

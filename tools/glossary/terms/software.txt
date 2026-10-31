@@ -1,0 +1,828 @@
+# Glossary source: perception, control, autonomy and running Talos. Format: see start.txt.
+
+## Detector
+aka: yolo_orientation, yolo_orientation.py, tensorrt.launch.py, tensor_detector
+part: perception
+slug: yolo-orientation
+The node that runs the YOLO model on one camera's images and turns each mask into a 3D pose with the depth image (`yolo_orientation`). Its output is `/talos/detected_objects`.
+> perception/detector.html#model
+> perception/detector.html#outputs
+
+## YOLO
+exp: You Only Look Once
+aka: YOLO26n-seg, Ultralytics, segmentation model
+part: perception
+The family of fast neural-network detectors Talos uses, from Ultralytics. Each camera has its own YOLO26n-seg model, which returns a class, confidence, box and pixel mask per object.
+> perception/detector.html#model
+> perception/training.html#what
+
+## Segmentation
+aka: mask, instance segmentation
+part: perception
+Finding exactly which pixels belong to each object (its mask), not just a box round it. Talos needs the mask to fit a surface and read which way a prop faces.
+> perception/training.html#what
+> perception/pose.html#sample
+
+## Class
+aka: class name
+part: perception
+What the detector says an object is, such as `torpedo`, `fire` or `nut_and_bolt`. The names match the course's props and are the names mapping and the trees use.
+> perception/detector.html#model
+> robosub.html#course
+
+## TensorRT
+aka: .engine, engine
+part: perception
+NVIDIA's compiler for neural networks. On the Orin the detector runs the model as a TensorRT `.engine`, much faster than PyTorch; an engine only works on the GPU and version that built it.
+> perception/detector.html#tensorrt
+> perception/training.html#deploy
+
+## SAM
+exp: Segment Anything Model
+part: perception
+A labelling model the team uses to draw masks on real prop videos, which become YOLO training data.
+> perception/training.html#label
+
+## Augmentation
+aka: augmented
+part: perception
+Making more training images from the same ones: rotating, zooming, mirroring and pasting props onto unrelated photos.
+> perception/training.html#augment
+
+## Synthetic data
+aka: nereus-dataset, dataset
+part: perception
+Training images rendered by Nereus, which labels every pixel for free. The 2026 forward set has 10 250 images, including empty backgrounds.
+> perception/training.html#synthetic
+> nereus.html#datasets
+
+## Intrinsics
+aka: focal length, camera matrix, K
+part: perception
+A camera's focal length and image centre, in pixels: what turns a direction in front of the lens into a pixel.
+> perception/calibration.html#pinhole
+
+## Lens distortion
+aka: distortion
+part: perception
+How a real lens bends straight lines, measured in calibration and undone before the image is used.
+> perception/calibration.html#distortion
+
+## Calibration (camera)
+aka: camera calibration, underwater calibration
+part: perception
+slug: camera-calibration
+Measuring a camera's intrinsics, distortion and stereo geometry. Talos's cameras are calibrated underwater, because water and the flat window change all three.
+> perception/calibration.html#underwater
+> perception/calibration.html#procedure
+
+## ChArUco board
+aka: ChArUco
+part: perception
+A chessboard with printed ArUco markers in its white squares. Each corner is identified, so a calibration works even when the board is only partly in view.
+> perception/calibration.html#charuco
+
+## Extrinsics
+part: perception
+Where a camera sits relative to something else: its two lenses relative to each other, or the camera on the robot.
+> perception/calibration.html#stereo
+> perception/calibration.html#extrinsics
+
+## Rectification
+aka: rectified, image_rect_color
+part: perception
+Warping a stereo pair so a point sits on the same row in both images. The ZED SDK does it on the GPU; the stack uses the rectified images.
+> perception/calibration.html#stereo
+> cameras.html#pipeline
+
+## Stereo depth
+aka: disparity, baseline
+part: perception
+Depth from two lenses: a near point shifts more between the left and right images than a far one. Depth is focal length × [[baseline]] ÷ that shift, so error grows with range squared.
+> cameras.html#stereo
+> perception/calibration.html#stereo
+> perception/noise.html#stereo
+
+## Baseline
+part: perception
+The distance between a stereo camera's two lenses: about 50 mm on the ZED X Mini.
+> cameras.html#two-cameras
+
+## Depth image
+aka: depth map, depth_registered
+part: perception
+An image whose pixels are distances in metres instead of colours, aligned with the colour image. Pixels where stereo failed are NaN or zero.
+> cameras.html#topics
+> perception/pose.html#backproject
+
+## Point cloud
+part: perception
+A set of 3D points, here from a depth image. The viewer can show the cameras' clouds; they are heavy over the tether.
+> nereus.html#cameras
+> viewer.html#seeing
+
+## Back-projection
+part: perception
+Running the camera model backwards: a pixel plus its depth gives a 3D point in the camera frame.
+> perception/pose.html#backproject
+
+## Depth gate
+part: perception
+Dropping mask samples whose depth is far from the median, so background seen through or round a prop doesn't bend its pose.
+> perception/pose.html#gate
+
+## Plane fit
+aka: normal, SVD
+part: perception
+Fitting a flat surface to a prop's 3D points. Its normal, the direction straight out of the surface, says which way the prop faces.
+> perception/pose.html#plane
+
+## Detection
+aka: detected_objects, Detection3DArray
+part: perception
+One object seen in one frame: class, confidence and a pose, published per frame on `/talos/detected_objects`. Its covariance is left at zero for mapping to decide.
+> perception/detector.html#outputs
+> perception/noise.html#model
+
+## Mahalanobis distance
+aka: chi-squared, gate
+part: perception
+Distance measured in standard deviations along the direction of the miss. Mapping rejects a detection whose distance from its track is too big to be chance.
+> perception/tracking.html#gating
+> perception/math.html#reading
+
+## Track
+aka: tracker
+part: perception
+Mapping's running estimate of one prop, a Kalman filter fed by its detections. A track is targeted, established and finally confirmed before trees trust it.
+> perception/tracking.html#update
+> perception/tracking.html#confirm
+
+## Confirmed
+aka: targeted, established
+part: perception
+A track that has had enough agreeing detections while targeted, and hasn't been asked to re-check since. Setting a target clears it.
+> perception/tracking.html#confirm
+
+## Mapping
+aka: riptide_mapping2, mapping.py, map_estimator
+part: perception
+slug: riptide-mapping2
+The node that fuses detections into one estimate per prop, starting from the prior map, and publishes each prop as a TF frame (`riptide_mapping2`).
+> perception/map.html#why
+> perception/frames.html#published
+
+## Prior map
+aka: prior, init_data, config.yaml
+part: perception
+Where each prop is expected to be before Talos sees it, in mapping's `config.yaml`. Measured on each course and edited in the viewer's prior map editor.
+> perception/map.html#model
+> viewer.html#mapping
+
+## Offset
+aka: map → offset
+part: perception
+Mapping's one shared shift of the whole course against odometry, published as the TF `map → offset`. Every map prop hangs below it, so seeing one prop moves the unseen ones too.
+> perception/map.html#model
+> perception/frames.html#tree
+
+## Deviation
+part: perception
+How far one prop sits from where the layout says, on top of the shared offset. A prop that disagrees a lot is blamed alone instead of dragging the course.
+> perception/map.html#model
+> perception/map.html#robust
+
+## Fix
+part: perception
+A finished track of one prop, stamped with the odometry distance and time it was seen at. Two fixes of a prop far apart measure odometry drift.
+> perception/map.html#fixes
+
+## Mapping target
+aka: mapping_target, target, background target
+part: perception
+Which props mapping fuses right now, set by the tree. Only targeted detections can confirm a prop; other props in view still improve as background targets.
+> perception/frames.html#targets
+> viewer.html#mapping
+
+## Lock map
+aka: lock the map
+part: perception
+Telling mapping to ignore all detections and freeze every estimate, so Talos acts on a fixed position while it shoots, drops or grabs.
+> perception/frames.html#targets
+> mission-tree.html#overview
+
+## Binary classifier
+part: perception
+Mapping's helper that splits two identical-looking props (the bins' two symbols, the two magnets) into target 1 and target 2.
+> perception/frames.html#binary
+> mission-tree.html#bins
+
+## Composite
+aka: torpedo board, pairs
+part: perception
+A prop made of several detected pieces, such as the torpedo board and its holes or a slalom row of poles, handled together.
+> perception/composites.html#pairs
+> perception/composites.html#torpedo
+
+## camera_faker
+part: perception
+The simulated ZED cameras of the previous simulator, riptide_simulator, which Nereus replaced. Kept off the robot with [[DEPLOY_IGNORE]].
+> code-map.html#explorer
+
+## MPC
+exp: Model predictive control
+aka: NMPC, nonlinear MPC, riptide_mpc
+part: control
+A controller that, every tick, predicts Talos's motion with a model for a short horizon, chooses the thrust plan that best follows the reference, and sends only the first step. Talos's is [[riptide_mpc]].
+> control/index.html#loop
+> control/mpc.html#problem
+
+## riptide_mpc
+aka: mpc_controller
+part: control
+The controller Talos flies with: a nonlinear MPC on a Fossen model, 20 times a second, planning 1.5 s ahead and writing thruster RPMs straight to CAN.
+> control/index.html#files
+> commanding.html#flow
+
+## Control tick
+aka: control period, 50 ms
+part: control
+One cycle of the MPC: every 50 ms it reads the state, solves, and sends eight thrusts. In Nereus it is on sim time, so it has to keep up with the simulator.
+> control/index.html#loop
+> nereus.html#time
+
+## Horizon
+aka: stage, prediction horizon
+part: control
+How far ahead the MPC plans: 30 stages of 50 ms, 1.5 s. The viewer's MPC path overlay draws it.
+> control/mpc.html#state
+> viewer.html#seeing
+
+## Receding horizon
+part: control
+Plan the whole horizon, use only the first 50 ms, then plan again from the new state. The rest of the plan only seeds the next solve.
+> control/mpc.html#receding
+
+## Reference
+aka: setpoint
+part: control
+Where the controller is told to be at each moment. A new setpoint isn't chased directly: a smooth reference glides to it.
+> control/reference.html#why
+> commanding.html#goals
+
+## S-curve
+aka: motion profile, jerk-limited profile
+part: control
+The jerk-limited path the reference takes to a new setpoint, so speed and acceleration build up and die down smoothly.
+> control/reference.html#scurve
+
+## Path
+aka: path_plan, PathSegment
+part: control
+A list of waypoints (lines, arcs, rounded corners) flown as one curve with one speed profile, through [[follow_path]].
+> control/reference.html#paths
+> commanding.html#paths
+
+## follow_path
+aka: FollowPath action
+part: control
+The MPC's action: fly through a list of poses without stopping and settle on the last. Trees send it with the [[FollowPath]] node.
+> commanding.html#paths
+> bt-nodes.html#moving
+
+## Governor
+aka: reference governor
+part: control
+Slows the reference when Talos falls behind it, so the controller isn't asked to catch up with something running away.
+> control/reference.html#governor
+
+## Feedforward
+aka: u_ff
+part: control
+The thrust the model says the reference needs (to hold depth against buoyancy, to push through drag). The MPC penalizes deviation from it, not thrust itself, so it doesn't lag.
+> control/mpc.html#feedforward
+
+## Cost
+aka: weights, Q
+part: control
+What the MPC minimizes: how far the plan is from the reference plus how much thrust deviates from the feedforward, each weighted. The weights depend on the mode.
+> control/mpc.html#errors
+> control/mpc.html#modes
+
+## QP
+exp: Quadratic program
+part: control
+An optimization with a quadratic cost and linear constraints. Each tick the MPC's problem is linearized into one QP in 240 numbers (30 stages × 8 thrusters).
+> control/solver.html#condensing
+> control/solver.html#qp
+
+## Condensing
+part: control
+Eliminating the predicted states from the problem, since they follow from the commands, to leave a small dense QP in the thrusts alone.
+> control/solver.html#condensing
+
+## Projected Newton
+part: control
+The method that solves the MPC's QP with its ±24 N limits per thruster, usually in one or two iterations.
+> control/solver.html#qp
+
+## RTI
+exp: Real-time iteration
+aka: SQP, warm start
+part: control
+Taking one optimization step per tick instead of solving to the end, starting from last tick's plan shifted by one stage. It works because consecutive problems are nearly the same.
+> control/solver.html#rti
+
+## Jacobian
+aka: finite differences, linearization
+part: control
+How each predicted state changes with a small change of state or command. riptide_mpc gets them by finite differences on the model.
+> control/solver.html#jacobians
+
+## Quaternion
+part: control
+Four numbers for an attitude, with no gimbal lock. The MPC perturbs it on the manifold (small rotations), since adding to a quaternion breaks it.
+> control/solver.html#manifold
+> commanding.html#terminal
+
+## Fossen model
+aka: equation of motion, marine dynamics
+part: control
+The standard equation of motion for a vehicle in water: mass and added mass, Coriolis, damping, and gravity with buoyancy. The MPC and Nereus share the same code for it.
+> control/model.html#eom
+> nereus.html#physics
+
+## DOF
+exp: Degrees of freedom
+aka: 6 DOF, surge, sway, heave, roll, pitch, yaw
+part: control
+The six ways a body can move: surge, sway and heave (forward, sideways, up) and roll, pitch and yaw (turning about x, y, z).
+> control/model.html#frames
+> thrusters-hw.html#layout
+
+## Wrench
+aka: tau
+part: control
+A force and a torque together, six numbers. The thrusters' eight forces add up to one wrench on Talos.
+> control/thrusters.html#matrix
+
+## Added mass
+part: control
+Accelerating Talos also accelerates the water round it, so it behaves as if it had more mass than it does. Identified in the pool.
+> control/model.html#mass
+> control/identify.html#inertia
+
+## Damping
+aka: drag
+part: control
+The water's resistance, growing with speed (linear and quadratic terms). Identified in the pool.
+> control/model.html#damping
+> control/identify.html#drag
+
+## Restoring forces
+aka: righting moment
+part: control
+Gravity at the COM and buoyancy at the COB. With the COB above the COM they level Talos when it tilts.
+> control/model.html#restoring
+
+## Thruster matrix
+aka: T, thrust allocation matrix
+part: control
+The 6 × 8 matrix that turns eight thruster forces into one wrench, built from the thrusters' positions and directions in CAD.
+> control/thrusters.html#matrix
+
+## Allocation
+part: control
+Turning a desired wrench into eight thruster forces. The MPC doesn't allocate to control: its decision variables are the forces themselves. It uses allocation only to compute its [[Feedforward|feedforward]] thrust, and `FEEDFORWARD` mode allocates the fixed wrench directly.
+> control/thrusters.html#allocation
+
+## Null space
+part: control
+Thruster patterns that push against each other and produce no net wrench. Identification uses them to test thrusters without moving Talos.
+> control/thrusters.html#nullspace
+> control/identify.html#session
+
+## Thruster dynamics
+aka: delay, lag, slew
+part: control
+A thruster's force arrives late: a 30 ms delay, then a lag of 60 to 80 ms, with a slew limit. The MPC plans through it with a replica of the thrusters.
+> control/thrusters.html#dynamics
+> control/mpc.html#delay
+
+## Power budget
+aka: 73 N
+part: control
+A cap on the sum of all eight thrusts (73 N). A plan over it is scaled down, keeping its direction.
+> control/index.html#loop
+> electrical.html#budget
+
+## RK4
+exp: Fourth-order Runge–Kutta
+part: control
+The integration step the model uses to predict the next state from the current one.
+> control/model.html#integration
+
+## Disturbance estimate
+aka: offset-free, disturbance wrench
+part: control
+A wrench the MPC learns for whatever its model gets wrong (a little extra buoyancy, say) and adds to its predictions, so Talos holds position without a steady error.
+> control/estimation.html#offsetfree
+
+## MPC state estimator
+aka: state_estimator, state_estimator.cpp, state_source
+part: control
+The MPC builds its own state straight from the IMU, gyro, DVL and depth sensor, because the [[EKF]]'s output arrives late for a controller planning 1.5 s ahead. The EKF only anchors x, y and heading, and re-seeds it after a large disagreement (over 1 m or 0.5 rad).
+> control/estimation.html#why
+> localization.html#users
+
+## Trust
+aka: settle trust, controller/scale/trust
+part: control
+A number from 0 to 1 per axis that says Talos has arrived and stayed. Trees wait for it (typically above 0.8) before the next step.
+> control/estimation.html#trust
+> commanding.html#goals
+
+## System identification
+aka: ident, pool_identify, identification
+part: control
+Fitting the numbers you can't measure on land (buoyancy, COB, drag, added mass, thruster gains) from a scripted pool session flown by the MPC.
+> control/identify.html#premise
+> pool-test.html#ident
+
+## Statics
+part: control
+What it takes to hold still: net buoyancy and where the COB sits, the first thing identification fits.
+> control/identify.html#statics
+
+## ControllerCommand
+aka: controller/linear, controller/angular
+part: control
+The message that sets the MPC's goal, one for the linear half and one for the angular half, each with a mode and a setpoint.
+> commanding.html#modes
+> interfaces.html
+
+## Controller modes
+aka: POSITION, VELOCITY, FEEDFORWARD, DISABLED, FF_body_force, controller/FF_body_force
+part: control
+`DISABLED` (no thrust), `FEEDFORWARD` (both halves: a fixed body wrench from `controller/FF_body_force` split straight onto the thrusters, no MPC), `VELOCITY` and `POSITION`. Either half disabled stops the whole controller.
+> commanding.html#modes
+> control/mpc.html#modes
+
+## controller_overseer
+aka: motion_enabled, controller/motion_enabled, setTeleop
+part: control
+A small Python node started with the controller. It watches the ESC telemetry and sets `controller/motion_enabled` false (zero thrust) after repeated faults or 2 s of silence. It also publishes the 1 Hz feedforward wrench and answers the viewer's `setTeleop` call.
+> commanding.html#stops
+> commanding.html#senders
+> commanding.html#goals
+
+## Teleop
+part: control
+Driving Talos by hand. Today the viewer's Motion panel is the teleop: typed targets, a drag gizmo or one-step-per-key moves.
+> commanding.html#teleop
+> viewer.html#motion
+
+## Legacy controller
+aka: hybrid, complete_controller, riptide_controllers2, Simulink
+part: control
+The old Simulink-built controller, no longer built. Launch files still default to `active_control_model:=hybrid`, which would start it, so nothing flies: pass `mpc`.
+> commanding.html#legacy
+
+## active_control_model
+aka: mpc_model
+part: control
+The launch argument that picks the controller: `mpc` starts riptide_mpc. In Nereus, `mpc_model:=sim` gives the MPC the simulator's exact model.
+> commanding.html#legacy
+> nereus.html#mpc-model
+
+## Behaviour tree
+aka: BT, behavior tree, mission tree
+part: autonomy
+The way Talos decides what to do: a tree of nodes in an XML file, ticked from the root. Control nodes pick which children run; leaves act or check.
+> bt.html#ticks
+> bt.html#why
+
+## BehaviorTree.CPP
+aka: BT.CPP, behaviortree_cpp_v3
+part: autonomy
+The C++ library Talos's trees run on, version 3. The team's own nodes are classes built on it.
+> bt.html#ticks
+> bt-nodes.html#kinds
+
+## Tick
+part: autonomy
+One pass down a behaviour tree from the root. doTask ticks about every 30 ms until the root returns SUCCESS or FAILURE.
+> bt.html#ticks
+> bt-nodes.html#dotask
+
+## Node status
+aka: SUCCESS, FAILURE, RUNNING, IDLE
+part: autonomy
+What a tree node answers when ticked: `SUCCESS`, `FAILURE` or `RUNNING` (not done, tick me again). `IDLE` means not started.
+> bt.html#ticks
+
+## Sequence
+aka: ReactiveSequence
+part: autonomy
+A control node that ticks its children in order and stops at the first that fails ("do all of these"). A ReactiveSequence re-checks the earlier children every tick.
+> bt.html#control
+
+## Fallback
+part: autonomy
+A control node that tries its children in order until one succeeds ("try until one works").
+> bt.html#control
+
+## Mapping nodes
+aka: SetMappingTarget, MapConverged, SeenRecently, CenterDetection
+part: autonomy
+The tree nodes a search is built from. `SetMappingTarget` tells mapping which prop to fuse. `SeenRecently` (a detection within the last 0.5 s, in the searches) and `MapConverged` (mapping's error under a threshold) are conditions re-checked every tick, so the sweep beneath them stops the moment either passes. `CenterDetection` then brings the prop to the middle of the image.
+> bt-nodes.html#perception
+> perception/frames.html#trees
+
+## IfThenElse
+part: autonomy
+A control node ("if, then, else"): it ticks the first child; if that succeeds, the second, otherwise the third. Talos uses it 55 times, mostly to pick numbers, such as the sweep size in a search. Not the same as a [[Fallback]].
+> bt.html#control
+
+## Decorator
+aka: ForceSuccess, RetryUntilSuccessfulOrTimeout, Repeat
+part: autonomy
+A node with one child that changes how it runs or what it returns. `ForceSuccess` wraps every competition task, so a failed task doesn't end the run.
+> bt.html#decorators
+
+## Action node
+aka: condition, async action, UWRTActionNode
+part: autonomy
+A leaf that does something (an action) or checks something (a condition). Slow ones are async: they start on one tick, return RUNNING and check their ROS reply on later ticks.
+> bt-nodes.html#kinds
+> bt.html#ros
+
+## Halt
+aka: onHalted
+part: autonomy
+Stopping a RUNNING node because its parent no longer needs it. Halting FollowPath cancels its MPC goal.
+> bt.html#ticks
+> bt.html#ros
+
+## Blackboard
+aka: SetBlackboard
+part: autonomy
+The key-value store that the nodes of one tree share. Nodes read and write it through ports.
+> bt.html#blackboard
+> bt-nodes.html#ports
+
+## Port
+part: autonomy
+A named input or output of a node type. `seconds="5"` is a value; `seconds="{hold_secs}"` reads a blackboard key. Every port is a string, converted when read.
+> bt.html#blackboard
+> bt-workflow.html#ports
+
+## Subtree
+aka: SubTree, remapping
+part: autonomy
+A tree called from another tree like a node. It gets its own blackboard; its ports map to the caller's key names, which is why trees write keys like `"15" = "15"`.
+> bt.html#subtrees
+> bt-workflow.html#new-subtree
+
+## Groot
+aka: TreeNodesModel, .fbl, btlogs
+part: autonomy
+The graphical editor for the tree XML (the team's fork), and the replay tool for the `~/btlogs/*.fbl` log each run writes.
+> bt-workflow.html#editing
+> bt.html#ticks
+
+## Workspace file
+aka: workspace.xml
+part: autonomy
+The Groot workspace that lists every node and its ports, so the editor's palette matches the C++.
+> bt-workflow.html#workspace
+
+## doTask
+aka: DoTask.cpp, autonomy/run_tree, /talos/autonomy
+part: autonomy
+The tree runner node, `/talos/autonomy`: give its `run_tree` action a tree file and it ticks it until it ends. The viewer's Autonomy panel calls it.
+> bt-nodes.html#dotask
+> bt-workflow.html#run
+
+## tree_stack
+aka: autonomy/tree_stack
+part: autonomy
+A topic with the names of the running tree nodes, root first. The viewer shows it while a tree runs.
+> bt-nodes.html#dotask
+
+## checkBT
+part: autonomy
+The team's checker for tree files: nodes against the C++, port names and directions, unbalanced braces. Run it on your machine; it rewrites the files it checks.
+> bt-workflow.html#checkbt
+
+## btassistant.py
+aka: BT assistant
+part: autonomy
+A helper that creates new node files from templates, rebuilds riptide_autonomy2 and runs the checks.
+> bt-workflow.html#assistant
+
+## UwrtBtNode
+part: autonomy
+The base class every custom tree node inherits next to BT.CPP's, which gives it the ROS node and a TF helper.
+> bt-nodes.html#kinds
+
+## FollowPath
+aka: AddWaypoint, AddArc
+part: autonomy
+The tree node that sends a path to the MPC's follow_path action. `AddWaypoint` and `AddArc` build the path string piece by piece.
+> bt-nodes.html#moving
+> bt-nodes.html#waypoints
+
+## Waypoint string
+part: autonomy
+FollowPath's whole path in one string: `frame: x,y,z,yaw | options; …`. A waypoint in a prop's frame moves with mapping's estimate of that prop.
+> bt-nodes.html#waypoints
+
+## WaitForController
+aka: PublishToController, KillController
+part: autonomy
+Subtrees that wait for the MPC's trust and distance to say Talos has arrived. PublishToController sends a setpoint; KillController sends DISABLED.
+> commanding.html#senders
+> bt-nodes.html#moving
+
+## Search subtrees
+aka: SearchMpc, MiniSearchMpc, DownwardSearchMpc
+part: autonomy
+The subtrees that look for a prop until mapping's error is under a threshold or time runs out: sweeps with the forward camera, spirals with the downward one.
+> mission-tree.html#search
+> bt-nodes.html#perception
+
+## ComputeFrameAlignment
+part: autonomy
+The node that works out where to put Talos so a tool frame (a torpedo tube, the claw) lines up with a target.
+> bt-nodes.html#frames
+
+## SetStatus
+part: autonomy
+The node that sets the status light's colour and pattern from a tree.
+> bt-nodes.html#leds
+> mission-tree.html#leds
+
+## RepairCompMpcTree
+aka: RepairCompMpcTree.xml, RescueCompMpcTree, CompMissionTreeMpc
+part: autonomy
+The competition tree, about 4 100 lines: it sets `repair_mission = 1` and runs CompMissionTreeMpc through gate, slalom, pinger, torpedo, table, bins and home. RescueCompMpcTree is the same for the other role.
+> mission-tree.html#overview
+> robosub.html#tree
+
+## repair_mission
+part: autonomy
+The blackboard key that picks the role: 1 for Survey & Repair, 0 for Search & Rescue. It is the only difference between the two competition trees.
+> robosub.html#tree
+> bt.html#subtrees
+
+## pinger_is_table
+aka: RandomPingerTree
+part: autonomy
+The key the pinger check sets: true means table first, false torpedo first.
+> mission-tree.html#pinger
+
+## WaitForKillSwitch
+part: autonomy
+The subtree the competition and prequal trees start with: it sets the status light and waits until `state/kill` reads false, that is, until the switch is in.
+> bt.html#ticks
+> robosub.html#tree
+
+## State machine
+aka: FSM, SMACH, FlexBE
+part: autonomy
+The way the team wrote missions before behaviour trees (SMACH, then FlexBE).
+> bt.html#why
+
+## Launch list
+aka: talos_launch_mpc.yaml, pool list, bench list
+part: ops
+A YAML file the remote launcher loads: the launch files to offer, in order, with the topics that show each is up. `talos_launch_mpc.yaml` is the pool list.
+> launch.html#entries
+> launch.html#ways
+
+## Entry
+aka: k/n
+part: ops
+One launch file in the launcher's list. Its `k/n` counts how many of its expected topics are present; a missing topic points at one device or node.
+> launch.html#states
+> launch.html#stuck
+
+## sim.launch.py
+aka: stack:=false, hardware:=none
+part: ops
+The one command that runs Nereus with the whole stack on your laptop. `stack:=false` runs only the simulator and viewer, for HIL.
+> launch.html#sim
+> nereus.html#run
+
+## HIL
+exp: Hardware in the loop
+part: ops
+The Orin runs the real stack while a desk computer simulates the world, to test the real computer and its load. Not yet confirmed end to end with Nereus, and the MPC still drives the real ESCs, so the kill switch stays out.
+> launch.html#hil
+
+## nereus-sim
+aka: physics_simulator
+part: ops
+Nereus's simulator: C++ physics, sensors, cameras, mechanisms, props and scoring, with a ROS 2 bridge. It plays the hardware so the rest of the stack runs unchanged.
+> nereus.html#what
+> nereus.html#physics
+
+## Pack
+aka: packs, resolved.json
+part: ops
+A folder of YAML (plus meshes) that describes one thing in Nereus: the robot, a pool, the course, the ROS bridge. They are checked and merged into one `resolved.json` per run.
+> nereus.html#packs
+
+## Scenario
+part: ops
+The pack that picks one robot, pool and course and places everything, such as `talos_uwrt` or `talos_uwrt_rpac`.
+> nereus.html#course
+> perception/workflow.html#scenario
+
+## Bridge
+aka: stream, bridge.yaml
+part: ops
+Nereus's ROS node. Its pack lists each topic as a stream: direction, type and which simulator value fills which field.
+> nereus.html#bridge
+
+## Sim tick
+aka: real-time factor
+part: ops
+Nereus advances in fixed 2 ms ticks and publishes `/clock` each one. The real-time factor sets how fast that runs against the wall clock.
+> nereus.html#physics
+> nereus.html#time
+
+## Nereus viewer
+aka: nereus-viewer, viewer
+part: ops
+The team's GUI for both the simulator and the real robot: a 3D pool view plus operator panels (Enable and KILL, Motion, Autonomy, Mapping, cameras). It replaced RViz.
+> viewer.html#what
+> viewer.html#tour
+
+## Enable
+aka: KILL button
+part: ops
+The viewer's buttons for kill slot 1. Enable latches, so a run survives the tether coming off; KILL asserts the slot, disables the controller and stops a running tree. Never a keyboard shortcut.
+> viewer.html#enable
+> commanding.html#viewer-slot
+
+## Motion panel
+aka: pose gizmo, Dive in place
+part: ops
+The viewer panel for moving Talos by hand: typed targets, a draggable pose gizmo, Dive in place, or one step per key press.
+> viewer.html#motion
+
+## Prior map editor
+aka: Edit map
+part: ops
+The viewer's editor (Ctrl+M) for mapping's prior map: move props, type poses, save back to `config.yaml` on that laptop.
+> viewer.html#mapping
+
+## Scorecard
+aka: task events
+part: ops
+In sim, the viewer scores a run by the 2026 rules from Nereus's task events, after Start run is pressed.
+> nereus.html#tasks
+> robosub.html#scoring
+
+## Pool test
+part: ops
+A session at the pool with Talos: bench-test and freeze the code before, set up on deck, fly, record everything, then write it up.
+> pool-test.html#shape
+
+## Code freeze
+aka: Pre RPAC test
+part: ops
+Before a pool test: commit each changed submodule, commit the new pins to the release repo ("Pre RPAC test …") and deploy exactly that.
+> pool-test.html#freeze
+> code-map.html#pinning
+
+## Operator
+aka: kill holder
+part: ops
+At the pool the operator is the only person at the viewer; a separate kill holder holds the physical switch and pulls it when anyone says so.
+> pool-test.html#roles
+> pool-test.html#kill
+
+## Launcher log
+aka: journal, journalctl
+part: ops
+A launched node's output goes only to the launcher page. The journal (`journalctl -u ros_launcher`) holds the launcher's own lines and the Zenoh router's crashes; each node's ROS log is in `~/.ros/log/` on the Orin.
+> launch.html#logs
+> debugging.html#logs
+
+## Plots
+aka: Topics window
+part: ops
+The viewer's live plots of any topic field, from its Windows menu.
+> debugging.html#plots
+> viewer.html#layouts
+
+## Bench
+aka: bench test, pretest bench, fake_dvl
+part: ops
+Talos out of the water, on a table and a power supply: where new code is tried on the real Orin and the pre-test bench checks run. Never start the controller as a plain launch there.
+> pool-test.html#pretest
+> launch.html#ways
+> commanding.html#stops

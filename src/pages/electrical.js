@@ -106,9 +106,9 @@ const POWER_TREE = [
 const DATA_TREE = [
   ['orin', 'the main computer', 'serial', [
     ['hat', '40-pin header', 'serial', [
-      ['ccbb', 'internal CAN FD (can0), 1 / 5 Mbit/s', 'can', [
-        ['mcu', 'CAN FD', 'can', [
-          ['esc0', 'CAN FD', 'can', [['esc1', 'CAN FD', 'can', [['ivc', 'CAN FD', 'can', [['led', 'CAN FD', 'can']]]]]]],
+      ['ccbb', 'internal CAN (can0), 1 Mbit/s', 'can', [
+        ['mcu', 'CAN', 'can', [
+          ['esc0', 'CAN', 'can', [['esc1', 'CAN', 'can', [['ivc', 'CAN', 'can', [['led', 'CAN', 'can']]]]]]],
           ['kill', 'SOFTWARE_KILL line', 'signal'],
           ['servo', 'serial, 115200 baud', 'serial'],
         ]],

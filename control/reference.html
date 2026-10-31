@@ -3,18 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Where to go: profiles and paths · How Talos flies</title>
+<title>Where to go: profiles and paths · How Talos works</title>
 <meta name="description" content="How riptide_mpc turns a setpoint into a jerk-limited S-curve reference, plans lines, arcs and rounded corners as one curve with a speed envelope, and slows the reference when the vehicle falls behind.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
+<style>
+  /* The path as a chain of pieces: chips that wrap on a narrow screen. */
+  .pp-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.3rem; font-family: var(--sans); font-size: 0.82rem; color: var(--ink-2); }
+  .pp-chain .chip { border: 1.5px solid; border-radius: 7px; background: var(--paper); padding: 0.15rem 0.5rem; white-space: nowrap; color: var(--ink); }
+  .pp-chain .chip span { color: var(--muted); margin-left: 0.25rem; font-variant-numeric: tabular-nums; }
+  .pp-chain .item { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .pp-chain .to { color: var(--muted); }
+</style>
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Chapter 4</div>
+    <div class="kicker">Control · Chapter 4</div>
     <h1>Where to go: profiles and paths</h1>
     <p class="lede">The MPC never chases a setpoint. It follows a reference that moves toward the setpoint at speeds, accelerations and jerks the vehicle can actually produce, and that arrives exactly, with nothing left to overshoot.</p>
   </header>
   <article>
+    <aside class="short"><span class="label">The short version</span><ul>
+      <li>The MPC never chases a setpoint. A reference moves toward it with bounded speed, acceleration and jerk, and arrives with nothing left to overshoot.</li>
+      <li>Point-to-point moves use a jerk-limited S-curve, rest to rest. Talos's limits: 0.6 m/s, 0.1 m/s&sup2;, 0.3 m/s&sup3; horizontally, 0.3 m/s and 0.2 m/s&sup2; vertically, 1 rad/s in yaw.</li>
+      <li>A FollowPath of lines and arcs is planned as one curve: line, arc and turn pieces, corners rounded by B&eacute;zier blends (up to 0.3 m), and a speed envelope from the speed, turn-rate, lateral-acceleration and braking limits.</li>
+      <li>A reference governor slows the reference when Talos falls behind (full speed at 15 cm of lag, a crawl at 40 cm), and re-seeds it at the vehicle past 1 m.</li>
+      <li>The reference runs on the prediction's clock, 30 ms ahead, where the command being computed takes effect.</li>
+    </ul></aside>
     <div class="prose">
       <h2 id="why">Why not just step the setpoint?</h2>
       <p>Hand an MPC a target two metres away and it does what its cost function says: get there as fast as the thrust allows, because every stage spent away from the target costs position error. That means full thrust, a hard stop, and on a vehicle with 30 ms of delay and an imperfect model, overshoot. It also means the MPC's plan changes completely every time autonomy nudges the goal.</p>
@@ -74,16 +89,16 @@
           <button class="btn" id="pp-play">Play the reference</button>
         </div>
         <div id="pp-wrap" style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:1rem;align-items:start"></div>
-        <div id="pp-chain" style="margin-top:.6rem"></div>
+        <div id="pp-chain" class="pp-chain" style="margin-top:.7rem" aria-label="The path as a chain of pieces"></div>
       </div>
-      <figcaption><b>A path as one curve.</b> Left: the path from above, with the first point fixed where the reference starts; drag the others. Lines are blue, arcs green, corner blends orange. Right: the speed envelope along s (dashed: the local limit before braking; solid: after the backward pass) and the speed the reference actually reaches. Below: the path as a chain of pieces.</figcaption>
+      <figcaption><b>A path as one curve.</b> The plan view shows the path from above, with the first point fixed where the reference starts; drag the others. Lines are blue, arcs green, corner blends orange. The chart shows the speed envelope along s (dashed: the local limit before braking; solid: after the backward pass) and the speed the reference actually reaches. Under both, the path as a chain of pieces.</figcaption>
     </figure>
     <div class="prose">
       <p>Moving along the path is a one-dimensional version of the S-curve, now in <span class="m">s</span>. Each substep, the reference targets the lowest envelope speed within its acceleration ramp's look-ahead, under the tightest acceleration and jerk limits on the way there, and brakes when its stopping distance reaches the end. Its pose is the path's position and heading at <span class="m">s</span>; its velocity is the tangent times <span class="m">\dot s</span>; its acceleration adds the centripetal term <span class="m">\kappa \dot s^2</span>. Those are exactly the reference velocity and acceleration the MPC's feedforward needs.</p>
       <p>Paths can also follow moving targets. Points given in a TF frame that moves (an object the mapping system keeps refining) carry the path with them through a separate rate-limited profile, and look-at segments can turn toward a moving target, all without stepping the reference. The browser port leaves those out.</p>
     </div>
     <figure class="fig">
-      <div class="panel flush" style="background:#0f2633"><video src="/img/nereus_path.mp4" poster="/img/nereus_path_overview.webp" controls muted playsinline loop preload="none" style="width:100%;display:block"></video></div>
+      <video class="media" src="/img/nereus_path.mp4" poster="/img/nereus_path_poster.jpg" width="1280" height="664" controls muted playsinline loop preload="none" aria-label="Talos following the planned path in the Nereus viewer"></video>
       <figcaption><b>The same kind of path in Nereus</b>, flown by the real C++ controller on the simulator: a 2 m line, a corner rounded at 0.3 m, a 1.5 m line, a 180° arc and a line back. The thin white line is the planned path, orange the MPC's predicted horizon. Real time, recorded live on the GPU display. Cross-track error over the 7.2 m run: 2.2 mm RMS, 7 mm worst.</figcaption>
     </figure>
 

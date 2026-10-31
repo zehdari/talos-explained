@@ -1,0 +1,241 @@
+/* The front page. Builds on style.css (.hero, .copy, .dock) and chapter.css. */
+
+/* ---------------------------------------------------------------- hero: Talos in 3D */
+.talos-hero { min-height: 600px; }
+.talos-hero .th-stage { position: absolute; inset: 0; }
+.talos-hero canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; opacity: 0; transition: opacity 0.6s ease; }
+.talos-hero .th-stage.ready canvas { opacity: 1; }
+.th-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.th-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: var(--sans); font-size: 0.86rem; color: var(--ink-2); background: rgba(243, 247, 247, 0.85); padding: 0.35rem 0.8rem; border-radius: 999px; }
+.th-loading[hidden] { display: none; }
+/* The poster: a still of the model where the canvas will draw it (centre a little right, 67% of the stage's height),
+   faded out once the model is in. On wide screens index.js draws the robot 20% of the width right of centre. */
+.th-poster { position: absolute; left: 51.8%; top: 51%; height: 66.8%; width: auto; max-width: none; transform: translate(-50%, -50%); pointer-events: none; transition: opacity 0.6s ease; user-select: none; }
+.th-stage.ready .th-poster { opacity: 0; }
+@media (min-width: 1241px) { .th-poster { left: 71.8%; top: 48%; height: 61%; } }
+/* While loading, the note sits under the poster (wide screens: above it, clear of the card). */
+.th-poster ~ .th-loading { left: 51.8%; top: auto; bottom: 0.7rem; transform: translateX(-50%); white-space: nowrap; }
+@media (min-width: 1241px) { .th-poster ~ .th-loading { left: 71.8%; top: 1.4rem; bottom: auto; } }
+.th-loading:has(.btn) { background: none; padding: 0; }
+.th-tip { position: absolute; left: 0; top: 0; pointer-events: none; font-family: var(--sans); font-size: 0.76rem; background: var(--ink); color: var(--paper); padding: 0.2rem 0.5rem; border-radius: 6px; white-space: nowrap; z-index: 3; }
+.th-tip[hidden] { display: none; }
+
+.th-dot {
+  position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer; touch-action: manipulation;
+  display: inline-flex; align-items: center; gap: 0.35rem; padding: 0; border: 0; background: none;
+  font-family: var(--sans); font-size: 0.74rem; font-weight: 600; color: var(--ink); white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+/* A larger invisible target than the dot itself, for fingers. */
+.th-dot::after { content: ''; position: absolute; left: -9px; top: -9px; width: 32px; height: 32px; border-radius: 50%; }
+@media (pointer: coarse) { .th-dot::after { left: -13px; top: -13px; width: 40px; height: 40px; } }
+.th-dot::before { content: ''; width: 14px; height: 14px; border-radius: 50%; background: var(--paper); border: 2.5px solid var(--c, var(--ink)); box-sizing: border-box; flex: none; box-shadow: 0 0 0 3px rgba(243, 247, 247, 0.65); transition: transform 0.15s ease; }
+.th-dot span { display: none; background: rgba(243, 247, 247, 0.95); border: 1px solid var(--rule); border-radius: 999px; padding: 0.1rem 0.5rem; }
+.th-dot:hover span, .th-dot.on span, .th-dot:focus-visible span { display: inline; }
+.th-dot:hover::before { transform: scale(1.15); }
+.th-dot.on::before { background: var(--c, var(--accent)); transform: scale(1.2); }
+.th-dot.dim { opacity: 0.4; }
+
+.talos-hero .copy { max-width: 29rem; }
+.talos-hero .dock { align-items: flex-end; }
+.th-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; max-width: 30rem; }
+.th-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--sans); font-size: 0.82rem; font-weight: 520;
+  background: rgba(243, 247, 247, 0.9); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 999px; padding: 0.3rem 0.75rem 0.3rem 0.55rem; cursor: pointer; white-space: nowrap;
+}
+.th-chip i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.th-chip:hover { border-color: var(--ink-2); }
+.th-chip[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.th-card {
+  width: 23rem; max-width: 100%; background: rgba(243, 247, 247, 0.93); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border-radius: 12px; padding: 0.85rem 1rem 0.8rem; font-family: var(--sans); font-size: 0.86rem; line-height: 1.45; color: var(--ink-2);
+  box-shadow: 0 1px 0 rgba(15, 38, 51, 0.04), 0 8px 30px rgba(15, 38, 51, 0.08);
+}
+.th-card p { margin: 0.35rem 0 0.55rem; }
+.th-head { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; color: var(--ink); font-stretch: 112%; }
+.th-head i { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.th-head b { font-weight: 680; }
+.th-x { margin-left: auto; border: 0; background: none; font-size: 1.3rem; line-height: 1; color: var(--muted); cursor: pointer; padding: 0 0.2rem; }
+.th-x:hover { color: var(--accent); }
+.th-card dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 0.8rem; margin: 0 0 0.55rem; font-size: 0.82rem; }
+.th-card dt { color: var(--muted); }
+.th-card dd { margin: 0; color: var(--ink); }
+.th-read { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; font-weight: 600; }
+.th-read a { color: var(--ink); text-decoration: none; border-bottom: 1.5px solid var(--accent); }
+.th-read a:hover { color: var(--accent); }
+.th-glance { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; }
+.th-glance div { display: flex; flex-direction: column; }
+.th-glance b { font-size: 1.55rem; font-weight: 720; font-stretch: 118%; color: var(--ink); line-height: 1.05; font-variant-numeric: tabular-nums; }
+.th-glance span { font-size: 0.74rem; color: var(--muted); line-height: 1.25; margin-top: 0.15rem; }
+.th-help { margin: 0.6rem 0 0 !important; font-size: 0.8rem; color: var(--muted); }
+
+/* Narrow screens: the hero becomes a column (words, model, chips, card) instead of layers over one canvas. Up to
+   1240 px, because below that the canvas is too narrow to draw the robot clear of the words (index.js shifts it right
+   only when the canvas is wider than 900 px). */
+@media (max-width: 1240px) {
+  .talos-hero { height: auto; min-height: 0; display: flex; flex-direction: column; }
+  .talos-hero .copy { position: static; order: 1; padding: 4.2rem clamp(1.1rem, 4vw, 3.5rem) 0; max-width: none; }
+  .talos-hero .copy p:last-child { margin-bottom: 0; }
+  .talos-hero .th-stage { position: relative; order: 2; height: min(56vh, 400px); min-height: 280px; }
+  .talos-hero .dock { position: static; order: 3; padding: 0 clamp(1.1rem, 4vw, 3.5rem) 1.2rem; flex-direction: column; align-items: stretch; gap: 0.7rem; }
+  .th-chips { gap: 0.35rem; max-width: none; }
+  .th-chip { font-size: 0.78rem; padding: 0.26rem 0.62rem 0.26rem 0.5rem; }
+  .th-card { width: 100%; }
+  .th-dot span { font-size: 0.7rem; }
+}
+/* Tablets and small laptops: the same column, with a taller stage and the card beside the chips where it fits. */
+@media (min-width: 761px) and (max-width: 1240px) {
+  .talos-hero .copy { padding-top: 3rem; max-width: 42rem; }
+  .talos-hero .th-stage { height: min(60vh, 480px); }
+  .talos-hero .dock { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+  .talos-hero .dock .th-chips { flex: 1 1 18rem; }
+  .talos-hero .dock .th-card { width: 23rem; flex: 0 1 23rem; }
+}
+@media (max-width: 380px) {
+  .th-glance b { font-size: 1.3rem; }
+}
+
+/* ---------------------------------------------------------------- one minute */
+.ix-video { aspect-ratio: 1280 / 800; }
+.ix-spec a { color: var(--ink-2); }
+.prose h3 { font-size: 1.25rem; }
+
+/* ---------------------------------------------------------------- the stack */
+.ix-stack .controls { justify-content: space-between; }
+.ix-hint { font-family: var(--sans); font-size: 0.82rem; color: var(--muted); }
+.ix-hint[hidden] { display: none; }
+.ix-stack svg.graph .node.hw rect { fill: #fbe3d8; stroke: #a8360a; }
+.ix-stack svg.graph .node.simnode rect { fill: var(--water); stroke: var(--ink-2); stroke-dasharray: 6 4; }
+.ix-stack svg.graph .node.simnode text:first-of-type { font-weight: 650; font-size: 14px; }
+.ix-info { margin-top: 0.6rem; font-family: var(--sans); font-size: 0.9rem; line-height: 1.5; color: var(--ink-2); min-height: 7rem; }
+.ix-info p { margin: 0.3rem 0 0.7rem; max-width: 46rem; }
+.ix-info-empty { color: var(--muted) !important; }
+.ix-info-empty b { color: var(--ink); }
+.ix-info-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.8rem; }
+.ix-info-head h3 { margin: 0; font-size: 1.2rem; color: var(--ink); }
+.ix-layer { font-size: 0.72rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); flex-basis: 100%; }
+.ix-runs { font-size: 0.82rem; color: var(--muted); }
+.ix-topics { display: grid; grid-template-columns: max-content 1fr; gap: 0.2rem 1rem; margin: 0 0 0.7rem; font-size: 0.84rem; }
+.ix-topics dt code { font-size: 0.78rem; overflow-wrap: anywhere; }
+.ix-topics dd { margin: 0; color: var(--ink); }
+.ix-nb { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; margin: 0 0 0.45rem; }
+.ix-nb > span { font-size: 0.74rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); width: 3rem; }
+.ix-nb button { font: inherit; font-size: 0.8rem; background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 0.18rem 0.6rem; cursor: pointer; color: var(--ink); }
+.ix-nb button:hover { border-color: var(--ink-2); }
+.ix-nb button small { color: var(--muted); font-size: 0.74rem; }
+.ix-links { display: flex; flex-wrap: wrap; gap: 0.3rem 1.4rem; font-size: 0.84rem; margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid var(--rule); }
+.ix-links a { color: var(--ink); }
+@media (max-width: 520px) {
+  .ix-topics { grid-template-columns: 1fr; gap: 0; }
+  .ix-topics dd { margin-bottom: 0.35rem; color: var(--ink-2); }
+  .ix-nb > span { width: 100%; }
+}
+
+/* Phones: the stack as a list of layers. */
+.ix-layers { display: flex; flex-direction: column; gap: 0.35rem; font-family: var(--sans); }
+.ix-row { background: var(--paper-3); border-radius: 8px; padding: 0.45rem 0.55rem 0.55rem; position: relative; }
+.ix-row + .ix-row::before { content: ''; position: absolute; left: 50%; top: -0.38rem; width: 1.5px; height: 0.4rem; background: var(--ink-2); }
+.ix-row-label { display: block; font-size: 0.66rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.3rem; }
+.ix-row-nodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.2rem, 1fr)); gap: 0.35rem; }
+.ix-row-nodes button { display: flex; flex-direction: column; align-items: flex-start; text-align: left; font: inherit; background: var(--paper); border: 1.5px solid var(--ink); border-radius: 7px; padding: 0.3rem 0.5rem 0.35rem; cursor: pointer; color: var(--ink); min-height: 2.9rem; justify-content: center; }
+.ix-row-nodes b { font-size: 0.84rem; font-weight: 600; line-height: 1.2; }
+.ix-row-nodes small { font-size: 0.72rem; color: var(--muted); line-height: 1.25; margin-top: 0.1rem; }
+.ix-row.hw .ix-row-nodes button { background: #fbe3d8; border-color: #a8360a; border-radius: 3px; }
+.ix-row.simrow .ix-row-nodes button { background: var(--water); border-style: dashed; }
+.ix-row-nodes button[aria-pressed='true'] { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
+
+/* ---------------------------------------------------------------- follow one decision */
+.ix-decision .panel.flush { overflow: visible; }
+.dx-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem 1rem; padding: 0.9rem 1.1rem 0.4rem; }
+.dx-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.dx-steps li { margin: 0; }
+.dx-steps button { display: inline-flex; align-items: center; gap: 0.35rem; font-family: var(--sans); font-size: 0.8rem; color: var(--ink-2); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 0.22rem 0.65rem 0.22rem 0.25rem; cursor: pointer; }
+.dx-steps button span { display: inline-grid; place-items: center; width: 1.35rem; height: 1.35rem; border-radius: 50%; background: var(--paper-3); color: var(--ink); font-weight: 650; font-size: 0.74rem; font-variant-numeric: tabular-nums; }
+.dx-steps button.done span { background: var(--ink-2); color: var(--paper); }
+.dx-steps button[aria-current='step'] { border-color: var(--accent); color: var(--ink); font-weight: 600; }
+.dx-steps button[aria-current='step'] span { background: var(--accent); color: #fff; }
+.dx-nav { display: flex; gap: 0.4rem; }
+.dx-nav .btn:disabled { opacity: 0.4; cursor: default; }
+.dx-layers { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; padding: 0.3rem 1.1rem 0; font-family: var(--sans); }
+.dx-layers span { font-size: 0.66rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); text-align: center; border-top: 4px solid var(--paper-3); padding-top: 0.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: border-color 0.2s, color 0.2s; }
+.dx-layers span.on { border-top-color: var(--accent); color: var(--ink); font-weight: 650; }
+.dx-body { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.2rem 1.6rem; padding: 1rem 1.1rem 1.2rem; align-items: start; min-height: 22rem; }
+.dx-media img, .dx-media .dx-svg { display: block; width: 100%; height: auto; border-radius: 8px; background: #0f2633; }
+.dx-media .dx-svg { background: none; }
+/* A portrait still (two viewer panels stacked) at about its own size, not stretched to the column. */
+.dx-media img.dx-tall { max-width: 400px; }
+.dx-cap { font-family: var(--sans); font-size: 0.78rem; color: var(--muted); margin: 0.4rem 0 0; line-height: 1.4; }
+.dx-text { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; color: var(--ink-2); }
+.dx-text h3 { margin: 0.2rem 0 0.5rem; font-size: 1.35rem; color: var(--ink); }
+.dx-text p { margin: 0 0 0.8rem; }
+.dx-text code { font-size: 0.8em; overflow-wrap: anywhere; }
+.dx-kicker { font-size: 0.72rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.dx-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0 0 0.8rem; font-size: 0.84rem; }
+.dx-facts dt { color: var(--muted); }
+.dx-facts dd { margin: 0; color: var(--ink); }
+.dx-read { font-size: 0.86rem; padding-top: 0.6rem; border-top: 1px solid var(--rule); }
+.dx-read a { color: var(--ink); }
+.dx-t { font-family: var(--sans); font-size: 11.5px; fill: var(--ink-2); }
+.dx-mut { fill: var(--muted); }
+.dx-b { font-weight: 600; fill: var(--ink); font-size: 12.5px; }
+.dx-svg line.dx-m, .dx-svg line.dx-h, .dx-svg line.dx-a { stroke-width: 2; }
+.dx-svg line.dx-m { stroke: var(--ink-2); }
+.dx-svg line.dx-h { stroke: var(--ink); }
+.dx-svg line.dx-a { stroke: var(--accent); }
+.dx-svg text.dx-a { fill: #a8360a; font-weight: 600; }
+.dx-svg text.dx-h { fill: var(--ink); font-weight: 600; }
+@media (max-width: 760px) {
+  .dx-body { grid-template-columns: 1fr; min-height: 0; padding: 0.8rem 0.9rem 1rem; }
+  .dx-top { padding: 0.8rem 0.9rem 0.3rem; }
+  .dx-layers { padding: 0.3rem 0.9rem 0; }
+  .dx-layers { display: none; }
+  .dx-nav { width: 100%; }
+  .dx-nav .btn.primary { flex: 1; }
+  .dx-facts { grid-template-columns: 1fr; gap: 0; }
+  .dx-facts dd { margin-bottom: 0.35rem; }
+}
+
+/* ---------------------------------------------------------------- reading */
+.ix-repos td:nth-child(2) code { white-space: nowrap; }
+.ix-br { display: none; }
+@media (max-width: 560px) {
+  .ix-repos th:nth-child(2), .ix-repos td:nth-child(2) { display: none; }
+  .ix-br { display: block; margin-top: 0.15rem; }
+  .ix-br code { background: none; padding: 0; color: var(--muted); }
+}
+.ix-paths { margin-top: 1rem; }
+.ix-path-seg { margin-bottom: 0.7rem; flex-wrap: wrap; border-radius: 14px; background: var(--paper); }
+.ix-path-seg button { white-space: nowrap; }
+.ix-path { font-family: var(--sans); font-size: 0.92rem; line-height: 1.5; color: var(--ink-2); }
+.ix-who { margin: 0 0 0.7rem; color: var(--ink); font-weight: 550; }
+.ix-steps { margin: 0; padding-left: 1.5em; }
+.ix-steps li { margin-bottom: 0.6rem; }
+.ix-steps li::marker { color: var(--accent); font-weight: 650; }
+.ix-steps a { color: var(--ink); text-decoration: none; }
+.ix-steps a strong { border-bottom: 1.5px solid var(--accent); }
+.ix-steps a:hover { color: var(--accent); }
+.ix-where { font-size: 0.76rem; color: var(--muted); white-space: nowrap; }
+
+/* ---------------------------------------------------------------- every chapter */
+.ix-tag { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); font-size: 0.95rem; margin-left: 0.3rem; }
+.ix-list { list-style: none; padding-left: 0; }
+.ix-list li { display: grid; grid-template-columns: 1.8rem minmax(0, 1fr) auto; gap: 0 0.4rem; align-items: baseline; padding: 0.15rem 0.4rem 0.15rem 0; border-radius: 6px; transition: background 0.2s; }
+.ix-n { font-family: var(--sans); font-size: 0.88rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ix-list li.in-path { background: var(--paper-2); }
+.ix-list li.in-path .ix-n { color: var(--accent); font-weight: 650; }
+.ix-badge { font-family: var(--sans); font-size: 0.7rem; font-weight: 650; color: #fff; background: var(--accent); border-radius: 999px; min-width: 1.35rem; height: 1.35rem; display: inline-grid; place-items: center; padding: 0 0.3rem; align-self: center; }
+.ix-badge[hidden] { display: none; }
+.ix-menu-note { display: none; }
+@media (max-width: 900px) { .ix-menu-note { display: inline; } .ix-menu-note-wide { display: none; } }
+
+/* ---------------------------------------------------------------- how do I */
+.prose ul.ix-howto { list-style: none; padding: 0; margin: 1rem 0 0; font-family: var(--sans); font-size: 0.92rem; line-height: 1.45; border-top: 1px solid var(--rule); }
+.ix-howto li { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 0.15rem 1.2rem; padding: 0.5rem 0; margin: 0; border-bottom: 1px solid var(--rule); }
+.ix-howto b { color: var(--ink); font-weight: 620; }
+.ix-howto span { color: var(--muted); }
+.ix-howto a { color: var(--ink-2); }
+@media (max-width: 560px) {
+  .ix-howto li { grid-template-columns: 1fr; padding: 0.45rem 0; }
+}

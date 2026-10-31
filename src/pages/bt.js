@@ -320,9 +320,9 @@ Promise.all([getJSON('searchmpc.json')]).then(([data]) => {
       </div>
       <div class="bt-side">
         <div class="bt-detail"></div>
-        <h4>Blackboard</h4>
+        <h3 class="panel-h">Blackboard</h3>
         <div class="bt-bb"></div>
-        <h4>Log</h4>
+        <h3 class="panel-h">Log</h3>
         <ol class="bt-log"></ol>
       </div>
     </div>`;

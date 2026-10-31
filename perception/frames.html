@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Frames, targets and the mission tree · How Talos sees</title>
-<meta name="description" content="What riptide_mapping publishes and how Talos's behavior trees use it: the TF tree from the AprilTag calibration to every prop's frame, mapping targets, published covariances, the bins' binary classifier and the table fit.">
+<title>Frames, targets and the mission tree · How Talos works</title>
+<meta name="description" content="What riptide_mapping publishes and how Talos's behaviour trees use it: the TF tree from the AprilTag calibration to every prop's frame, mapping targets, published covariances, the bins' binary classifier and the table fit.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Mapping · Chapter 9</div>
+    <div class="kicker">Perception · Chapter 9</div>
     <h1>Frames, targets and the mission tree</h1>
     <p class="lede">Mapping publishes TF frames and covariances. Autonomy drives to the frames, waits on the covariances, and tells mapping which props to look for.</p>
   </header>
@@ -21,8 +21,9 @@
       <li><code>RepairCompMpcTree</code> runs the tasks in order; a failed task just moves on to the next.</li>
       <li>The gate is flown from its prior. The table is fit to its two baskets only if both converge.</li>
     </ul></aside>
+    <div class="prose"><div class="callout"><span class="label">New to behaviour trees?</span><p>This chapter uses tree terms (tick, blackboard, <code>Sequence</code>, subtree). Read the short version of <a href="../bt.html">Behaviour trees</a> first; the node names used here, like <code>SetMappingTarget</code>, are explained in <a href="../bt-nodes.html">Talos's tree nodes</a>.</p></div></div>
     <div class="prose">
-      <p>This chapter is the interface of the mapping node, <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/mapping.py"><code>mapping.py</code></a>: its frames, its services, and how the trees in <code>riptide_autonomy</code> use them. It ends with three prop-specific pieces: the bins' classifier, the table fit and the bin fit.</p>
+      <p>This chapter is the interface of the mapping node, <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/mapping.py"><code>mapping.py</code></a>: its frames, its services, and how the trees in <code>riptide_autonomy</code> use them. It ends with three prop-specific pieces: the bins' classifier, the table fit and the bin fit. The trees themselves have their own part: <a href="../bt-nodes.html">Talos's tree nodes</a> and <a href="../mission-tree.html">The competition mission</a>.</p>
 
       <h2 id="tree">The frame tree</h2>
       <ul>
@@ -62,10 +63,10 @@
       <table class="params">
         <thead><tr><th>Node</th><th>What it does</th></tr></thead>
         <tbody>
-          <tr><td><code>SetMappingTarget</code></td><td>Calls <code>mapping_target</code> with <code>target_object</code> and <code>lock_map</code>; fails if the call doesn't return within <code>time_limit_secs</code>.</td></tr>
-          <tr><td><code>getCovariance</code></td><td>Waits up to 5 s for the next <code>mapping/&lt;Target&gt;</code> message and outputs its <em>error</em> (below).</td></tr>
-          <tr><td><code>MapConverged</code></td><td>Succeeds once every object in a comma list has an error below <code>target_cov</code>. Answers at once, and only trusts messages received after it started ticking.</td></tr>
-          <tr><td><code>SeenRecently</code></td><td>Succeeds if the object was detected at or above <code>min_score</code> (0.2) within <code>max_age_secs</code>, from the detector's topic or <code>mapping/fused</code>.</td></tr>
+          <tr><td><a href="../bt-nodes.html#node-SetMappingTarget"><code>SetMappingTarget</code></a></td><td>Calls <code>mapping_target</code> with <code>target_object</code> and <code>lock_map</code>; fails if the call doesn't return within <code>time_limit_secs</code>.</td></tr>
+          <tr><td><a href="../bt-nodes.html#node-getCovariance"><code>getCovariance</code></a></td><td>Waits up to 5 s for the next <code>mapping/&lt;Target&gt;</code> message and outputs its <em>error</em> (below).</td></tr>
+          <tr><td><a href="../bt-nodes.html#node-MapConverged"><code>MapConverged</code></a></td><td>Succeeds once every object in a comma list has an error below <code>target_cov</code>. Answers at once, and only trusts messages received after it started ticking.</td></tr>
+          <tr><td><a href="../bt-nodes.html#node-SeenRecently"><code>SeenRecently</code></a></td><td>Succeeds if the object was detected at or above <code>min_score</code> (0.2) within <code>max_age_secs</code>, from the detector's topic or <code>mapping/fused</code>.</td></tr>
         </tbody>
       </table>
       <p>The error is not a distance. It combines the six diagonal <em>variances</em>, angles divided by 2π:</p>
@@ -78,7 +79,7 @@
     </figure>
     <div class="prose">
       <h2 id="mission-tree" data-short="The tree, task by task">RepairCompMpcTree, task by task</h2>
-      <p><a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a> is about 4 100 lines, but simple: tasks run in order, each in <code>ForceSuccess</code>, so a timeout or failed check moves on to the next task. Nothing calls <code>mapping/reset_mapping</code>.</p>
+      <p><a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a> is about 4 100 lines, but simple: tasks run in order, each in <code>ForceSuccess</code>, so a timeout or failed check moves on to the next task. Nothing calls <code>mapping/reset_mapping</code>. This section shows only what each task asks of mapping; <a href="../mission-tree.html">The competition mission</a> walks the whole tree, with an explorer of the real file.</p>
     </div>
     <figure class="fig">
       <div class="panel tasks" id="task-cards"></div>

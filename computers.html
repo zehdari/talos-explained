@@ -59,8 +59,11 @@
 
     </div>
     <figure class="fig narrow">
-      <img class="media" data-src="img/computers/tdr24-camera-cage.webp" width="1100" height="878" alt="Exploded render of Talos's 2024 camera cage: from the top, a printed lid, the Camera Cage Breakout Board, a plate, the network switch, another plate, the AGX Orin with the M.2 breakout board beside it, the Nvidia Orin Hat, the VN-100 IMU, the VG103S fibre-optic gyro in its ring mounts, the cage frame and a ZED 2i stereo camera." loading="lazy">
-      <figcaption><b>Where the Orin lives.</b> The 2024 camera cage, exploded: the Orin, the network switch, the camera cage breakout board, the M.2 breakout for the gyro's RS-422 link, the IMU and the gyro on shelves around it. Talos has since swapped the single ZED 2i for two ZED X Minis. From the <a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2024/06/TDR_THEOhioStateUniversity_RS2024.pdf">2024 TDR</a>, Fig. 18.</figcaption>
+      <div class="media-grid">
+        <figure><img class="media" data-src="media/cad/sub-computer-cage-starboard-iso.webp" width="1600" height="1356" alt="CAD render of the starboard cage in its red ring frame: the Jetson AGX Orin with its heat sink on top, the forward ZED X Mini stereo camera at the front, and the capture card, IMU and fan packed around them." loading="lazy"><figcaption>Today's starboard cage (CAD, July 2026): Orin, GMSL2 capture card, forward ZED X Mini, VN-100.</figcaption></figure>
+        <figure><img class="media" data-src="img/computers/tdr24-camera-cage.webp" width="1100" height="878" alt="Exploded render of Talos's 2024 camera cage: from the top, a printed lid, the Camera Cage Breakout Board, a plate, the network switch, another plate, the AGX Orin with the M.2 breakout board beside it, the Nvidia Orin Hat, the VN-100 IMU, the VG103S fibre-optic gyro in its ring mounts, the cage frame and a ZED 2i stereo camera." loading="lazy"><figcaption>The 2024 cage, exploded, with the old single ZED 2i. From the <a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2024/06/TDR_THEOhioStateUniversity_RS2024.pdf">2024 TDR</a>, Fig. 18.</figcaption></figure>
+      </div>
+      <figcaption><b>Where the Orin lives.</b> The current cage is from the "Talos 7-11-26" SolidWorks CAD, a design model from July 2026. The 2024 exploded view labels the parts around the Orin: the network switch, the camera cage breakout board, the M.2 breakout for the gyro's RS-422 link, the IMU and the gyro.</figcaption>
     </figure>
     <div class="prose">
       <h3>Why one computer</h3>
@@ -84,10 +87,6 @@
       <figcaption><b>The launcher's page.</b> This is the real <code>launcher.py</code> with <code>talos_launch_mpc.yaml</code> loaded, run on a desk computer, so every entry is stopped. Expanding an entry (+) lists the topics it must publish before the bar reads <i>Running</i>.</figcaption>
     </figure>
     <div class="prose">
-      <ul>
-        <li><strong>After a boot, nothing runs.</strong> The launcher comes up empty. When you open its page, the page asks it to load the list you used last (your browser remembers it). You then press Start on each entry yourself, top to bottom.</li>
-        <li><strong>The lists are read from the installed package.</strong> The launcher reads <code>launches/</code> from <code>remote_launch</code>'s share directory in <code>~/colcon_deploy/install</code>. To change a list, edit it in <code>riptide_launch</code> and deploy <code>remote_launch</code>.</li>
-      </ul>
       <p>Each robot mode has its own launch-file list. Three are current for the MPC. Pick one to see its entries in list order, the order you start them in. Tap an entry to see its arguments and the topics the launcher waits for.</p>
     </div>
     <figure class="fig narrow">
@@ -105,34 +104,13 @@
           <li><strong>Force Reset kills every node without cleanup.</strong> Use the normal Stop buttons unless the launcher is stuck.</li>
         </ul>
       </div>
-      <p>The service file settles a few behaviours you'll notice:</p>
-      <table class="params">
-        <thead><tr><th>Setting</th><th>What it means</th></tr></thead>
-        <tbody>
-          <tr><td><code>User=ros</code></td><td>Everything runs as <code>ros</code>, sourcing <code>/home/ros/colcon_deploy/install/setup.bash</code> first.</td></tr>
-          <tr><td><code>Restart=always</code></td><td>A crashed launcher comes back after 500 ms. More than 5 restarts in 15 s and systemd gives up.</td></tr>
-          <tr><td><code>KillSignal=SIGINT</code></td><td>A stop sends Ctrl-C, so the launcher can stop its launches cleanly. After 15 s it gets SIGKILL.</td></tr>
-          <tr><td><code>Type=notify</code></td><td>The launcher tells systemd when it's ready and posts its status, so <code>systemctl status ros_launcher</code> shows what's running.</td></tr>
-          <tr><td><code>StandardOutput=journal</code></td><td>All node output goes to the journal under <code>ros_launcher</code>. That's where you read logs (<a href="#ssh">below</a>).</td></tr>
-        </tbody>
-      </table>
-      <p>The full launch sequence, with each entry and what it starts, is in <a href="launch.html">Launching the stack</a>.</p>
+      <p>Inside the launcher (restarts, states, logs, scripting): <a href="launch.html#launcher">Launching the stack, The remote launcher, inside</a>. The full launch sequence, with each entry and what it starts, is on the same page.</p>
 
       <h2 id="deploy" data-short="Deploying code">Getting code onto the Orin: ~/colcon_deploy</h2>
-      <p><code>~/colcon_deploy</code> isn't a git checkout. Code goes on with <strong><code>colcon deploy</code></strong>, a verb the team added to colcon (<a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/colcon_riptide/README.md"><code>colcon_riptide</code></a> in <code>riptide_setup</code>). You run it from the release workspace on op-top:</p>
-<pre class="cmd" data-where="op-top">cd ~/osu-uwrt/release
-colcon deploy orin2 --packages-select riptide_mpc   # one package
-colcon deploy orin2 --clean        # clean rebuild of everything</pre>
-      <ol>
-        <li><strong>Sync.</strong> <code>rsync -vrzc --delete</code> copies each selected package's source to <code>~/colcon_deploy/src</code>, leaving out <code>.git</code>. A package with a <code>DEPLOY_IGNORE</code> file is skipped.</li>
-        <li><strong>Build on the robot.</strong> It writes a build script to the Orin and runs <code>colcon build</code> there with <code>-DBUILD_DEPLOY=ON</code>, so packages can tell they're building for the vehicle.</li>
-        <li><strong>Restart what you changed</strong> in the launcher. A running node keeps the old code until it restarts.</li>
-      </ol>
+      <p><code>~/colcon_deploy</code> isn't a git checkout. Code goes on with <strong><code>colcon deploy</code></strong>, a verb the team added to colcon (<a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/colcon_riptide/README.md"><code>colcon_riptide</code></a> in <code>riptide_setup</code>). <code>colcon deploy orin2</code> rsyncs package sources to <code>~/colcon_deploy/src</code> and builds them there (<a href="setup.html#deploy">Setting up your machine, colcon deploy</a>).</p>
       <p>Why build on the Orin? It's ARM and op-top is x86, so binaries built on op-top won't run on the Orin. Building in place keeps the robot's install matched to its own libraries.</p>
       <ul>
         <li><strong>Don't edit files on the Orin.</strong> No git tracks <code>~/colcon_deploy</code>, and the next deploy overwrites the change.</li>
-        <li><strong>Deploy from <code>release</code>.</strong> The <a href="https://github.com/osu-uwrt/riptide_release">release repo</a> pins every package as a submodule. Its README asks for a tag with the date after each pool test, so you can find out what the robot ran.</li>
-        <li><strong>Defaults:</strong> user <code>ros</code> and <code>~/colcon_deploy</code>. Override them with <code>--username</code> and <code>--remote_dir</code>.</li>
       </ul>
 
       <h2 id="can">CAN: the link to the boards</h2>
@@ -308,7 +286,7 @@ ros2 topic hz /talos/odometry/filtered</pre>
       <h2 id="ssh" data-short="SSH and logs">SSH, logs and the usual commands</h2>
       <p>SSH is for looking, not for running the stack. Use key login (the release repo's <a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/config_host/relationship.bash"><code>relationship.bash</code></a> makes and installs a key). Tools like <code>colcon deploy</code> and the viewer's bag recorder expect it.</p>
 <pre class="cmd" data-where="your laptop">ssh ros@orin2
-journalctl -u ros_launcher -f -o cat             # follow every node's output live
+journalctl -u ros_launcher -f -o cat             # the launcher's own messages
 journalctl -u ros_launcher --since "10 min ago"  # what just happened
 systemctl status ros_launcher                    # is it up, what is it running
 sudo systemctl restart ros_launcher              # last resort: stops every node
@@ -316,7 +294,7 @@ ip -br link show can0                            # CAN up?
 candump can0                                     # raw CAN traffic, needs can-utils (Ctrl-C to stop)
 df -h ~                                          # room left for bags</pre>
       <ul>
-        <li><strong>Read logs in the journal.</strong> Nodes started by the launcher have no terminal, so their output goes to the journal. The old README's <code>ros2_launch_service</code> name is out of date: the unit is <code>ros_launcher</code>.</li>
+        <li><strong>Node output is on the launcher page only.</strong> It appears there while the page is open; afterwards read <code>~/.ros/log/</code> on the Orin (<a href="debugging.html#logs">Debugging, where the logs are</a>, and <a href="launch.html#logs">Launching the stack, Logs</a>). The journal holds the launcher's own lines and the Zenoh router's output if it dies. The old README's <code>ros2_launch_service</code> name is out of date: the unit is <code>ros_launcher</code>.</li>
         <li><strong>Record bags on the robot.</strong> The viewer's Bagging panel runs <code>ros2 bag record</code> over SSH as <code>ros@orin2</code>. The bag keeps recording if the link drops or the viewer closes, and it's saved under <code>/home/ros/bags/</code>. Copy it off with <code>rsync</code> or <code>scp -r</code>. See <a href="debugging.html">Debugging, bags and data</a>.</li>
         <li><strong>Looking is fine, changing isn't.</strong> Don't edit code, run <code>apt upgrade</code> or rebuild on the Orin by hand. Deploy from the release workspace so the robot always runs code you can name.</li>
       </ul>

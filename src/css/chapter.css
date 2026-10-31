@@ -1,8 +1,8 @@
-/* Shared by every chapter outside the Perception and Control parts. Chapter-specific styles go in src/css/<chapter>.css. */
+/* Shared by every page (imported by src/layout.js). Chapter-specific styles go in src/css/<chapter>.css, src/perception/css or src/control/css. */
 
 /* The plain-language summary under each lede. */
 aside.short { max-width: var(--measure); margin: 0 auto 2rem; background: var(--paper-2); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem 0.6rem; font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; color: var(--ink); }
-aside.short .label { display: block; font-size: 0.78rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.5rem; font-stretch: 100%; }
+aside.short .label { display: block; font-size: 0.78rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); margin: 0 0 0.5rem; font-stretch: 100%; }
 aside.short ul { margin: 0; padding-left: 1.1em; }
 aside.short li { margin-bottom: 0.4em; }
 .term { font-weight: 650; }
@@ -12,7 +12,7 @@ aside.short li { margin-bottom: 0.4em; }
 .callout { font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; background: var(--paper-2); border-radius: 8px; padding: 0.85rem 1.1rem 0.5rem; margin: 1.3rem 0 1.6rem; }
 .callout .label { display: block; font-size: 0.74rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 0.35rem; }
 .callout.safety { background: #fde9df; box-shadow: inset 3px 0 0 var(--accent); }
-.callout.safety .label { color: #a8360a; }
+.callout.safety .label { color: var(--accent-ink); }
 .callout ul { padding-left: 1.1em; }
 
 /* A command to type, with an optional "where" tag (which machine runs it). */
@@ -27,7 +27,7 @@ dl.spec dd { margin: 0; color: var(--ink); }
 
 /* Photos, renders and screen recordings. */
 .fig .media { display: block; width: 100%; height: auto; border-radius: 6px; background: #0f2633; }
-.fig .media-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.8rem; }
+:where(.fig) .media-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.8rem; }
 .fig .media-grid figure { margin: 0; }
 .fig .media-grid figcaption { margin-top: 0.35rem; }
 
@@ -40,7 +40,7 @@ dl.spec dd { margin: 0; color: var(--ink); }
 .chapter-list li { margin-bottom: 0.7em; }
 .chapter-list a { text-decoration: none; }
 .chapter-list a strong { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 0.18em; }
-.part-label { font-family: var(--sans); font-size: 0.78rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 1.4rem 0 0.4rem; }
+.part-label { font-family: var(--sans); font-size: 0.78rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); margin: 1.4rem 0 0.4rem; }
 
 /* "Where this lives": repo / package / file pointers at the end of a section. */
 .src-list { font-family: var(--sans); font-size: 0.88rem; color: var(--ink-2); }
@@ -53,3 +53,10 @@ svg text.halo { paint-order: stroke; stroke: var(--paper-2); stroke-width: 4px; 
 
 /* A params table whose first column holds long code may wrap it. */
 table.params.wrap-first td:first-child { white-space: normal; }
+
+/* Keyboard keys. */
+main kbd { font-family: var(--mono); font-size: 0.8em; font-weight: 500; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0.02em 0.32em; white-space: nowrap; }
+
+/* A term linked to its glossary entry (added by src/layout.js, once per page): quieter than a real link. */
+a.gl { color: inherit; text-decoration: underline dotted; text-decoration-color: var(--ink-2); text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
+a.gl:hover { color: var(--accent-ink); text-decoration-color: currentColor; }

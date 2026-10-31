@@ -7,8 +7,8 @@ export const PARTS = [
     chapters: [
       { href: 'index.html', title: 'How Talos works', n: '' },
       { href: 'robosub.html', title: 'RoboSub and the course' },
-      { href: 'code-map.html', title: 'A map of the code' },
       { href: 'ros2.html', title: 'ROS 2, the Talos way' },
+      { href: 'code-map.html', title: 'A map of the code' },
       { href: 'setup.html', title: 'Setting up your machine' },
     ],
   },

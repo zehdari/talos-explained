@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Props made of several pieces · How Talos sees</title>
+<title>Props made of several pieces · How Talos works</title>
 <meta name="description" content="How tensor_detector builds one detection from several boxes: the gate halves from pairs of symbols, the torpedo board and its four labelled openings from one shared plane, and the slalom from the closest pole.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Vision · Chapter 5</div>
+    <div class="kicker">Perception · Chapter 5</div>
     <h1>Props made of several pieces</h1>
     <p class="lede">The network sees symbols, not props. A torpedo board is four symbols and four identical rings; a gate half is two signs. These objects can only be built once the whole frame has been seen.</p>
   </header>
@@ -57,7 +57,7 @@
       <figcaption><b>Naming the openings, at any roll.</b> The board, measured from a Nereus frame, 1.5 m in front of the camera; dashed line = fire→blood axis, ticks = each opening's <span class="m">s</span>. Roll or turn it: the names stay right, while the nearest-symbol-in-image rule (scored below) splits 3–1 at some rolls past 50°.</figcaption>
     </figure>
     <div class="prose">
-      <p>Each opening is published with the board's orientation and its circle box's confidence (marker size = box pixels / 150, for RViz only). What the mission published, projected back into the image:</p>
+      <p>Each opening is published with the board's orientation and its circle box's confidence (marker size = box pixels / 150, used only for display). What the mission published, projected back into the image:</p>
     </div>
     <figure class="fig">
       <div class="panel">

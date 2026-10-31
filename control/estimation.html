@@ -3,21 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Feedback and model error · How Talos flies</title>
+<title>Feedback and model error · How Talos works</title>
 <meta name="description" content="riptide_mpc's model-based state estimator, offset-free MPC through a learned disturbance wrench, the settle-trust signal autonomy waits on, and how the ROS 2 node ties it together.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Chapter 7</div>
+    <div class="kicker">Control · Chapter 7</div>
     <h1>Feedback and model error</h1>
     <p class="lede">A prediction is only useful if it starts from the right place and the model behind it is honest. The estimator handles the first; a learned disturbance wrench handles the second, and makes the controller offset-free.</p>
   </header>
   <article>
+    <aside class="short"><span class="label">The short version</span><ul>
+      <li>The MPC builds its own state from raw sensors (<code>state_source: sensors</code>), because the EKF was too late to control with: its velocity lagged the DVL by 0.2&ndash;0.35 s when measured.</li>
+      <li>Between samples it propagates the Fossen model with a replica of the commanded thrust. Gyros set the rates outright (the FOG owns yaw), IMU gravity pulls roll and pitch in over 1 s, the DVL corrects velocity at its own timestamp, the depth sensor corrects z.</li>
+      <li>The EKF only anchors x, y and heading (2 s time constant) and stands in for a stale sensor.</li>
+      <li>Velocity and rate innovations become a learned disturbance wrench (3 s time constant, slowed with speed), added to the model the MPC predicts with. That makes the controller offset-free.</li>
+      <li>A per-axis settle trust on <code>controller/scale/trust</code> tells autonomy when a move is done.</li>
+    </ul></aside>
     <div class="prose">
       <h2 id="why">Why the MPC has its own estimator</h2>
-      <p>Talos already runs an EKF (robot_localization) that fuses the same sensors. The MPC uses it only as an anchor, because for control it is late. Bench and pool tests on 2026-10-27 measured its velocity 0.2–0.35 s behind the DVL, and its roll and pitch rates about 0.45 s behind the IMU. Half a second of lag in the feedback of a controller planning 1.5 s ahead is a third of its horizon. (Both were tuning problems: the IMU reported its gyro about 10,000× noisier than it is, and the EKF's velocity process noise was tiny. Fixing them the same day brought the rates to about 45 ms on the bench and the velocity to about 0.1 s in pool-bag replays. The MPC still builds its own state, which is on time regardless.)</p>
+      <p>Talos already runs an EKF (robot_localization) that fuses the same sensors; <a href="../localization.html">Where am I? State estimation</a> covers it, and the sensors themselves are in <a href="../sensors.html">Navigation sensors</a>. The MPC uses it only as an anchor, because for control it is late. Bench and pool tests on 2026-10-27 measured its velocity 0.2–0.35 s behind the DVL, and its roll and pitch rates about 0.45 s behind the IMU. Half a second of lag in the feedback of a controller planning 1.5 s ahead is a third of its horizon. (Both were tuning problems: the IMU reported its gyro about 10,000× noisier than it is, and the EKF's velocity process noise was tiny. Fixing them the same day brought the rates to about 45 ms on the bench and the velocity to about 0.1 s in pool-bag replays. The MPC still builds its own state, which is on time regardless.)</p>
       <p>So <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/state_estimator.cpp"><code>state_estimator.cpp</code></a> builds the MPC's state directly from raw sensors (<code>state_source: sensors</code> in <code>mpc.yaml</code>). Between measurements it propagates the same Fossen model, driven by a replica of the thrusters fed every command the MPC publishes. Each measurement then corrects the channel it observes.</p>
     </div>
     <figure class="fig">
@@ -69,7 +76,7 @@
         <thead><tr><th>Topic</th><th>Direction</th><th>What</th></tr></thead>
         <tbody>
           <tr><td><code>controller/linear</code>, <code>controller/angular</code></td><td>in</td><td>Setpoints and modes (ControllerCommand)</td></tr>
-          <tr><td><code>follow_path</code></td><td>action</td><td>Lines and arcs flown as one path</td></tr>
+          <tr><td><code>follow_path</code></td><td>action</td><td>Lines and arcs flown as one path (<a href="../commanding.html#paths">Commanding Talos</a>)</td></tr>
           <tr><td><code>vectornav/imu</code>, <code>gyro/twist</code>, <code>dvl_twist</code>, <code>depth/pose</code>, <code>odometry/filtered</code></td><td>in</td><td>Sensors for the estimator, EKF as anchor</td></tr>
           <tr><td><code>thruster_forces</code>, <code>command/requested_rpm</code></td><td>out</td><td>The first stage's command, in newtons and as RPM</td></tr>
           <tr><td><code>controller/mpc/predicted_path</code>, <code>planned_path</code>, <code>reference</code></td><td>out</td><td>The horizon, the planned path, the live profile pose</td></tr>

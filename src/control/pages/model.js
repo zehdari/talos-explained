@@ -51,6 +51,27 @@ const mm = (v) => v.map((x) => (x * 1000).toFixed(0)).join(', ');
       { from: 'origin', to: 'imu' },
       { from: 'origin', to: 'depth' },
     ],
+    // Phones: the chain world → base_link → origin top-down, origin's children below it.
+    narrow: {
+      below: 600, width: 360, height: 425,
+      nodes: {
+        world: { x: 180, y: 30 },
+        base_link: { x: 180, y: 112 },
+        origin: { x: 180, y: 197 },
+        com: { x: 62, y: 290 },
+        cob: { x: 62, y: 395 },
+        thrusters: { x: 296, y: 290 },
+        dvl: { x: 160, y: 395 },
+        imu: { x: 232, y: 395 },
+        depth: { x: 310, y: 395 },
+      },
+      edges: {
+        'world>base_link': { lx: 188, ly: 75, anchor: 'start' },
+        'base_link>origin': { lx: 188, ly: 159, anchor: 'start' },
+        'origin>com': { lx: 104, ly: 236, anchor: 'end' },
+        'com>cob': { lx: 70, ly: 347, anchor: 'start' },
+      },
+    },
     info: (n) => (note.textContent = n ? txt[n.id] : 'Hover or tap a frame.'),
   });
   host.appendChild(note);
@@ -119,7 +140,14 @@ const mm = (v) => v.map((x) => (x * 1000).toFixed(0)).join(', ');
   host.appendChild(leg);
   const box = document.createElement('div');
   host.appendChild(box);
-  barChart(box, labels.map((l, i) => ({ label: l, segments: [{ value: rigid[i] * (i > 2 ? 20 : 1), shown: rigid[i], color: 'var(--state)', name: 'rigid' }, { value: hydro.added_mass[i] * (i > 2 ? 20 : 1), shown: hydro.added_mass[i], color: 'var(--prediction)', name: 'added' }], total: rigid[i] + hydro.added_mass[i], unit: i > 2 ? ' kg·m²' : ' kg' })), { digits: 1, valueW: 92 });
+  // Drawn at the box's own pixel width (redrawn when it changes), so the text is never scaled down on a phone.
+  let drawnW = 0;
+  const draw = () => {
+    drawnW = box.clientWidth || 640;
+    barChart(box, labels.map((l, i) => ({ label: l, segments: [{ value: rigid[i] * (i > 2 ? 20 : 1), shown: rigid[i], color: 'var(--state)', name: 'rigid' }, { value: hydro.added_mass[i] * (i > 2 ? 20 : 1), shown: hydro.added_mass[i], color: 'var(--prediction)', name: 'added' }], total: rigid[i] + hydro.added_mass[i], unit: i > 2 ? ' kg·m²' : ' kg' })), { digits: 1, valueW: 92, labelW: 84, width: Math.max(280, Math.min(640, drawnW)) });
+  };
+  draw();
+  new ResizeObserver(() => { if (box.clientWidth && Math.abs(box.clientWidth - drawnW) > 4) draw(); }).observe(box);
 }
 
 // ---------- drag ----------

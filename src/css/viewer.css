@@ -58,15 +58,29 @@ main kbd {
 }
 
 /* ---------- command bar, both states ---------- */
-.vt-bars { display: grid; gap: 0.5rem; }
+.vt-bars { display: grid; gap: 0.5rem; justify-items: center; }
+/* Shown at natural size: the captures are only 87 px tall, so scaling them up blurs the text. */
+.vt-bars .media { max-width: 440px; }
 
 /* ---------- image grids ---------- */
 .fig .media-grid.vt-grid3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.75fr); align-items: start; }
 .fig .media-grid.vt-grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; }
+/* One shape for the four panel shots, so the row lines up; the short Actuators shot gets panel-white below it. */
+.fig .media-grid.vt-grid4 .media { aspect-ratio: 432 / 590; object-fit: contain; object-position: top; background: #fff; outline: 1px solid var(--rule); outline-offset: -1px; }
+.fig .media-grid.vt-grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+/* Scorecard and Display windows side by side at about the same height. */
+.fig .media-grid.vt-grid-sim { grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr); align-items: start; }
+.fig .media-grid a { display: block; }
+/* Crops never scale up past their own pixels. */
+.fig .media-grid.vt-grid2 .media { width: auto; max-width: 100%; }
 @media (max-width: 760px) {
   .fig .media-grid.vt-grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fig .media-grid.vt-grid3 > figure:last-child { grid-column: 1 / -1; }
   .fig .media-grid.vt-grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .fig .media-grid.vt-grid2, .fig .media-grid.vt-grid-sim { grid-template-columns: minmax(0, 1fr); }
+  .fig .media-grid.vt-grid-sim > figure:last-child .media { max-width: 341px; margin: 0 auto; }
 }
 
 /* ---------- typed-move sandbox ---------- */
@@ -88,7 +102,8 @@ main kbd {
 @media (max-width: 900px) { .vm-grid { grid-template-columns: minmax(0, 1fr); } }
 .vm-read { font-family: var(--sans); font-size: 0.88rem; line-height: 1.45; min-height: 4.4em; display: grid; gap: 0.15rem; align-content: start; background: var(--paper); border-radius: 6px; padding: 0.5rem 0.65rem; }
 .vm-said { font-family: var(--mono); font-size: 0.86rem; color: var(--ink); font-weight: 600; }
-.vm-to { font-family: var(--mono); font-size: 0.82rem; color: var(--reference); font-variant-numeric: tabular-nums; white-space: pre-wrap; }
+/* The goal readout: ink text (orange on paper is under 3:1), marked as the reference by an orange rule. */
+.vm-to { font-family: var(--mono); font-size: 0.82rem; color: var(--ink); font-variant-numeric: tabular-nums; white-space: pre-wrap; border-left: 3px solid var(--reference); padding-left: 0.4rem; }
 .vm-from { font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: pre-wrap; }
 .vm-err { color: #a8360a; }
 .vm-map { background: var(--paper); border-radius: 8px; overflow: hidden; }

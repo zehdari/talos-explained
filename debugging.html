@@ -252,16 +252,7 @@ python3 static_tf_from_bag.py BAG</code></pre>
         <li>Publish the sensor mounts: the bag's static TF, plus <code>dvl_link</code>, which is on <code>/tf</code> (it hangs off a revolute joint), not <code>/tf_static</code>.</li>
         <li>Record the new <code>odometry/filtered</code> and compare. First run it unchanged: the replay must match the live EKF, or nothing after means anything. It did, exactly.</li>
       </ol>
-      <div class="table-scroll"><table class="params">
-        <thead><tr><th>EKF change (pool and bench bags, 2026-10-27)</th><th>Result</th></tr></thead>
-        <tbody>
-          <tr><td>Unchanged</td><td>roll/pitch rates ~455 ms late at 12–15 % gain; velocity 351 ms behind the DVL</td></tr>
-          <tr><td>Gyro covariance 1e-5 (from 0.01)</td><td>roll/pitch rates 45 ms late, gain ×0.97</td></tr>
-          <tr><td><code>smooth_lagged_data</code>, history 1.0 s</td><td>velocity 292 ms</td></tr>
-          <tr><td>…and velocity process noise ×100</td><td>velocity 96 ms, no extra noise</td></tr>
-          <tr><td>No IMU acceleration fusion</td><td>velocity 394 ms (worse)</td></tr>
-        </tbody>
-      </table></div>
+      <p>Applied to the EKF, this found a fix that cuts the velocity lag from 351 to 96 ms (results in <a href="localization.html#replay">Where am I?, Finding the fix</a>).</p>
       <p>The same recipe works for mapping (replay <code>detected_objects</code>, odometry and TF) and for anything else whose inputs you recorded. The MPC's identification fits can be redone offline too: <code>ros2 run riptide_mpc identify_fit --dir &lt;session copy&gt; --model &lt;prior&gt;</code> refits a saved session.</p>
 
       <h2 id="time">Stamps and clocks</h2>

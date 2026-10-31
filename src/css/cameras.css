@@ -58,3 +58,6 @@ svg.chart text.bw-val.in { fill: #fff; stroke: none; }
 
 /* Settings table: keep each setting name on one line where there is room (layout.js adds <wbr> after each _). */
 @media (min-width: 700px) { table.cam-settings td:first-child wbr { display: none; } }
+
+/* Colour swatch before a camera name in the footprint readout (text stays ink for contrast). */
+.cam-sw { display: inline-block; width: 0.75em; height: 0.75em; border-radius: 2px; background: var(--c); vertical-align: -0.05em; margin-right: 0.3em; }

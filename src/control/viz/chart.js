@@ -134,7 +134,10 @@ export class LineChart {
         if (row < 0) row = rowEnds.length;
         const t = el('text', { class: 'label marker-label', x, y: m.t + 10 + row * 13 }, svg);
         t.textContent = mk.label;
-        rowEnds[row] = x + (t.getComputedTextLength?.() || mk.label.length * 6.5);
+        const len = t.getComputedTextLength?.() || mk.label.length * 6.5;
+        // a label that would run off the right edge sits to the left of its line instead
+        if (x + len > W - 2) { t.setAttribute('text-anchor', 'end'); t.setAttribute('x', x - 8); }
+        rowEnds[row] = x + len;
       }
     }
     this.cross = el('line', { class: 'crosshair', y1: m.t, y2: H - m.b, visibility: 'hidden' }, svg);

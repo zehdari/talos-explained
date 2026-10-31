@@ -112,7 +112,7 @@ titan_enable_bootloader(poac_board can) <span class="c"># bootloader that listen
         <thead><tr><th>When</th><th>How</th><th>Used by</th></tr></thead>
         <tbody>
           <tr><td>Compile time</td><td>The board header names the bus and client ID (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_boards/include/boards/talos/poac_board.h#L10-L17"><code>poac_board.h</code></a>), from <a href="https://github.com/osu-uwrt/titan_canmore/blob/f6273e2c25f0202788be01e41338a6bbd6320006/canmore/include/canmore/client_ids.h"><code>client_ids.h</code></a>.</td><td>POAC, camera cage, LED, IVC</td></tr>
-          <tr><td>At boot, from a jumper</td><td>A solder jumper pulls GPIO 29 high. Open: board 0, client 2, thrusters 0–3. Bridged: board 1, client 3, thrusters 4–7 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/main.c#L36-L49"><code>load_client_id</code></a>). The bootloader reads the same pin, so one image fits both. Thrusters are numbered from 0 here, as in the code; <a href="boards.html#esc">The circuit boards</a> counts 1–8.</td><td>ESC boards</td></tr>
+          <tr><td>At boot, from a jumper</td><td>A solder jumper pulls GPIO 29 high. Open: board 0, client 2, thrusters 0–3. Bridged: board 1, client 3, thrusters 4–7 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/main.c#L36-L49"><code>load_client_id</code></a>). The bootloader reads the same pin, so one image fits both. Thrusters are numbered from 0 here and everywhere in software; only the board's silkscreen (ESC 1/5 … 4/8) counts from 1 (<a href="boards.html#esc">The circuit boards</a>).</td><td>ESC boards</td></tr>
           <tr><td>At boot, from flash</td><td>A serial-number byte at <code>0x101FF000</code>, written once per housing, becomes the client ID. A blank byte stops the firmware (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/src/main.c#L188-L201"><code>main.c</code></a>).</td><td>Smart battery housings</td></tr>
         </tbody>
       </table>
@@ -275,7 +275,7 @@ titan_enable_bootloader(poac_board can) <span class="c"># bootloader that listen
       </ul>
 
       <h2 id="flash" data-short="Flashing">Flashing and upgrading</h2>
-      <p>Every board has the <strong>titan bootloader</strong> in front of its application (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_bootloader/src/main.c#L74-L157"><code>main.c</code></a>):</p>
+      <p>Every board has the <strong>titan bootloader</strong> in front of its application (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_bootloader/src/main.c#L74-L152"><code>main.c</code></a>):</p>
       <dl class="spec">
         <dt>Where it lives</dt><dd>The first 16 kB of flash; the application starts at <code>0x10004000</code> (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_bootloader/bootloader_runtime/memmap_bootloader.ld#L29-L30"><code>memmap_bootloader.ld</code></a>).</dd>
         <dt>At power-up</dt><dd>It listens 500 ms for a request on channel 14 (<code>B0 07 10 AD</code>).</dd>

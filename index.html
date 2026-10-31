@@ -3,34 +3,175 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How Talos works · How Talos works</title>
-<meta name="description" content="One or two sentences on what this chapter explains.">
+<title>How Talos works · The Ohio State AUV, explained end to end</title>
+<meta name="description" content="An interactive guide to Talos, the Ohio State Underwater Robotics Team's competition AUV, for new team members: the hull, power, boards and firmware, sensors and cameras, state estimation, perception and mapping, behaviour trees, the MPC controller, the Nereus simulator and pool tests.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
-  <header class="page-head">
-    <div class="kicker">Start here</div>
-    <h1>How Talos works</h1>
-    <p class="lede">One or two sentences: what this is and why a new member should care.</p>
-  </header>
+  <section class="hero talos-hero" aria-label="Talos in 3D, from the team's CAD">
+    <div class="th-stage" id="th-stage">
+      <img class="th-poster" id="th-poster" src="/img/index/hero-poster.webp" alt="" width="704" height="720" decoding="async">
+      <canvas id="th-canvas" aria-label="3D model of Talos, coloured by system. Drag to turn it; tap a part to read about it."></canvas>
+      <div class="th-labels" id="th-labels"></div>
+      <div class="th-tip" id="th-tip" hidden></div>
+      <div class="th-loading" id="th-loading">Loading the 3D model…</div>
+    </div>
+    <div class="copy">
+      <h1>How Talos works</h1>
+      <p class="sub">The Ohio State AUV, explained end to end</p>
+      <p>Talos is the Underwater Robotics Team's competition submarine. Once its kill switch goes in, it swims the RoboSub course alone. This site explains all of it, from the frame to the code. Tap a part to start there.</p>
+    </div>
+    <div class="dock">
+      <div class="th-chips" id="th-chips" role="group" aria-label="Parts of Talos"></div>
+      <div class="th-card" id="th-card" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <div class="page-head">
+    <div class="kicker">Start here · the overview</div>
+    <p class="lede" style="margin-top:0">Everything Talos does is one loop: sensors and cameras measure, software works out where the robot and the props are, a behaviour tree decides what to do, and a controller turns that into thrust 20 times a second. This page walks the loop once, then shows you where to read next.</p>
+  </div>
+
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Three to five bullets a reader can stop after.</li>
+      <li>Talos is UWRT's autonomous underwater vehicle (AUV): 32.4 kg, eight thrusters, two stereo cameras and one Jetson AGX Orin computer. It placed 4th in the RoboSub 2026 Autonomy Challenge.</li>
+      <li>Small boards with RP2040 microcontrollers handle power, the kill switch, the thrusters and the launcher. They talk to the Orin over CAN.</li>
+      <li>On the Orin, about 25 ROS 2 programs do the rest: an EKF for position, a YOLO detector and a map for the props, a behaviour tree for the mission, and an MPC that flies the robot.</li>
+      <li>Nereus, the team's simulator, stands in for the hardware so the same code runs on a laptop. Its viewer is the operator's GUI for the simulator and the real robot alike.</li>
+      <li>New here? Read <a href="#stack">the whole stack</a> below, then pick <a href="#paths">a reading path</a> for your sub-team.</li>
     </ul></aside>
+
     <div class="prose">
-      <p>Opening paragraph.</p>
-      <h2 id="first-section">First section</h2>
-      <p>Coming soon.</p>
+      <h2 id="one-minute">Talos in one minute</h2>
+      <p>Talos is an <strong>autonomous underwater vehicle</strong>. Nobody drives it during a competition run. A diver puts the kill switch in, and from then on everything is decided on board: where to go, what the props are, when to fire.</p>
+      <p>It is built for one event, <a href="robosub.html">RoboSub</a>. The 2026 course had a gate, a slalom, a torpedo board, a table of objects to sort into baskets, bins to drop markers into, magnets to hold against targets, and an octagon to surface in. Talos runs the whole course from one behaviour tree, <code>RepairCompMpcTree</code>. With it the team placed 4th in the 2026 Autonomy Challenge, after 2nd in 2024.</p>
+      <p>Here is that tree in the simulator, the robot's own code flying the gate, the slalom and the torpedo board:</p>
     </div>
+
     <figure class="fig">
-      <div class="panel" id="some-figure"></div>
-      <figcaption><b>Bold lead-in.</b> What to look at. Tap or hover … (if interactive).</figcaption>
+      <video class="media ix-video" src="/media/nereus/tree-run-behind.mp4" poster="/media/nereus/tree-run-behind.jpg" muted loop playsinline controls preload="none" aria-label="The Nereus viewer following Talos through the gate, the slalom, the torpedo board and the start of the table task"></video>
+      <figcaption><b>The competition tree in Nereus, at 6× speed.</b> Every node of Talos's software is running; only the hardware is simulated. The label in the corner names the task. The line ahead of Talos is the MPC's planned path; the arrows on it are thrust. Recorded 2026-10-30.</figcaption>
     </figure>
+
     <div class="prose">
-      <h2 id="second-section">Second section</h2>
-      <p>Coming soon.</p>
+      <h3>The numbers</h3>
+      <dl class="spec ix-spec">
+        <dt>Size</dt><dd>925 × 639 × 582 mm without the claw; 32.4 kg dry, on a scale (<a href="mechanical.html#numbers">Hull, frame and layout</a>)</dd>
+        <dt>Hull</dt><dd>Two clear tubes in an open aluminium frame: one for the computer, one for the circuit boards (<a href="mechanical.html#hull">Hull</a>)</dd>
+        <dt>Thrusters</dt><dd>8 Blue Robotics T200s in one plane: four push fore and aft, four tilted 45°. ±24 N each, 73 N total (<a href="thrusters-hw.html">Thrusters and ESCs</a>)</dd>
+        <dt>Power</dt><dd>2 × 8000 mAh 5S LiPo (18.5 V, 148 Wh each). The kill switch cuts the thrusters and nothing else (<a href="electrical.html">Power and wiring</a>)</dd>
+        <dt>Boards</dt><dd>Team-made boards with RP2040 microcontrollers on one CAN FD bus: power and kill (POAC, the <a href="glossary.html#term-poac">power + actuator board</a>), two ESC boards, camera cage, LED, acoustic modem (<a href="boards.html">The circuit boards</a>)</dd>
+        <dt>Sensors</dt><dd>VectorNav VN-100 IMU (400 Hz), fibre-optic gyro (about 475 Hz), Nortek DVL1000 (8 Hz), Bar02 depth (20 Hz), a hydrophone (<a href="sensors.html">Navigation sensors</a>)</dd>
+        <dt>Cameras</dt><dd>2 Stereolabs ZED X Mini, forward and down, 1920 × 1200 at 15 Hz (<a href="cameras.html">The cameras</a>)</dd>
+        <dt>Tools</dt><dd>A launcher with 2 torpedoes and 2 markers on one servo, a claw, a magnet on a rod (<a href="actuators.html">Torpedoes, dropper and claw</a>)</dd>
+        <dt>Computer</dt><dd>NVIDIA Jetson AGX Orin: ROS 2 Humble over Zenoh, every node of the robot (<a href="computers.html">Computers and networks</a>)</dd>
+        <dt>Software</dt><dd>EKF at 30 Hz, YOLO detector at about 10 Hz, a Kalman filter per prop, behaviour trees ticked every 30 ms, an MPC planning 1.5 s ahead every 50 ms (<a href="code-map.html">A map of the code</a>)</dd>
+      </dl>
     </div>
+
+    <div class="prose">
+      <h2 id="stack">The whole stack, as one loop</h2>
+      <p>Each box below is one program or one piece of hardware. Data flows up the left side, from the sensors to the mission tree, and commands flow down the right side, from the tree to the thrusters and the launcher. Tap a box for what it does, what it publishes and which chapter explains it.</p>
+    </div>
+    <figure class="fig ix-stack">
+      <div class="panel">
+        <div class="controls">
+          <div class="seg" id="stack-mode" role="group" aria-label="Where the stack runs"><button data-v="robot" aria-pressed="true">On the robot</button><button data-v="sim" aria-pressed="false">In Nereus</button></div>
+          <span class="ix-hint" id="stack-hint">Tap a box</span>
+        </div>
+        <div id="stack-graph"></div>
+      </div>
+      <div class="panel ix-info" id="stack-info"></div>
+      <figcaption><b>Talos's software and hardware, layer by layer.</b> Solid arrows are data every tick; dashed ones are occasional (a target, a kill). Switch to <i>In Nereus</i> to see what the simulator replaces: the hardware, the boards and the drivers become one program, and everything above runs unchanged. Rates marked "in Nereus" were measured on 2026-10-30 with the full stack in the simulator.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <p>Three things in this picture explain a lot of how the team works:</p>
+      <ul>
+        <li><strong>Every arrow is a message.</strong> The programs never call each other. They publish and subscribe to ROS 2 topics, services and actions, so you can watch any arrow from a laptop with <code>ros2 topic echo</code> (<a href="ros2.html">ROS 2, the Talos way</a>).</li>
+        <li><strong>The line between "robot" and "simulator" is low.</strong> Everything above the drivers doesn't know whether the sensors are real. That is why most work happens in <a href="nereus.html">Nereus</a> first, and pool time is for what only water can tell you.</li>
+        <li><strong>Safety lives at the bottom.</strong> The kill switch and the boards' own timeouts stop the thrusters even if every program above them is wrong (<a href="commanding.html">Commanding Talos</a>).</li>
+      </ul>
+
+      <h2 id="decision">Follow one decision: firing a torpedo</h2>
+      <p>The best way to see how the pieces fit is to follow one decision through all of them. Here is the first torpedo shot of the run above, from a camera frame to a spring letting go. Step through it; each step links to the chapter that explains it.</p>
+    </div>
+    <figure class="fig ix-decision">
+      <div class="panel flush">
+        <div class="dx-top">
+          <ol class="dx-steps" id="dx-steps"></ol>
+          <div class="dx-nav"><button class="btn" id="dx-prev" aria-label="Previous step">←</button><button class="btn primary" id="dx-next">Next →</button></div>
+        </div>
+        <div class="dx-layers" id="dx-layers" aria-hidden="true"></div>
+        <div class="dx-body" id="dx-body" aria-live="polite"></div>
+      </div>
+      <figcaption><b>One torpedo, eight steps.</b> The pictures are from Nereus (the robot's own code, simulated hardware), most of them from the run of 2026-10-30, except the ESC board, which is a render of its PCB design, and two drawings. The kicker on each step (and, on wide screens, the strip under the steps) names the layers of the stack it happens in.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <p>In that run the tree turned to the torpedo 28 s before the shot, and that includes the swim there. Much of the rest is waiting on purpose: for mapping to be sure, then for the controller to settle. Each wait is a number someone chose, and the chapters say which file it lives in.</p>
+      <p>The same chain is also how you debug Talos. When "the torpedo missed", one of these eight steps went wrong, and each one leaves a trace you can record and check on its own (<a href="debugging.html">Debugging, bags and data</a>).</p>
+
+      <h2 id="reading">How to read this site</h2>
+      <p>The site is written for new team members. You need some programming and high-school physics; everything else is explained where it comes up.</p>
+      <ul>
+        <li><strong>Every chapter starts with a short version.</strong> If that's all you need today, stop there. The rest is the detail you'll want when you work on that part.</li>
+        <li><strong>Figures are live.</strong> Tap or hover boxes, drag sliders, press play. On a phone everything works by tap.</li>
+        <li><strong>Numbers come from the code.</strong> When a chapter quotes a rate, a threshold or a weight, it links to the exact file on GitHub, on the branch Talos runs (table below). If the code changes, trust the code.</li>
+        <li><strong>Orange boxes are about safety.</strong> They mark anything that can hurt a person or break hardware: the thrusters, the launcher, the batteries, the seals.</li>
+        <li><strong>Commands say where to run them.</strong> A tag in the corner of a command block says which machine it is for: your laptop, the Orin or the operator laptop.</li>
+        <li><strong>Unknown word?</strong> The <a href="glossary.html">Glossary</a> (Appendix B) has about 300 terms, with search and a filter by part. Every topic, service and frame is in <a href="interfaces.html">Appendix A</a>.</li>
+        <li><strong>Perception and Control are deeper.</strong> They began as two separate sites (<i>How Talos sees</i> and <i>How Talos flies</i>), each with its own overview and a page of all its maths.</li>
+      </ul>
+
+      <h3 id="branches">Which code this site describes</h3>
+      <p>Talos runs <a href="https://github.com/osu-uwrt/riptide_release">riptide_release</a>, which pins every package repo to one commit. Most of them run a feature branch, not <code>master</code>, so check the branch before you clone (<a href="code-map.html#pinning">A map of the code</a>).</p>
+      <table class="params ix-repos">
+        <thead><tr><th>Repo</th><th>Branch</th><th>What's in it</th></tr></thead>
+        <tbody id="repo-rows"></tbody>
+      </table>
+
+      <h2 id="paths">Where to start</h2>
+      <p>You don't have to read in order. Pick the path that fits what you'll work on; the chapters are listed in the order that makes sense for it. The full list follows.</p>
+    </div>
+    <figure class="fig narrow ix-paths">
+      <div class="seg ix-path-seg" id="path-seg" role="group" aria-label="Reading paths"></div>
+      <div class="panel ix-path" id="path-body"></div>
+      <figcaption><b>Reading paths by sub-team.</b> Pick a tab; the chapters are in the order that makes sense for that work, and are marked in the full list below.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="howto">How do I…</h2>
+      <p>The chapters follow the robot's systems, but you will often arrive with a job to do. These go straight to the section that does it.</p>
+      <ul class="ix-howto">
+        <li><b>Build and source the code</b><span><a href="setup.html#build">Building: rosdep, then colcon</a></span></li>
+        <li><b>Run the simulator</b><span><a href="setup.html#nereus">Building Nereus</a> · <a href="nereus.html#run">Running Nereus</a></span></li>
+        <li><b>Get my change onto Talos</b><span><a href="setup.html#git">Branches, pull requests and release</a> · <a href="setup.html#deploy">colcon deploy</a></span></li>
+        <li><b>Join the robot from my laptop</b><span><a href="computers.html#join">Joining from your own laptop</a></span></li>
+        <li><b>Start the stack on the robot</b><span><a href="launch.html#ways">Four ways to start Talos</a></span></li>
+        <li><b>Enable, kill and drive Talos</b><span><a href="viewer.html#enable">Enable and KILL</a> · <a href="viewer.html#motion">The Motion panel</a> · <a href="pool-test.html#kill">Kill switch rules</a></span></li>
+        <li><b>Run a mission tree</b><span><a href="viewer.html#autonomy">Running a tree</a></span></li>
+        <li><b>Add a node to a tree</b><span><a href="bt-workflow.html#node">Writing a node</a></span></li>
+        <li><b>Flash a board</b><span><a href="firmware.html#flash">Flashing and upgrading</a></span></li>
+        <li><b>Swap a thruster or propeller</b><span><a href="thrusters-hw.html#swap">Swapping a thruster or propeller</a></span></li>
+        <li><b>Open the hull and reseal it</b><span><a href="mechanical.html#service">Opening Talos up</a> · <a href="pool-test.html#pvt">The depressurization test</a></span></li>
+        <li><b>Charge the batteries</b><span><a href="electrical.html#charging">Charging and handling</a></span></li>
+        <li><b>Calibrate the map on the AprilTag</b><span><a href="localization.html#tag">The AprilTag calibration</a></span></li>
+        <li><b>Put a new detector model on Talos</b><span><a href="perception/training.html#deploy">Putting a model on Talos</a></span></li>
+        <li><b>Record and copy a bag</b><span><a href="debugging.html#bags">Recording bags</a></span></li>
+        <li><b>Find a node's log</b><span><a href="debugging.html#logs">Where the logs are</a> · <a href="launch.html#logs">Logs: the page, the journal and the disk</a></span></li>
+        <li><b>Test the launcher on the bench</b><span><a href="actuators.html#bench-test">Testing on the bench</a></span></li>
+        <li><b>Read the status LEDs</b><span><a href="mission-tree.html#leds">What the LEDs say</a></span></li>
+      </ul>
+    </div>
+
+    <div class="prose ix-chapters">
+      <h2 id="chapters">Every chapter</h2>
+      <p>The same list is in the menu (<span class="ix-menu-note">the Chapters button on a phone</span><span class="ix-menu-note-wide">the column on the left</span>), grouped by part.</p>
+      <div id="chapter-index"></div>
+    </div>
+
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>
 </main>

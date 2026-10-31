@@ -78,7 +78,7 @@ const SENSORS = [
   },
   {
     id: 'depth', anchor: 'ne', label: 'Depth', title: 'Bar02 pressure sensor', href: '#depth',
-    what: 'Water pressure, turned into depth with fresh-water density. Read by the camera cage board\'s RP2040 over I²C.',
+    what: 'Water pressure, turned into depth with fresh-water density. The sensor sits in the starboard lid; the camera cage board\'s RP2040 reads it over I²C.',
     rows: [
       ['Rate', '20 Hz'],
       ['Topic', `${code('state/depth/raw')} → ${code('depth/pose')}`],
@@ -205,22 +205,6 @@ getJSON('timeline.json').then((tl) => {
   note.innerHTML = 'Tap or hover a row for what it is and how it is stamped.';
   segment(document.getElementById('tl-zoom'), (z) => { zoom = +z; w0 = zoom === 1 ? 0 : Math.max(0, Math.floor((firstEcho - 0.02) * 100) / 100); draw(); });
   new ResizeObserver(() => draw()).observe(host);
-});
-
-// ---------------------------------------------------------------- EKF and the IMU rate covariance
-getJSON('ekf_cov.json').then((d) => {
-  const chart = new LineChart(document.getElementById('cov-chart'), { height: 260, xLabel: 'time (s)', yLabel: 'roll rate (°/s)', digits: 1, unit: '°/s', yZero: true });
-  const note = document.getElementById('cov-note');
-  const show = (k) => {
-    const r = d[k];
-    chart.set([
-      { name: 'IMU (body roll rate)', color: css('--state'), values: pts(r.t, r.imu), width: 1.6 },
-      { name: 'EKF odometry/filtered', color: css('--reference'), values: pts(r.ekf_t, r.ekf), width: 2.2 },
-    ]);
-    note.innerHTML = `IMU <code>angular_velocity_covariance</code> ${r.cov}: the EKF's roll rate is <b>${Math.round(r.lag_s * 1000)} ms</b> late at <b>${Math.round(r.gain * 100)} %</b> of the IMU's size (least-squares fit).`;
-  };
-  segment(document.getElementById('cov-pick'), show);
-  show('A');
 });
 
 // ---------------------------------------------------------------- still: drift, noise, pool
@@ -421,7 +405,7 @@ getJSON('catalog.json').then(({ gyro: g }) => {
     ['imu', 'No <code>vectornav/imu</code>', 'Wrong port (Talos needs <code>imu_port:=/dev/ttyTHS1</code>), or the VN-100 hung.', `<code>ros2 topic hz /talos/vectornav/imu</code> should say 400. Driver log: "Unable to connect to IMU". Viewer electrical panel: Cycle IMU (${link(CORE + 'riptide_hardware/riptide_hardware2/imu_power_cycle.py', 'holds Orin GPIO pin 22 low for 10 s')}).`],
     ['imu', 'IMU rate no longer 400 Hz', 'Registers written and not saved, or saved with a different rate.', 'Read the output registers from the viewer\'s electrical panel; save after any change.'],
     ['imu', 'Gaps in <code>vectornav/imu</code>', 'The driver drops a message with NaN, a quaternion component above 1, a rate above 2π rad/s or an acceleration above 20 m/s². A serial hiccup also makes the driver reconnect, which reboots the VN-100 (a gap in the data).', 'Driver log errors. <code>ros2 topic hz</code> for gaps.'],
-    ['imu', 'EKF roll and pitch rates small and late', '<code>angular_velocity_covariance</code> 0.01 in <code>riptide_imu/config/vectornav.yaml</code>.', 'Compare <code>odometry/filtered</code> twist with the IMU in a bag (the covariance plot above).'],
+    ['imu', 'EKF roll and pitch rates small and late', '<code>angular_velocity_covariance</code> 0.01 in <code>riptide_imu/config/vectornav.yaml</code>.', 'Compare <code>odometry/filtered</code> twist with the IMU in a bag (<a href="localization.html#lag">The EKF is late</a>).'],
     ['fog', 'Heading creeps while Talos sits still', 'A bad or old tare (taken while moving or tilted). Rarely the gyro itself.', 'With Talos still and level, tare from the viewer (100,000 samples).'],
     ['fog', '<code>temp_within_cal</code> false', 'FOG colder than 37.6 °C (just powered on) or hotter than 51.3 °C.', 'Watch the FOG temperature in the viewer header (warns at 55 °C, errors at 75 °C); let it warm up.'],
     ['fog', 'Yaw rate suspect, <code>gyro/status</code> flags', 'Supply outside 4.75 to 5.25 V, light-source (SLD) current outside 0.07 to 0.15 A, or diagnostic signal outside 0.95 to 1.05.', '<code>ros2 topic echo /talos/gyro/status</code>; check the FOG supply and wiring.'],

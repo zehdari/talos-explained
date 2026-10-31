@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How Talos sees · Perception and mapping for an AUV, explained</title>
+<title>Perception: how Talos sees · How Talos works</title>
 <meta name="description" content="An interactive explainer for riptide_perception: the YOLO detector, how a segmentation mask becomes a 3D pose, the detection noise model, the per-object filters and the robust course-map solve that tell Talos's autonomy where the props are.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
@@ -39,13 +39,13 @@
   </section>
 
   <div class="page-head">
-    <div class="kicker">riptide_perception, chapter by chapter</div>
+    <div class="kicker">Perception · riptide_perception, chapter by chapter</div>
     <p class="lede" style="margin-top:0" id="hero-lede">Talos found every prop in that run with the two halves of <code>riptide_perception</code>: a detector that finds props in each camera image, and a map that turns those detections into where each prop really is.</p>
   </div>
 
   <article>
     <div class="prose">
-      <p>Talos is the Underwater Robotics Team's competition AUV. Every RoboSub task starts with one question: where exactly is the thing? <a href="https://github.com/osu-uwrt/riptide_perception/tree/mapping-estimator"><code>riptide_perception</code></a> answers it. This site explains that code for new team members. You need some Python and high-school vectors; the maths is <a href="math.html">on one page</a>.</p>
+      <p>Talos is the Underwater Robotics Team's competition AUV. Every RoboSub task starts with one question: where exactly is the thing? <a href="https://github.com/osu-uwrt/riptide_perception/tree/mapping-estimator"><code>riptide_perception</code></a> answers it. This part of the site explains that code. You need some Python and high-school vectors; the maths is <a href="math.html">on one page</a>.</p>
       <ul>
         <li><strong>Vision</strong> (<code>tensor_detector</code>): looks at one image at a time and says what it sees and where, relative to the camera.</li>
         <li><strong>Mapping</strong> (<code>riptide_mapping</code>): collects detections over the run into a course map, and publishes each prop as a coordinate frame for the behaviour trees and the <a href="../control/index.html">controller</a>.</li>

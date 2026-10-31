@@ -33,7 +33,7 @@
 
 .bt-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 0 1.2rem; padding: 0.7rem 1rem 1rem; }
 .bt-side { position: sticky; top: 8.4rem; align-self: start; font-family: var(--sans); font-size: 0.84rem; color: var(--ink-2); max-height: calc(100vh - 9rem); overflow-y: auto; }
-.bt-side h4 { font-size: 0.72rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0.9rem 0 0.3rem; font-stretch: 100%; }
+.bt-side h3.panel-h { font-size: 0.72rem; line-height: 1.12; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0.9rem 0 0.3rem; font-stretch: 100%; }
 .bt-variant { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem; margin: 0.1rem 0 0.6rem; font-family: var(--sans); font-size: 0.84rem; color: var(--ink-2); }
 .bt-detail.inline { margin: 0.2rem 0 0.5rem calc(var(--d) * var(--ind) + 1.2rem); font-family: var(--sans); font-size: 0.82rem; color: var(--ink-2); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .bt-detail.inline .bt-dhead { font-size: 0.86rem; }
@@ -42,7 +42,7 @@
 /* outline rows */
 .bt-tree { font-family: var(--sans); font-size: 0.84rem; line-height: 1.3; --ind: 0.85rem; }
 .bt-row {
-  position: relative; display: flex; align-items: flex-start; gap: 0.35rem;
+  position: relative; display: flex; align-items: flex-start; gap: 0.35rem; min-width: 0;
   padding: 0.24rem 0.3rem 0.24rem calc(var(--d) * var(--ind) + 0.2rem);
   border-radius: 5px; cursor: pointer; color: var(--muted);
   background-image: repeating-linear-gradient(to right, transparent 0 calc(var(--ind) * 0.5 - 0.5px), var(--rule) calc(var(--ind) * 0.5 - 0.5px) calc(var(--ind) * 0.5 + 0.5px), transparent calc(var(--ind) * 0.5 + 0.5px) var(--ind));
@@ -55,8 +55,8 @@
 .bt-row .caret[data-toggle] { cursor: pointer; }
 .bt-row .chip {
   flex: none; width: 4.6rem; height: 1.18rem; margin-top: 0.06rem; border-radius: 4px;
-  font-size: 0.62rem; font-weight: 650; letter-spacing: 0.05em; text-align: center; line-height: 1.18rem;
-  border: 1px dashed var(--rule); background: transparent; color: #9fb3ba; font-weight: 500; text-transform: lowercase; letter-spacing: 0.02em;
+  font-size: 0.68rem; font-weight: 650; letter-spacing: 0.05em; text-align: center; line-height: 1.18rem;
+  border: 1px dashed var(--rule); background: transparent; color: var(--muted); font-weight: 500; text-transform: lowercase; letter-spacing: 0.02em;
 }
 .bt-row .chip.SUCCESS, .bt-row .chip.FAILURE, .bt-row .chip.RUNNING { border-style: solid; font-weight: 650; text-transform: none; letter-spacing: 0.05em; }
 .bt-row .chip.SUCCESS { border-color: var(--bt-ok); color: var(--bt-ok); background: #e3f3e8; }
@@ -126,7 +126,7 @@ ol.bt-history a { color: var(--ink-2); font-size: 0.82rem; white-space: nowrap; 
 
 /* ---------- phones ---------- */
 @media (max-width: 900px) {
-  .bt-grid { grid-template-columns: 1fr; }
+  .bt-grid { grid-template-columns: minmax(0, 1fr); }
   .bt-side { position: static; max-height: none; overflow: visible; margin-top: 0.8rem; }
   .bt-side > .bt-detail { display: none; }
   .bt-last { display: block; }
@@ -138,12 +138,18 @@ ol.bt-history a { color: var(--ink-2); font-size: 0.82rem; white-space: nowrap; 
   .bt-hint { font-size: 0.78rem; }
   .bt-grid { padding: 0.5rem 0.4rem 0.8rem; }
   .bt-tree { --ind: 0.55rem; font-size: 0.8rem; }
-  .bt-row .chip { width: 3.9rem; font-size: 0.56rem; }
+  .bt-row .chip { width: 3.9rem; font-size: 0.68rem; }
   .bt-row .ord { min-width: 0.9rem; }
   .bt-clock { flex-basis: 100%; margin-left: 0; }
   ol.bt-history li { grid-template-columns: 2.8rem 1fr; gap: 0.5rem; }
   #wfk-graph .seg button { padding: 0.3rem 0.55rem; font-size: 0.8rem; }
   #decorator-table td:nth-child(2) code { white-space: normal; overflow-wrap: anywhere; }
+}
+@media (max-width: 340px) {
+  .bt-row .chip, .bt-row .chip.SUCCESS, .bt-row .chip.FAILURE, .bt-row .chip.RUNNING { width: 3.6rem; letter-spacing: 0; }
+  .bt-variant .seg button { padding: 0.28rem 0.5rem; font-size: 0.78rem; }
+  .bt-bbt td { overflow-wrap: anywhere; }
+  .bt-bbt td:first-child { white-space: normal; }
 }
 
 /* ---------- WaitForKillSwitch tree ---------- */

@@ -90,7 +90,7 @@ BT_REGISTER_NODES(factory)
     </figure>
     <div class="prose">
       <h2 id="moving">Moving: paths and setpoints</h2>
-      <p>The MPC takes two kinds of command (<a href="control/reference.html#paths">How Talos flies, Chapter 4</a>):</p>
+      <p>The MPC takes two kinds of command (<a href="control/reference.html#paths">Control, Chapter 4</a>):</p>
       <ul>
         <li><strong>A path</strong>: <code>FollowPath</code> sends one <code>follow_path</code> goal. Talos flies through every waypoint without stopping and settles on the last. The newer subtrees (names ending in <code>Mpc</code>) mostly move this way.</li>
         <li><strong>A setpoint</strong> on <code>controller/linear</code> or <code>controller/angular</code>: <code>PublishToController</code>, <code>CenterDetection</code> and <code>ContinuousSpin</code> send these. The MPC holds a setpoint until the next one.</li>
@@ -123,7 +123,7 @@ torpedo_frame: 1.937824843,0.4948079185,0,0 | arc=0,0,0.25 | heading=look_at | l
     &lt;/Inverter&gt;
     &lt;Action ID="FollowPath" max_depth="-2.5" min_depth="-0.75" timeout="90" waypoints="{sweep_path}"/&gt;
 &lt;/ReactiveSequence&gt;</code></pre>
-      <p>When a condition flips, the <code>ReactiveSequence</code> halts <code>FollowPath</code>, whose <code>onHalted</code> cancels the goal. The search then calls <code>CenterDetection</code> to bring the target into the middle of the image, and holds there (at most 8 s) until <code>MapConverged</code> passes or the target has been out of sight for 2 s. What the covariance thresholds mean is in <a href="perception/frames.html#published">How Talos sees, Chapter 9</a>; the whole search, stage by stage, is in <a href="mission-tree.html#search">Chapter 3</a>.</p>
+      <p>When a condition flips, the <code>ReactiveSequence</code> halts <code>FollowPath</code>, whose <code>onHalted</code> cancels the goal. The search then calls <code>CenterDetection</code> to bring the target into the middle of the image, and holds there (at most 8 s) until <code>MapConverged</code> passes or the target has been out of sight for 2 s. What the covariance thresholds mean is in <a href="perception/frames.html#published">Perception, Chapter 9</a>; the whole search, stage by stage, is in <a href="mission-tree.html#search">Chapter 3</a>.</p>
 
       <h2 id="calls" data-short="Services and topics">What the generic nodes call</h2>
       <p>Ten nodes take any topic or service name as a port. Nine of them appear in the competition tree, and reach these:</p>
@@ -158,7 +158,7 @@ torpedo_frame: 1.937824843,0.4948079185,0,0 | arc=0,0,0.25 | heading=look_at | l
     </div>
     <figure class="fig narrow">
       <div class="panel" id="time-chart"></div>
-      <figcaption><b>Time as the deepest running node, in one Nereus run of <code>RepairCompMpcTree</code></b> (<span data-bind="runlen">538 s</span>, recorded 2026-10-29 for <a href="perception/mission.html">How Talos sees, Chapter 10</a>). Tap a bar. A decorator on top means its child just failed and it is waiting for the next tick to retry.</figcaption>
+      <figcaption><b>Time as the deepest running node, in one Nereus run of <code>RepairCompMpcTree</code></b> (<span data-bind="runlen">538 s</span>, recorded 2026-10-29 for <a href="perception/mission.html">Perception, Chapter 10</a>). Tap a bar. A decorator on top means its child just failed and it is waiting for the next tick to retry.</figcaption>
     </figure>
     <div class="prose">
       <p>Two thirds of the run is <code>FollowPath</code> and <code>Wait</code>: flying, and pausing between polls. <code>SetControllerSafeMode</code>'s 10 s is a timeout in the old flip at the gate: the MPC doesn't have the parameter it sets. For those 10 s the controller is disabled, because the flip's first step sends DISABLED (<a href="mission-tree.html#gate">Chapter 3</a>).</p>

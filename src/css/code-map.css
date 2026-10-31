@@ -133,3 +133,8 @@ pre.cm-tree-narrow { display: none; }
 .cm-pins .cm-br::before { content: '⎇\00a0'; color: var(--muted); }
 .cm-pins .cm-date { white-space: nowrap; }
 @media (max-width: 520px) { .cm-pins .cm-date { display: block; } }
+/* Repo names in code don't break: tighten the pins table so 'Ahead' fits at 360 px. */
+@media (max-width: 420px) {
+  table.cm-pins td, table.cm-pins th { padding-right: 0.35rem; }
+  table.cm-pins code { font-size: 0.7rem; }
+}

@@ -77,3 +77,7 @@ svg.dvl-top .dvl-val { fill: var(--ink); font-variant-numeric: tabular-nums; fon
 .tr-row span { color: var(--muted); font-size: 0.8rem; padding-top: 0.05rem; }
 svg.tl .tl-sub { fill: var(--muted); font-size: 0.68rem; }
 .sx-label.on { z-index: 2; }
+
+/* ---------- CAD renders of the DVL and hydrophone pod: same box, white letterbox ---------- */
+.fig .media-grid.sx-cad { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sx-cad .media { aspect-ratio: 4 / 5; width: 100%; height: auto; object-fit: contain; background: #fff; }

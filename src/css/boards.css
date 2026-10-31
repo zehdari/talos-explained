@@ -140,10 +140,15 @@ ol.bx-steps li::marker { color: var(--accent); font-family: var(--sans); font-we
 .bx-tabs button { white-space: nowrap; }
 .bx-tabs .bx-n { font-size: 0.74rem; opacity: 0.7; font-variant-numeric: tabular-nums; }
 .bx-tabs .bx-short { display: none; }
-@media (max-width: 520px) {
+/* Short labels where the tab row is narrow: on a phone, and in the explorer's side column on mid-width screens
+   (about 215-330 px wide between 901 and 1260 px). Narrowest there, the row may still need a second line, so let it wrap. */
+@media (max-width: 520px), (min-width: 901px) and (max-width: 1260px) {
   .bx-tabs button { padding: 0.32rem 0.62rem; }
   .bx-tabs .bx-long { display: none; }
   .bx-tabs .bx-short { display: inline; }
+}
+@media (min-width: 901px) and (max-width: 1260px) {
+  .bx-tabs { flex-wrap: wrap; border-radius: 14px; }
 }
 
 /* topic lists: what the arrows mean, and branch-only topics */

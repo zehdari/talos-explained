@@ -3,18 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Thrusters and allocation · How Talos flies</title>
+<title>Thrusters and allocation · How Talos works</title>
 <meta name="description" content="Talos's eight thrusters as a 6×8 thruster matrix, its null space, why the MPC optimizes thrust directly instead of allocating, and the thruster delay and lag the controller models.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
+<style>
+  /* The allocation figure: model beside the controls, or above them on a phone. */
+  .alloc-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  .alloc-grid > div:first-child { min-height: 360px; }
+  @media (max-width: 720px) {
+    .alloc-grid { grid-template-columns: 1fr; }
+    .alloc-grid > div:first-child { min-height: 300px; }
+  }
+</style>
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Chapter 2</div>
+    <div class="kicker">Control · Chapter 2</div>
     <h1>Thrusters and allocation</h1>
     <p class="lede">Eight thrusters, six ways to move. How thrust becomes a wrench, which thrust patterns do nothing at all, and why a thruster that answers 30 ms late has to be part of the model.</p>
   </header>
   <article>
+    <aside class="short"><span class="label">The short version</span><ul>
+      <li>The 6&times;8 thruster matrix <span class="m">\mathbf T</span> turns eight thruster forces into one wrench. Positions and axes come from the vehicle YAML, the same file as the URDF and simulator.</li>
+      <li><span class="m">\mathbf T</span> has a two-dimensional null space: two thrust patterns that move Talos not at all. Identification and the spin bias use them.</li>
+      <li>A pseudo-inverse allocation has to clip at &plusmn;24 N and then gets the wrench wrong. The MPC skips allocation: the eight forces are its decision variables, with &plusmn;24 N as box bounds, and the total is scaled to the 73 N power budget.</li>
+      <li>Thrust is late: a 30 ms transport delay, then an 80 ms rise (60 ms fall) lag and a 300 N/s slew limit. The realized forces are part of the MPC's state.</li>
+      <li>Force becomes RPM through a propeller law fitted to Blue Robotics' T200 data: 24 N takes about 2,450 rpm forward, 2,740 in reverse.</li>
+    </ul></aside>
     <div class="prose">
       <h2 id="matrix">From eight forces to one wrench</h2>
       <p>Each thruster <span class="m">i</span> sits at a position <span class="m">r_i</span> relative to the COM and pushes along a unit axis <span class="m">d_i</span>. A force <span class="m">f_i</span> along that axis is a force <span class="m">f_i d_i</span> plus a moment <span class="m">r_i \times f_i d_i</span> about the COM. Stack the columns and the whole propulsion system is one linear map, the <strong>thruster matrix</strong>:</p>
@@ -43,8 +59,8 @@
       <p>A classical controller computes a desired wrench and then <em>allocates</em> it to thrusters, usually with the minimum-norm solution <span class="m">f = \mathbf T^{+}\boldsymbol\tau = \mathbf T^\top(\mathbf T\mathbf T^\top)^{-1}\boldsymbol\tau</span>. riptide_mpc uses exactly this inside its feedforward (<code>MpcController::allocate</code>, via a complete orthogonal decomposition), but not for control. Try asking for a large wrench:</p>
     </div>
     <figure class="fig">
-      <div class="panel flush" style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)" id="alloc-grid">
-        <div style="position:relative;min-height:360px;background:linear-gradient(180deg,#e3f1f3,var(--water))"><canvas id="alloc-canvas" style="width:100%;height:100%;display:block;position:absolute;inset:0"></canvas></div>
+      <div class="panel flush alloc-grid" id="alloc-grid">
+        <div style="position:relative;background:linear-gradient(180deg,#e3f1f3,var(--water))"><canvas id="alloc-canvas" style="width:100%;height:100%;display:block;position:absolute;inset:0"></canvas></div>
         <div style="padding:1rem 1.1rem">
           <div class="controls" id="alloc-controls" style="display:grid;grid-template-columns:1fr;gap:.25rem"></div>
           <div class="seg" role="group" aria-label="Allocation method" style="margin:.4rem 0 .6rem"><button aria-pressed="true" data-m="pinv">Pseudo-inverse, clipped</button><button aria-pressed="false" data-m="qp">Box-constrained least squares</button></div>
@@ -81,7 +97,7 @@
       <p>Because the lag is a state, the MPC carries it in its own state vector: the 13 body states plus the 8 realized thruster forces. That is why the controller's linearized state has dimension 20 (12 on the tangent space plus 8), and why it can plan a command that leads the force it actually wants. It also keeps a replica of the delay queue (<code>MpcController::actuator_</code>), fed every published command, so it always knows what is still in flight. Chapter 5 shows how it uses that to plan through the delay.</p>
 
       <h2 id="rpm">From force to RPM</h2>
-      <p>The ESCs take RPM, not newtons. Talos uses Blue Robotics T200 thrusters, and its force-to-RPM curve comes straight from Blue Robotics' published T200 performance data. The model file stores that data as a propeller law per direction, <span class="m">|F| = K_T\,\rho D^4 (n/60)^2</span>, with a thrust coefficient that grows slightly with speed, <span class="m">K_T = a + b\,n</span>, fitted to the published curve. The node inverts it with a few Newton iterations (<code>HardwareConfig::forceToRpm</code>). Reverse thrust is weaker: the propeller is shaped for forward.</p>
+      <p>The ESCs take RPM, not newtons. Talos uses Blue Robotics T200 thrusters, and its force-to-RPM curve comes straight from Blue Robotics' published T200 performance data. The model file stores that data as a propeller law per direction, <span class="m">|F| = K_T\,\rho D^4 (n/60)^2</span>, with a thrust coefficient that grows slightly with speed, <span class="m">K_T = a + b\,n</span>, fitted to the published curve. The node inverts it with a few Newton iterations (<code>HardwareConfig::forceToRpm</code>). Reverse thrust is weaker: the propeller is shaped for forward. The hardware past this point (the ESC boards, DShot, telemetry and the bench thruster test) is in <a href="../thrusters-hw.html">Thrusters and ESCs</a>.</p>
     </div>
     <figure class="fig narrow">
       <div class="panel" id="rpm-chart"></div>

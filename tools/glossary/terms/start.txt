@@ -1,0 +1,536 @@
+# Glossary source: team, competition, ROS 2 and code terms.
+# Format (entries separated by a blank line):
+#   ## Term
+#   exp: expansion of an acronym (optional)
+#   aka: other names, comma separated, searched but not shown as the heading (optional)
+#   part: start | vehicle | perception | control | autonomy | ops
+#   slug: id after "term-" (optional; default from the term)
+#   Definition: one or two sentences. `code`, [[Other term]], [[slug|text]], [text](https://...)
+#   > page.html#section-id   (one line per link; checked by build.py)
+
+## AUV
+exp: Autonomous underwater vehicle
+part: start
+A robot submarine that runs with nobody steering it. At RoboSub every decision has to be made on board, so Talos carries its own computer, cameras and mission tree.
+> robosub.html#robosub
+> robosub.html#rules
+
+## UWRT
+exp: Underwater Robotics Team
+aka: Ohio State Underwater Robotics Team
+part: start
+The Ohio State student team that builds Talos. It started with ROVs and switched to AUVs for RoboSub in 2015.
+> robosub.html#history
+
+## Talos
+part: start
+UWRT's main competition AUV, designed from August 2022 and competing 2023 to 2026: 2nd in the Autonomy Challenge in 2024, 4th in 2026. In the code it is the `/talos` namespace and `talos.yaml`.
+> robosub.html#history
+> mechanical.html#numbers
+
+## Riptide
+part: start
+The team's first AUV (2016), and still the name of the whole software stack. That is why the team's ROS packages are called `riptide_*`.
+> robosub.html#history
+> code-map.html#layers
+
+## Tempest
+part: start
+Talos's predecessor (competed in 2022), with the first-generation Mark 1 electronics. Files like `tempest.yaml` in old configs are history, not a second robot.
+> robosub.html#history
+> boards.html#rp2040
+
+## Puddles
+part: start
+The team's 2019 and 2020 AUV. `puddles.yaml` and `puddles_ekf.yaml` in the code are leftovers from it.
+> robosub.html#history
+
+## Triton
+part: start
+The team's second, smaller vehicle for 2026, rebuilt around the SS Flip Barker's hull. It runs its own stack, [[Mercury]], and talks to Talos acoustically through the [[IVC board]].
+> robosub.html#history
+> code-map.html#legacy
+
+## Mercury
+aka: mercury_release
+part: start
+The separate ROS 2 stack for [[Triton]] (`mercury_release`, `mercury_dev`, …). Nothing on this site runs on it.
+> code-map.html#legacy
+
+## SS Flip Barker
+aka: liltank, Lil Boat
+part: start
+The 2025 second vehicle: tracks to drive and an active ballast tank for depth. Its code name is almost certainly `liltank` (`liltank.yaml`, `LiltankCompTree.xml`).
+> robosub.html#history
+
+## RoboSub
+aka: RoboNation, Woollett Aquatics Center, Irvine
+part: start
+RoboNation's international student competition for AUVs, one week at one pool each summer. Two parts are ranked separately: the [[Autonomy Challenge]] and [[Design Documentation]].
+> robosub.html#robosub
+
+## Autonomy Challenge
+part: start
+The in-pool half of RoboSub: judges score what the vehicle does on its own during timed runs. Only the last semi-final run counts, and the best finals run.
+> robosub.html#robosub
+> robosub.html#runs
+
+## Design Documentation
+part: start
+The judged-on-land half of RoboSub: a [[TDR]], website, video, presentation and system assessment, 860 points in all.
+> robosub.html#docs
+
+## TDR
+exp: Technical Design Report
+part: start
+The six-page report each team writes for RoboSub on its strategy, design and testing. The team's TDRs are the source for many hardware facts on this site.
+> robosub.html#docs
+
+## Prequal
+exp: Prequalification
+aka: prequalification, PreQualMpcTree
+part: start
+Qualifying from home with an unbroken video of one autonomous run: through a gate, round a pole 10 m beyond it and back. Talos prequalified in March 2026 with `PreQualMpcTree.xml`.
+> robosub.html#prequal
+
+## Storm Response
+aka: Survey & Repair, Search & Rescue, role
+part: start
+The 2026 course theme. At the gate the vehicle takes a role, Survey & Repair or Search & Rescue, which decides which half of each later task is correct. Talos flies Survey & Repair.
+> robosub.html#course
+
+## Gate
+part: start
+The first task: every other task scores only after the vehicle has passed through it. The vehicle also picks its role here.
+> robosub.html#runs
+> mission-tree.html#gate
+
+## Slalom
+part: start
+Three rows of poles after the gate that the vehicle weaves through on one side. Talos maps the row once, locks the map and flies all three sets as one path.
+> mission-tree.html#slalom
+> perception/composites.html#slalom
+
+## Torpedo board
+aka: torpedo task, fire_hole_large, fire_hole_small
+part: start
+A board with holes to shoot torpedoes through; the large hole first earns a sequence bonus. Talos maps the board, then both holes, and shoots from 1.5 m.
+> mission-tree.html#torpedo
+> perception/composites.html#torpedo
+> actuators.html#shot
+
+## Bins
+part: start
+A bin with two printed symbols (vinyls) to drop markers onto. The [[binary classifier]] tells the two identical symbols apart so Talos drops one marker on each.
+> mission-tree.html#bins
+> perception/frames.html#binfit
+
+## Magnets
+aka: magnet lights
+part: start
+Lights next to the bins that turn on when a magnet is held close. Talos touches them with its passive [[magnet poker]], placed from the bin's CAD fit.
+> mission-tree.html#magnets
+
+## Octagon
+part: start
+The area of the course where surfacing is a task. Breaking the surface anywhere else ends the run.
+> robosub.html#runs
+
+## Table
+aka: baskets
+part: start
+The octagon's table of objects to sort into two baskets with the [[claw]]. The largest single task in 2026, and the reason Talos got a claw.
+> mission-tree.html#table
+> robosub.html#scoring
+> perception/frames.html#table
+
+## Pinger
+part: start
+An acoustic beacon at the torpedo board and the octagon. Talos listens once, at two spots, to choose whether to do the torpedo or the table first.
+> mission-tree.html#pinger
+> sensors.html#acoustics
+
+## Coin flip
+part: start
+An optional start for extra points: a flip decides which way the vehicle faces, and another which role it takes. The team starts the tree that matches the role flip.
+> robosub.html#runs
+> robosub.html#scoring
+
+## RPAC
+part: start
+Ohio State's recreation centre, whose dive well is where the team pool-tests. Nereus has an RPAC scenario (`pool:=rpac`).
+> pool-test.html#shape
+> nereus.html#course
+
+## ROS 2
+aka: ROS, Robot Operating System
+part: start
+The framework all of Talos's software is built on: programs (nodes) that pass messages through a shared graph. Talos runs ROS 2 Humble on Ubuntu 22.04.
+> ros2.html#graph
+> computers.html#orin
+
+## Humble
+part: start
+The ROS 2 release the team uses, on Ubuntu 22.04. Its packages install under `/opt/ros/humble`.
+> setup.html#before
+> computers.html#orin
+
+## Node
+part: start
+One running ROS program, with a name like `/talos/autonomy`. Nodes only talk to each other through topics, services, actions and parameters.
+> ros2.html#graph
+
+## Topic
+part: start
+A named stream of messages, such as `/talos/odometry/filtered`. Any number of nodes can publish or subscribe; nobody waits for a reply.
+> ros2.html#topics
+> interfaces.html
+
+## Message
+aka: msg
+part: start
+The typed data a topic carries, like `nav_msgs/Odometry`. The team's own types are in [[riptide_msgs2]].
+> ros2.html#topics
+
+## Service
+part: start
+A quick request and reply between nodes, like `set_camera_is_dfc`. The caller waits for the answer.
+> ros2.html#services
+
+## Action
+part: start
+A long job with a goal, progress feedback, a result and a way to cancel, like the MPC's [[follow_path]] or a tree run.
+> ros2.html#actions
+
+## Parameter
+aka: params
+part: start
+A named setting of a node, usually loaded from a YAML file at launch and readable with `ros2 param get`.
+> ros2.html#params
+
+## Launch file
+aka: launch.py
+part: start
+A Python file that starts a set of nodes with their parameters and names, run with `ros2 launch`. On the robot the [[remote launcher]] runs them for you.
+> ros2.html#launch
+> launch.html#explorer
+
+## Namespace
+aka: /talos
+part: start
+A prefix on names. Every robot topic is under `/talos`, so `state/kill` in the code is `/talos/state/kill` on the wire.
+> ros2.html#names
+
+## QoS
+exp: Quality of service
+part: start
+Per-topic delivery rules (reliable or best effort, how many messages to keep, whether late joiners get the last one). Under Zenoh mismatches still deliver, but choose them as if they mattered.
+> ros2.html#qos
+
+## TF
+aka: tf2, transform
+part: start
+ROS's tree of coordinate frames: every position is a transform between two named frames, looked up at a given time. `ros2 run tf2_tools view_frames` draws it.
+> ros2.html#tf
+> localization.html#frames
+
+## Frame
+aka: coordinate frame
+part: start
+A named coordinate system in [[TF]], like [[base_link]], `odom` or `torpedo_frame`. Every Talos frame has x forward, y to port, z up.
+> localization.html#frames
+> perception/frames.html#tree
+
+## Static transform
+aka: tf_static
+part: start
+A transform that never changes, such as where a sensor is bolted to the body. It is published once on `/tf_static`; moving ones go on `/tf`.
+> ros2.html#tf
+> localization.html#urdf
+
+## robot_state_publisher
+part: start
+The standard ROS node that turns the [[URDF]] into [[TF]]: fixed joints once on `/tf_static`, movable ones on `/tf` (about 7 Hz, even for sensor mounts that never move). On Talos it runs in `navigation.launch.py`.
+> localization.html#urdf
+> ros2.html#tf
+
+## URDF
+exp: Unified Robot Description Format
+part: start
+The XML description of the robot's links and joints. Talos's is built by [[xacro]] from `talos.yaml`, and it gives every sensor and tool its TF frame.
+> localization.html#urdf
+> mechanical.html#software
+
+## Xacro
+part: start
+A macro language that generates URDF. `robot_base.xacro` and friends in riptide_descriptions read `talos.yaml` and write out Talos's frames.
+> localization.html#urdf
+> actuators.html#mechanisms
+
+## Sim time
+aka: use_sim_time, /clock
+part: start
+Running nodes on the time published on `/clock` instead of the wall clock. Nereus and bag replays (`--clock`) publish it; nodes need `use_sim_time:=true`.
+> ros2.html#time
+> nereus.html#time
+> debugging.html#replay
+
+## header.stamp
+aka: timestamp, stamp
+part: start
+The time a message's data was measured, on the clock of the machine that stamped it. Compare stamps only from the same clock.
+> debugging.html#time
+> sensors.html#timing
+
+## Package
+part: start
+The unit ROS builds and installs: a folder with a `package.xml`. `ros2 run` and `ros2 launch` want the package name, which can differ from the folder name (the folder `riptide_hardware` builds `riptide_hardware2`).
+> ros2.html#packages
+> code-map.html#explorer
+
+## Workspace
+part: start
+A folder with a `src/` of packages that colcon builds into `build/` and `install/`. The team has a release workspace and a development one.
+> setup.html#workspaces
+
+## colcon
+part: start
+The ROS 2 build tool. `colcon build` builds every package in a workspace in dependency order; the team added a [[colcon deploy]] verb.
+> ros2.html#packages
+> setup.html#build
+
+## rosdep
+part: start
+The tool that installs the system libraries a workspace's packages declare. Run it before colcon; a few dependencies (GLFW, Ultralytics) it can't resolve.
+> setup.html#build
+
+## Overlay
+aka: underlay
+part: start
+The workspace sourced last, whose packages win over those in the workspaces sourced before it (its underlays, such as `/opt/ros/humble`).
+> setup.html#sourcing
+
+## source
+aka: setup.bash
+part: start
+`source install/setup.bash` runs a workspace's setup script in your current shell so ROS can find its packages. Forget it and `ros2 run` can't see your build.
+> setup.html#sourcing
+
+## ros2 CLI
+aka: ros2 topic, ros2 node, ros2 service
+part: start
+The `ros2` command line: list and echo topics, measure rates, call services, send action goals, read parameters, record bags.
+> ros2.html#cli
+> debugging.html#cli
+
+## ROS daemon
+aka: --no-daemon, ros2 daemon
+part: start
+A background process that caches the ROS graph for the `ros2` command. It can keep stale answers after you switch middleware, so with Zenoh add `--no-daemon` or run `ros2 daemon stop`.
+> computers.html#zenoh
+> debugging.html#cli
+
+## RMW
+exp: ROS middleware
+aka: RMW_IMPLEMENTATION
+part: start
+The swappable layer that actually moves ROS messages. Talos uses `rmw_zenoh_cpp`; check `echo $RMW_IMPLEMENTATION` when topics go missing.
+> computers.html#zenoh
+> ros2.html#zenoh
+
+## DDS
+exp: Data Distribution Service
+aka: Fast DDS
+part: start
+The default ROS 2 middleware family. The team dropped Fast DDS for Zenoh after tracing a year of network problems to it.
+> computers.html#zenoh
+> ros2.html#zenoh
+
+## Zenoh
+aka: rmw_zenoh, rmw_zenoh_cpp
+part: start
+The middleware Talos's ROS 2 runs on. A router on the Orin listens on TCP port 7447, and laptops join as clients.
+> computers.html#zenoh
+> ros2.html#zenoh
+
+## Zenoh router
+aka: rmw_zenohd
+part: start
+The process (`rmw_zenohd`) that connects Zenoh clients. On the robot the launcher starts it; in sim you run `ros2 run rmw_zenoh_cpp rmw_zenohd` yourself.
+> computers.html#zenoh
+> computers.html#join
+
+## ROS_DOMAIN_ID
+aka: domain
+part: start
+A number that separates ROS networks sharing the same wires. With Zenoh it is a second guard; the router address is the first.
+> ros2.html#zenoh
+> computers.html#join
+
+## Bag
+aka: rosbag, ros2 bag, .db3
+part: start
+A recording of topics: every message with the time it was received. Talos's are folders with a `metadata.yaml` and one SQLite `.db3` file.
+> debugging.html#bags
+> debugging.html#python
+
+## riptide_release
+aka: release repo
+part: start
+The repo the robot runs: no packages of its own, only git submodules, each pinned to one commit. One release commit names the whole robot's code.
+> code-map.html#pinning
+> setup.html#workspaces
+
+## riptide_setup
+part: start
+The script repo that sets up a new machine: installs ROS 2 Humble, clones the workspaces and installs the [[colcon deploy]] plugin.
+> setup.html#riptide-setup
+
+## Submodule
+part: start
+A git repo inside another repo. The outer repo stores only a commit hash for it, the [[pin]].
+> setup.html#workspaces
+> code-map.html#pinning
+
+## Pin
+part: start
+The commit a submodule is fixed to in the release repo. Before a pool test each changed submodule is pushed and the release repo commits the new pins.
+> setup.html#workspaces
+> pool-test.html#freeze
+
+## Release workspace
+aka: ~/osu-uwrt/release
+part: start
+`~/osu-uwrt/release`: a checkout of riptide_release with its submodules. You build and deploy from here.
+> setup.html#workspaces
+> code-map.html#disk
+
+## Development workspace
+aka: ~/osu-uwrt/development
+part: start
+`~/osu-uwrt/development`, cloned by riptide_setup with `vcs import`: the team repos on their default branches, plus dependencies and the firmware.
+> setup.html#workspaces
+> code-map.html#disk
+
+## COLCON_IGNORE
+part: start
+An empty marker file that makes colcon skip a package everywhere (riptide_teleop, and Nereus, which has its own CMake build).
+> code-map.html#explorer
+
+## DEPLOY_IGNORE
+part: start
+A marker file that keeps a package off the robot during `colcon deploy` (riptide_rviz, riptide_meshes, camera_faker).
+> code-map.html#explorer
+> computers.html#deploy
+
+## riptide_core
+part: start
+The repo every other one leans on: the message types ([[riptide_msgs2]]), the vehicle description (`talos.yaml`) and the hardware layer (drivers, EKF launch, board bridge).
+> code-map.html#explorer
+
+## riptide_msgs2
+aka: riptide_msgs
+part: start
+The team's own messages, services and actions: thruster commands, kill-switch reports, [[ControllerCommand]], `ExecuteTree` and more. The folder is `riptide_msgs`.
+> code-map.html#explorer
+> interfaces.html
+
+## riptide_descriptions2
+aka: riptide_descriptions, talos.yaml
+part: start
+The vehicle description: `config/talos.yaml` (mass, centre of mass, thruster and sensor poses) and the xacro that turns it into TF frames.
+> localization.html#urdf
+> code-map.html#explorer
+
+## riptide_hardware2
+aka: riptide_hardware
+part: start
+The hardware layer: `hardware.launch.py` starts the board bridge, DVL, IMU, gyro, AprilTag and acoustics; `navigation.launch.py` the EKF.
+> code-map.html#explorer
+> launch.html#explorer
+
+## riptide_control
+part: start
+The repo that turns "go there" into eight thruster forces: [[riptide_mpc]], the [[controller_overseer]] and the thruster test tools.
+> code-map.html#explorer
+> control/index.html#files
+
+## riptide_perception
+part: start
+The repo with the detector ([[yolo_orientation]]) and the course map ([[riptide_mapping2]]).
+> code-map.html#explorer
+> perception/index.html#pipeline
+
+## riptide_autonomy2
+aka: riptide_autonomy
+part: start
+The mission package: the C++ behaviour-tree nodes, the tree XML files in `trees/` and the [[doTask]] runner. The repo is riptide_autonomy.
+> code-map.html#explorer
+> bt-workflow.html#where
+
+## riptide_launch
+aka: riptide_bringup2, bringup
+part: start
+How the stack starts: the [[remote launcher]] and the launch lists it loads, plus `bringup.launch.py`, which includes every subsystem in one file (used by the simulator, not on the robot).
+> code-map.html#explorer
+> launch.html#explorer
+
+## titan_firmware
+part: start
+The C firmware for every board's RP2040, on the Pico SDK: one CMake project per board, shared libraries, one main loop.
+> firmware.html#repo
+
+## Nereus
+part: ops
+The team's simulator and operator GUI: [[nereus-sim]], the [[Nereus viewer]] and the [[pack|packs]]. A submodule of the release repo with its own CMake build.
+> nereus.html#what
+> viewer.html#what
+
+## pretest_checks
+aka: pretest
+part: ops
+The pre-pool-test checker, run as `pretest` on op-top. It checks the repos, then the robot on the bench, and prints PASS, WARN or FAIL with the fix; it never changes the robot.
+> pool-test.html#pretest
+> debugging.html#chain
+
+## Legacy
+aka: riptide_gui, riptide_rviz, riptide_simulator, RViz
+part: start
+Code still in the repos but not used on Talos today: the RViz GUI (riptide_gui), the old simulator (riptide_simulator) and the old controllers. The Nereus viewer replaced RViz.
+> code-map.html#legacy
+> commanding.html#legacy
+
+## Feature branch
+aka: mpc, newsim, mapping-estimator, branch, pull request
+part: start
+A branch for one piece of work, merged by pull request. Several team repos run long-lived branches far ahead of `master` (`mpc`, `newsim`, `mapping-estimator`); the release repo pins what goes in the water.
+> setup.html#git
+> code-map.html#pinning
+
+## Release tag
+aka: tag, roll back
+part: start
+After a pool test the release repo is tagged with the date, so a known-good state of the whole robot can be checked out again.
+> code-map.html#pinning
+> pool-test.html#after
+
+## SSH
+exp: Secure Shell
+aka: ssh ros@orin2
+part: ops
+Logging in to another machine's terminal. On Talos it is for looking (logs, CAN, disk), not for running the stack; use key login.
+> computers.html#ssh
+
+## systemd
+aka: systemctl, service, ros_launcher.service
+part: ops
+Linux's service manager. The remote launcher runs as the systemd service `ros_launcher`, started at boot and restarted if it crashes.
+> computers.html#launcher
+> launch.html#logs
+
+## CUDA
+aka: GPU
+part: perception
+NVIDIA's GPU computing platform. The ZED SDK needs it; the detector uses it for TensorRT and falls back to the CPU without it.
+> setup.html#gpu
+> perception/detector.html#tensorrt

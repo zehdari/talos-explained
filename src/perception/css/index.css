@@ -1,4 +1,6 @@
 /* Overview page: the mission-replay hero and the chapter list. */
+/* the replay has no pointer interaction, so let swipes on it scroll the page */
+.course-hero canvas { touch-action: pan-y; }
 .course-hero .copy { max-width: 26rem; }
 .course-hero .copy p { font-size: 1.02rem; max-width: 24rem; }
 @media (max-height: 860px) and (min-width: 721px) { .course-hero .copy p { display: none; } }

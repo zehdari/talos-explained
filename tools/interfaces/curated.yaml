@@ -1,0 +1,791 @@
+# Hand-checked facts for the Interfaces appendix (interfaces.html), merged by build.py with the Nereus capture
+# (public/data/rosgraph) and the firmware sources. Every entry here was read from the code at the branch in use;
+# paths are relative to the repo root and are turned into GitHub links (line numbers looked up at build time).
+
+repos:
+  riptide_core:       {local: ~/osu-uwrt/release/src/riptide_core,        ref: origin/followpath-speed,      gh: osu-uwrt/riptide_core,        branch: followpath-speed}
+  riptide_control:    {local: ~/osu-uwrt/release/src/riptide_control,     ref: origin/mpc,                   gh: osu-uwrt/riptide_control,     branch: mpc}
+  riptide_perception: {local: ~/osu-uwrt/release/src/riptide_perception,  ref: origin/mapping-estimator,     gh: osu-uwrt/riptide_perception,  branch: mapping-estimator}
+  riptide_autonomy:   {local: ~/osu-uwrt/release/src/riptide_autonomy,    ref: origin/autonomy-mapping,      gh: osu-uwrt/riptide_autonomy,    branch: autonomy-mapping}
+  riptide_launch:     {local: ~/osu-uwrt/release/src/riptide_launch,      ref: origin/newsim,                gh: osu-uwrt/riptide_launch,      branch: newsim}
+  nereus:             {local: ~/osu-uwrt/release/nereus,                  ref: origin/main,                  gh: osu-uwrt/nereus,              branch: main}
+  titan_firmware:     {local: ~/osu-uwrt/development/titan_firmware,      ref: origin/master,                gh: osu-uwrt/titan_firmware,      branch: master}
+  nortek_dvl:         {local: ~/osu-uwrt/release/src/nortek_dvl,          ref: origin/DvlWaterTrackFallback, gh: osu-uwrt/nortek_dvl,          branch: DvlWaterTrackFallback}
+  apriltag_ros:       {local: ~/osu-uwrt/release/src/apriltag_ros,        ref: origin/CompressedImages,      gh: osu-uwrt/apriltag_ros,        branch: CompressedImages}
+  zed_wrapper:        {local: ~/osu-uwrt/release/src/zed-ros2-wrapper,    ref: HEAD,                         gh: stereolabs/zed-ros2-wrapper,  branch: f6978f5}
+  chameleon_tf:       {local: ~/osu-uwrt/release/src/chameleon_tf,        ref: HEAD,                         gh: coalman321/chameleon_tf,      branch: f1d3e19}
+
+subsystems:
+  - {id: sensors,    label: Sensors,              chapter: sensors.html}
+  - {id: cameras,    label: Cameras,              chapter: cameras.html#topics}
+  - {id: estimation, label: State estimation,     chapter: localization.html}
+  - {id: control,    label: Control,              chapter: control/index.html}
+  - {id: thrusters,  label: Thrusters,            chapter: thrusters-hw.html#path}
+  - {id: perception, label: Perception,           chapter: perception/detector.html}
+  - {id: mapping,    label: Mapping,              chapter: perception/map.html}
+  - {id: autonomy,   label: Autonomy,             chapter: bt-nodes.html#ros}
+  - {id: actuators,  label: Actuators,            chapter: actuators.html#ros}
+  - {id: power,      label: "Kill, power and boards", chapter: firmware.html#microros}
+  - {id: acoustics,  label: Acoustics and IVC,    chapter: sensors.html#acoustics}
+  - {id: operator,   label: Viewer,               chapter: viewer.html#ros}
+  - {id: simulator,  label: Simulator,            chapter: nereus.html#bridge}
+  - {id: ros,        label: ROS plumbing,         chapter: ros2.html}
+
+# Which subsystem a name belongs to: first matching prefix wins (names relative to /talos/, '/' = absolute).
+subsystem_rules:
+  - [simulator/, simulator]
+  - [reset_sim_to_start, simulator]
+  - [set_sim_pose, simulator]
+  - [sync_sim_to_estimate, simulator]
+  - [vectornav/, sensors]
+  - [gyro/, sensors]
+  - [dvl, sensors]
+  - [depth/, sensors]
+  - [state/depth/, sensors]
+  - [ffc/, cameras]
+  - [dfc/, cameras]
+  - [capture_image, cameras]
+  - [enable_subscription, cameras]
+  - [odometry/, estimation]
+  - [accel/, estimation]
+  - [set_pose, estimation]
+  - [joint_states, estimation]
+  - [robot_description, estimation]
+  - [enable, estimation]
+  - [toggle, estimation]
+  - [state/thrusters/, thrusters]
+  - [dshot_tune/, thrusters]
+  - [command/thruster_rpm, thrusters]
+  - [command/requested_rpm, thrusters]
+  - [thruster_forces, control]
+  - [controller, control]
+  - [ff_auto_tune, control]
+  - [follow_path, control]
+  - [setTeleop, control]
+  - [calibrate_drag, control]
+  - [trigger, control]
+  - [thrusterSolver/, control]
+  - [pool_identify/, control]
+  - [yolo_orientation/, perception]
+  - [detected_objects, perception]
+  - [detections, perception]
+  - [set_camera_is_dfc, perception]
+  - [set_slalom_type, perception]
+  - [set_table_pair_enabled, perception]
+  - [toggle_subscription, perception]
+  - [apriltag/, perception]
+  - [mapping, mapping]
+  - [state/mapping, mapping]
+  - [map/, mapping]
+  - [tf2_frames, mapping]
+  - [autonomy/, autonomy]
+  - [command/actuator/, actuators]
+  - [state/actuator/, actuators]
+  - [command/simple_, actuators]
+  - [ivc/, acoustics]
+  - [acoustics/, acoustics]
+  - [/clock, ros]
+  - [/rosout, ros]
+  - [/parameter_events, ros]
+  - [/tf, ros]
+  - [/diagnostics, ros]
+  - [/events/, ros]
+  - ['', power]
+
+# Primary chapter for a name (prefix match, first wins). Without a match the subsystem's chapter is used.
+chapter_rules:
+  - [vectornav/, sensors.html#imu]
+  - [gyro/, sensors.html#fog]
+  - [dvl, sensors.html#dvl]
+  - [depth/, sensors.html#depth]
+  - [state/depth/, sensors.html#depth]
+  - [odometry/filtered, localization.html#ekf]
+  - [accel/filtered, localization.html#ekf]
+  - [set_pose, localization.html#ekf]
+  - [joint_states, localization.html#urdf]
+  - [robot_description, localization.html#urdf]
+  - [thruster_forces, commanding.html#flow]
+  - [command/requested_rpm, commanding.html#flow]
+  - [command/thruster_rpm, thrusters-hw.html#path]
+  - [dshot_tune/, thrusters-hw.html#esc]
+  - [state/thrusters/telemetry, thrusters-hw.html#telemetry]
+  - [controller/linear, commanding.html#goals]
+  - [controller/angular, commanding.html#goals]
+  - [controller/motion_enabled, commanding.html#stops]
+  - [controller/FF_body_force, control/estimation.html#node]
+  - [controller/mpc/, control/estimation.html#node]
+  - [controller/scale/trust, control/estimation.html#trust]
+  - [controller/identification/, control/identify.html#session]
+  - [pool_identify/, control/identify.html#session]
+  - [follow_path, commanding.html#paths]
+  - [setTeleop, commanding.html#teleop]
+  - [state/kill, commanding.html#kill]
+  - [command/software_kill, commanding.html#kill]
+  - [state/physkill_notify, commanding.html#kill]
+  - [command/led, bt-nodes.html#leds]
+  - [command/electrical, viewer.html#robot-panels]
+  - [state/battery, electrical.html#batteries]
+  - [state/electrical, electrical.html#rails]
+  - [state/firmware, firmware.html#microros]
+  - [detected_objects, perception/detector.html#outputs]
+  - [yolo_orientation/, perception/detector.html#outputs]
+  - [set_camera_is_dfc, perception/detector.html#switching]
+  - [set_slalom_type, perception/composites.html#slalom]
+  - [set_table_pair_enabled, perception/composites.html#pairs]
+  - [detections, localization.html#tag]
+  - [toggle_subscription, localization.html#tag]
+  - [map/, localization.html#tag]
+  - [mapping/fused, perception/frames.html#published]
+  - [mapping_target, perception/frames.html#targets]
+  - [state/mapping, perception/frames.html#targets]
+  - [mapping/reset_mapping, perception/map.html#fixes]
+  - [mapping/start_binary_classifier, perception/frames.html#binary]
+  - [mapping/stop_binary_classifier, perception/frames.html#binary]
+  - [mapping/freeze_binary_classifier_buffer, perception/frames.html#binary]
+  - [mapping/center_table_on_baskets, perception/frames.html#table]
+  - [mapping/fit_bin_geometry, perception/frames.html#binfit]
+  - [mapping/, perception/frames.html#published]
+  - [autonomy/, bt-nodes.html#dotask]
+  - [command/actuator/, actuators.html#ros]
+  - [state/actuator/, actuators.html#ros]
+  - [ffc/, cameras.html#topics]
+  - [dfc/, cameras.html#topics]
+  - [ivc/tx, boards.html#led-ivc]
+  - [ivc/rx, boards.html#led-ivc]
+  - [ivc/debug, boards.html#led-ivc]
+  - [simulator/supervisor, nereus.html#run]
+  - [simulator/load_scenario, nereus.html#run]
+  - [simulator/, nereus.html#bridge]
+  - [heartbeat, firmware.html#microros]
+  - [state/fw_heartbeat, firmware.html#microros]
+  - [ivc/pinger/, sensors.html#acoustics]
+  - [acoustics/, sensors.html#acoustics]
+  - [ffc/zed_node/start_svo_rec, viewer.html#robot-panels]
+  - [dfc/zed_node/start_svo_rec, viewer.html#robot-panels]
+  - [capture_image, cameras.html#try]
+  - [/clock, ros2.html#time]
+  - [/tf, ros2.html#tf]
+  - [/rosout, debugging.html#logs]
+  - [/parameter_events, ros2.html#params]
+  - [/diagnostics, computers.html]
+
+# One-line notes shown with an item (name relative to /talos/).
+notes:
+  vectornav/imu: "VectorNav IMU: orientation, angular rate, acceleration. Fused by the EKF and read directly by the MPC's estimator."
+  gyro/twist: "Fibre-optic gyro (FOG): yaw rate only (angular.z). Its bias stays put, so heading drifts far less than with the IMU's gyro."
+  gyro/raw: "FOG raw counts with the time stamp, before the temperature model turns them into a rate."
+  gyro/status: "FOG temperature and health (50 Hz in the driver); drives the viewer's FOG chip."
+  dvl_twist: "DVL velocity over the pool floor, only while it has bottom lock. About 125 ms old when it arrives."
+  dvl/bottom_lock: "True while the DVL sees the floor; drives the viewer's DVL chip."
+  dvl/water_twist: "DVL velocity relative to the water (water track), the fallback when there is no bottom lock."
+  dvl/status: "DVL health and settings. The launcher watches it."
+  dvl: "Full DVL report (nortek_dvl_msgs/Dvl): all beams, figure of merit, altitude."
+  depth/pose: "Depth as a pose: base_link's z, negative below the surface, corrected for where the pressure sensor sits. Fused by the EKF and the MPC."
+  state/depth/raw: "Pressure-sensor depth from the camera cage board, before the lever-arm correction."
+  odometry/filtered: "The EKF's answer: pose in odom, velocity in talos/base_link. Almost everything reads it (each tree node opens its own subscription, hence hundreds of subscribers in the capture)."
+  accel/filtered: "EKF acceleration estimate (publish_acceleration is on)."
+  joint_states: "Joint positions for the URDF's zero-range joints; robot_state_publisher turns them into /tf."
+  robot_description: "The URDF as text, latched (transient local)."
+  thruster_forces: "The MPC's output: eight thruster forces in newtons, in the order VUS, VUP, HUS, HUP, HLS, HLP, VLS, VLP. Nereus applies them; on the robot the MPC sends RPM to the ESC boards over CAN itself."
+  command/requested_rpm: "The RPM the MPC sent to the ESCs over CAN, published only so bags record it."
+  command/thruster_rpm: "RPM targets as a ROS topic, for calibration tools. The MPC doesn't use it (it talks CAN directly)."
+  state/thrusters/telemetry: "ESC telemetry, four thrusters per message (RPM, voltage, current, temperature, error counts), from each of the two ESC boards every 500 ms. The overseer turns motion off when it is flagged or stops arriving."
+  state/thrusters/rpm: "Measured RPM; only published when targets came on the ROS topic (empty on the CAN path)."
+  state/thrusters/cmd: "Commanded RPM echo; only on the ROS-topic path, like state/thrusters/rpm."
+  controller/linear: "Position or velocity goal for x, y, z (ControllerCommand). The viewer and the trees publish it; each tree node makes its own publisher."
+  controller/angular: "Orientation or angular-velocity goal (ControllerCommand), the partner of controller/linear."
+  controller/motion_enabled: "From the overseer: false after more than two flagged ESC telemetry messages in a row, or none for 2 s. The MPC outputs zero thrust then."
+  controller/FF_body_force: "A fixed body wrench from the overseer, only used in the MPC's FEEDFORWARD mode."
+  controller/mpc/state: "The MPC's own state estimate (its estimator, not the EKF)."
+  controller/mpc/reference: "Where the MPC is trying to be right now (the motion profile's current point)."
+  controller/mpc/predicted_path: "The MPC's predicted trajectory over its 30-step horizon."
+  controller/mpc/planned_path: "The whole planned path of the current goal, latched."
+  controller/mpc/disturbance: "The estimated unmodelled force and torque (offset-free MPC)."
+  controller/mpc/solve_time_ms: "How long each solve took; must stay well under the 50 ms period."
+  controller/scale/trust: "Settle trust per axis, 0 to 1: how settled the MPC is on its goal. The tree's WaitForController waits on it."
+  controller_debug_wrench: "The body wrench (force and torque) of the MPC's current output, for plots."
+  controller/identification/thrusters: "Thrust overrides from the pool identification tool; the MPC only accepts them when identification.allow is set."
+  pool_identify/done: "Set by the identification tool when a session ends."
+  controller/active_body_force: "Drag calibration's test force."
+  controller/solver_weights: "Thruster-solver weights from the overseer; a leftover of the older controllers."
+  controller/re_init_accumulators: "Overseer signal for the older controllers' integrators."
+  controller/drag_comp/forward: "Subscribed by the overseer, published by nothing in the current stack."
+  controller/drag_comp/reverse: "Subscribed by the overseer, published by nothing in the current stack."
+  ff_auto_tune: "Subscribed by the overseer, published by nothing in the current stack."
+  thrusterSolver/thrusterState: "Subscribed by the overseer for the older thruster solver; nothing publishes it with the MPC."
+  trigger: "Starts a drag-calibration step; nothing publishes it in normal runs."
+  controller/stunt_state: "Published by doTask for stunt manoeuvres (older controllers)."
+  controller/running_stunt_state: "doTask listens for it; nothing publishes it with the MPC."
+  state/kill: "True = killed. The POAC publishes the robot's kill state (physical switch plus software kill slots). Everything that moves listens."
+  command/software_kill: "Software kill reports, one sender per slot. The viewer reports on slot 1 every 50 ms: asserting kill unless enabled."
+  state/physkill_notify: "Sent when the physical kill switch is inserted or removed, so the LED and camera cage boards can flash."
+  command/electrical: "Power commands (ElectricalCommand): cycle the computer, cycle the robot, kill robot power, cycle the IMU, fans, LEDs, clear depth. The viewer's Electrical panel sends them."
+  state/electrical: "Rail voltages and currents from the POAC."
+  state/battery: "Smart battery housing status (charge, voltage, current). The battery housings are on the external CAN bus, whose agent is turned off (copro_agent.launch.py), so nothing reaches ROS right now."
+  state/batteries_balanced: "POAC: true while both batteries are powering the robot."
+  state/aux: "POAC aux switch state."
+  state/leak: "Camera cage leak sensor. The team doesn't use the leak sensor."
+  state/firmware: "Every board's FirmwareStatus: version, faults, uptime, kill state as the board sees it."
+  heartbeat: "micro-ROS heartbeat from the boards (Int8)."
+  state/fw_heartbeat: "micro-ROS heartbeat from the ESC, camera cage and battery boards (Int8)."
+  command/led: "LED colour and mode. Trees use it to show what they're doing; the LED and camera cage boards obey it."
+  state/actuator/status: "Armed state and counts for torpedoes and droppers (ActuatorStatus)."
+  state/actuator/busy: "True while the actuator servo moves."
+  state/actuator/cmd_status: "Reply to the last actuator command: accepted or refused."
+  state/actuator/cmd_feedback: "Why the last actuator command was refused, as text."
+  state/actuator/dynamixel: "Servo telemetry from the POAC."
+  command/actuator/arm: "Arm (true) or disarm (false) the actuators. A topic for the firmware, and a SetBool service of the same name from the translator."
+  command/actuator/torpedo: "Fire the next torpedo. A topic for the firmware, and a Trigger service of the same name from the translator."
+  command/actuator/dropper: "Drop the next marker. Topic and service, like torpedo."
+  command/actuator/notify_reload: "\"I reloaded by hand\": counts back to full. Topic and service."
+  command/actuator/claw: "Open (true) or close (false) the claw. Nereus takes it; on the robot the claw firmware is on the poac-multiple-servos branch."
+  command/actuator/claw_move_s: "Move the claw for a number of seconds (0 stops it). Same branch note as command/actuator/claw."
+  command/actuator/torpedo_marker/set_home: "Store the servo's current angle as home."
+  command/actuator/torpedo_marker/go_home: "Turn the servo back to home."
+  command/simple_torpedo_fire: "simple_actuator_interface: arm if needed and fire, for quick tests."
+  command/simple_dropper_fire: "simple_actuator_interface: arm if needed and drop."
+  detected_objects: "The detector's output: one Detection3D per object with class, score and 3D pose. Mapping and many tree nodes read it."
+  detections: "AprilTag detections on the forward camera, for the map's tag calibration."
+  yolo_orientation/annotated/compressed: "The camera image with boxes and scores drawn on, made only while someone subscribes."
+  yolo_orientation/visualization_marker_array: "Detection markers for 3D views."
+  yolo_orientation/point_cloud: "The depth points the detector used, coloured by class."
+  mapping/fused: "Which objects mapping has fused so far, as JSON text."
+  state/mapping: "Mapping's target and status, for the viewer's Mapping panel."
+  autonomy/tree_stack: "The running tree's execution stack: what the robot is doing right now."
+  /<hostname>/autonomy/bag_trigger: "doTask's bag trigger, named after the computer it runs on (/<hostname>/autonomy/bag_trigger)."
+  ivc/pinger/enable: "Turn the IVC board's pinger listening on or off."
+  ivc/pinger/set_freq_broker_khz: "Ask for a pinger frequency; pinger_broker passes it on to the board."
+  ivc/pinger/set_freq_khz: "The pinger frequency the IVC board should listen at."
+  ivc/pinger/selected_freq_khz: "The frequency the IVC board is listening at."
+  ivc/pinger/selected_freq_amp_stream: "Hydrophone amplitude at the selected frequency, streamed by the IVC board."
+  acoustics/buffer_0_closer: "riptide_acoustics' answer, once a second: true if hydrophone 0 is closer to the pinger."
+  ivc/tx: "Inter-vehicle comms: byte to send. The publishers depend on which IVC firmware is flashed (unconfirmed)."
+  ivc/rx: "Inter-vehicle comms: byte received. Master's IVCBoard publishes std_msgs/Int8; the viewer subscribes with UInt8."
+  ivc/tx_success: "Inter-vehicle comms: send confirmation."
+  simulator/ground_truth: "Where Talos really is in Nereus (no noise), for comparing with the EKF."
+  /clock: "Simulation time. Every node in Nereus runs with use_sim_time, so this drives all their timers. Not used on the robot."
+  /tf: "Moving transforms (EKF pose, mapping's object frames, sensor joints)."
+  /tf_static: "Fixed transforms, latched (transient local)."
+  /rosout: "Every node's log lines."
+  /parameter_events: "Parameter changes, from every node."
+  /diagnostics: "Diagnostic status. In the capture only the EKF publishes it; the team doesn't run the diagnostics nodes."
+  /diagnostics_agg: "Aggregated diagnostics. The viewer's CPU chip reads it; nothing publishes it while the diagnostics nodes are off."
+  /events/write_split: "A rosbag2 recorder event; ignore it."
+  dvl_sonar0: "Range to the floor along DVL beam 0 (sensor_msgs/Range); one topic per beam."
+  dvl_sonar1: "Range to the floor along DVL beam 1."
+  dvl_sonar2: "Range to the floor along DVL beam 2."
+  dvl_sonar3: "Range to the floor along DVL beam 3."
+  state/depth/temp: "Water temperature from the depth sensor (camera cage board)."
+  vectornav/magnetometer: "IMU magnetometer reading. Nothing in the stack uses it."
+  vectornav/magheading: "Heading from the IMU's magnetometer. Nothing in the stack uses it."
+  vectornav/pressure_bar: "The IMU's own barometer. Nothing in the stack uses it."
+  vectornav/dump: "Everything the IMU reports in one message (VnDump), for debugging."
+  ffc/zed_node/rgb/image_rect_color/compressed: "Forward camera, rectified colour, as JPEG (~0.2 to 0.5 MB). The detector, the AprilTag node and the viewer's camera cards read this one."
+  dfc/zed_node/rgb/image_rect_color/compressed: "Down camera, rectified colour, as JPEG. The detector (when on dfc) and the viewer read it."
+  ffc/zed_node/rgb/image_rect_color: "Forward camera, raw bgra8 (9.2 MB a frame). Nobody uses it on purpose: it is the JPEG's source. Never pull it over the tether."
+  dfc/zed_node/rgb/image_rect_color: "Down camera, raw bgra8 (9.2 MB a frame); the JPEG's source."
+  ffc/zed_node/depth/depth_registered: "Forward depth image, 32-bit float metres, aligned to the colour image (9.2 MB). The detector reads it for 3D poses."
+  dfc/zed_node/depth/depth_registered: "Down depth image, 32-bit float metres (9.2 MB)."
+  ffc/zed_node/rgb/camera_info: "Forward camera intrinsics. The detector and the AprilTag node need it; the launcher watches it."
+  dfc/zed_node/rgb/camera_info: "Down camera intrinsics; the launcher watches it."
+  ffc/zed_node/point_cloud/cloud_registered: "Forward camera point cloud, for the viewer's Vision panel when switched on."
+  dfc/zed_node/point_cloud/cloud_registered: "Down camera point cloud, for the viewer's Vision panel when switched on."
+  ffc/zed_node/stereo_raw/image_raw_color: "Both forward lenses side by side, unrectified (18.4 MB). picture_taker subscribes from launch, for calibration."
+  ffc/zed_node/start_svo_rec: "Start recording the forward camera to an SVO file on the Orin (the viewer's Recording panel)."
+  dfc/zed_node/start_svo_rec: "Start recording the down camera to an SVO file on the Orin (the viewer's Recording panel)."
+  ffc/zed_node/stop_svo_rec: "Stop the forward camera's SVO recording."
+  dfc/zed_node/stop_svo_rec: "Stop the down camera's SVO recording."
+  enable_subscription: "picture_taker: turn its raw stereo subscription off (false) or on. Off when you aren't calibrating."
+  enable: "robot_localization: start the filter if it was launched disabled."
+  toggle: "robot_localization: pause or resume the filter (ToggleFilterProcessing)."
+  toggle_subscription: "AprilTag node: turn its camera subscription off or on."
+  set_camera_is_dfc: "Switch the detector between the forward (false) and down (true) camera. The trees call it to change cameras."
+  set_slalom_type: "Rename the detector's slalom detection (default slalom_front)."
+  set_table_pair_enabled: "Merge warning and helmet into one table detection. Off in the current tree."
+  mapping/start_binary_classifier: "Bins: start buffering detections to tell the two vinyls apart."
+  mapping/start_binary_classifier_second: "Bins: look for the second target in the buffered clusters."
+  mapping/stop_binary_classifier: "Back to normal fusion."
+  mapping/freeze_binary_classifier_buffer: "Bins: stop adding detections to the classifier's buffer."
+  mapping/center_table_on_baskets: "Fit the table to many detections of each basket; autonomy calls it after mapping both."
+  mapping/fit_bin_geometry: "Fit the bin's CAD model to the two classified vinyls, which places the magnets."
+  mapping/set_background_targets: "Objects that are always fused and never reset."
+  tf2_frames: "The TF frame tree as text, served by the tf2 buffer inside mapping."
+  controller_overseer/update_complete_controller_params: "Reload a controller's parameters. For the older controllers; nothing uses it with the MPC."
+  controller_overseer/update_pid_params: "Reload the older PID controller's parameters."
+  controller_overseer/update_smc_params: "Reload the older sliding-mode controller's parameters."
+  controller_overseer/update_thruster_solver_params: "Reload the older thruster solver's parameters."
+  pool_identify/start: "Start an identification session (only when launched with wait_for_trigger)."
+  acoustics/start_sample: "riptide_acoustics: start collecting hydrophone amplitudes."
+  acoustics/stop_sample: "riptide_acoustics: stop collecting."
+  state/temp/poacboard: "POAC board temperature (SHT41)."
+  state/humidity/poacboard: "POAC board humidity (SHT41)."
+  state/temp/cameracage: "Camera cage board temperature."
+  state/humidity/cameracage: "Humidity in the camera cage."
+  status/temp/smartbattery: "Battery housing temperature (note the status/ prefix, not state/)."
+  status/humidity/smartbattery: "Battery housing humidity."
+  ivc/debug_rx_mag: "IVC board debug: received signal magnitude."
+  ivc/debug_tx_frequency: "IVC board debug input (a transmit frequency)."
+  simulator/claw_joints: "[left, right] claw jaw travel from closed, in metres, for drawing the claw."
+  simulator/magnet_lights: "Magnet target lights, for the viewer."
+  simulator/projectiles: "Torpedoes and markers in flight and still loaded, for the viewer."
+  simulator/task_objects: "The props' meshes and poses, for the viewer."
+  simulator/task_score: "Task outcome counters as JSON."
+  simulator/scenario: "The loaded scenario (pool and tasks), latched."
+  simulator/load_scenario: "Restart the simulator in another pool (the viewer's View > Pool, or ros2 topic pub with a pool name). The robot stack keeps running."
+  simulator/supervisor: "sim_supervisor's status, latched."
+  simulator/run_command: "The scorecard's Start, Stop and Reset buttons."
+  simulator/run_score: "The RoboSub scorecard as JSON."
+  simulator/task_events: "One JSON object per task event (torpedo hit, claw move, dropper, magnet, reset)."
+  simulator/actual_thruster_forces: "The thrust the simulated thrusters really produce (after their dynamics), for the viewer's arrows."
+  dshot_tune/set_raw: "Put the ESC boards in raw mode (no RPM loop) for thrust-curve tools; raises the RAW_MODE fault."
+  dshot_tune/p_gain: "ESC board RPM loop tuning, set at runtime."
+  dshot_tune/i_gain: "ESC board RPM loop tuning, set at runtime."
+  dshot_tune/i_bound: "ESC board RPM loop tuning, set at runtime."
+  dshot_tune/hard_limit: "ESC board RPM loop tuning, set at runtime."
+  dshot_tune/min_command: "ESC board RPM loop tuning, set at runtime."
+  setTeleop: "Called by the viewer when it takes manual control. With the MPC the overseer just answers success."
+  follow_path: "The MPC's path action: a list of poses (lines, arcs, headings, a speed cap). The trees' FollowPath node sends it."
+  autonomy/run_tree: "Run a behaviour tree by file name (ExecuteTree). The viewer's Autonomy panel Start sends a goal, Stop cancels it."
+  autonomy/list_trees: "The tree files doTask can run; fills the viewer's tree picker."
+  mapping_target: "Tell mapping which object to fuse next (or automatic). Trees and the viewer's Mapping panel call it."
+  mapping/reset_mapping: "Forget every fused object and start the map again from the prior."
+  set_pose: "Reset the EKF's pose (robot_localization SetPose). doTask and the Nereus simulator call it."
+  map/model_tf: "Move world->map to fit the AprilTag (tag calibration). The viewer's Mapping panel Calibrate sends it."
+  map/set_transform: "Set world->map directly."
+  gyro/tare: "Zero the FOG's bias while Talos sits still (TareGyro). The viewer's Electrical panel runs it."
+  vectornav/mag_cal: "Magnetometer calibration on the IMU."
+  vectornav/config: "Send a raw configuration query to the IMU over serial."
+  calibrate_drag_new: "Drag calibration action (calibrate_drag.py)."
+  reset_sim_to_start: "Nereus: put Talos back at the start pose (tasks untouched)."
+  sync_sim_to_estimate: "Nereus: move the simulated Talos to where the EKF thinks it is."
+  set_sim_pose: "Nereus: place the simulated Talos at a pose."
+  simulator/reset_tasks: "Nereus: reset the props, reload the torpedoes and droppers, disarm."
+  simulator/reset_scenario: "Nereus: reload the scenario."
+  capture_image: "picture_taker: save the next forward-camera stereo frame. The viewer's Recording panel Capture image calls it."
+
+# Nodes that only run on the robot (their interfaces are read from the code at the branches above).
+# side: robot (Orin), board (micro-ROS firmware), laptop (operator laptop), tool (run by hand).
+robot_nodes:
+  - id: riptide_imu
+    fq: /talos/riptide_imu
+    package: "riptide_imu: imu"
+    sub: sensors
+    side: robot
+    role: "VectorNav IMU driver on /dev/ttyTHS1 (serial on the Orin HAT)."
+    repo: riptide_core
+    files: [riptide_imu/src/main.cpp, riptide_imu/include/serialinterface.hpp]
+    launch: riptide_imu/launch/imu.launch.py
+    config: [riptide_imu/config/vectornav.yaml]
+    chapter: sensors.html#imu
+    pubs:
+      - [vectornav/imu, sensor_msgs/msg/Imu, reliable/volatile]
+      - [vectornav/magnetometer, geometry_msgs/msg/Vector3, reliable/volatile]
+      - [vectornav/magheading, std_msgs/msg/Float32, reliable/volatile]
+      - [vectornav/pressure_bar, std_msgs/msg/Float32, reliable/volatile]
+      - [vectornav/dump, riptide_msgs2/msg/VnDump, reliable/volatile]
+    services:
+      - [vectornav/config, riptide_msgs2/srv/QueryImuSerial]
+    actions:
+      - [vectornav/mag_cal, riptide_msgs2/action/MagCal]
+  - id: riptide_gyro
+    fq: /talos/riptide_gyro
+    package: "riptide_gyro: gyro_driver"
+    sub: sensors
+    side: robot
+    role: "Fibre-optic gyro (FOG) driver on /dev/ttyTHS2; turns raw counts into a yaw rate with a temperature model."
+    repo: riptide_core
+    files: [riptide_gyro/src/riptide_gyro/driver.cpp]
+    launch: riptide_gyro/launch/gyro.launch.py
+    config: [riptide_gyro/config/gyro_config.yaml]
+    chapter: sensors.html#fog
+    pubs:
+      - [gyro/raw, riptide_msgs2/msg/Int32Stamped, best_effort/volatile]
+      - [gyro/status, riptide_msgs2/msg/GyroStatus, reliable/volatile]
+      - [gyro/twist, geometry_msgs/msg/TwistWithCovarianceStamped, best_effort/volatile]
+    actions:
+      - [gyro/tare, riptide_msgs2/action/TareGyro]
+  - id: dvl
+    fq: /talos/dvl
+    package: "nortek_dvl: dvl"
+    sub: sensors
+    side: robot
+    role: "Nortek DVL driver: reads the DVL over Ethernet (TCP) and publishes velocity and status."
+    repo: nortek_dvl
+    files: [nortek_dvl/src/dvl_driver.cpp]
+    launch: nortek_dvl/launch/dvl.launch.py
+    config: []
+    launch_extra: [riptide_core, riptide_hardware/launch/dvl.launch.py]
+    chapter: sensors.html#dvl
+    pubs:
+      - [dvl, nortek_dvl_msgs/msg/Dvl, best_effort/volatile]
+      - [dvl/status, nortek_dvl_msgs/msg/DvlStatus, best_effort/volatile]
+      - [dvl_twist, geometry_msgs/msg/TwistWithCovarianceStamped, best_effort/volatile]
+      - [dvl/bottom_lock, std_msgs/msg/Bool, reliable/volatile]
+      - [dvl/water_twist, geometry_msgs/msg/TwistWithCovarianceStamped, best_effort/volatile]
+      - [dvl_sonar0, sensor_msgs/msg/Range, best_effort/volatile]
+      - [dvl_sonar1, sensor_msgs/msg/Range, best_effort/volatile]
+      - [dvl_sonar2, sensor_msgs/msg/Range, best_effort/volatile]
+      - [dvl_sonar3, sensor_msgs/msg/Range, best_effort/volatile]
+  - id: copro_agent
+    fq: /talos/copro_agent
+    package: "micro_ros_agent: micro_ros_agent"
+    sub: power
+    side: robot
+    role: "micro-ROS agent on can0: carries every internal board's topics between CAN and ROS. The boards' topics appear as if published by their own nodes (below)."
+    repo: riptide_core
+    files: [riptide_hardware/launch/copro_agent.launch.py]
+    launch: riptide_hardware/launch/copro_agent.launch.py
+    config: []
+    chapter: firmware.html#microros
+  - id: simple_actuator_interface
+    fq: /talos/simple_actuator_interface
+    package: "riptide_hardware2: simple_actuator_interface.py"
+    sub: actuators
+    side: robot
+    role: "One-topic test shortcuts: arm if needed, fire or drop through the actuator services."
+    repo: riptide_core
+    files: [riptide_hardware/riptide_hardware2/simple_actuator_interface.py]
+    launch: riptide_hardware/launch/hardware.launch.py
+    config: []
+    chapter: actuators.html#ros
+    subs:
+      - [command/simple_torpedo_fire, std_msgs/msg/Empty]
+      - [command/simple_dropper_fire, std_msgs/msg/Empty]
+      - [state/actuator/status, riptide_msgs2/msg/ActuatorStatus]
+      - [state/actuator/busy, std_msgs/msg/Bool]
+    clients:
+      - [command/actuator/arm, std_srvs/srv/SetBool]
+      - [command/actuator/dropper, std_srvs/srv/Trigger]
+      - [command/actuator/torpedo, std_srvs/srv/Trigger]
+  - id: imu_power_cycle
+    fq: /talos/imu_power_cycle
+    package: "riptide_hardware2: imu_power_cycle.py"
+    sub: sensors
+    side: robot
+    role: "Power-cycles the IMU through a Jetson GPIO pin when an electrical command asks for it."
+    repo: riptide_core
+    files: [riptide_hardware/riptide_hardware2/imu_power_cycle.py]
+    launch: riptide_hardware/launch/hardware.launch.py
+    config: [riptide_hardware/cfg/imu_pwr_cycle.yaml]
+    chapter: sensors.html#imu
+    subs:
+      - [command/electrical, riptide_msgs2/msg/ElectricalCommand]
+  - id: pinger_broker
+    fq: /talos/pinger_broker
+    package: "riptide_hardware2: pinger_broker"
+    sub: acoustics
+    side: robot
+    role: "Passes a requested pinger frequency on to the IVC board."
+    repo: riptide_core
+    files: [riptide_hardware/src/pinger_broker.cpp]
+    launch: riptide_hardware/launch/hardware.launch.py
+    config: []
+    chapter: sensors.html#acoustics
+    pubs:
+      - [ivc/pinger/set_freq_khz, std_msgs/msg/Int32, reliable/volatile]
+    subs:
+      - [ivc/pinger/set_freq_broker_khz, std_msgs/msg/Int32]
+  - id: ffc_zed_node
+    fq: /talos/ffc/zed_node
+    package: "zed_components: ZedCamera (in /talos/zed_container)"
+    sub: cameras
+    side: robot
+    role: "Forward ZED X Mini camera: images, depth, point cloud, camera info, SVO recording."
+    repo: riptide_core
+    files: [riptide_hardware/launch/zed.launch.py]
+    launch: riptide_hardware/launch/zed.launch.py
+    config: [riptide_hardware/cfg/ffc_config.yaml, "zed_wrapper:zed_wrapper/config/common_stereo.yaml", "zed_wrapper:zed_wrapper/config/zedxm.yaml"]
+    chapter: cameras.html#topics
+    pubs:
+      - [ffc/zed_node/rgb/image_rect_color, sensor_msgs/msg/Image, ""]
+      - [ffc/zed_node/rgb/image_rect_color/compressed, sensor_msgs/msg/CompressedImage, ""]
+      - [ffc/zed_node/rgb/camera_info, sensor_msgs/msg/CameraInfo, ""]
+      - [ffc/zed_node/depth/depth_registered, sensor_msgs/msg/Image, ""]
+      - [ffc/zed_node/point_cloud/cloud_registered, sensor_msgs/msg/PointCloud2, ""]
+      - [ffc/zed_node/stereo_raw/image_raw_color, sensor_msgs/msg/Image, ""]
+    services:
+      - [ffc/zed_node/start_svo_rec, zed_msgs/srv/StartSvoRec]
+      - [ffc/zed_node/stop_svo_rec, std_srvs/srv/Trigger]
+  - id: dfc_zed_node
+    fq: /talos/dfc/zed_node
+    package: "zed_components: ZedCamera (in /talos/zed_container)"
+    sub: cameras
+    side: robot
+    role: "Downward ZED X Mini camera, configured like the forward one."
+    repo: riptide_core
+    files: [riptide_hardware/launch/zed.launch.py]
+    launch: riptide_hardware/launch/zed.launch.py
+    config: [riptide_hardware/cfg/dfc_config.yaml, "zed_wrapper:zed_wrapper/config/common_stereo.yaml", "zed_wrapper:zed_wrapper/config/zedxm.yaml"]
+    chapter: cameras.html#topics
+    pubs:
+      - [dfc/zed_node/rgb/image_rect_color, sensor_msgs/msg/Image, ""]
+      - [dfc/zed_node/rgb/image_rect_color/compressed, sensor_msgs/msg/CompressedImage, ""]
+      - [dfc/zed_node/rgb/camera_info, sensor_msgs/msg/CameraInfo, ""]
+      - [dfc/zed_node/depth/depth_registered, sensor_msgs/msg/Image, ""]
+      - [dfc/zed_node/point_cloud/cloud_registered, sensor_msgs/msg/PointCloud2, ""]
+    services:
+      - [dfc/zed_node/start_svo_rec, zed_msgs/srv/StartSvoRec]
+      - [dfc/zed_node/stop_svo_rec, std_srvs/srv/Trigger]
+  - id: zed_container
+    fq: /talos/zed_container
+    package: "rclcpp_components: component_container"
+    sub: cameras
+    side: robot
+    role: "Container process that hosts both ZED nodes (ffc_zed_node and dfc_zed_node) as components: one process, so if it stops, both cameras stop."
+    repo: riptide_core
+    files: [riptide_hardware/launch/zed.launch.py]
+    launch: riptide_hardware/launch/zed.launch.py
+    config: []
+    chapter: cameras.html#topics
+  - id: picture_taker
+    fq: /talos/picture_taker
+    package: "riptide_hardware2: picture_taker.py"
+    sub: cameras
+    side: robot
+    role: "Saves forward-camera stereo frames for calibration. Subscribes to the raw stereo stream from launch: turn it off when not calibrating."
+    repo: riptide_core
+    files: [riptide_hardware/riptide_hardware2/picture_taker.py]
+    launch: riptide_hardware/launch/zed.launch.py
+    config: []
+    chapter: cameras.html#bandwidth
+    subs:
+      - [ffc/zed_node/stereo_raw/image_raw_color, sensor_msgs/msg/Image]
+    services:
+      - [capture_image, std_srvs/srv/Trigger]
+      - [enable_subscription, std_srvs/srv/SetBool]
+  - id: zed_state_publisher
+    fq: /talos/ffc/zed_state_publisher, /talos/dfc/zed_state_publisher
+    package: "robot_state_publisher (ZED description)"
+    sub: estimation
+    side: robot
+    role: "Publishes each ZED's own frames (camera centre, left and right lenses) under talos/<cam>_camera_link. Skipped where zed_wrapper isn't installed, so it was missing from the Nereus capture."
+    repo: riptide_core
+    files: [riptide_hardware/launch/navigation.launch.py]
+    launch: riptide_hardware/launch/navigation.launch.py
+    config: ["zed_wrapper:zed_wrapper/urdf/zed_macro.urdf.xacro"]
+    chapter: cameras.html#topics
+  - id: diagnostics
+    fq: /electrical_monitor, /firmware_monitor, /voltage_monitor, /computer_monitor, diagnostic_aggregator
+    package: "riptide_hardware2 monitors + diagnostic_aggregator"
+    sub: ros
+    side: robot
+    status: "not used"
+    role: "Diagnostics monitors and aggregator. Still an entry in talos_launch_mpc.yaml, but the team no longer runs them."
+    repo: riptide_core
+    files: [riptide_hardware/launch/diagnostics.launch.py]
+    launch: riptide_hardware/launch/diagnostics.launch.py
+    config: [riptide_hardware/cfg/diagnostic_analyzers.yaml, riptide_hardware/cfg/diagnostic_thresholds.yaml]
+    chapter: computers.html
+  - id: pool_identify
+    fq: /talos/pool_identify
+    package: "riptide_mpc: pool_identify_node"
+    sub: control
+    side: tool
+    role: "System identification in the pool: drives test manoeuvres through the MPC and fits a new model. Run by hand (pool_identify.launch.py)."
+    repo: riptide_control
+    files: [riptide_mpc/src/pool_identify_node.cpp]
+    launch: riptide_mpc/launch/pool_identify.launch.py
+    config: [riptide_mpc/config/identification.yaml]
+    chapter: control/identify.html#session
+    pubs:
+      - [controller/identification/thrusters, std_msgs/msg/Float64MultiArray, reliable/volatile]
+      - [controller/linear, riptide_msgs2/msg/ControllerCommand, reliable/volatile]
+      - [controller/angular, riptide_msgs2/msg/ControllerCommand, reliable/volatile]
+      - [pool_identify/done, std_msgs/msg/Bool, reliable/volatile]
+      - [command/led, riptide_msgs2/msg/LedCommand, reliable/volatile]
+    services:
+      - [pool_identify/start, std_srvs/srv/Trigger]
+    subs:
+      - [odometry/filtered, nav_msgs/msg/Odometry]
+      - [controller/mpc/reference, geometry_msgs/msg/PoseStamped]
+      - [controller/scale/trust, geometry_msgs/msg/Twist]
+      - [state/kill, std_msgs/msg/Bool]
+      - [thruster_forces, std_msgs/msg/Float32MultiArray]
+      - [vectornav/imu, sensor_msgs/msg/Imu]
+      - [gyro/twist, geometry_msgs/msg/TwistWithCovarianceStamped]
+      - [dvl_twist, geometry_msgs/msg/TwistWithCovarianceStamped]
+
+# micro-ROS firmware projects (titan_firmware master), parsed from talos/<dir>/src/*.c by build.py.
+boards:
+  - {id: poac_board,     dir: PoacBoard,     label: POAC board,        node: "/talos/poac_board",       chapter: boards.html#poac, firmware_id: poac}
+  - {id: esc_board,      dir: ESCBoard,      label: ESC boards (2),    node: "/talos/esc_board_0, esc_board_1", chapter: boards.html#esc, firmware_id: esc}
+  - {id: camera_cage_bb, dir: CameraCageBB,  label: Camera cage board, node: "/talos/camera_cage_bb",   chapter: boards.html#ccbb, firmware_id: ccbb}
+  - {id: led_board,      dir: LEDBoard,      label: LED board,         node: "/talos/led_board",        chapter: boards.html#led-ivc, firmware_id: led}
+  - {id: ivc_board,      dir: IVCBoard,      label: IVC board,         node: "/talos/ivc_board",        chapter: boards.html#led-ivc, firmware_id: ivc}
+  - {id: smart_battery,  dir: SmartBattery,  label: Smart battery housings, node: "/talos/smart_battery_<n>", chapter: boards.html#batteries, firmware_id: sbh, status: "agent off"}
+
+# The IVC pinger topics come from IVCBoard2 on titan_firmware branch blake/ivc (see sensors.html#acoustics),
+# not from master's IVCBoard; only the ones the stack uses are listed.
+ivc2:
+  ref: origin/blake/ivc
+  branch: blake/ivc
+  path: talos/IVCBoard2/src/ros.c
+  pubs:
+    - [ivc/pinger/selected_freq_amp_stream, std_msgs/msg/Float32]
+    - [ivc/pinger/selected_freq_khz, std_msgs/msg/Int32]
+  subs:
+    - [ivc/pinger/enable, std_msgs/msg/Bool]
+    - [ivc/pinger/set_freq_khz, std_msgs/msg/Int32]
+
+# Rates set in code (robot side), for topics the pool bag didn't record. [name, Hz, why, repo, path, pattern]
+robot_rates:
+  - [state/kill, 6.67, "POAC publishes every 150 ms", titan_firmware, talos/PoacBoard/src/main.c, KILLSWITCH_PUBLISH_TIME_MS]
+  - [heartbeat, 10, "every 100 ms per board", titan_firmware, talos/PoacBoard/src/main.c, "define HEARTBEAT_TIME_MS"]
+  - [state/firmware, 1, "every 1000 ms per board", titan_firmware, talos/PoacBoard/src/main.c, FIRMWARE_STATUS_TIME_MS]
+  - [state/electrical, 1, "every 1000 ms", titan_firmware, talos/PoacBoard/src/main.c, ELECTRICAL_READINGS_INTERVAL]
+  - [state/aux, 1, "every 1000 ms", titan_firmware, talos/PoacBoard/src/main.c, AUXSWITCH_INTERVAL]
+  - [state/actuator/status, 2, "every 500 ms", titan_firmware, talos/PoacBoard/src/main.c, ACTUATOR_STATUS_TIME_MS]
+  - [state/thrusters/telemetry, 4, "each of the two ESC boards every 500 ms", titan_firmware, talos/ESCBoard/src/main.c, TELEM_PUBLISH_RATE_MS]
+  - [state/depth/raw, 20, "depth sensor polled every 50 ms", titan_firmware, lib/driver_depth/include/driver/depth.h, "define DEPTH_POLLING_RATE_MS"]
+  - [state/battery, 1, "every 1000 ms per housing (agent off)", titan_firmware, talos/SmartBattery/src/main.c, BATTERY_STATUS_TIME_MS]
+  - [gyro/twist, 500, "max_publish_rate", riptide_core, riptide_gyro/config/gyro_config.yaml, max_publish_rate]
+  - [acoustics/buffer_0_closer, 1, "1 s timer", riptide_core, riptide_acoustics/src/Acoustics.cpp, create_wall_timer]
+  - [accel/filtered, 30, "EKF frequency: 30", riptide_core, riptide_hardware/cfg/talos_ekf.yaml, "frequency: 30"]
+  - [ffc/zed_node/rgb/image_rect_color, 15, "grab_frame_rate: 15", riptide_core, riptide_hardware/cfg/ffc_config.yaml, "grab_frame_rate"]
+  - [ffc/zed_node/rgb/image_rect_color/compressed, 15, "grab_frame_rate: 15", riptide_core, riptide_hardware/cfg/ffc_config.yaml, "grab_frame_rate"]
+  - [ffc/zed_node/rgb/camera_info, 15, "grab_frame_rate: 15", riptide_core, riptide_hardware/cfg/ffc_config.yaml, "grab_frame_rate"]
+  - [ffc/zed_node/depth/depth_registered, 15, "grab_frame_rate: 15", riptide_core, riptide_hardware/cfg/ffc_config.yaml, "grab_frame_rate"]
+  - [ffc/zed_node/point_cloud/cloud_registered, 10, "point_cloud_freq: 10 in the wrapper's common_stereo.yaml", zed_wrapper, zed_wrapper/config/common_stereo.yaml, "point_cloud_freq: 10"]
+  - [dfc/zed_node/rgb/image_rect_color, 15, "grab_frame_rate: 15", riptide_core, riptide_hardware/cfg/dfc_config.yaml, "grab_frame_rate"]
+  - [dfc/zed_node/rgb/image_rect_color/compressed, 15, "grab_frame_rate: 15", riptide_core, riptide_hardware/cfg/dfc_config.yaml, "grab_frame_rate"]
+  - [dfc/zed_node/rgb/camera_info, 15, "grab_frame_rate: 15", riptide_core, riptide_hardware/cfg/dfc_config.yaml, "grab_frame_rate"]
+  - [dfc/zed_node/depth/depth_registered, 15, "grab_frame_rate: 15", riptide_core, riptide_hardware/cfg/dfc_config.yaml, "grab_frame_rate"]
+  - [dfc/zed_node/point_cloud/cloud_registered, 10, "point_cloud_freq: 10 in the wrapper's common_stereo.yaml", zed_wrapper, zed_wrapper/config/common_stereo.yaml, "point_cloud_freq: 10"]
+  - [ffc/zed_node/stereo_raw/image_raw_color, 15, "grab_frame_rate: 15", riptide_core, riptide_hardware/cfg/ffc_config.yaml, "grab_frame_rate"]
+
+# Config files and parameter dumps per node id (ids as in the Nereus capture, without /talos/).
+node_meta:
+  ekf_localization_node:
+    repo: riptide_core
+    files: [riptide_hardware/cfg/talos_ekf.yaml]
+    config: [riptide_hardware/cfg/talos_ekf.yaml]
+    dump: params_ekf.json
+    chapter: localization.html#ekf
+  depth_converter:
+    sub: sensors
+    repo: riptide_core
+    files: [riptide_hardware/riptide_hardware2/depth_converter.py]
+    config: []
+    chapter: sensors.html#depth
+  robot_state_publisher:
+    sub: estimation
+    repo: riptide_core
+    files: [riptide_hardware/launch/navigation.launch.py]
+    config: [riptide_descriptions/config/talos.yaml, riptide_descriptions/robots/talos.xacro]
+    chapter: localization.html#urdf
+  joint_state_publisher:
+    sub: estimation
+    repo: riptide_core
+    files: [riptide_hardware/launch/navigation.launch.py]
+    config: [riptide_descriptions/robots/talos.xacro]
+    chapter: localization.html#urdf
+  odom_to_world_broadcaster:
+    sub: estimation
+    repo: riptide_core
+    files: [riptide_hardware/launch/navigation.launch.py]
+    config: []
+    chapter: localization.html#frames
+  mpc_controller:
+    repo: riptide_control
+    files: [riptide_mpc/src/mpc_controller_node.cpp]
+    config: [riptide_mpc/config/mpc.yaml, riptide_mpc/config/models/talos.yaml, "riptide_core:riptide_descriptions/config/talos.yaml"]
+    dump: params_mpc.json
+    chapter: control/index.html#files
+  controller_overseer:
+    repo: riptide_control
+    files: [riptide_controllers/src/riptide_controllers/controller_overseer.py]
+    config: ["riptide_core:riptide_descriptions/config/talos.yaml"]
+    dump: params_controller_overseer.json
+    chapter: commanding.html#stops
+  calibrate_drag:
+    sub: control
+    repo: riptide_control
+    files: [riptide_controllers/src/riptide_controllers/calibrate_drag.py]
+    config: []
+    chapter: control/index.html
+  yolo_orientation:
+    repo: riptide_perception
+    files: [tensor_detector/src/yolo_orientation.py]
+    config: [tensor_detector/config/yolo_orientation.yaml]
+    dump: params_detector.json
+    chapter: perception/detector.html
+  riptide_mapping2:
+    repo: riptide_perception
+    files: [riptide_mapping/riptide_mapping2/mapping.py]
+    config: [riptide_mapping/config/config.yaml, riptide_mapping/config/binary_classifier.yaml, riptide_mapping/config/dependent_frames.yaml, riptide_mapping/config/oriented_frames.yaml]
+    dump: params_mapping.json
+    chapter: perception/map.html
+  world_to_map:
+    sub: mapping
+    repo: riptide_perception
+    files: [riptide_mapping/launch/mapping.launch.py]
+    config: [riptide_mapping/launch/mapping.launch.py]
+    chapter: localization.html#tag
+  apriltag_36h11:
+    sub: perception
+    repo: riptide_core
+    files: [riptide_hardware/launch/apriltag.launch.py]
+    config: [riptide_hardware/launch/apriltag.launch.py]
+    dump: params_apriltag.json
+    chapter: localization.html#tag
+  apriltag/tag_container:
+    sub: perception
+    repo: riptide_core
+    files: [riptide_hardware/launch/apriltag.launch.py]
+    config: []
+    chapter: localization.html#tag
+  surface_frame_node:
+    sub: perception
+    repo: riptide_core
+    files: [riptide_hardware/launch/apriltag.launch.py]
+    config: []
+    chapter: localization.html#tag
+  autonomy:
+    sub: autonomy
+    repo: riptide_autonomy
+    files: [src/riptide_autonomy/DoTask.cpp, "src/**/*.cpp", "include/**/*.h", "include/**/*.hpp"]
+    config: [launch/autonomy.launch.py]
+    dump: params_autonomy.json
+    chapter: bt-nodes.html#dotask
+  ActuatorTranslator:
+    repo: riptide_core
+    files: [riptide_hardware/riptide_hardware2/actuator_service_translator.py]
+    config: []
+    launch: ["riptide_autonomy", launch/autonomy.launch.py]
+    package: "riptide_hardware2: actuator_service_translator.py"
+    chapter: actuators.html#ros
+  riptide_acoustics:
+    repo: riptide_core
+    files: [riptide_acoustics/src/Acoustics.cpp]
+    config: [riptide_acoustics/launch/acoustics.launch.py]
+    chapter: sensors.html#acoustics
+  physics_simulator:
+    repo: nereus
+    files: [content/packs/bridges/uwrt_talos/bridge.yaml]
+    config: [content/packs/bridges/uwrt_talos/bridge.yaml, content/packs/robots/talos/robot.yaml]
+    chapter: nereus.html#bridge
+  sim_supervisor:
+    repo: nereus
+    files: [integrations/uwrt/launch/sim_supervisor.py]
+    config: []
+    chapter: nereus.html#run
+  nereus_viewer:
+    repo: nereus
+    files: [content/viewer/talos_uwrt_panels.yaml, "integrations/ros2/viewer/**/*.cpp"]
+    config: [content/viewer/talos_uwrt_panels.yaml]
+    chapter: viewer.html#ros
+  viewer_panels:
+    repo: nereus
+    files: [content/viewer/talos_uwrt_panels.yaml, "integrations/ros2/viewer/panels/*.cpp"]
+    config: [content/viewer/talos_uwrt_panels.yaml]
+    chapter: viewer.html#ros
+  viewer_plots:
+    repo: nereus
+    files: ["integrations/ros2/viewer/panels/plots_*.cpp"]
+    config: []
+    chapter: viewer.html#ros
+  nereus_viewer_timing:
+    repo: nereus
+    files: ["integrations/ros2/viewer/**/*.cpp"]
+    config: []
+    chapter: viewer.html#ros

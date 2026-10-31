@@ -102,7 +102,7 @@ colcon deploy orin2 --clean</code></pre>
       <figcaption><b>Every check, and what it passes on.</b> IDs and titles are read from the tool's source; the limits come from the Talos profile. Tap a stage to filter; it opens on <code>bench</code>.</figcaption>
     </figure>
     <figure class="fig narrow">
-      <img class="media" src="img/pool-test/bench-ffc-snapshot.webp" width="1280" height="800" loading="lazy" alt="Talos's front camera on the bench: the team's lab, with a red frame of an older robot on a workbench, storage shelves, red tool chests and a wheeled cart with a case in the foreground. A dark part of Talos's frame fills the left edge.">
+      <img class="media" src="/img/pool-test/bench-ffc-snapshot.webp" width="1280" height="800" loading="lazy" alt="Talos's front camera on the bench: the team's lab, with a red frame of an older robot on a workbench, storage shelves, red tool chests and a wheeled cart with a case in the foreground. A dark part of Talos's frame fills the left edge.">
       <figcaption><b>What B13 saves.</b> One front-camera frame from a bench run on 2026-10-20, kept in the report so a person can spot a fogged, covered or swapped camera. Talos's own frame is at the left edge.</figcaption>
     </figure>
 
@@ -175,15 +175,16 @@ colcon deploy orin2 --clean</code></pre>
       <h2 id="batteries">Batteries</h2>
       <dl class="spec">
         <dt>Packs</dt><dd>Two smart battery housings, port and starboard. Each holds a MaxAmps 8000 mAh 5S2P LiPo pack, 18.5 V nominal, about 148 Wh (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L4">gauge notes</a>), with a TI BQ40Z80 gauge and a 45 A protector fuse (<a href="electrical.html#batteries">The electrical system</a>).</dd>
-        <dt>Voltage</dt><dd>Charged to at most 4.15 V a cell (20.75 V) and discharged to no less than 3.2 V a cell (16 V). The gauge raises a swap alert at <strong>17.5 V</strong>, MaxAmps' recommended landing voltage (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L389">line 389</a>). The pre-test tool's B4 wants at least <strong>18.5 V</strong> (nominal) on the bus: that is a start-of-day bar, not a landing limit.</dd>
+        <dt>Voltage</dt><dd>Charged to at most 4.15 V a cell (20.75 V) and discharged to no less than 3.2 V a cell (16 V). Swap at <strong>17.5 V</strong>, MaxAmps' recommended landing voltage. The gauge sets an alarm flag there (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L389">line 389</a>), but nothing on Talos reads it. The pre-test tool's B4 wants at least <strong>18.5 V</strong> (nominal) on the bus: that is a start-of-day bar, not a landing limit.</dd>
         <dt>Sharing</dt><dd>The POAC board ORs the two packs through ideal diodes: whichever is higher supplies the bus.</dd>
         <dt>On the housing</dt><dd>A small OLED and three LEDs, one lit for the charge band: above 60 %, 30 to 60 %, 30 % or less (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/include/bq40z80.h#L26-L27"><code>bq40z80.h</code></a>).</dd>
-        <dt>In the viewer</dt><dd><code>PORT</code> and <code>STBD</code> chips show each pack's charge: amber below 50 %, red below 20 %, gray after 10 s without a reading. Hover for voltage, current and time to empty.</dd>
+        <dt>In the viewer</dt><dd>The <code>PORT</code> and <code>STBD</code> chips read the housings' <code>state/battery</code> (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml#L57-L58">talos_uwrt_panels.yaml</a>), which comes over the external CAN bus, <code>can1</code>. The Orin's agent for that bus has been commented out since 27 October 2026 (<a href="https://github.com/osu-uwrt/riptide_core/commit/720bdd9">720bdd9</a>), so for now the chips stay gray (<a href="boards.html">Boards</a>, <a href="electrical.html#charging">Charging and handling</a>).</dd>
+        <dt>Bus voltage</dt><dd>The working low-battery signal: <code>balanced_voltage</code> in <code>state/electrical</code>, which the POAC publishes on the internal bus, <code>can0</code>. It is what B4 checks (<code>pretest_checks/stages/bench.py</code>, lines 188 to 192). Plot it in the viewer's Plots window (<a href="debugging.html#plots">Plotting live</a>) or run <code>ros2 topic echo state/electrical --field balanced_voltage</code>.</dd>
       </dl>
       <ul>
         <li><strong>Charge both the night before.</strong> On the bench Talos runs from a power supply, so the packs are only tested once they're in.</li>
         <li><strong>B4 fails below 18.5 V on deck?</strong> The packs weren't charged: start the day on fresh ones.</li>
-        <li><strong>At the pool, swap</strong> when a chip goes red or the gauge's 17.5 V alert fires, whichever comes first. Don't fly a pack down to its 16 V cutoff.</li>
+        <li><strong>At the pool, swap</strong> when <code>balanced_voltage</code> reaches 17.5 V. Don't fly a pack down to its 16 V cutoff.</li>
       </ul>
       <div class="callout safety"><span class="label">LiPo</span>
         <ul>
@@ -233,12 +234,12 @@ cd ~/osu-uwrt/release/pretest_checks
         <li><strong><code>config_rmw.bash</code></strong> makes the terminal a Zenoh client of <code>orin2</code> (<a href="computers.html#zenoh">ROS 2 over Zenoh</a>).</li>
         <li><strong><code>pool:=rpac</code></strong> draws the RPAC pool around the robot (<code>robosub</code> for the competition pool); <code>robot_only:=true</code> hides the pool. Talos is drawn from the localization estimate, on wall-clock time (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/launch/robot.launch.py">robot.launch.py</a>).</li>
         <li><strong>The health check</strong> is five bench checks that start nothing and take under a minute. The planned <code>dayof</code> stage will compare everything with the last passing bench run.</li>
-        <li><strong>In the command bar</strong>, check the FOG temperature, DVL and both battery chips. The CPU chip reads the computer monitor in <code>diagnostics.launch.py</code>, which isn't started any more, so it stays gray.</li>
+        <li><strong>In the command bar</strong>, check the FOG temperature and DVL. Three chips stay gray: CPU reads the computer monitor in <code>diagnostics.launch.py</code>, which isn't started any more, and PORT and STBD wait for the <code>can1</code> agent (<a href="#batteries">Batteries</a>). For the same reason B3 reports both battery housings as not reporting on batteries; until <code>can1</code> is back, that is expected. Check the bus voltage instead.</li>
       </ul>
     </div>
     <figure class="fig">
       <div class="vw" id="vw">
-        <img class="media" src="img/pool-test/viewer-robot.webp" width="1480" height="940" loading="lazy" alt="The Nereus viewer in its standard layout against Talos: a dark command bar with a red KILL button and FOG, DVL, CPU, PORT and STBD chips; the Motion panel on the left with a pose table; Mapping, Vision and Autonomy tabs below it; the 3D pool view in the middle showing Talos in front of the AprilTag board; forward and downward camera cards on the right; and Course map, Recording, Bagging, Electrical and Actuators tabs at the bottom right.">
+        <img class="media" src="/img/pool-test/viewer-robot.webp" width="1480" height="940" loading="lazy" alt="The Nereus viewer in its standard layout against Talos: a dark command bar with a red KILL button and FOG, DVL, CPU, PORT and STBD chips; the Motion panel on the left with a pose table; Mapping, Vision and Autonomy tabs below it; the 3D pool view in the middle showing Talos in front of the AprilTag board; forward and downward camera cards on the right; and Course map, Recording, Bagging, Electrical and Actuators tabs at the bottom right.">
       </div>
       <ol class="vw-key" id="vw-key"></ol>
       <figcaption><b>The operator's screen.</b> The viewer as <code>robot.launch.py pool:=rpac</code> opens it, fed by the bag of the untethered identification session of 2026-10-26. That bag holds no battery, FOG or CPU readings and no camera images, so those chips read <code>--</code> and the camera cards wait; Talos was enabled in that bag, so the bar reads <i>Robot: enabled</i>. The header names the scenario pack, the RoboSub 2026 course set in the RPAC pool. Tap or hover a number; on a phone, the part you tap is shown enlarged under the picture. Captured headless by <code>tools/pool-test/viewer_shot.sh</code>.</figcaption>
@@ -311,7 +312,7 @@ colcon deploy orin2 --packages-select riptide_mapping2</code></pre>
       <p>How the map, the calibration and mapping targets fit together: <a href="perception/frames.html">Frames, targets and the mission tree</a> and <a href="perception/map.html">The course map</a>.</p>
 
       <h2 id="trees">Running trees</h2>
-      <p>A tree is started from the viewer's Autonomy panel, but it doesn't move until the physical switch goes in. The mission trees begin with <code>WaitForKillSwitch</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/CompMissionTree.xml#L1893">CompMissionTree.xml</a>): wait 5 s, poll <code>state/kill</code> until it reads false, then wait 6 s more. That is how a run goes untethered:</p>
+      <p>A tree is started from the viewer's Autonomy panel, but it doesn't move until the physical switch goes in. The mission trees begin with <code>WaitForKillSwitch</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L3086-L3103">RepairCompMpcTree.xml</a>): wait 5 s, poll <code>state/kill</code> until it reads false, then wait 6 s more. That is how a run goes untethered:</p>
       <ol>
         <li>Talos at the surface, switch <strong>out</strong>.</li>
         <li><strong>Enable</strong> in the viewer. Talos stays killed by the switch, but slot 1 is now clear, and latched.</li>
@@ -386,14 +387,14 @@ ros2 launch riptide_mpc pool_identify.launch.py wait_for_trigger:=true max_itera
       <ol>
         <li><strong>Switch out.</strong> Killed, Talos floats up. This works whatever the software is doing.</li>
         <li><strong>Tether in.</strong> Untethered, nothing on op-top reaches the robot. Then Stop the tree and KILL in the viewer, as in <a href="#ending">Ending a run</a>.</li>
-        <li><strong>Read the viewer.</strong> The FOG, DVL and battery chips, the Motion panel's error column, the camera cards.</li>
-        <li><strong>Read the logs.</strong> The launcher's nodes write to the journal on the Orin: <code>journalctl -u ros_launcher --since "10 min ago"</code> (<a href="computers.html#ssh">SSH and logs</a>).</li>
+        <li><strong>Read the viewer.</strong> The FOG and DVL chips, the bus voltage, the Motion panel's error column, the camera cards.</li>
+        <li><strong>Read the logs.</strong> Live node output is on the launcher page (<code>http://orin2:8080</code>), only while it's open. Warnings are on <code>/rosout</code> (<code>ros2 topic echo /rosout --field msg</code>), and each node's log file is under <code>~/.ros/log/</code> on the Orin. <code>journalctl -u ros_launcher</code> only shows launches starting, stopping or dying, and router crashes (<a href="debugging.html#logs">Where the logs are</a>).</li>
         <li><strong>Restart one launch, not everything.</strong> Stop and Start the launch that failed in the launcher page. Restarting <code>ros_launcher</code> itself stops every node.</li>
       </ol>
       <ul>
         <li><strong>The viewer freezes or its pose goes stale:</strong> it releases manual control and the robot holds its last command. It never kills on its own (<a href="https://github.com/osu-uwrt/nereus/blob/main/docs/viewer.md#driving-the-robot-motion">viewer docs</a>). Pull the switch.</li>
         <li><strong>DVL lock lost or depth wrong mid-run:</strong> the MPC flies to wherever the estimate says Talos is, so a bad estimate means a bad run. Switch out, then work through <a href="sensors.html#trouble">When a sensor misbehaves</a>.</li>
-        <li><strong>Water in the hull:</strong> the leak sensor is no longer used, so nothing raises an alarm. Rising humidity on a board (<code>state/humidity/poacboard</code>, <code>state/humidity/cameracage</code>, <code>status/humidity/smartbattery</code>; <code>plot</code> them in the viewer) is the early sign (<a href="sensors.html#housekeeping">Housekeeping sensors</a>). Any sign of water: switch out, Talos out, power off, and no dive until it's opened, dried and the PVT passes again.</li>
+        <li><strong>Water in the hull:</strong> the leak sensor is no longer used, so nothing raises an alarm. Rising humidity on a board (<code>state/humidity/poacboard</code>, <code>state/humidity/cameracage</code>; <code>plot</code> them in the viewer; the housings' <code>status/humidity/smartbattery</code> is unavailable while <code>can1</code> is off) is the early sign (<a href="sensors.html#housekeeping">Housekeeping sensors</a>). Any sign of water: switch out, Talos out, power off, and no dive until it's opened, dried and the PVT passes again.</li>
       </ul>
       <p>More symptoms seen on Talos, each with its cause: <a href="debugging.html#symptoms">Debugging, bags and data</a>.</p>
 
@@ -419,6 +420,7 @@ gh release create 10-30-26-talos --title "Pool test 10-30-26" --notes-file notes
     </div>
     <figure class="fig narrow">
       <div class="panel" id="pool-checklist"></div>
+      <figcaption><b>Pool day, in order.</b> Tick as you go; ticks stay in this browser. SAFETY rows can hurt people or hardware; the B/G codes are the pretest checks above.</figcaption>
     </figure>
     <div class="prose">
       <p>From here, <a href="debugging.html">Debugging, bags and data</a> picks up the bags you brought home.</p>

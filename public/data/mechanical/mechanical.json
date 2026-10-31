@@ -877,7 +877,7 @@
   {
    "node": "electronics",
    "group": "electronics",
-   "label": "Electronics and computer cages (inside the hull)",
+   "label": "Board stack and camera cage (inside the hull)",
    "colour": "#008300",
    "min": [
     -0.22,

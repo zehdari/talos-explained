@@ -1,6 +1,5 @@
 import { setup } from '../layout.js';
 import { LineChart, el } from '../viz/chart.js';
-import { Graph } from '../viz/graph.js';
 import { profile1d } from '../engine/profile.js';
 import { PathPlan } from '../engine/path.js';
 import { settings, pathOptions } from '../engine/talos.js';
@@ -94,14 +93,8 @@ setup();
       { name: 'reference speed', color: 'var(--reference)', values: sim.map((p) => ({ x: p.s, y: p.v })) },
     ], { yDomain: [0, 0.7], xDomain: [0, plan.length] });
     info.textContent = `Length ${plan.length.toFixed(2)} m of s · ${plan.pieces.length} pieces · the reference takes ${sim.at(-1).t.toFixed(1)} s, top speed ${Math.max(...sim.map((p) => p.v)).toFixed(2)} m/s.`;
-    // chain graph
-    chainHost.innerHTML = '';
-    const k = plan.pieces.length, gw = 900, step = Math.min(118, (gw - 60) / k);
-    new Graph(chainHost, {
-      width: gw, height: 70,
-      nodes: plan.pieces.map((p, i) => ({ id: 'p' + i, x: 40 + step * (i + 0.5), y: 35, label: p.kind.toLowerCase(), sub: `${p.length.toFixed(2)} m`, w: step - 22, stroke: colors[p.kind] })),
-      edges: plan.pieces.slice(1).map((_, i) => ({ from: 'p' + i, to: 'p' + (i + 1) })),
-    });
+    // the path as a chain of pieces
+    chainHost.innerHTML = plan.pieces.map((p, i) => `<span class="item">${i ? '<span class="to" aria-hidden="true">→</span>' : ''}<span class="chip" style="border-color:${colors[p.kind]}">${p.kind.toLowerCase()}<span>${p.length.toFixed(2)} m</span></span></span>`).join('');
     drawPoints();
   }
   function drawPoints() {
@@ -136,12 +129,14 @@ setup();
   document.getElementById('pp-play').addEventListener('click', () => {
     if (!plan || !sim || playing) return;
     playing = true;
-    const t0 = performance.now(), speedUp = 2;
+    const speedUp = 2;
+    let t0 = null; // taken from the first frame: its timestamp can be earlier than performance.now() at the click
     refDot.setAttribute('visibility', 'visible');
     refNose.setAttribute('visibility', 'visible');
     const frame = (now) => {
+      if (t0 === null) t0 = now;
       const t = ((now - t0) / 1000) * speedUp;
-      const k = Math.min(sim.length - 1, Math.floor(t / 0.05));
+      const k = Math.max(0, Math.min(sim.length - 1, Math.floor(t / 0.05)));
       const s = sim[k].s;
       const [x, y] = toS(plan.position(s));
       const yaw = plan.heading(s);

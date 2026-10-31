@@ -390,6 +390,7 @@ dataWs.then((ws) => {
     seg.appendChild(b);
   }
   const pick = h('select', 'pick');
+  pick.setAttribute('aria-label', 'Package');
   pick.innerHTML = pk.filter((p) => !p.deploy_ignore).map((p) => `<option>${p.name}</option>`).join('');
   pick.onchange = () => { st.pkg = pick.value; draw(); };
   const flags = ['clean', 'no_build', 'archive'].map((f) => {
@@ -441,6 +442,7 @@ dataWs.then((ws) => {
       ['os', 'Ubuntu 22.04 installed and updated', 'lsb_release -sr        # prints 22.04', '#before'],
       ['gpu', 'NVIDIA driver installed, if you have an NVIDIA GPU', 'nvidia-smi', '#gpu'],
       ['gh', 'GitHub account; asked a lead for write access to osu-uwrt', '', '#before'],
+      ['vpn', 'Asked a lead to add your laptop to the team network (Tailscale), only if you will join the robot remotely', '', 'computers.html#join'],
     ]],
     ['riptide_setup', [
       ['setup', 'Cloned riptide_setup and ran setup.bash, answering y for release', '~/osu-uwrt/riptide_setup/setup.bash', '#riptide-setup'],

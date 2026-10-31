@@ -286,8 +286,8 @@ source ~/osu-uwrt/release/install/setup.bash
       <p>That starts the simulator, Talos's whole stack and the viewer. On a machine with CUDA, the first start can take minutes while the detector builds its TensorRT engine for the forward camera (<a href="#gpu">above</a>). <a href="launch.html">Launching the stack</a> and <a href="perception/workflow.html">Working on it yourself</a> go from here.</p>
     </div>
     <figure class="fig">
-      <img class="media" data-src="img/setup/nereus-viewer.webp" width="1728" height="1080" loading="lazy" alt="The Nereus viewer: a 3D pool with the RoboSub 2026 course, the forward and downward camera images on the right, motion and autonomy panels on the left.">
-      <figcaption><b>The viewer, before the simulator connects.</b> The RoboSub 2026 course in scene preview ("Preview / controls disconnected"): the pool and props in the middle, both cameras on the right, motion and autonomy panels on the left. Once the sim is up, the panels fill with Talos's live pose and the cameras show the simulator's images. Screenshot from the Nereus repo.</figcaption>
+      <img class="media" data-src="media/nereus/viewer-startup-killed.webp" width="1600" height="1000" loading="lazy" alt="The Nereus viewer right after sim.launch.py: a green Enable button and 'Robot: killed' at the top, the Motion and Autonomy panels on the left, Talos in the pool in the middle, the forward and downward camera images on the right.">
+      <figcaption><b>The viewer right after <code>sim.launch.py</code>.</b> Talos is killed until you press <b>Enable</b>. On the left, the Motion panel shows its pose (dashes for the commanded values) and the Autonomy panel waits for a tree; in the middle, the pool; on the right, both cameras and the actuators. This is the viewer's default light theme.</figcaption>
     </figure>
 
     <div class="prose">

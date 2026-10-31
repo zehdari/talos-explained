@@ -18,7 +18,7 @@
     <aside class="short"><span class="label">The short version</span><ul>
       <li>The MPC takes a goal two ways: a setpoint per half on <code>controller/linear</code> and <code>controller/angular</code>, or a <code>follow_path</code> action that flies waypoints as one curve. Autonomy uses both; people use the Nereus viewer.</li>
       <li>Every 50 ms the MPC turns its thrust into RPM and writes one raw CAN frame per ESC board.</li>
-      <li>The POAC board kills if the physical switch is out, or if any of four software slots asserts kill or goes silent. The viewer owns slot 1.</li>
+      <li>The POAC board kills if the physical switch is out, or if any of its three software slots asserts kill or (for heartbeat slots) goes silent for 500 ms. The viewer owns slot 1.</li>
       <li>Several layers stop the thrusters on their own: ESC power, the ESC boards' 0.5 s command timeout, and the MPC's zeros when killed, disabled or without odometry.</li>
       <li>A kill doesn't clear the MPC's goal. It cuts a running path short and leaves the path's last point as the setpoint. Only a <code>DISABLED</code> command clears it.</li>
     </ul></aside>
@@ -49,7 +49,7 @@
         </tbody>
       </table>
       <ul>
-        <li>The node starts with both halves <code>DISABLED</code>, so nothing moves until both have a mode (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc.cpp#L353"><code>mpc.cpp</code></a>).</li>
+        <li>The node starts with both halves <code>DISABLED</code> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/include/riptide_mpc/mpc.hpp#L15"><code>mpc.hpp</code></a>), and either half disabled gives zero thrust (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc.cpp#L353"><code>mpc.cpp</code></a>), so nothing moves until both have a mode.</li>
         <li>A <code>POSITION</code> setpoint isn't chased directly. The reference glides to it along the S-curve from <a href="control/reference.html">Chapter 4</a>.</li>
         <li><strong>The reference outlives a kill.</strong> Only a <code>DISABLED</code> command clears it, so after the switch goes back in, Talos returns to its last setpoint.</li>
         <li><strong>A kill mid-path skips the rest of the path.</strong> The kill aborts it (<code>PROGRESS_FAIL</code>, in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1324"><code>tick</code></a>) and <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1045"><code>finishPath</code></a> makes the path's <em>last</em> point the setpoint. For a path you sent by hand, Talos flies straight there when the switch goes back in, past the waypoints in between. In a tree, <code>FollowPath</code> fails instead. If that ends the tree, the tree runner sends <code>DISABLED</code> on both halves, as it does whenever a tree ends (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L248"><code>DoTask.cpp</code></a>).</li>
@@ -192,12 +192,8 @@
         <li>The board starts killed, and stays killed while it has no micro-ROS connection (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/main.c#L317"><code>main.c</code></a>).</li>
         <li>A kill blocks arming and torpedo fire (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/ros_torp.c#L92"><code>ros_torp.c</code></a>), but not the dropper, and it doesn't disarm armed actuators (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L61">a <code>TODO</code></a>). Treat them as live.</li>
       </ul>
-      <p>The result drives a soft-kill pin that cuts ESC power (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L91"><code>safety_interface.c</code></a>) and goes out on <code>state/kill</code>. The ESC boards treat that as a heartbeat: killed, silent for 500 ms or not yet heard, and they kill too (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/ros.c#L85"><code>ros.c</code></a>). After power returns they wait 5 s (<code>ESC_POWERON_DELAY</code>) for the ESCs to start.</p>
+      <p>The result drives a soft-kill pin that cuts ESC power (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L91"><code>safety_interface.c</code></a>) and goes out on <code>state/kill</code>. The ESC boards treat that as a heartbeat: killed, silent for 500 ms or not yet heard, and they kill too (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/ros.c#L85"><code>ros.c</code></a>). After power returns they wait 5 s (<code>ESC_POWERON_DELAY</code>) for the ESCs to start. The hardware path (switch, DG448, P-FETs) is in <a href="boards.html#kill">The circuit boards, The kill switch, in hardware</a>.</p>
     </div>
-    <figure class="fig">
-      <div class="panel"><a class="sch-link" href="img/commanding/poac-kill-switch.webp"><img class="media sch" data-src="img/commanding/poac-kill-switch.webp" width="1800" height="632" loading="lazy" alt="Schematic of the POAC board's kill switch circuit: the KILL_SWITCH input feeds a MOSFET to the PHYS_KILLSWITCH microcontroller pin and, through a DG448 analog switch controlled by SOFTWARE_KILL, the MOTOR_EN line that drives three gate drivers and P-channel MOSFETs between V+ and MOTOR_PWR."></a></div>
-      <figcaption><b>The kill circuit on the POAC board.</b> The switch line (<code>KILL_SWITCH</code>, left) goes to the microcontroller as <code>PHYS_KILLSWITCH</code> (slot 0), and through analog switch U13, which passes it on as <code>MOTOR_EN</code> only while <code>SOFTWARE_KILL</code> says "run". <code>MOTOR_EN</code> switches the MOSFETs Q2 to Q4 that feed the ESCs (<code>MOTOR_PWR</code>). R3 holds <code>SOFTWARE_KILL</code> at "kill" while the chip isn't driving it. Page 7 of the <a href="https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator">Combined_Power_Actuator</a> schematic. Tap it to open it full size.</figcaption>
-    </figure>
     <div class="prose">
       <h3 id="viewer-slot">Slot 1 belongs to the Nereus viewer</h3>
       <ul>
@@ -256,6 +252,7 @@ ros2 topic pub --once /talos/controller/linear  riptide_msgs2/msg/ControllerComm
 <pre class="cmd" data-where="laptop"><code>ros2 topic pub -r 20 /talos/command/software_kill riptide_msgs2/msg/KillSwitchReport \
   "{sender_id: cli_$USER, kill_switch_id: 3, switch_asserting_kill: true, switch_needs_update: true}"</code></pre>
       <p>Stopping that publisher doesn't un-kill: slot 3 times out, which counts as a kill. To clear it, publish <code>switch_asserting_kill: false</code> with <code>switch_needs_update: false</code> from the same sender. That latches slot 3 clear until the board reboots.</p>
+      <p>In Nereus this does nothing: the simulator only honours slot 1 (the viewer's) and has no timeout (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/bridges/uwrt_talos/bridge.yaml#L103"><code>bridge.yaml</code></a>), so practise slot 3 only against the real POAC board, with the propellers clear.</p>
       <div class="callout safety"><span class="label">Before you clear slot 3</span>
         <p>If no other slot is asserting kill when you clear it, Talos is enabled at once, with nobody driving. Make sure something else holds a kill first: the viewer open and not enabled, or a <code>needs_update</code> kill of your own on slot 1 that will time out into a kill. That is the order in the simulator's <em>Bench hold</em> story above.</p>
       </div>

@@ -204,6 +204,32 @@ const g = new Graph(document.getElementById('loop-graph'), {
     { from: 'sensors', to: 'ekf', bend: 95, dash: true, label: 'fused separately' },
     { from: 'mpc', to: 'autonomy', label: 'trust', bend: -80, dash: true },
   ],
+  // Phones: the forward path runs down the left column, the feedback climbs the right one.
+  narrow: {
+    below: 600,
+    width: 360,
+    height: 510,
+    nodes: {
+      autonomy: { x: 92, y: 36 },
+      reference: { x: 92, y: 132 },
+      mpc: { x: 92, y: 240 },
+      thrusters: { x: 92, y: 352 },
+      talos: { x: 92, y: 470 },
+      estimator: { x: 272, y: 240 },
+      ekf: { x: 268, y: 352, w: 128 },
+      sensors: { x: 268, y: 470 },
+    },
+    edges: {
+      'autonomy>reference': { lx: 100, ly: 88, anchor: 'start' },
+      'reference>mpc': { lx: 100, ly: 190, anchor: 'start' },
+      'mpc>thrusters': { lx: 100, ly: 300, anchor: 'start' },
+      'thrusters>talos': { lx: 100, ly: 415, anchor: 'start' },
+      'sensors>estimator': { via: [356, 352], lx: 352, ly: 300, anchor: 'end' },
+      'ekf>estimator': { lx: 262, ly: 300, anchor: 'end' },
+      'sensors>ekf': { bend: 0, lx: 260, ly: 415, anchor: 'end' },
+      'mpc>autonomy': { bend: 0, via: [200, 138], lx: 178, ly: 132 },
+    },
+  },
   info: (n) => {
     const b = blurb[n ? n.id : 'mpc'];
     info.innerHTML = `<b style="font-size:1rem">${b[0]}</b><br>${b[1]} <a class="src" href="${SRC}/${b[2]}">${b[2]}</a>`;

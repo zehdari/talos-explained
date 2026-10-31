@@ -87,7 +87,7 @@
      "sim_hz": null,
      "sim_only": false,
      "robot": "",
-     "note": "Position half of each command (map frame)",
+     "note": "Position half of each command: typed in map, sent in world (= odom), the MPC's frame",
      "when": "",
      "peers_note": ""
     },
@@ -159,7 +159,7 @@
      "sim_hz": null,
      "sim_only": true,
      "robot": "",
-     "note": "Actual pose: world \u2192 talos/base_link",
+     "note": "Actual pose: map \u2192 talos/base_link, and world \u2192 map to convert commands",
      "when": "",
      "peers_note": ""
     }
@@ -355,7 +355,7 @@
      "rate": null,
      "sim_hz": null,
      "sim_only": true,
-     "robot": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
+     "robot": "Nothing: no POAC build subscribes to it, so Open / Close claw only act in sim",
      "note": "Open claw (needs Arm)",
      "when": "",
      "peers_note": ""
@@ -371,7 +371,7 @@
      "rate": null,
      "sim_hz": null,
      "sim_only": true,
-     "robot": "No subscriber found in titan_firmware or the robot stack: only the simulator uses it",
+     "robot": "POAC firmware on the unmerged poac-multiple-servos branch only (not master). There 0 is an integer divide by zero: don't press Stop claw on the robot",
      "note": "Stop claw (needs Arm)",
      "when": "",
      "peers_note": ""

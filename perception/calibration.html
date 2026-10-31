@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cameras and calibration · How Talos sees</title>
+<title>Cameras and calibration · How Talos works</title>
 <meta name="description" content="How a camera turns the world into pixels (intrinsics, lens distortion, extrinsics), how a stereo camera measures depth, why the factory calibration is wrong underwater, and how the team calibrates Talos's ZED X Mini cameras with a ChArUco board.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Vision · Chapter 1</div>
+    <div class="kicker">Perception · Chapter 1</div>
     <h1>Cameras and calibration</h1>
     <p class="lede">To turn a pixel into a position, the software needs the exact numbers for how the camera makes images. Underwater, the factory numbers are wrong.</p>
   </header>
@@ -22,6 +22,8 @@
   </ul></aside>
   <article>
     <div class="prose">
+      <p>This chapter is the maths and procedure behind the numbers. The hardware itself (the two ZED X Minis, how they are launched, their topics and frame rates) is in <a href="../cameras.html">The cameras</a>.</p>
+
       <h2 id="pinhole">From a point to a pixel</h2>
       <p>The vision code treats each camera as a <strong>pinhole</strong>: every ray passes through one point, the optical centre. The camera frame sits there, with <span class="m">z</span> out of the lens, <span class="m">x</span> right and <span class="m">y</span> down (the <em>optical frame</em>, e.g. <code>talos/ffc_left_camera_optical_frame</code>). A point <span class="m">(x, y, z)</span> lands on pixel</p>
       <div class="M">u = f_x\,\frac{x}{z} + c_x, \qquad v = f_y\,\frac{y}{z} + c_y \qquad\Longleftrightarrow\qquad \begin{bmatrix} u \\ v \\ 1 \end{bmatrix} \propto \underbrace{\begin{bmatrix} f_x & 0 & c_x \\ 0 & f_y & c_y \\ 0 & 0 & 1 \end{bmatrix}}_{K} \begin{bmatrix} x \\ y \\ z \end{bmatrix}</div>

@@ -1,5 +1,5 @@
 import './style.css';
-import katex from 'katex';
+import './css/chapter.css';
 import { PARTS, ALL } from './site.js';
 
 export { PARTS, ALL };
@@ -44,8 +44,20 @@ function appendixLinks(APPENDIX) {
   });
 }
 
+// KaTeX (and its CSS and fonts) loads only on pages that have equations.
+let katex = null;
+let katexLoad = null;
+function loadKatex() {
+  katexLoad ||= Promise.all([import('katex'), import('katex/dist/katex.min.css')]).then(([m]) => { katex = m.default; });
+  return katexLoad;
+}
+
+// Renders .m (inline) and .M (display) TeX under root. Returns a promise that settles once it is drawn.
 function renderMath(root = document) {
-  root.querySelectorAll('.m, .M').forEach((el) => {
+  const els = [...root.querySelectorAll('.m, .M')].filter((el) => !el.dataset.done);
+  if (!els.length) return Promise.resolve();
+  if (!katex) return loadKatex().then(() => renderMath(root));
+  els.forEach((el) => {
     if (el.dataset.done) return;
     const tex = el.textContent;
     const display = el.classList.contains('M');
@@ -53,6 +65,7 @@ function renderMath(root = document) {
     el.dataset.done = '1';
     if (display) { el.dataset.tex = tex; fitMath(el); }
   });
+  return Promise.resolve();
 }
 
 // Splits TeX at its top-level \qquad gaps (outside braces and environments).
@@ -103,6 +116,7 @@ function fitMath(el) {
 
 let fitWidth = 0;
 function refitMath() {
+  if (!katex) return;
   const w = document.documentElement.clientWidth;
   if (w === fitWidth) return;
   fitWidth = w;
@@ -173,13 +187,22 @@ function buildRail() {
   btn.className = 'btn menu-btn';
   btn.textContent = 'Chapters';
   btn.setAttribute('aria-expanded', 'false');
+  const close = () => {
+    if (!rail.classList.contains('open')) return;
+    rail.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+  };
   btn.onclick = (e) => {
     e.stopPropagation();
     const open = rail.classList.toggle('open');
     btn.setAttribute('aria-expanded', String(open));
     if (open) rail.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'center' });
   };
-  document.addEventListener('click', (e) => { if (!rail.contains(e.target)) rail.classList.remove('open'); });
+  // The phone drawer closes on a tap outside it, on any link in it (a section link only scrolls the page behind),
+  // and on Escape.
+  document.addEventListener('click', (e) => { if (!rail.contains(e.target)) close(); });
+  rail.addEventListener('click', (e) => { if (e.target.closest('a')) close(); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && rail.classList.contains('open')) { close(); btn.focus(); } });
   // On a phone the button floats over the page: it steps out of the way while reading down (so it doesn't sit on
   // figures and headings) and comes back on any scroll up, or near the top.
   let lastY = scrollY;
@@ -197,7 +220,77 @@ function buildRail() {
   return { rail, btn };
 }
 
-const label = (c) => (c.part.chapters[0] === c && c.n !== '' ? `${c.part.title}: ${c.title}` : c.title);
+// Acronyms and team names link to their glossary entry, once per page, the first time they appear in the prose.
+// [glossary id, pattern, expansion, pages that explain the term themselves (no link there)].
+const GLOSSARY = [
+  ['poac', 'POAC', 'Power + actuator board', ['boards.html', 'electrical.html', 'actuators.html']],
+  ['ccbb', 'CCBB', 'Camera cage breakout board', ['boards.html']],
+  ['ivc-board', 'IVC', 'Inter-vehicle communication board', ['boards.html', 'sensors.html']],
+  ['fog', 'FOG', 'Fibre-optic gyro', ['sensors.html']],
+  ['dvl', 'DVL', 'Doppler velocity log', ['sensors.html']],
+  ['ekf', 'EKF', 'Extended Kalman filter', ['localization.html']],
+  ['mpc', 'N?MPC', 'Model predictive control', ['control/index.html', 'control/mpc.html']],
+  ['esc', 'ESCs?', 'Electronic speed controller', ['thrusters-hw.html', 'boards.html']],
+  ['dshot', 'DShot', '', ['thrusters-hw.html', 'firmware.html']],
+  ['tf', 'TF', 'ROS coordinate frames', ['ros2.html', 'localization.html']],
+  ['urdf', 'URDF', 'Unified Robot Description Format', ['localization.html', 'mechanical.html']],
+  ['rpac', 'RPAC', '', ['pool-test.html', 'nereus.html']],
+  ['hil', 'HIL', 'Hardware in the loop', ['launch.html']],
+  ['tdr', 'TDRs?', 'Technical Design Report', ['robosub.html']],
+  ['cob', 'COB', 'Centre of buoyancy', ['mechanical.html', 'control/identify.html']],
+  ['com', 'COM', 'Centre of mass', ['mechanical.html', 'control/model.html']],
+  ['can-fd', 'CAN[ \u00a0-]FD', '', ['firmware.html', 'boards.html', 'computers.html']],
+  ['subconn', 'SubConns?', '', ['electrical.html', 'mechanical.html']],
+  ['opbox', '[Oo]pbox', 'Operator box', ['computers.html']],
+  ['op-top', 'op-top', 'Operator laptop', ['computers.html']],
+  ['zenoh', 'Zenoh', '', ['computers.html', 'ros2.html']],
+];
+const NO_GLOSSARY = 'a, code, pre, kbd, svg, figure, h1, h2, h3, h4, button, label, .katex, .m, .M, .hero, .controls, .next, .rail, [data-no-gl]';
+function glossaryLinks(main) {
+  const here = herePath();
+  if (here === 'glossary.html') return;
+  const todo = GLOSSARY.filter((t) => !t[3].includes(here));
+  if (!todo.length) return;
+  const re = new RegExp(`(?<![\\w-])(?:${todo.map((t) => `(${t[1]})`).join('|')})(?![\\w-])`, 'g');
+  const done = new Set();
+  const texts = [];
+  const walk = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => (n.parentElement.closest('p, li, dd') && !n.parentElement.closest(NO_GLOSSARY) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+  });
+  while (walk.nextNode()) texts.push(walk.currentNode);
+  for (const node of texts) {
+    if (done.size === todo.length) break;
+    let rest = node;
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(rest.data))) {
+      const i = m.slice(1).findIndex((g) => g !== undefined);
+      const [id, , exp] = todo[i];
+      if (done.has(id)) continue;
+      done.add(id);
+      const word = rest.splitText(m.index);
+      rest = word.splitText(m[0].length);
+      const a = document.createElement('a');
+      a.className = 'gl';
+      a.href = url(`glossary.html#term-${id}`);
+      if (exp) a.title = exp;
+      word.replaceWith(a);
+      a.appendChild(word);
+      re.lastIndex = 0;
+    }
+  }
+}
+
+// A kicker of the form 'Part · Chapter n' takes its number from src/site.js, so reordering chapters there renumbers it.
+function numberKicker() {
+  const k = document.querySelector('.page-head .kicker');
+  const c = ALL.find((x) => x.href === herePath());
+  if (!k || !c || !/^[^·]+ · (Chapter|Appendix) \w+$/.test(k.textContent.trim())) return;
+  k.textContent = `${c.part.title} · ${c.appendix || /^[A-Z]$/.test(c.n) ? 'Appendix' : 'Chapter'} ${c.n}`;
+}
+
+// 'Perception: Overview' for a part's own overview page (chapter 0), else the chapter title.
+export const label = (c) => (c.n === '0' ? `${c.part.title}: ${c.title}` : c.title);
 
 function nextPrev() {
   const here = herePath();
@@ -205,7 +298,8 @@ function nextPrev() {
   const slot = document.querySelector('.next');
   if (!slot || i < 0) return;
   const prev = ALL[i - 1], next = ALL[i + 1];
-  const tag = (c) => (c.part !== ALL[i].part ? ` · ${c.part.title}` : '');
+  // a chapter in another part names that part, unless its label already does
+  const tag = (c) => (c.part !== ALL[i].part && c.n !== '0' ? ` · ${c.part.title}` : '');
   slot.innerHTML = `${prev ? `<a href="${url(prev.href)}"><small>Previous${tag(prev)}</small><strong>${label(prev)}</strong></a>` : '<span></span>'}${next ? `<a href="${url(next.href)}" style="text-align:right"><small>Next${tag(next)}</small><strong>${label(next)}</strong></a>` : ''}`;
 }
 
@@ -223,9 +317,11 @@ export function setup(opts = {}) {
   shell.appendChild(rail);
   shell.appendChild(main);
   document.body.appendChild(btn);
-  renderMath();
+  numberKicker();
+  glossaryLinks(main);
   fitWidth = document.documentElement.clientWidth;
-  document.fonts?.ready.then(() => { fitWidth = 0; refitMath(); }); // widths change once KaTeX's fonts arrive
+  // widths change once KaTeX's fonts arrive
+  renderMath().then(() => document.fonts?.ready).then(() => { fitWidth = 0; refitMath(); });
   let t = 0;
   addEventListener('resize', () => { clearTimeout(t); t = setTimeout(refitMath, 150); });
   if (opts.appendix) appendixLinks(opts.appendix);

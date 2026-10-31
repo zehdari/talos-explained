@@ -19,7 +19,7 @@
       <li>Two <span class="term">smart battery housings</span>, each holding a MaxAmps 8000 mAh 5S LiPo (18.5 V nominal, 148 Wh) with its own protection board. An ideal-diode OR on the POAC board lets whichever pack is higher carry the bus.</li>
       <li>The <span class="term">kill switch</span> only cuts <code>MOTOR_PWR</code>, the ESC supply. The Orin, sensors and boards stay on, so a kill never reboots anything.</li>
       <li>Two 20 A regulator modules make <strong>15 V</strong> (Orin, DVL) and <strong>5 V</strong> (logic, switch, fans). Every board makes its own 3.3 V. The rail called <code>twelve_volt_voltage</code> is really 15 V.</li>
-      <li>Data: one <strong>CAN FD</strong> bus runs through every board to the Orin (<code>can0</code>). The batteries sit on a second, slower bus. Ethernet joins the Orin, the DVL and the tether.</li>
+      <li>Data: one <strong>CAN</strong> bus (1 Mbit/s) runs through every board to the Orin (<code>can0</code>). The batteries sit on a second, slower bus. Ethernet joins the Orin, the DVL and the tether.</li>
       <li>Thrusters dominate the peak draw: about 26 A at the peak of an aggressive pool run, estimated from T200 data. The ESCs' own current telemetry is not usable.</li>
     </ul></aside>
 
@@ -156,7 +156,7 @@
         <figure><a href="media/boards/poac-sch-battery-or.webp" target="_blank" rel="noopener"><img class="media el-sheet" src="/media/boards/poac-sch-battery-or.webp" width="1470" height="630" loading="lazy" alt="Schematic: the port battery input goes through two P-channel MOSFETs controlled by an LTC4412 ideal-diode controller onto V+; the controller's STAT pin becomes PORT_STAT."></a></figure>
         <figure><a href="media/boards/poac-sch-regulators.webp" target="_blank" rel="noopener"><img class="media el-sheet" src="/media/boards/poac-sch-regulators.webp" width="1466" height="1250" loading="lazy" alt="Schematic: two TDK-Lambda modules PS1 and PS2 take Vreg and make 15 V and 5 V, each set by a trim resistor (1.24 k and 8.56 k) with input and output capacitors."></a></figure>
       </div>
-      <figcaption><b>The POAC's battery input and regulators</b>, from the exported schematic (<a href="https://github.com/osu-uwrt/electric_boogaloo/releases/tag/talos_boards">talos_boards release</a>, page 5). Left: one half of the ideal-diode OR. Right: the 15 V and 5 V modules, identical but for the trim resistor. Tap a sheet to open it full size.</figcaption>
+      <figcaption><b>The POAC's battery input and regulators</b>, from the exported schematic (<a href="https://github.com/osu-uwrt/electric_boogaloo/releases/tag/talos_boards">talos_boards release</a>, page 5). First sheet: one half of the ideal-diode OR. Second: the 15 V and 5 V modules, identical but for the trim resistor. Tap a sheet to open it full size.</figcaption>
     </figure>
     <div class="prose">
       <h3 id="measured">What the POAC measures</h3>
@@ -264,7 +264,7 @@
         <figure><img class="media el-light" src="/img/electrical/tdr23-cages.webp" width="1029" height="621" loading="lazy" alt="Photo of Talos's two red electronics cages: the camera cage with the camera cage breakout board, fan and stereo camera, and the board stack cage holding, from top, the actuator board, two ESC boards and the power board."></figure>
         <figure><img class="media el-light" src="/img/electrical/tdr24-board-cage.webp" width="748" height="1180" loading="lazy" alt="Exploded render of the 2024 board cage: printed top frame, aluminium LED PCB, LED control PCB, acoustics board, two ESC PCBs, a fan block carrying the Hall-effect kill and AUX switches, the POAC PCB and the printed base."></figure>
       </div>
-      <figcaption><b>The cages.</b> Left: the Mark 2 cages in 2023, when separate power and actuator boards were still in the stack (2023 report, figure 5). Right: the 2024 stack, with the combined POAC board at the bottom and the Hall-effect kill and AUX switches on the fan block (2024 report, figure 17). The 2026 report shows the IVC board on the stack link where the 2024 acoustics board was.</figcaption>
+      <figcaption><b>The cages.</b> First: the Mark 2 cages in 2023, when separate power and actuator boards were still in the stack (2023 report, figure 5). Second: the 2024 stack, with the combined POAC board at the bottom and the Hall-effect kill and AUX switches on the fan block (2024 report, figure 17). The 2026 report shows the IVC board on the stack link where the 2024 acoustics board was.</figcaption>
     </figure>
 
     <div class="prose">
@@ -273,22 +273,21 @@
       <table class="params">
         <thead><tr><th>Bus</th><th>Protocol</th><th>Who</th><th>On the Orin</th></tr></thead>
         <tbody>
-          <tr><td>Internal</td><td>CAN FD, 1 Mbit/s, 5 Mbit/s data</td><td>POAC (1), ESC boards (2, 3), camera cage (4), LED (6), IVC (8)</td><td><code>can0</code></td></tr>
+          <tr><td>Internal</td><td>Classic CAN, 1 Mbit/s</td><td>POAC (1), ESC boards (2, 3), camera cage (4), LED (6), IVC (8)</td><td><code>can0</code></td></tr>
           <tr><td>External</td><td>Classic CAN, 250 kbit/s</td><td>Battery housings (their serial numbers)</td><td><code>can1</code></td></tr>
         </tbody>
       </table>
       <ul>
-        <li><strong>One chain.</strong> The internal bus runs Orin HAT → camera cage board → POAC → ESC board 0 → ESC board 1 → IVC → LED board, on the same Mini-Fit cables as the power (2026 report). Rates are set in <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_boards/include/robots/talos.h#L16-L25"><code>robots/talos.h</code></a>.</li>
+        <li><strong>Classic, not FD, in practice.</strong> <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_boards/include/robots/talos.h#L16-L25"><code>robots/talos.h</code></a> configures the internal bus for CAN FD with a 5 Mbit/s data phase, but the boards send only classic frames (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/driver_canbus/src/can_interface.c#L356">"TODO: Enable CAN FD"</a>) and the Orin brings <code>can0</code> up as classic CAN at 1 Mbit/s (<a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/config_target/configure_jetpack.bash#L51-L67"><code>configure_jetpack.bash</code></a>). Details in <a href="firmware.html#can">Firmware on the boards, CAN and CANmore</a>.</li>
+        <li><strong>One chain.</strong> The internal bus runs Orin HAT → camera cage board → POAC → ESC board 0 → ESC board 1 → IVC → LED board, on the same Mini-Fit cables as the power (2026 report).</li>
         <li><strong>Termination.</strong> A CAN bus needs about 120 Ω at each end and none in the middle. Every board has a slide switch for split termination (two 60.4 Ω resistors). Only the two boards at the ends of the chain should have it on. The designs don't say which switches are on in Talos: check before adding a board.</li>
         <li><strong>The external bus</strong> leaves the Orin HAT through the camera cage board, whose <code>EXT. CAN</code> jacks also carry 15 V. The 2026 diagram connects it to both battery packs.</li>
         <li><strong>Ethernet</strong> joins the Orin, the DVL and the tether through a 5 V switch in the camera cage. Addresses and the tether are in <a href="computers.html">Computers and networks</a>.</li>
       </ul>
       <h3 id="why-can">Why CAN</h3>
       <ul>
-        <li><strong>Mark 1 was a hub.</strong> Its electronics "forwarded all control signals between the electronics boards and the primary computer through a single microcontroller" (<a href="https://org.osu.edu/osu-uwrt/files/2023/06/TDR_THEOhioStateUniversity_RS2023.pdf">2023 report</a>).</li>
-        <li><strong>What broke.</strong> At a pool test in fall 2021, an adapter stretched the I2C bus to about three feet to reach the depth sensor on the other side of the vehicle, and it started causing signal issues (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/tools/DeviceList.jsonc#L267-L279"><code>DeviceList.jsonc</code></a>).</li>
-        <li><strong>What the team decided.</strong> The failure helped "convince us to not have a common i2c bus (as we planned in the original mark 2 spec) and instead throw an RP2040 on every board", linked by CAN. I2C now runs only a few centimetres on each board, plus the cable from the camera cage board to the depth sensor.</li>
-        <li><strong>Why CAN.</strong> It is differential, so the signal holds up over longer cables. It detects errors, and many nodes share one pair of wires (2023 report).</li>
+        <li><strong>Built for the job.</strong> CAN is differential, so the signal holds up over longer cables. It detects errors, and many nodes share one pair of wires (<a href="https://org.osu.edu/osu-uwrt/files/2023/06/TDR_THEOhioStateUniversity_RS2023.pdf">2023 report</a>).</li>
+        <li><strong>One RP2040 per board.</strong> Why every board got its own microcontroller (a failed I2C run at a 2021 pool test) is told in <a href="boards.html#rp2040">The circuit boards, One microcontroller on every board</a>.</li>
       </ul>
     </div>
     <figure class="fig">
@@ -308,18 +307,7 @@
       </ul>
 
       <h2 id="workflow">Designing a board</h2>
-      <p>The team designs its boards in <strong>Altium Designer</strong>. Every project, library and template lives in one repo, <a href="https://github.com/osu-uwrt/electric_boogaloo">osu-uwrt/electric_boogaloo</a>. Its <a href="https://github.com/osu-uwrt/electric_boogaloo/blob/master/ProjectCreation.md"><code>ProjectCreation.md</code></a> is the setup guide:</p>
-      <ol>
-        <li><strong>Once per computer:</strong> import <code>UWRTPreferences.DXPPrf</code>. Point Altium's document path at the repo and its library path at <code>Library/</code>. Register <code>UWRT_Template_Project</code> as a template, with <code>Sch_Sheet_Template</code> as the default schematic sheet.</li>
-        <li><strong>New project:</strong> create it from <code>UWRT_Project_Template</code> (no spaces in the name). Rename the sheets <code>ProjectName_SheetName.SchDoc</code>, and keep only the PCB template for your layer count. There are 2- and 4-layer templates in two sizes.</li>
-        <li><strong>Parameters:</strong> set <code>ProjectTitle</code> and <code>TeamLead</code>. Leave <code>BoardRevision</code> at 1.0 and fill in <code>DateOfDesignReview</code> once the board has had its design review. On each sheet, set <code>Date</code>, <code>Author</code> and <code>Title</code>. They fill the title block.</li>
-        <li><strong>Libraries:</strong> add every library in <code>Library/</code> (capacitors, connectors, converters, ICs, the team's <code>UWRT.SchLib</code> and <code>UWRT.PcbLib</code>, and so on).</li>
-      </ol>
-      <ul>
-        <li><strong>Reuse the device sheets.</strong> Every Talos board with a microcontroller places <code>Device_Sheets/RP2040_with_CAN.SchDot</code>: the RP2040, flash, crystal, CAN FD controller and transceiver, status LED and termination switch. Every board then shares a pin map, which is why one firmware library runs them all.</li>
-        <li><strong>Design rules</strong> for JLCPCB's 4-layer process are in <code>JLCPCB_4Layers.RUL</code>, with the matching stackup. The table below is parsed from those files.</li>
-        <li><strong>Releases.</strong> Exported schematic PDFs are attached to repo releases (<code>Tempest_mk_2</code>, <code>talos_boards</code>, <code>ssfb_boards</code>). Those are the easiest way to read a board without Altium.</li>
-      </ul>
+      <p>The team designs its boards in <strong>Altium Designer</strong>, in one repo, <a href="https://github.com/osu-uwrt/electric_boogaloo">osu-uwrt/electric_boogaloo</a>. The Altium setup, the shared <code>RP2040_with_CAN</code> sheet and the order steps are in <a href="boards.html#design">The circuit boards, From idea to a board</a>. The team's JLCPCB 4-layer design rules (<code>JLCPCB_4Layers.RUL</code>, with the matching stackup) are parsed below.</p>
     </div>
     <figure class="fig narrow">
       <div class="panel" id="rules"></div>

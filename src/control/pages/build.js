@@ -41,5 +41,5 @@ setup();
     ['nereus_path_corner', 'Through the rounded corner'],
     ['nereus_follow_arc', 'On the 180° arc'],
   ];
-  g.innerHTML = shots.map(([f, alt]) => `<a href="${base}${f}.png"><img src="${base}${f}.webp" alt="Nereus viewer: ${alt}" loading="lazy" style="width:100%;display:block;aspect-ratio:1400/780;object-fit:cover"></a>`).join('');
+  g.innerHTML = shots.map(([f, alt]) => `<a href="${base}${f}_full.webp"><img src="${base}${f}.webp" alt="Nereus viewer: ${alt}" loading="lazy" style="width:100%;display:block;aspect-ratio:1400/780;object-fit:cover"></a>`).join('');
 }

@@ -3,6 +3,7 @@
 .map-fly { margin-top: 0.8rem; margin-bottom: 0.4rem; }
 .map-fly .seg { margin-left: auto; }
 .map-muted { color: var(--muted); }
+.map-log .map-muted { color: var(--water-deep); }
 .map-readout { font-family: var(--sans); font-size: 0.84rem; color: var(--ink-2); }
 .map-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.4rem 1rem; margin: 0.6rem 0 0.2rem; font-variant-numeric: tabular-nums; }
 .map-summary small { display: block; color: var(--muted); font-size: 0.76rem; }

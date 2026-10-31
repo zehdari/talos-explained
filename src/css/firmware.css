@@ -19,6 +19,8 @@
 .lib-head { display: grid; grid-template-columns: minmax(9.5rem, 12rem) minmax(0, 1fr) auto; gap: 0 0.9rem; font-family: var(--sans); font-size: 0.74rem; color: var(--muted); padding: 0 0.1rem 0.3rem; }
 .lib-head .lu { display: flex; gap: 3px; }
 .lib-head .lu span { width: 9px; text-align: center; font-size: 0.62rem; }
+.lib-key { margin: 0 0 0.5rem; font-family: var(--sans); font-size: 0.78rem; color: var(--muted); }
+.lib-key b { font-weight: 650; color: var(--ink-2); }
 @media (max-width: 640px) {
   .lib-row, .lib-head { grid-template-columns: minmax(0, 1fr) auto; }
   .lib-row .ld { grid-column: 1 / -1; grid-row: 2; }

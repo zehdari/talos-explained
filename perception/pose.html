@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>From a mask to a pose · How Talos sees</title>
+<title>From a mask to a pose · How Talos works</title>
 <meta name="description" content="How tensor_detector turns a YOLO mask and a depth image into a 3D pose: grid sampling, back-projection, the MAD depth gate, two outlier passes, an SVD plane fit and the centroid, on real Nereus frames.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Vision · Chapter 4</div>
+    <div class="kicker">Perception · Chapter 4</div>
     <h1>From a mask to a pose</h1>
     <p class="lede">The mask says which pixels are the object; depth says how far each is. Together they give a few hundred 3D points, and a plane through them gives position and facing.</p>
   </header>
@@ -81,7 +81,7 @@
     <div class="prose">
       <h2 id="output">What comes out</h2>
       <p>Each box with five or more points left becomes one <code>Detection3D</code>: class, confidence, centroid and quaternion in the camera's optical frame, with no covariance (Chapter 6 decides its weight). A box whose points don't survive publishes nothing. That is the common failure: a mask mostly on invalid depth (image edge, reflective surface, open water) is seen but never mapped.</p>
-      <p>The filtered samples also feed the debug point cloud and the dots on the annotated image, so RViz and Foxglove show exactly what the plane was fitted to.</p>
+      <p>The filtered samples also feed the debug point cloud (<code>yolo_orientation/point_cloud</code>, published only while something subscribes) and the dots on the annotated image. Tick <em>YOLO detections</em> in the <a href="../viewer.html#seeing">Nereus viewer</a> to see exactly what the plane was fitted to.</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

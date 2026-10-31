@@ -653,7 +653,9 @@ function Anatomy(ifaces) {
       l._sep = l.k === 'sep' ? sepN : 0;
       const b = h('button', { type: 'button', 'aria-pressed': 'false' }, li);
       b.innerHTML = `<span class="code">${lineHtml(l)}</span>`;
-      if (l.k === 'blank') b.classList.add('blank');
+      // A blank line keeps its row (and line number) and stays tappable, but
+      // has nothing to name, so it stays out of the tab order and the a11y tree.
+      if (l.k === 'blank') { b.classList.add('blank'); b.tabIndex = -1; b.setAttribute('aria-hidden', 'true'); }
       b.addEventListener('click', () => pick(i));
     });
     const y = yamlFor(cur);

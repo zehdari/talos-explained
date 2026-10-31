@@ -54,10 +54,8 @@
     </div>
     <figure class="fig">
       <img class="media" src="/media/cad/sub-torpedo-marker-launcher-iso.webp" width="1600" height="996" loading="lazy" alt="The launcher on its own: two red torpedoes in printed tubes at the front, two spring-loaded marker tubes underneath, a spur gear on the servo shaft, the grey servo housing with its cable connector, and a long black mounting bracket.">
-      <div class="media-grid" style="margin-top:.8rem">
-        <figure><img class="media" src="/media/cad/sub-torpedo-marker-launcher-port.webp" width="1600" height="574" loading="lazy" alt="Side view of the launcher: torpedo pointing left (forward), marker spring below, servo housing behind the gear, mount to the right."><figcaption>From port: torpedo forward, marker spring below, servo behind.</figcaption></figure>
-        <figure><img class="media" src="/media/cad/sub-torpedo-marker-launcher-below.webp" width="1600" height="1299" loading="lazy" alt="The launcher from below: the two marker tube openings, the helix gears and pushing arm between the torpedo and marker tubes."><figcaption>From below: the two marker exits and the gears.</figcaption></figure>
-      </div>
+      <figure class="act-sub"><img class="media" src="/media/cad/sub-torpedo-marker-launcher-port.webp" width="1600" height="574" loading="lazy" alt="Side view of the launcher: torpedo pointing left (forward), marker spring below, servo housing behind the gear, mount to the right."><figcaption>From port: torpedo forward, marker spring below, servo behind.</figcaption></figure>
+      <figure class="act-sub act-below"><img class="media" src="/media/cad/sub-torpedo-marker-launcher-below.webp" width="1600" height="1299" loading="lazy" alt="The launcher from below: the two marker tube openings, the helix gears and pushing arm between the torpedo and marker tubes."><figcaption>From below: the two marker exits and the gears.</figcaption></figure>
       <figcaption><b>The V8 launcher</b>, from the CAD. The springs (McMaster 9435K123, four of them) store the energy; the servo only releases. The team has a newer launcher design (V10, V11) in CAD that has not been printed or tested, so this chapter describes V8.</figcaption>
     </figure>
     <div class="prose">
@@ -116,7 +114,7 @@
     </div>
     <figure class="fig narrow" id="poac-fig">
       <div class="panel flush poac-wrap">
-        <div class="poac-stage" id="poac-stage"><img src="/media/boards/poac-top.webp" width="1400" height="1003" alt="Render of the POAC circuit board, top side, with numbered rings over the parts on the actuator path."></div>
+        <div class="poac-stage" id="poac-stage"><img src="/media/boards/poac-top.webp" width="1400" height="1003" loading="lazy" alt="Render of the POAC circuit board, top side, with numbered rings over the parts on the actuator path."></div>
       </div>
       <div class="graph-note" id="poac-note">Tap a ring.</div>
       <figcaption><b>The actuator path on the POAC</b>: CAN in, the RP2040, the 12 V regulator and the servo connector. Render of the current Altium design (a board in the robot can be an older revision). Tap or hover a ring.</figcaption>
@@ -202,7 +200,7 @@
       <p>The competition tree is <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a>. Four small subtrees do all the actuator work, and the task trees wrap them:</p>
       <ul>
         <li><strong><code>SetActuatorsArmed</code></strong>: wait 1 s, then call <code>command/actuator/arm</code> (1 s limit). Wrapped in a <code>ForceSuccess</code>, so a refusal doesn't stop the tree (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L2196-L2209">L2196</a>).</li>
-        <li><strong><code>FireTorpedo</code></strong>: call <code>command/actuator/torpedo</code> (<code>CallTriggerService</code>, 1 s limit), wait 2 s, then <code>WaitForActuators</code> until <code>busy</code> is false. Wrapped in a <code>ForceSuccess</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L1004-L1015">L1004</a>).</li>
+        <li><strong><code>FireTorpedo</code></strong>: call <code>command/actuator/torpedo</code> (<code>CallTriggerService</code>, 1 s limit), wait 2 s, then <code>WaitForActuators</code>, which as written gives up at once because its timeout key is never set (<a href="mission-tree.html#watch">The competition mission, Things to watch</a>). Wrapped in a <code>ForceSuccess</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L1004-L1015">L1004</a>).</li>
         <li><strong><code>FireDropper</code></strong>: check the states aren't ERROR, wait until idle, check a marker is left, call <code>command/actuator/dropper</code>, wait 1 s, wait until idle. Also wrapped in a <code>ForceSuccess</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L977-L1003">L977</a>).</li>
         <li><strong><code>ReloadActuators</code></strong>: call <code>notify_reload</code> up to 3 times. <code>PrepForRun</code> runs it, then disarms, at the start of every run.</li>
       </ul>
@@ -227,10 +225,10 @@
       <h2 id="claw">The claw and the magnet poker</h2>
       <p>The claw (CAD <code>EMERGENCYCLAWASSEMBLY</code>) hangs below the bow on a PET mount and an aluminium box channel. Its servo turns a pinion between two gear racks (McMaster 2662N57, 20° pressure angle); each rack carries one <code>Gripper_V6</code> jaw, so the jaws close symmetrically on the centre line.</p>
     </div>
-    <figure class="fig">
+    <figure class="fig act-claw">
       <div class="media-grid">
         <figure><img class="media" src="/media/cad/sub-claw-iso.webp" width="982" height="1867" loading="lazy" alt="The claw on its own: a white mounting arm at the top, a grey box channel, the servo, and two ribbed grey jaws at the bottom on a rack-and-pinion base."><figcaption>The claw: mount, box channel, servo, rack-and-pinion jaws.</figcaption></figure>
-        <figure><img class="media" src="/media/cad/sub-claw-front.webp" width="1280" height="2217" loading="lazy" alt="The claw from the front: the two racks run side to side above two triangular ribbed jaws that meet in the middle."><figcaption>From the bow: two racks, one pinion, two jaws.</figcaption></figure>
+        <figure><img class="media" src="/img/actuators/claw-front.webp" width="1244" height="1720" loading="lazy" alt="The claw from the front: the two racks run side to side above two triangular ribbed jaws that meet in the middle."><figcaption>From the bow: two racks, one pinion, two jaws.</figcaption></figure>
       </div>
       <figcaption><b>The claw</b>, from the CAD. The servo is a separate unit (CAD <code>Servo - SER-20XX</code>, the same Blue Trail model name as the launcher's), not in a housing. The branch firmware drives the claw as Hiwonder bus servo ID 3, so here too the fitted servo is unconfirmed.</figcaption>
     </figure>

@@ -8,6 +8,8 @@ setup();
 
 const BASE = import.meta.env.BASE_URL;
 const CAD = (f) => `${BASE}media/cad/${f}.webp`;
+// 800 px copies (tools/mechanical/make_images.py) so phones skip the 1600 px renders.
+const CAD_SRCSET = (f) => `${BASE}img/mechanical/800/${f}.webp 800w, ${CAD(f)} 1600w`;
 const GH = 'https://github.com/osu-uwrt';
 const YAML = `${GH}/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml`;
 const MODEL = `${GH}/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml`;
@@ -44,7 +46,7 @@ const SYSTEMS = [
     text: 'A Nortek DVL1000 (300 m model) under the middle of the robot, on two brackets. It measures Talos\'s velocity over the pool floor.',
     facts: [['Mount', 'turned 45° (talos.yaml)'], ['Rate', '8 Hz']], link: ['sensors.html#dvl', 'Navigation sensors: DVL'] },
   { id: 'down_camera', name: 'Down camera', nodes: ['down_camera'], inside: true, anchor: [-0.126, -0.1, 0.0], img: 'sub-down-camera-below',
-    text: 'A second ZED X Mini, mounted against the bottom of the starboard tube and looking down through its wall. When the computer cage slides in, a slide-in adapter connects it, so there is no cable to plug in by hand (2025 report).',
+    text: 'A second ZED X Mini, mounted against the bottom of the starboard tube and looking down through its wall. When the camera cage slides in, a slide-in adapter connects it, so there is no cable to plug in by hand (2025 report).',
     facts: [['Frame', 'dfc'], ['Note', 'the CAD has it rolled 180° from the robot']], link: ['cameras.html', 'The cameras'] },
   { id: 'acoustics', name: 'Acoustics', nodes: ['acoustics'], anchor: [-0.127, -0.29, -0.17], explode: [0, -0.18, -0.12], img: 'ctx-acoustics-below',
     text: 'The hydrophone pod (an H1C hydrophone and its preamp in a small housing) low at the stern on the starboard side, and the transducer that sends acoustic messages on the port side.',
@@ -111,7 +113,7 @@ function renderCard(id) {
   if (!s) { card.innerHTML = OVERVIEW; return; }
   const facts = s.facts.length ? `<dl class="spec">${s.facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>` : '';
   card.innerHTML = `<h3>${s.name}</h3><p>${s.text}</p>${facts}
-    <img src="${CAD(s.img)}" alt="${s.name} highlighted on the CAD" loading="lazy">
+    <img src="${BASE}img/mechanical/800/${s.img}.webp" alt="${s.name} highlighted on the CAD" loading="lazy">
     <div class="mx-more">More: <a href="${s.link[0]}">${s.link[1]}</a></div>`;
 }
 function setSeg(seg, v) { seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v))); }
@@ -348,6 +350,7 @@ const matRows = () => [...data.materials].sort((a, b) => b.kg - a.kg).filter((m)
   });
   function show(i) {
     const [name, where, f, [w, h]] = OUT[i];
+    img.srcset = CAD_SRCSET(f);
     img.src = CAD(f);
     img.width = w; img.height = h;
     img.alt = `${name} highlighted on the CAD of Talos. ${where.replace(/<[^>]+>/g, '')}`;
@@ -550,6 +553,7 @@ const matRows = () => [...data.materials].sort((a, b) => b.kg - a.kg).filter((m)
   });
   function show(i) {
     const [f, title, text, sys] = VIEWS[i];
+    img.srcset = CAD_SRCSET(f);
     img.src = CAD(f);
     img.width = SIZES[f][0]; img.height = SIZES[f][1];
     img.alt = `Talos CAD render: ${title.toLowerCase()}. ${text}`;

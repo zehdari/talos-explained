@@ -3,19 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Which numbers matter · How Talos flies</title>
+<title>Which numbers matter · How Talos works</title>
 <meta name="description" content="Where each of Talos's model parameters comes from (CAD, the lab, Blue Robotics data, the pool), how much each matters, why mass and COM decide setpoint holding while inertia, drag and thrust decide moving, and a live lab for making the model wrong.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Chapter 3</div>
+    <div class="kicker">Control · Chapter 3</div>
     <h1>Which numbers matter</h1>
     <p class="lede">A model has dozens of numbers, and they don't all matter at the same time. Holding still depends on a handful you measure in the lab; moving depends on the ones only the pool can tell you.</p>
     <p class="lede" style="font-size:1.05rem;margin-top:.6rem">Two ideas from later chapters, in a sentence each. The controller plans around a <strong>feedforward</strong>: the thrust its model says the reference motion needs (Chapter 5). And it learns, online, a constant <strong>disturbance wrench</strong> for whatever its model gets wrong at rest, so static errors fade over about ten seconds (Chapter 7).</p>
   </header>
   <article>
+    <aside class="short"><span class="label">The short version</span><ul>
+      <li>Holding still depends only on statics: weight against buoyancy, and where the COM sits relative to the COB. Both are small differences of large numbers (1.6 N net out of about 337 N), so the lab mass and COM and the fitted volume and COB must be right.</li>
+      <li>Moving depends on dynamics: added mass, drag and the thrust curve set the tens of newtons the feedforward asks for. None of them shows up in a hold.</li>
+      <li>The learned disturbance wrench soaks up statics errors in about ten seconds. Its learning is gated off with speed, so it cannot fix drag or added mass.</li>
+      <li>The biggest move error found: the old 32 kg surge added mass more than tripled the tracking error during a surge.</li>
+      <li>Identification fits relative to the mass and COM you supply. Change the body (a new claw, a moved battery) and the model file has to be re-expressed.</li>
+    </ul></aside>
     <div class="prose">
       <h2 id="sources">Where each number comes from</h2>
       <p>Before Talos goes in the water for identification, most of its model already exists. The pool session only fits what can't be measured on land, and it fits those <em>around</em> the numbers you give it, so the land numbers have to be right first.</p>

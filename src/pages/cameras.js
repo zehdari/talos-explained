@@ -321,10 +321,10 @@ Promise.all([getJSON('fov.json')]).then(([F]) => {
     const fl = foot.map((p) => p[0]), fwdth = foot.map((p) => p[1]);
     const len = Math.max(...fl) - Math.min(...fl), wid = Math.max(...fwdth) - Math.min(...fwdth);
     note.innerHTML =
-      `<p><b style="color:var(--state)">Forward</b>, ${hfov(ffc).toFixed(1)}° × ${vfov(ffc).toFixed(1)}°. At ${D.toFixed(2)} m the image covers <b>${w.toFixed(2)} m × ${h.toFixed(2)} m</b>, ${(1000 * D / ffc.rect[0]).toFixed(1)} mm per pixel. ` +
+      `<p><b><i class="cam-sw" style="--c:var(--state)"></i>Forward</b>, ${hfov(ffc).toFixed(1)}° × ${vfov(ffc).toFixed(1)}°. At ${D.toFixed(2)} m the image covers <b>${w.toFixed(2)} m × ${h.toFixed(2)} m</b>, ${(1000 * D / ffc.rect[0]).toFixed(1)} mm per pixel. ` +
       `The ${F.props.gate_width.toFixed(1)} m gate fits across from ${gateFrom.toFixed(2)} m; the ${F.props.torpedo_board.toFixed(2)} m torpedo board fills the height at ${boardAt.toFixed(2)} m.` +
       (ffcFloor ? ` The floor enters the bottom of the image ${(ffcFloor[0] - ffc.pos[0]).toFixed(1)} m ahead.` : '') + '</p>' +
-      `<p><b style="color:var(--prediction)">Down</b>, ${hfov(dfc).toFixed(1)}° fore–aft × ${vfov(dfc).toFixed(1)}° across, ${hd.toFixed(2)} m above the floor: footprint <b>${len.toFixed(2)} m × ${wid.toFixed(2)} m</b>, ${(1000 * hd / dfc.rect[0]).toFixed(2)} mm per pixel.</p>`;
+      `<p><b><i class="cam-sw" style="--c:var(--prediction)"></i>Down</b>, ${hfov(dfc).toFixed(1)}° fore–aft × ${vfov(dfc).toFixed(1)}° across, ${hd.toFixed(2)} m above the floor: footprint <b>${len.toFixed(2)} m × ${wid.toFixed(2)} m</b>, ${(1000 * hd / dfc.rect[0]).toFixed(2)} mm per pixel.</p>`;
   }
   draw();
   let lastW = 0;

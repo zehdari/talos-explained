@@ -3,18 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Solving it every 50 ms · How Talos flies</title>
+<title>Solving it every 50 ms · How Talos works</title>
 <meta name="description" content="How riptide_mpc solves its nonlinear MPC in a few milliseconds: single shooting, finite-difference Jacobians on the quaternion manifold, condensing into a dense QP, projected Newton for box constraints, and real-time iteration with warm starts.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
+<style>
+  /* Projected Newton: the plot with its readout beside it, or under it on a phone. */
+  .qp-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.6rem; }
+  .qp-wrap svg { flex: 1 1 18rem; max-width: 28rem; }
+  .qp-read { flex: 1 1 12rem; font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; color: var(--ink); }
+  .qp-read p { margin: 0 0 0.6rem; }
+  .qp-read .key { font-size: 0.84rem; color: var(--ink-2); }
+</style>
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Chapter 6</div>
+    <div class="kicker">Control · Chapter 6</div>
     <h1>Solving it every 50 ms</h1>
     <p class="lede">The problem of Chapter 5 is nonlinear and has 240 unknowns. riptide_mpc solves it with one Gauss–Newton step per tick, on a QP small enough to factor densely, warm-started from the last plan. In C++ that takes about 11 ms.</p>
   </header>
   <article>
+    <aside class="short"><span class="label">The short version</span><ul>
+      <li>One Gauss&ndash;Newton step of the nonlinear problem per tick (real-time iteration), warm-started from last tick's plan shifted one stage.</li>
+      <li>Attitude is perturbed on the manifold (<span class="m">\boxplus</span>, <span class="m">\boxminus</span>), so the linearized state has 20 dimensions. Jacobians come from finite differences of the exact stage code.</li>
+      <li>Condensing eliminates the states: what is left is a dense QP in the 240 command changes.</li>
+      <li>Projected Newton (<code>box_qp.cpp</code>) handles the &plusmn;24 N bounds: one iteration when nothing saturates, a few when thrusters hit their limits.</li>
+      <li>A tick takes about 11 ms (median) in C++ on a desktop CPU, against a 50 ms budget. The node publishes it on <code>controller/mpc/solve_time_ms</code>.</li>
+    </ul></aside>
     <div class="prose">
       <p>Here is the whole of <code>MpcController::compute</code> after the reference is built, in order. Each step gets a section below.</p>
       <ol>

@@ -116,7 +116,7 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
     B0: 'A person confirms the O-ring sealing surfaces inside both lids are clean.',
     B1: 'SSH works, the launcher answers, the ROS graph is visible. WARN if op-top and Orin clocks differ by more than 50 ms.',
     B2: '<code>talos_launch_bench_mpc.yaml</code> is loaded; any stopped bench launch is started (sensors and perception only). WARN if <code>control_system</code> is running.',
-    B3: 'Every board reports on <code>state/firmware</code> with no faults: POAC, both ESC boards, camera cage, LED, IVC, and both battery housings with <code>--power battery</code>. Debug firmware warns; versions are only shown.',
+    B3: 'Every board reports on <code>state/firmware</code> with no faults: POAC, both ESC boards, camera cage, LED, IVC, and both battery housings with <code>--power battery</code> (they report over <code>can1</code>, whose agent is off for now, so expect them missing). Debug firmware warns; versions are only shown.',
     B4: `Rails in range: 15 V rail 14.7–16.0 V, 5 V 4.7–5.7 V, 3.3 V 3.2–3.4 V. On batteries, the bus at least ${P.battery_min_v} V.`,
     B5: `Minimum rates in Hz, one topic at a time for 5 s: ${rates}.`,
     B6: 'Information only: <code>state/kill</code>, the physical switch, and who is asserting a software kill.',
@@ -276,7 +276,7 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
   // Positions in the 1480 x 940 screenshot. What each control does: nereus docs/viewer.md.
   const SPOTS = [
     [176, 62, 'KILL / Enable', 'One button, also at the top of the Motion panel. The viewer starts on KILL; Enable clears slot 1 and latches, so Talos keeps running if the tether comes off.'],
-    [856, 62, 'Health chips', '<code>FOG</code> temperature (amber at 55 °C), <code>DVL</code> bottom lock, <code>CPU</code> temperature (only with the diagnostics launch, no longer started), <code>PORT</code> and <code>STBD</code> battery charge (amber below 50 %, red below 20 %). A red <code>BAG</code> chip appears while a bag records.'],
+    [856, 62, 'Health chips', '<code>FOG</code> temperature (amber at 55 °C), <code>DVL</code> bottom lock, <code>CPU</code> temperature (only with the diagnostics launch, no longer started), <code>PORT</code> and <code>STBD</code> battery charge (amber below 50 %, red below 20 %; gray for now, as the <code>can1</code> agent that carries <code>state/battery</code> is off). A red <code>BAG</code> chip appears while a bag records.'],
     [1279, 62, 'Edit map', 'Ctrl+M. Moves the props in riptide_mapping\'s prior map to where they are in this pool.'],
     [516, 18, 'Search, Ctrl+P', 'Typed moves (<code>forward 0.5</code>, <code>turn 30</code>) and plots (<code>plot disturbance</code>).'],
     [370, 207, 'Motion', 'Actual, commanded and error per axis. Watch the error column on the first small moves.'],

@@ -9,42 +9,66 @@ setup();
 // ---------- manifold picture ----------
 {
   const host = document.getElementById('manifold-fig');
-  const W = 560, H = 330, cx = 200, cy = 175, R = 125;
-  const svg = el('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, style: 'touch-action:none' }, host);
-  el('circle', { cx, cy, r: R, fill: 'none', stroke: 'var(--ink-2)', 'stroke-width': 1.5 }, svg);
-  el('text', { class: 'label', x: cx, y: cy + 4, 'text-anchor': 'middle' }, svg).textContent = 'unit attitudes';
-  const g = el('g', {}, svg);
-  let th = 2.2;
+  let th = 2.2, svg = null, builtW = 0;
   const delta = 0.75;
-  const draw = () => {
-    g.innerHTML = '';
-    const p = [cx + R * Math.cos(th), cy - R * Math.sin(th)];
-    const t = [-Math.sin(th), -Math.cos(th)]; // tangent (screen coords, counterclockwise)
-    const add = [p[0] + R * delta * t[0], p[1] + R * delta * t[1]];
-    const bp = [cx + R * Math.cos(th + delta), cy - R * Math.sin(th + delta)];
-    el('line', { x1: p[0], y1: p[1], x2: add[0], y2: add[1], stroke: 'var(--muted)', 'stroke-width': 2, 'stroke-dasharray': '5 4' }, g);
-    el('circle', { cx: add[0], cy: add[1], r: 5, fill: 'var(--muted)' }, g);
-    el('text', { class: 'label', x: add[0] + 8, y: add[1] - 6 }, g).textContent = 'x + δ: off the surface';
-    const a0 = -th, a1 = -(th + delta);
-    el('path', { d: `M${p[0]},${p[1]} A${R},${R} 0 0 0 ${bp[0]},${bp[1]}`, fill: 'none', stroke: 'var(--prediction)', 'stroke-width': 3.5, 'stroke-linecap': 'round' }, g);
-    el('circle', { cx: bp[0], cy: bp[1], r: 6, fill: 'var(--prediction)', stroke: 'var(--paper-2)', 'stroke-width': 2 }, g);
-    el('text', { class: 'label', x: bp[0] + (Math.cos(th + delta) > 0 ? 10 : -10), y: bp[1] + 16, 'text-anchor': Math.cos(th + delta) > 0 ? 'start' : 'end' }, g).textContent = 'x ⊞ δ: along it';
-    const dot = el('circle', { cx: p[0], cy: p[1], r: 9, fill: 'var(--accent)', stroke: 'var(--paper-2)', 'stroke-width': 2, style: 'cursor:grab' }, g);
-    el('text', { class: 'label', x: p[0] + (Math.cos(th) > 0 ? 14 : -14), y: p[1] + 4, 'text-anchor': Math.cos(th) > 0 ? 'start' : 'end' }, g).textContent = 'x';
-    void a0; void a1;
-    dot.addEventListener('pointerdown', (e) => {
-      dot.setPointerCapture(e.pointerId);
-      const move = (ev) => {
-        const r = svg.getBoundingClientRect();
-        const x = ((ev.clientX - r.left) / r.width) * W - cx, y = cy - ((ev.clientY - r.top) / r.height) * H;
-        th = Math.atan2(y, x);
-        draw();
-      };
-      dot.addEventListener('pointermove', move);
-      dot.addEventListener('pointerup', () => dot.removeEventListener('pointermove', move), { once: true });
-    });
+  const build = () => {
+    // Drawn at the panel's own width up to 560 units, the circle centred, so labels keep their size on a phone.
+    const W = Math.round(Math.max(300, Math.min(560, host.clientWidth || 560))), H = W < 420 ? 300 : 330;
+    builtW = host.clientWidth;
+    // Centred; on a phone shifted right, so the labels of the starting point (upper left) have room.
+    const R = Math.min(125, W / 2 - 70), cx = W < 420 ? W - R - 16 : W / 2, cy = H / 2;
+    if (svg) svg.remove();
+    svg = el('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, style: 'touch-action:pan-y' }, host);
+    el('circle', { cx, cy, r: R, fill: 'none', stroke: 'var(--ink-2)', 'stroke-width': 1.5 }, svg);
+    el('text', { class: 'label', x: cx, y: cy + 4, 'text-anchor': 'middle' }, svg).textContent = 'unit attitudes';
+    const g = el('g', {}, svg);
+    // A label just outside the circle along the outward direction (ux, uy), kept inside the drawing.
+    const label = (at, ux, uy, text, off = 14) => {
+      const t = el('text', { class: 'label halo', y: at[1] + off * uy + 4 }, g);
+      t.textContent = text;
+      const len = t.getComputedTextLength?.() || text.length * 6.5;
+      let x = at[0] + off * ux;
+      const end = ux < 0;
+      // No room beside the point: lift the label above (or below) it instead of pushing it over the point.
+      if (end ? x - len < 6 : x + len > W - 6) {
+        t.setAttribute('y', at[1] + (uy < 0 ? -12 : 20));
+        x = end ? Math.max(6 + len, at[0] + 4) : Math.min(W - 6 - len, at[0] - 4);
+      }
+      x = end ? Math.max(6 + len, Math.min(W - 6, x)) : Math.max(6, Math.min(W - 6 - len, x));
+      t.setAttribute('x', x);
+      t.setAttribute('text-anchor', end ? 'end' : 'start');
+    };
+    const draw = () => {
+      g.innerHTML = '';
+      const p = [cx + R * Math.cos(th), cy - R * Math.sin(th)];
+      const t = [-Math.sin(th), -Math.cos(th)]; // tangent (screen coords, counterclockwise)
+      const add = [p[0] + R * delta * t[0], p[1] + R * delta * t[1]];
+      const bp = [cx + R * Math.cos(th + delta), cy - R * Math.sin(th + delta)];
+      el('line', { x1: p[0], y1: p[1], x2: add[0], y2: add[1], stroke: 'var(--muted)', 'stroke-width': 2, 'stroke-dasharray': '5 4' }, g);
+      el('circle', { cx: add[0], cy: add[1], r: 5, fill: 'var(--muted)' }, g);
+      el('path', { d: `M${p[0]},${p[1]} A${R},${R} 0 0 0 ${bp[0]},${bp[1]}`, fill: 'none', stroke: 'var(--prediction)', 'stroke-width': 3.5, 'stroke-linecap': 'round' }, g);
+      el('circle', { cx: bp[0], cy: bp[1], r: 6, fill: 'var(--prediction)', stroke: 'var(--paper-2)', 'stroke-width': 2 }, g);
+      const dot = el('circle', { cx: p[0], cy: p[1], r: 9, fill: 'var(--accent)', stroke: 'var(--paper-2)', 'stroke-width': 2, style: 'cursor:grab;touch-action:none' }, g);
+      const da = Math.hypot(add[0] - cx, add[1] - cy);
+      label(add, (add[0] - cx) / da, (add[1] - cy) / da, 'x + δ: off the surface', 18);
+      label(bp, Math.cos(th + delta), -Math.sin(th + delta), 'x ⊞ δ: along it');
+      label(p, Math.cos(th), -Math.sin(th), 'x', 16);
+      dot.addEventListener('pointerdown', (e) => {
+        dot.setPointerCapture(e.pointerId);
+        const move = (ev) => {
+          const r = svg.getBoundingClientRect();
+          const x = ((ev.clientX - r.left) / r.width) * W - cx, y = cy - ((ev.clientY - r.top) / r.height) * H;
+          th = Math.atan2(y, x);
+          draw();
+        };
+        dot.addEventListener('pointermove', move);
+        dot.addEventListener('pointerup', () => dot.removeEventListener('pointermove', move), { once: true });
+      });
+    };
+    draw();
   };
-  draw();
+  build();
+  new ResizeObserver(() => { if (host.clientWidth && Math.abs(host.clientWidth - builtW) > 4) build(); }).observe(host);
 }
 
 // ---------- the condensed Hessian ----------
@@ -131,16 +155,22 @@ setup();
 // ---------- projected Newton in 2-D ----------
 {
   const host = document.getElementById('qp-fig');
-  const W = 900, H = 440, S = 7, ox = 250, oy = 220; // 1 N = S px
-  const svg = el('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, style: 'touch-action:none' }, host);
+  // The plot is a square SVG; the readout is HTML beside it (under it on a phone), so its text never scales down.
+  const W = 440, H = 440, S = 6.5, ox = 220, oy = 220; // 1 N = S px
+  const wrap = document.createElement('div');
+  wrap.className = 'qp-wrap';
+  host.appendChild(wrap);
+  const svg = el('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, style: 'touch-action:pan-y;overflow:hidden' }, wrap);
+  const side = document.createElement('div');
+  side.className = 'qp-read';
+  wrap.appendChild(side);
   const toS = (p) => [ox + p[0] * S, oy - p[1] * S];
   const toW = (x, y) => [(x - ox) / S, (oy - y) / S];
-  let c = [34, 12], x0 = [-10, -16];
+  const lim = (W / 2 - 10) / S; // keep the handles inside the drawing
+  let c = [31, 12], x0 = [-10, -16];
   const gC = el('g', {}, svg), gB = el('g', {}, svg), gP = el('g', {}, svg), gH = el('g', {}, svg);
   const [bx, by] = toS([-24, 24]);
   el('rect', { x: bx, y: by, width: 48 * S, height: 48 * S, fill: 'rgba(15,38,51,0.04)', stroke: 'var(--ink)', 'stroke-width': 1.5 }, gB);
-  el('text', { class: 'label', x: bx + 4, y: by - 6 }, gB).textContent = 'box: −24 ≤ uᵢ ≤ 24';
-  const side = el('g', {}, svg);
   const draw = () => {
     const rot = (+document.getElementById('qp-rot').value * Math.PI) / 180, cond = +document.getElementById('qp-cond').value;
     document.getElementById('qp-rot-o').textContent = `${(+document.getElementById('qp-rot').value).toFixed(0)}°`;
@@ -163,10 +193,11 @@ setup();
     pts.forEach((p, i) => { if (i) el('circle', { cx: p[0], cy: p[1], r: 4.5, fill: 'var(--accent)', stroke: 'var(--paper-2)', 'stroke-width': 2 }, gP); });
     gH.innerHTML = '';
     const cross = el('g', { style: 'cursor:grab' }, gH);
-    el('circle', { cx: ccx, cy: ccy, r: 14, fill: 'transparent' }, cross);
+    cross.style.touchAction = 'none'; // the handles take every drag; the rest of the plot still scrolls the page
+    el('circle', { cx: ccx, cy: ccy, r: 16, fill: 'transparent' }, cross);
     el('path', { d: `M${ccx - 8},${ccy - 8}L${ccx + 8},${ccy + 8}M${ccx + 8},${ccy - 8}L${ccx - 8},${ccy + 8}`, stroke: 'var(--ink)', 'stroke-width': 2.5 }, cross);
     const [sx0, sy0] = toS(x0);
-    const start = el('circle', { cx: sx0, cy: sy0, r: 8, fill: 'var(--paper)', stroke: 'var(--ink)', 'stroke-width': 2, style: 'cursor:grab' }, gH);
+    const start = el('circle', { cx: sx0, cy: sy0, r: 8, fill: 'var(--paper)', stroke: 'var(--ink)', 'stroke-width': 2, style: 'cursor:grab;touch-action:none' }, gH);
     const drag = (node, set) => node.addEventListener('pointerdown', (e) => {
       node.setPointerCapture(e.pointerId);
       const move = (ev) => {
@@ -177,16 +208,11 @@ setup();
       node.addEventListener('pointermove', move);
       node.addEventListener('pointerup', () => node.removeEventListener('pointermove', move), { once: true });
     });
-    drag(cross, (p) => (c = p.map((v) => Math.max(-50, Math.min(50, v)))));
+    drag(cross, (p) => (c = p.map((v) => Math.max(-lim, Math.min(lim, v)))));
     drag(start, (p) => (x0 = p.map((v) => Math.max(-24, Math.min(24, v)))));
-    side.innerHTML = '';
-    const lines = [
-      `iterations: ${res.iterations}${res.converged ? ', converged' : ''}`,
-      `solution: (${x[0].toFixed(2)}, ${x[1].toFixed(2)})`,
-      `active bounds: ${[0, 1].filter((i) => Math.abs(Math.abs(x[i]) - 24) < 1e-6).map((i) => `u${'₁₂'[i]}`).join(', ') || 'none'}`,
-    ];
-    lines.forEach((t, i) => (el('text', { class: 'label', x: 560, y: 120 + i * 24, style: 'font-size:14px' }, side).textContent = t));
-    el('text', { class: 'label', x: 560, y: 210 }, side).textContent = '× unconstrained minimum   ○ warm start   ● iterates';
+    const active = [0, 1].filter((i) => Math.abs(Math.abs(x[i]) - 24) < 1e-6).map((i) => `u${'₁₂'[i]}`).join(', ') || 'none';
+    side.innerHTML = `<p><b>Iterations:</b> ${res.iterations}${res.converged ? ', converged' : ''}<br><b>Solution:</b> (${x[0].toFixed(2)}, ${x[1].toFixed(2)})<br><b>Active bounds:</b> ${active}</p>`
+      + '<p class="key">Box: −24 ≤ uᵢ ≤ 24<br>× unconstrained minimum<br>○ warm start<br><span style="color:var(--accent)">●</span> iterates</p>';
   };
   ['qp-rot', 'qp-cond'].forEach((id) => document.getElementById(id).addEventListener('input', draw));
   draw();

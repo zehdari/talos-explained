@@ -12,7 +12,7 @@
   <header class="page-head">
     <div class="kicker">Running Talos · Chapter 1</div>
     <h1>Launching the stack</h1>
-    <p class="lede">About thirty programs make Talos work. Nobody starts them by hand: on the robot a web page on the Orin starts them from a list, and in the simulator one command starts everything. This chapter shows what starts, in what order, and why.</p>
+    <p class="lede">About 25 programs (27 processes on the pool list) make Talos work. Nobody starts them by hand: on the robot a web page on the Orin starts them from a list, and in the simulator one command starts everything. This chapter shows what starts, in what order, and why.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
@@ -112,7 +112,7 @@
     <div class="prose">
       <dl class="spec">
         <dt>Port</dt><dd>8080 (env <code>SERVER_PORT</code>): <code>http://orin2:8080</code>, or <code>http://192.168.1.24:8080</code> on the robot LAN if your laptop can't resolve <code>orin2</code> (<a href="computers.html">Computers and networks</a>). Page at <code>/</code>, websocket at <code>/ws</code>. No login: anyone who can reach the port can start and stop launches.</dd>
-        <dt>Zenoh router</dt><dd>Started first: <code>rmw_zenohd</code> with <code>zenoh_router_test.json5</code>, after killing any old router. If it dies, the launcher stops everything and exits.</dd>
+        <dt>Zenoh router</dt><dd>Started first, after killing any old router. <code>launcher.py</code>'s default is <code>rmw_zenohd</code> with <code>zenoh_router_test.json5</code> (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py#L29-L30">L29</a>), but the service first sources <code>zenoh_server.bash</code>, which can override it through <code>DISCOVERY_SERVER_CMD</code>: the <a href="https://github.com/osu-uwrt/riptide_release/blob/master/scripts/uwrt_config/source/zenoh_server.bash">committed version</a> runs plain <code>rmw_zenohd</code>, no config file. Which one runs depends on the Orin's copy of that script. If it dies, the launcher stops everything and exits.</dd>
         <dt>Restarts</dt><dd><code>Restart=always</code> after 500 ms; systemd gives up after 5 restarts in 15 s.</dd>
         <dt>Stopping</dt><dd>SIGINT to each launch's process group; systemd allows 15 s, then SIGKILL.</dd>
         <dt>Status</dt><dd>Broadcast to every page at least every 1.5 s, and on every change.</dd>
@@ -171,6 +171,38 @@
         <li><strong>Force Reset</strong> (service only) exits at once without cleanup; systemd then kills every leftover process in the service and restarts it. Its confirm box warns that it kills all running nodes without cleanup: the last resort.</li>
       </ul>
 
+      <h3 id="adding">Adding your node to a list</h3>
+      <p>A list is a YAML file with one key, <code>launches</code>, holding the entries. This is the <code>hardware</code> entry of the pool list (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml#L1-L18"><code>talos_launch_mpc.yaml</code> L1-18</a>):</p>
+<pre><code>launches: [
+  {
+    package: <span class="s">"riptide_hardware2"</span>,
+    file: <span class="s">"hardware.launch.py"</span>,
+    args: [
+      <span class="s">"robot:=talos"</span>,
+      <span class="s">"imu_port:=/dev/ttyTHS1"</span>,
+      <span class="s">"imu_frame_id:=talos/imu_link"</span>,
+      <span class="s">"gyro_port:=/dev/ttyTHS2"</span>
+    ],
+    topics: [
+      <span class="s">"/talos/dvl/status"</span>, <span class="s">"nortek_dvl_msgs/msg/DvlStatus"</span>, <span class="s">"0"</span>,
+      <span class="s">"/talos/vectornav/imu"</span>, <span class="s">"sensor_msgs/msg/Imu"</span>, <span class="s">"0"</span>,
+      ...
+    ]
+  },</code></pre>
+      <dl class="spec">
+        <dt><code>package</code>, <code>file</code></dt><dd>The launch file, looked up in <code>share/&lt;package&gt;/launch/</code> of the deployed install. The page names the entry after the file, minus <code>.launch.py</code>.</dd>
+        <dt><code>args</code></dt><dd>Launch arguments, as on the <code>ros2 launch</code> command line (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py#L409-L411">launcher.py L409-411</a>). Always include <code>robot:=talos</code>.</dd>
+        <dt><code>topics</code></dt><dd>What the page waits for before showing <i>Running</i>: a flat list read three items at a time: name, type, QoS flag (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py#L286-L304">launcher.py L286-304</a>). The name is the full name from <code>/</code> (letters, digits, underscores); the type is <code>package/msg/Name</code>; the flag is the string <code>"0"</code> for the default QoS or <code>"1"</code> for sensor-data QoS (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py#L1179">L1179</a>). Use <code>"1"</code> for a topic published best-effort: a reliable subscriber never receives it, so the entry would never reach <i>Running</i>. An empty list means <i>Running</i> at once. A bad name, type or flag, or a count that isn't a multiple of three, stops the list loading at that entry.</dd>
+      </dl>
+      <p>To get a new launch file started on the robot:</p>
+      <ol>
+        <li><strong>Add the launch file to your package</strong> and install it to <code>share/&lt;package&gt;/launch/</code> (in its <code>CMakeLists.txt</code> or <code>setup.py</code>). Check it with <code>ros2 launch &lt;package&gt; &lt;file&gt; robot:=talos</code> on your laptop.</li>
+        <li><strong>Add an entry</strong> to the pool list, <code>talos_launch_mpc.yaml</code>, and the bench list, <code>talos_launch_bench_mpc.yaml</code> (and the HIL list if it should run there), with <code>robot:=talos</code> and one or two of its output topics to watch. Put it where it belongs in the <a href="#order">start order</a>.</li>
+        <li><strong>Deploy</strong> both your package and <code>riptide_launch</code> (<a href="setup.html#deploy">colcon deploy</a>). The lists are read from the installed <code>remote_launch</code> package, not from your checkout (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py#L689-L691">launcher.py L689-691</a>).</li>
+        <li><strong>Reload the list on the page.</strong> Choosing the list that's already loaded does nothing (<a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/remote_launch/launcher.py#L726-L727">L726-727</a>): load another list and then yours, or use <i>Restart Launcher</i>. Either stops everything running. A brand-new list file only shows in the menu after a restart, because the folder is read once at start-up.</li>
+      </ol>
+      <p><strong>The simulator doesn't read the lists.</strong> <code>sim.launch.py</code> starts the stack through riptide_bringup2's <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/riptide_bringup/launch/bringup.launch.py#L22-L91"><code>bringup.launch.py</code></a>, which includes the same launch files from its own list of <code>add_launch_file</code> calls. A node added to an existing launch file (say <code>mapping.launch.py</code>) runs in both; a new launch file needs an <code>add_launch_file</code> there too to run in Nereus.</p>
+
       <h2 id="scripting" data-short="Scripting the launcher">Driving the launcher from a script</h2>
       <p>The page is one client of a small JSON protocol over the websocket. Anything else can use it too. Each command is a JSON object with a <code>cmd</code> field plus the fields listed:</p>
       <dl class="spec proto">
@@ -214,7 +246,7 @@ asyncio.run(main())</code></pre>
         <li><strong>The viewer.</strong> Closing it ends the whole launch, unless <code>close_with_viewer:=false</code>.</li>
       </ol>
       <p><code>bringup.launch.py</code> includes the same files as the pool list (control_system, navigation, tensorrt, mapping, autonomy) but, with <code>hardware:=none</code>, swaps <code>hardware</code> for acoustics alone and has no <code>zed</code>: the simulator publishes the sensor topics and camera images. (<code>hardware:=real</code> or <code>fake</code> would start the whole robot stack as one launch, but on the robot the team uses the launcher's separate entries.) The launch's first lines say which branches it took (<a href="https://github.com/zehdari/talos-explained/blob/main/public/data/rosgraph/launch_log.txt">full log</a>):</p>
-<pre class="cmd" data-where="launch output"><code>MPC model: this run's plant (/tmp/nmedia/run/sim.mpc)
+<pre class="cmd out"><code>MPC model: this run's plant (/tmp/nmedia/run/sim.mpc)
 Launching with NO hardware                       <span class="c"># bringup.launch.py</span>
 I'm running on a development laptop              <span class="c"># control_system.launch.py</span>
 zed_wrapper not found. Launching without zed TF  <span class="c"># navigation.launch.py</span>
@@ -229,7 +261,8 @@ zed_wrapper not found. Launching without zed TF  <span class="c"># navigation.la
     </div>
     <figure class="fig">
       <img class="media" data-src="media/nereus/viewer-startup-killed.webp" width="1600" height="1000" loading="lazy" alt="The Nereus viewer right after sim.launch.py: a green Enable button and 'Robot: killed' in the command bar, the Motion panel with dashes for the commanded values, and a top-down pool view with Talos at its start pose by the AprilTag board.">
-      <figcaption><b>What you see when the launch finishes.</b> The viewer opens with Talos killed: green Enable, "Robot: killed", nothing commanded. Every node is up; nothing moves until you press Enable (<a href="viewer.html#enable">The Nereus viewer</a>).</figcaption>
+      <img class="media lx-bar-crop" src="/img/viewer/command-bar-killed.webp" width="440" height="87" loading="lazy" alt="The left end of the command bar, full size: TALOS · ROBOSUB 2026, a green Enable button, and Robot: killed in orange.">
+      <figcaption><b>What you see when the launch finishes.</b> The viewer opens with Talos killed: green Enable, "Robot: killed", nothing commanded (the left end of the command bar, at full size, under the screenshot). Every node is up; nothing moves until you press Enable (<a href="viewer.html#enable">The Nereus viewer</a>).</figcaption>
     </figure>
 
     <div class="prose">
@@ -251,11 +284,11 @@ zed_wrapper not found. Launching without zed TF  <span class="c"># navigation.la
         <li><strong>"Why did everything stop?":</strong> the journal, which holds the launcher's own lines and the Zenoh router's crash output.</li>
         <li><strong>After the fact:</strong> each node's ROS log file under <code>~/.ros/log/</code> on the Orin, and <code>/rosout</code> live (<a href="debugging.html#logs">Debugging: where the logs are</a>).</li>
       </ul>
-<pre class="cmd" data-where="orin, over ssh"><code>journalctl -u ros_launcher -f -o cat            <span class="c"># follow</span>
+<pre class="cmd" data-where="Orin, over ssh"><code>journalctl -u ros_launcher -f -o cat            <span class="c"># follow</span>
 journalctl -u ros_launcher --since "10 min ago"
 systemctl status ros_launcher                   <span class="c"># list loaded, launches active</span></code></pre>
       <p>What the journal holds, from the desk run above:</p>
-<pre class="cmd" data-where="journal"><code>[remote_launch] Loading launch definition 'talos_launch_mpc.yaml'
+<pre class="cmd out"><code>[remote_launch] Loading launch definition 'talos_launch_mpc.yaml'
 [remote_launch.navigation] Launch Starting
 [remote_launch.mapping] Launch Starting
 [remote_launch.navigation] Launch Stopping...

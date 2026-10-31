@@ -2,7 +2,6 @@
 @import '@fontsource-variable/source-serif-4/opsz.css';
 @import '@fontsource-variable/source-serif-4/opsz-italic.css';
 @import '@fontsource-variable/jetbrains-mono/index.css';
-@import 'katex/dist/katex.min.css';
 
 :root {
   --paper: #f3f7f7;
@@ -13,6 +12,7 @@
   --muted: #546d79;
   --rule: #cbdadd;
   --accent: #d9480f; /* safety orange: things you can touch */
+  --accent-ink: #a8360a; /* the same orange, dark enough for small text (5:1 on paper) */
   --water: #cfe7ec;
   --water-deep: #9fcbd4;
   /* data roles (validated categorical slots 1-3 on --paper) */
@@ -51,7 +51,7 @@ a { color: inherit; text-decoration-color: var(--accent); text-decoration-thickn
 a:hover { color: var(--accent); }
 :focus-visible { outline: 2.5px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 
-h1, h2, h3, h4 { text-wrap: balance; font-family: var(--sans); font-stretch: 118%; letter-spacing: -0.01em; line-height: 1.12; margin: 0; }
+h1, h2, h3, h4 { text-wrap: balance; overflow-wrap: break-word; font-family: var(--sans); font-stretch: 118%; letter-spacing: -0.01em; line-height: 1.12; margin: 0; }
 h1 { font-size: clamp(2.4rem, 5vw, 4rem); font-weight: 760; font-stretch: 125%; }
 h2 { font-size: clamp(1.6rem, 3vw, 2.15rem); font-weight: 720; margin-top: 3.2rem; margin-bottom: 0.9rem; }
 h3 { font-size: 1.5rem; font-weight: 680; margin-top: 2.2rem; margin-bottom: 0.5rem; font-stretch: 110%; }
@@ -87,8 +87,8 @@ hr { border: 0; border-top: 1px solid var(--rule); margin: 3rem 0; }
 .rail .rail-part > summary::before { content: ''; width: 0.42rem; height: 0.42rem; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg) translate(-1px, -1px); transition: transform 0.15s ease; margin-right: 0.15rem; flex: none; align-self: center; }
 .rail .rail-part[open] > summary::before { transform: rotate(45deg) translate(-2px, -1px); }
 .rail .rail-part > summary small { font-size: 0.78rem; font-weight: 450; letter-spacing: 0; text-transform: none; color: var(--muted); font-style: italic; font-family: var(--serif); }
-.rail .rail-part > summary:hover { color: var(--accent); }
-.rail .rail-part[open] > summary { color: var(--accent); }
+.rail .rail-part > summary:hover { color: var(--accent-ink); }
+.rail .rail-part[open] > summary { color: var(--accent-ink); }
 .rail .toc li { margin: 0; }
 .rail ol > li > a { display: grid; grid-template-columns: 1.6rem 1fr; padding: 0.42rem 0; text-decoration: none; color: var(--ink-2); }
 .rail ol > li > a::before { content: attr(data-n); color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -157,9 +157,9 @@ svg.chart .crosshair { stroke: var(--ink-2); stroke-width: 1; }
 }
 .tip i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.35rem; }
 
-/* math */
-.katex { font-size: 1.06em; }
-.katex-display { margin: 1.3rem 0 1.5rem; overflow-x: auto; overflow-y: hidden; padding: 0.2rem 0; }
+/* math (KaTeX's own CSS loads later, with KaTeX, on pages that have math: these rules outrank it) */
+html .katex { font-size: 1.06em; }
+html .katex-display { margin: 1.3rem 0 1.5rem; overflow-x: auto; overflow-y: hidden; padding: 0.2rem 0; }
 .eq-note { font-family: var(--sans); font-size: 0.86rem; color: var(--ink-2); margin-top: -0.6rem; }
 .words { font-family: var(--sans); font-size: 0.92rem; line-height: 1.5; color: var(--ink-2); margin-top: -0.5rem; padding-left: 0.8rem; border-left: 2px solid var(--rule); }
 .words b { color: var(--ink); font-weight: 600; }
@@ -204,17 +204,19 @@ svg.graph { display: block; width: 100%; height: auto; font-family: var(--sans);
 svg.graph.narrow { max-width: 27rem; margin: 0 auto; } /* the phone layout, not blown up on a small tablet */
 svg.graph .node { cursor: pointer; touch-action: manipulation; outline: none; } /* selection shows as the highlight, keyboard focus included */
 svg.graph .node rect, svg.graph .node circle { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
-svg.graph .node text { fill: var(--ink); font-size: 12.5px; text-anchor: middle; dominant-baseline: central; }
-svg.graph .node .sub { fill: var(--muted); font-size: 11.5px; }
+svg.graph .node text { fill: var(--ink); font-size: calc(12.5px * var(--gs, 1)); text-anchor: middle; dominant-baseline: central; }
+svg.graph .node .sub { fill: var(--muted); font-size: calc(11.5px * var(--gs, 1)); }
 svg.graph .node.dim { opacity: 0.25; }
 svg.graph .node.hot rect, svg.graph .node.hot circle { stroke: var(--accent); stroke-width: 2.2; }
 svg.graph .edge { stroke: var(--ink-2); stroke-width: 1.4; fill: none; }
 svg.graph .edge.dim { opacity: 0.15; }
 svg.graph .edge.hot { stroke: var(--accent); stroke-width: 2.2; }
-svg.graph .elabel { fill: var(--ink-2); font-size: 11.5px; text-anchor: middle; paint-order: stroke; stroke: var(--paper-2); stroke-width: 5px; stroke-linejoin: round; }
+svg.graph .elabel { fill: var(--ink-2); font-size: calc(11.5px * var(--gs, 1)); text-anchor: middle; paint-order: stroke; stroke: var(--paper-2); stroke-width: 5px; stroke-linejoin: round; }
 svg.graph .pulse { fill: var(--accent); }
 svg.graph .band { fill: var(--paper-3); stroke: var(--paper-3); stroke-width: 14px; stroke-linejoin: round; }
-svg.graph .band-label { fill: var(--accent); font-size: 10.5px; font-weight: 650; letter-spacing: 0.08em; }
+svg.graph .band-label { fill: var(--accent-ink); font-size: calc(10.5px * var(--gs, 1)); font-weight: 650; letter-spacing: 0.08em; paint-order: stroke; stroke: var(--paper-3); stroke-width: 4px; stroke-linejoin: round; } /* the halo keeps it readable where an edge crosses */
+/* phone layouts: src/viz/graph.js sets --band-fs so band labels show at about 11 px */
+svg.graph.narrow .band-label { font-size: var(--band-fs, 12.5px); }
 
 /* ---------- hero ---------- */
 .hero { position: relative; height: min(88vh, 820px); min-height: 560px; background: linear-gradient(180deg, #e3f1f3 0%, var(--water) 55%, var(--water-deep) 100%); overflow: hidden; margin: 0 calc(-1 * clamp(1.1rem, 4vw, 3.5rem)); }
@@ -249,6 +251,9 @@ svg.graph .band-label { fill: var(--accent); font-size: 10.5px; font-weight: 650
   .shell { grid-template-columns: 1fr; }
   .rail { position: fixed; z-index: 50; inset: 0 auto 0 0; width: min(20rem, 86vw); background: var(--paper); transform: translateX(-102%); transition: transform 0.22s ease; box-shadow: 0 0 0 100vmax rgba(15, 38, 51, 0); }
   .rail.open { transform: none; box-shadow: 0 0 0 100vmax rgba(15, 38, 51, 0.35); }
+  .rail { overscroll-behavior: contain; } /* scrolling past the drawer's end doesn't scroll the page under it */
+  .rail .toc a { padding: 0.45rem 0 0.45rem 0.7rem; } /* finger-sized */
+  .hud .names { font-size: 0.7rem; }
   .menu-btn { display: inline-flex; position: fixed; z-index: 40; top: 0.8rem; left: 0.8rem; transition: transform 0.2s ease, opacity 0.2s ease; }
   .menu-btn.tucked { transform: translateY(-4rem); opacity: 0; pointer-events: none; }
   .page-head { padding-top: 4.2rem; }
@@ -263,6 +268,14 @@ svg.graph .band-label { fill: var(--accent); font-size: 10.5px; font-weight: 650
   table.params th, table.params td { padding-right: 0.5rem; }
   table.params td:first-child { white-space: normal; }
   table.params code { overflow-wrap: break-word; font-size: 0.74rem; }
+}
+/* Phones: a plain hero (Control's) stacks: the words, then the 3D view, then its buttons and panels, so nothing
+   is drawn over the text and the attitude sliders don't cover the robot. The home and course heroes have their own. */
+@media (max-width: 720px) {
+  main > .hero:not(.talos-hero):not(.course-hero) { height: auto; min-height: 0; display: flex; flex-direction: column; }
+  main > .hero:not(.talos-hero):not(.course-hero) .copy { position: static; order: 1; padding: 4.2rem 1.1rem 0; }
+  main > .hero:not(.talos-hero):not(.course-hero) canvas { order: 2; height: min(52vh, 380px); }
+  main > .hero:not(.talos-hero):not(.course-hero) .dock { position: static; order: 3; padding: 0.8rem 1.1rem 1.2rem; }
 }
 /* Phones: a segmented control wraps onto a second row (as in the Vision chapters) instead of squeezing its labels
    onto three lines. */

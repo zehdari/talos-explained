@@ -139,3 +139,6 @@ table.params.stuck td:first-child { width: 36%; }
   table.params.stuck td { display: block; border: 0; padding: 0; width: auto; }
   table.params.stuck td:first-child { width: auto; margin-bottom: 0.15rem; }
 }
+
+/* sim figure: the command bar crop at its own size, so "Robot: killed" is legible on a phone */
+.fig .media.lx-bar-crop { width: auto; max-width: 100%; margin-top: 0.6rem; }

@@ -117,7 +117,8 @@ function libList(fw) {
   const unused = fw.libs.filter((l) => !l.used_by.length).map((l) => l.name);
   let pick = 'all';
   const draw = () => {
-    host.innerHTML = `<div class="lib-head"><span>library</span><span class="hd">what it does</span><span class="lu" aria-label="used by">${projects.map((p) => `<span title="${esc(p.name)}">${esc(SHORT[p.id][0])}</span>`).join('')}</span></div>` +
+    host.innerHTML = `<p class="lib-key">Dots, left to right: ${projects.map((p) => `<b>${esc(SHORT[p.id][0])}</b> ${esc(SHORT[p.id])}`).join(' · ')}.</p>` +
+      `<div class="lib-head"><span>library</span><span class="hd">what it does</span><span class="lu" aria-label="used by">${projects.map((p) => `<span title="${esc(p.name)}">${esc(SHORT[p.id][0])}</span>`).join('')}</span></div>` +
       libs.map((l) => `<div class="lib-row${pick !== 'all' && !l.used_by.includes(pick) ? ' off' : ''}">
         <span class="ln"><a href="${l.url}">${esc(l.name)}</a></span>
         <span class="ld"><span class="kind">${KIND[l.kind] || ''}</span>${esc(l.desc)}</span>

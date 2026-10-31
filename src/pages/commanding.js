@@ -396,7 +396,7 @@ function init(data) {
     $('ks-chain').innerHTML = [
       chip('POAC board', !p.asserting, p.asserting ? 'killed' : 'enabled'),
       chip('state/kill', sim.inputs.link && p.stateKill === false, sim.inputs.link ? String(p.stateKill) : 'silent'),
-      chip('ESC flags', e.flags === 0, flagNames.length ? flagNames.join(', ') : 'none'),
+      chip('ESC flags', e.flags === 0, flagNames.length ? flagNames.map((f, i) => `<span class="nw">${f}${i < flagNames.length - 1 ? ',' : ''}</span>`).join(' ') : 'none'),
       chip('motion_enabled', sim.inputs.control && o.motionEnabled, sim.inputs.control ? String(o.motionEnabled) : 'not running'),
       chip('MPC', e.thrustersOn, !sim.inputs.control ? 'not running' : m.killed ? 'killed: zeros' : m.mode === 'DISABLED' ? 'DISABLED: zeros' : m.commanding ? 'thrusting' : 'zeros'),
     ].join('');

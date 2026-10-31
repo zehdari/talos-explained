@@ -87,26 +87,7 @@ still['stats'] = stats
 save('still.json', still)
 print(json.dumps(stats, indent=1))
 
-# ---------- EKF roll rate with the configured and a corrected IMU rate covariance ----------
-ekf = {}
-for name, (d, t0, a, b) in {'A': (bA, tA, 32, 56), 'B': (bB, tB, 8, 38)}.items():
-    imu, od = d['vectornav_imu'], d['odometry_filtered']
-    roll, pitch, yaw = body_rates(imu)
-    ti, to = imu[:, 1] - t0, od[:, 1] - t0
-    tt, rr = binmean(ti, roll, 0.01, a, b)
-    mo = (to >= a) & (to < b)
-    # lag and gain of the EKF roll rate against the IMU (least squares over shifts 0..800 ms)
-    best = None
-    for lag in np.arange(0, 0.8, 0.005):
-        e = np.interp(tt + lag, to, od[:, 12])
-        g = float(np.dot(e, rr) / np.dot(rr, rr))
-        res = float(np.mean((e - g * rr) ** 2))
-        if best is None or res < best[2]:
-            best = (lag, g, res)
-    ekf[name] = {'t': r(tt - a, 3), 'imu': r(rr * R2D, 3), 'ekf_t': r(to[mo] - a, 3), 'ekf': r(od[mo, 12] * R2D, 3),
-                 'cov': float(imu[0, 13]), 'lag_s': round(best[0], 3), 'gain': round(best[1], 3)}
-    print('ekf', name, ekf[name]['cov'], ekf[name]['lag_s'], ekf[name]['gain'])
-save('ekf_cov.json', ekf)
+# (The EKF roll-rate comparison moved to the localization chapter, localization.html#lag.)
 
 # ---------- pool: DVL, depth and yaw rate (ident run talos_20261026_204748, untethered) ----------
 P, tP = load('/tmp/sens_pool.npz')

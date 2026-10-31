@@ -28,6 +28,14 @@ const dofs = ['surge X', 'sway Y', 'heave Z', 'roll K', 'pitch M', 'yaw N'];
   note.style.cssText = 'font-family:var(--sans);font-size:.86rem;color:var(--ink-2);min-height:2.6em';
   new Graph(host, {
     width: W, height: 290, nodes, edges, arrows: false,
+    // Phones: thrusters in a column on the left, axes on the right.
+    narrow: {
+      below: 600, width: 360, height: 440,
+      nodes: Object.fromEntries([
+        ...thrusterNames.map((_, i) => ['t' + i, { x: 52, y: 30 + i * 54, w: 72, h: 36 }]),
+        ...dofs.map((_, j) => ['d' + j, { x: 290, y: 49 + j * 68.4, w: 108, h: 38 }]),
+      ]),
+    },
     info: (n) => {
       if (!n) return (note.textContent = 'Tap or hover a thruster or an axis.');
       if (n.id[0] === 't') {
@@ -58,6 +66,8 @@ const dofs = ['surge X', 'sway Y', 'heave Z', 'roll K', 'pitch M', 'yaw N'];
 function nullSpace() {
   // Projector onto the null space: I - T'(TT')^-1 T, then Gram-Schmidt on its columns.
   const n = 8;
+  const bars = document.getElementById('alloc-bars');
+  let barsW = 0;
   const TT = T.map((a) => T.map((b) => a.reduce((s, x, k) => s + x * b[k], 0)));
   const inv = invert(TT);
   const P = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 1 : 0) - T.reduce((s, row, a) => s + row[i] * T.reduce((t, row2, b) => t + inv[a][b] * row2[j], 0), 0)));
@@ -102,7 +112,7 @@ function invert(M) {
 // ---------- allocation ----------
 {
   const canvas = document.getElementById('alloc-canvas');
-  const scene = createScene(canvas, { floorDepth: -2.2, cameraPos: [-1.6, -1.7, -0.45], target: [-0.05, 0.05, -1.05], interactive: false, autoRotate: true });
+  const scene = createScene(canvas, { floorDepth: -2.2, cameraPos: [-1.15, -1.3, -0.62], target: [-0.05, 0.05, -1.05], interactive: false, autoRotate: true });
   scene.setRobot([0, 0, -1], [1, 0, 0, 0]);
   scene.setReference([0, 0, -50], [1, 0, 0, 0]);
   const ctl = document.getElementById('alloc-controls');
@@ -115,6 +125,8 @@ function invert(M) {
     document.querySelectorAll('#alloc-grid [data-m]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     update();
   }));
+  const bars = document.getElementById('alloc-bars');
+  let barsW = 0;
   const TT = T.map((a) => T.map((b) => a.reduce((s, x, k) => s + x * b[k], 0)));
   const inv = invert(TT);
   const update = () => {
@@ -138,13 +150,16 @@ function invert(M) {
     }
     const got = T.map((row) => row.reduce((s, t, i) => s + t * f[i], 0));
     scene.setThrust(f);
-    barChart(document.getElementById('alloc-bars'), thrusterNames.map((n, i) => ({ label: n, segments: [{ value: f[i], color: Math.abs(f[i]) >= 23.99 ? 'var(--s8)' : 'var(--ink-2)' }], total: f[i] })), { digits: 1, max: 24, unit: 'N', rowH: 21, width: 420, labelW: 52, valueW: 60 });
+    // Drawn at the host's own pixel width, so the labels are never scaled down.
+    barsW = bars.clientWidth || 420;
+    barChart(bars, thrusterNames.map((n, i) => ({ label: n, segments: [{ value: f[i], color: Math.abs(f[i]) >= 23.99 ? 'var(--s8)' : 'var(--ink-2)' }], total: f[i] })), { digits: 1, max: 24, unit: 'N', rowH: 22, width: Math.max(260, barsW), labelW: 52, valueW: 60 });
     const err = got.map((g2, j) => g2 - tau[j]);
     const cos = tau.reduce((s, t, j) => s + t * got[j] * (j > 2 ? 6.25 : 1), 0) / Math.sqrt(tau.reduce((s, t, j) => s + t * t * (j > 2 ? 6.25 : 1), 0) * got.reduce((s, t, j) => s + t * t * (j > 2 ? 6.25 : 1), 0) || 1);
     const sat = pinv.filter((v) => Math.abs(v) > 24).length;
     document.getElementById('alloc-result').innerHTML = `Delivered wrench: ${got.map((v, j) => `${dofs[j].split(' ')[1]} ${v.toFixed(1)}`).join(', ')}<br>Largest error ${Math.max(...err.map(Math.abs)).toFixed(1)}; direction off by ${((Math.acos(Math.min(1, cos)) * 180) / Math.PI).toFixed(1)}°. ${sat ? `${sat} thruster${sat > 1 ? 's' : ''} past ±24 N before clipping.` : 'No thruster saturates.'}`;
   };
   ctl.addEventListener('input', update);
+  new ResizeObserver(() => { if (bars.clientWidth && Math.abs(bars.clientWidth - barsW) > 4) update(); }).observe(bars);
   scene.ready.then(update);
   update();
 }

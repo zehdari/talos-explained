@@ -18,7 +18,7 @@
     <aside class="short"><span class="label">The short version</span><ul>
       <li>Eight <strong>Blue Robotics T200</strong> thrusters in one plane: four outer ones push fore and aft, four inner ones at 45° push up or down and sideways at once.</li>
       <li>The MPC turns each force into a target RPM and sends it over CAN, 20 times a second, to two <strong>ESC boards</strong>. Each runs an RPM loop that drives four <strong>APD 80F3</strong> ESCs over <span class="term">DShot</span>.</li>
-      <li>Thrusters 0, 3, 4 and 7 have reverse-pitch propellers; the firmware spins them backwards, so a positive command always pushes the same way.</li>
+      <li>Thrusters 0, 3, 4 and 7 are marked <code>type: 1</code> in <code>talos.yaml</code> (presumably the counter-rotating propellers) and the ESC firmware spins them backwards, so a positive command always pushes the same way.</li>
       <li>The thruster test spins each one at 300 rpm for 3 s. Check that the right one spins and that it blows water the right way.</li>
     </ul></aside>
 

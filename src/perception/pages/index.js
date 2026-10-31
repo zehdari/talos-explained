@@ -16,7 +16,12 @@ const BASE = import.meta.env.BASE_URL;
   const inset = document.getElementById('cam-inset');
   // the detector's annotated image topic (yolo_orientation/annotated/compressed) from the same run, on the mission clock
   const VIDEO = { src: 'video/cam_exact.mp4', t0: -0.04 };
-  const video = Object.assign(document.createElement('video'), { muted: true, playsInline: true, preload: 'auto', src: `${BASE}${VIDEO.src}` });
+  const video = Object.assign(document.createElement('video'), { muted: true, playsInline: true, preload: 'metadata', poster: `${BASE}img/mission-tree/cam_poster.webp`, src: `${BASE}${VIDEO.src}` });
+  // fetch the whole clip only once the reader plays or scrubs (it is 5.7 MB). The autoplay still streams it,
+  // except with Data Saver on, where the inset keeps its poster until the reader asks.
+  const saveData = !!navigator.connection?.saveData;
+  let wanted = false;
+  const wantVideo = () => { wanted = true; if (video.preload !== 'auto') video.preload = 'auto'; };
   video.setAttribute('aria-label', "The camera Talos is using, with YOLO's masks and boxes");
   inset.prepend(video);
   inset.hidden = false;
@@ -44,7 +49,7 @@ const BASE = import.meta.env.BASE_URL;
     const line = at(data.log, t);
     hudLog.textContent = line && t - line[0] < 25 ? line[2] : ' ';
     // the camera: the detector's annotated stream, kept in step with the replay
-    if (video.readyState >= 1) {
+    if (video.readyState >= 1 && (wanted || !saveData)) {
       const vt = Math.min(Math.max(t - VIDEO.t0, 0), video.duration);
       const rate = playing && speed <= 16 ? speed : 0;
       if (rate) {
@@ -85,8 +90,8 @@ const BASE = import.meta.env.BASE_URL;
       requestAnimationFrame(frame);
     }
   }
-  play.onclick = () => setPlaying(!playing);
-  scrub.oninput = () => { t = +scrub.value; update(); };
+  play.onclick = () => { wantVideo(); setPlaying(!playing); };
+  scrub.oninput = () => { wantVideo(); t = +scrub.value; update(); };
   document.querySelectorAll('#speed button').forEach((b) => {
     b.onclick = () => {
       speed = +b.dataset.v;

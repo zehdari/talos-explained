@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tracking one object · How Talos sees</title>
+<title>Tracking one object · How Talos works</title>
 <meta name="description" content="How riptide_mapping turns a stream of detections of one object into an estimate: a three-state Kalman filter, a chi-squared gate against lookalikes, acquisition by agreement, and the confirm and verify rules autonomy's covariance checks depend on.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Mapping · Chapter 7</div>
+    <div class="kicker">Perception · Chapter 7</div>
     <h1>Tracking one object</h1>
     <p class="lede">Each mapping object has its own small filter. It starts at the layout's guess, waits for a few detections to agree, then averages in the ones that fit and refuses the rest.</p>
   </header>
@@ -19,7 +19,7 @@
       <li>Each prop has its own <span class="term">Kalman filter</span>: a best guess of where it is plus a covariance for how sure it is.</li>
       <li>The first detections are held back until 4 agree within 4 s, so one stray detection can't move anything.</li>
       <li>After 10 detections, any detection more than about 4σ off is rejected. 30 rejections in a row and mapping starts over.</li>
-      <li>Until a prop is freshly seen while targeted, mapping publishes a huge covariance, so the behavior tree waits.</li>
+      <li>Until a prop is freshly seen while targeted, mapping publishes a huge covariance, so the behaviour tree waits.</li>
     </ul></aside>
     <div class="prose">
       <p>This chapter follows one object's <strong>track</strong>, the estimate built from its own detections. For a child object (a torpedo hole in <code>torpedo_frame</code>, a table item in <code>table_frame</code>) the track is the estimate. For a course prop in <code>map</code>, the track becomes a <strong>fix</strong> that the course map solves with (Chapter 8). The code is <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/map_estimator.py#L316"><code>MapEstimator.observe</code></a>.</p>
@@ -75,7 +75,7 @@
 
     <div class="prose">
       <h2 id="confirm">Targeted, established, confirmed</h2>
-      <p>Behavior trees wait for a published variance (say of <code>mapping/torpedo</code>) to fall under a threshold before acting. Three flags per track decide what gets published:</p>
+      <p>Behaviour trees wait for a published variance (say of <code>mapping/torpedo</code>) to fall under a threshold before acting. Three flags per track decide what gets published:</p>
       <ul>
         <li><strong>Targeted.</strong> Only detections while the object is in the target list can confirm it. Background targets improve but never confirm.</li>
         <li><strong>Established.</strong> 10 accepted detections while targeted since the last full reset (<code>confirm_detections</code>).</li>

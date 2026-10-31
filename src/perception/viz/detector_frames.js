@@ -3,7 +3,7 @@
 const NS = 'http://www.w3.org/2000/svg';
 export const BASE = import.meta.env.BASE_URL;
 
-// tensor_detector/src/colors.py COLOR_MAP (RViz marker colours, keyed by class), as CSS
+// tensor_detector/src/colors.py COLOR_MAP (the detector's marker colours, keyed by class), as CSS
 const C = {
   slalom: [1, 0, 0], slalom_front: [0, 1, 0.4], gate_repair: [0, 1, 0], gate_rescue: [0, 0.5, 1], torpedo: [0, 1, 1],
   fire_hole_large: [1, 0.4, 0], fire_hole_small: [1, 0.7, 0], blood_hole_large: [0.6, 0, 0], blood_hole_small: [1, 0, 0.4],

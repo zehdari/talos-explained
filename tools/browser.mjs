@@ -18,7 +18,8 @@ export class ErrorOverlay {}
 export async function launch() {
   return chromium.launch({
     executablePath: process.env.HOME + '/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome',
-    args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+    // NOGL=1: plain '--disable-gpu', faster to start on a loaded machine, but WebGL (three.js figures) won't render.
+    args: process.env.NOGL ? ['--disable-gpu'] : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
     timeout: 120000,
   });
 }

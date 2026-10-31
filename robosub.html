@@ -135,7 +135,7 @@
       <h2 id="tree" data-short="The competition tree">One tree for the whole run</h2>
       <p>On competition day the operator starts one behaviour tree, <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a> (about <span id="tree-len">4&#8239;100</span> lines). Its root sets <code>repair_mission = 1</code> and runs <code>CompMissionTreeMpc</code>; <code>RescueCompMpcTree.xml</code> is the same mission for the other role. In order:</p>
       <ol>
-        <li><strong>Wait</strong> for the kill switch to be inserted, then 5 s more. Lock the map, reload and disarm the actuators.</li>
+        <li><strong>Wait</strong> for the kill switch to be inserted, then about 6 s more (1 s, then 5 s). Lock the map, reload and disarm the actuators.</li>
         <li><strong>Dive</strong> in place to 0.75 m and hold the starting heading (the tree asks for 0.56 m; <code>PrimitiveMovePosition</code> never goes shallower than 0.75 m).</li>
         <li><strong>Gate, slalom, pinger.</strong> The pinger check sets <code>pinger_is_table</code>: true means table first, false means torpedo first.</li>
         <li><strong>Torpedo and table</strong>, in that order or the other.</li>
@@ -181,6 +181,17 @@
     </figure>
 
     <div class="prose">
+      <h2 id="team">The team</h2>
+      <p>UWRT has four subteams (team website, <code>src/config/subteams.ts</code>):</p>
+      <ul>
+        <li><strong>Mechanical</strong> designs, machines and assembles the hulls, frames, thruster mounts and manipulators.</li>
+        <li><strong>Electrical</strong> builds the custom circuit boards and power systems and integrates the sensors: what drives the thrusters and keeps the computer alive.</li>
+        <li><strong>Software</strong> writes the autonomy stack: perception, mapping, control and mission planning.</li>
+        <li><strong>Business</strong> runs sponsorships, finances, outreach and media.</li>
+      </ul>
+      <p>Each technical subteam has a reading path under <a href="index.html#paths">Where to start</a>: Mechanical, Electrical, and for Software the Software, Autonomy, Perception and Controls paths. Anyone coming to the pool should read First pool test.</p>
+      <p>The lab is in Dreese Laboratory, room 457, 2015 Neil Ave (team website, <code>src/config/site.ts</code>). Two things come from a lead, not from this site: write access to the team's GitHub (<a href="setup.html#before">Before you start</a>) and access to the robot's network from your own laptop (<a href="computers.html#join">Joining from your own laptop</a>).</p>
+
       <h2 id="history" data-short="The team's robots">The team's robots, and their names in the code</h2>
       <p>UWRT started with ROVs and switched to AUVs for RoboSub in 2015; the software subteam was founded then. The stack is still called <strong>Riptide</strong> after the first AUV, which is why every package is <code>riptide_*</code> (team website). Every AUV since is below; from 2025 the team also built a second, smaller vehicle beside the main one.</p>
     </div>

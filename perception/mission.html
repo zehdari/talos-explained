@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>One mission in Nereus · How Talos sees</title>
+<title>One mission in Nereus · How Talos works</title>
 <meta name="description" content="Talos's full software stack flying the RoboSub 2026 course in the Nereus simulator, twice: once on the course its map describes and once on a course moved off it. Every estimate against the simulator's truth, and what mapping said at each step.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Mapping · Chapter 10</div>
+    <div class="kicker">Perception · Chapter 10</div>
     <h1>One mission in Nereus</h1>
     <p class="lede">Every earlier chapter in one run: Talos's whole software stack swimming the RoboSub 2026 course in the simulator.</p>
   </header>
@@ -22,7 +22,7 @@
     </ul></aside>
     <div class="prose">
       <h2 id="setup">The run</h2>
-      <p><a href="https://github.com/osu-uwrt/nereus">Nereus</a> simulates the pool, props, Talos's dynamics and sensors, and renders both ZED cameras' colour and depth. Everything else is the robot's own software, unchanged: YOLO and <code>tensor_detector</code>, mapping, the EKF, the <a href="../control/index.html">MPC</a> and <code>RepairCompMpcTree</code>. Nothing in the stack knows where the simulator put the props.</p>
+      <p><a href="../nereus.html">Nereus</a> simulates the pool, props, Talos's dynamics and sensors, and renders both ZED cameras' colour and depth. Everything else is the robot's own software, unchanged: YOLO and <code>tensor_detector</code>, mapping, the EKF, the <a href="../control/index.html">MPC</a> and <code>RepairCompMpcTree</code> (walked through in <a href="../mission-tree.html">The competition mission</a>; its building blocks are in <a href="../bt-nodes.html">Talos's tree nodes</a>). Nothing in the stack knows where the simulator put the props.</p>
       <p>The map is <code>init_data</code>, the RoboSub 2026 layout as the team measured it. Two runs:</p>
       <ul>
         <li><strong>Exact course.</strong> Every prop exactly where the map says.</li>
@@ -50,9 +50,9 @@
     </figure>
 
     <figure class="fig">
-      <video class="viewer-clip" id="run-video" src="video/mission_8x.mp4" poster="video/mission_8x.jpg" controls muted playsinline preload="metadata"></video>
+      <video class="viewer-clip" id="run-video" src="/video/mission_8x.mp4" poster="/video/mission_8x.jpg" width="1280" height="720" controls muted playsinline preload="none"></video>
       <div class="vh-chapters" id="run-video-chapters" role="group" aria-label="Jump to a task"></div>
-      <figcaption><b>The exact-course run in the Nereus viewer</b> at 8× speed, the camera behind Talos, with mapping's covariance ellipsoids, both cameras and the current target. Tap a task to jump.</figcaption>
+      <figcaption><b>The exact-course run in the <a href="../viewer.html">Nereus viewer</a></b> at 8× speed, the camera behind Talos, with mapping's covariance ellipsoids, both cameras and the current target. Tap a task to jump.</figcaption>
     </figure>
 
     <div class="prose">
@@ -87,7 +87,7 @@
         <li><strong>The start-time drift is huge.</strong> In simulation the node reads the clock before the first <code>/clock</code> message, so its first <code>predict</code> adds about 1.8 × 10<sup>9</sup> s of drift to the offset's prior (17 900 m² at the start). On the robot it starts at the configured 1 m. The runs here are barely affected, but it is worth fixing in <code>mapping.py</code>: set <code>last_predict_time</code> on the first odometry or detection, not in the constructor.</li>
         <li><strong>Everything else is real</strong>: models, thresholds, filters, the tree's checks and timing.</li>
       </ul>
-      <p>Data comes from <code>ros2 bag</code> recordings via <code>tools/bag_to_mission.py</code>.</p>
+      <p>Data comes from <code>ros2 bag</code> recordings via <code>tools/perception/bag_to_mission.py</code> in this site's repository.</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

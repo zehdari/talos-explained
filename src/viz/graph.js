@@ -12,8 +12,10 @@ function textWidth(text, weight, size) {
 export class Graph {
   // `narrow`: an optional second layout for small screens, used while the container is narrower than `narrow.below`
   // css px: { below, width, height, bands, nodes: { id: { x, y, ... } }, edges: { 'from>to': { bend, via, lx, ly, anchor } } }.
-  constructor(container, { width = 900, height = 360, nodes = [], edges = [], bands = [], onSelect, arrows = true, info, narrow } = {}) {
-    this.cfg = { width, height, nodes, edges, bands, narrow };
+  // It is also used whenever the wide layout would be shrunk below 80% (a small laptop window), where its text would
+  // drop under 10 px. `label`: an accessible name for the whole graph.
+  constructor(container, { width = 900, height = 360, nodes = [], edges = [], bands = [], onSelect, arrows = true, info, narrow, label } = {}) {
+    this.cfg = { width, height, nodes, edges, bands, narrow, label };
     this.container = container;
     this.arrows = arrows;
     this.onSelect = onSelect;
@@ -30,20 +32,42 @@ export class Graph {
     }
     document.addEventListener('pointerdown', (e) => { if (this.selected && !this.svg.contains(e.target)) this.highlight(null); });
   }
+  // The width the svg gets: the container's content box (or the window, before the container is laid out).
+  boxWidth() {
+    const cs = getComputedStyle(this.container);
+    const w = this.container.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    return w > 0 ? w : innerWidth;
+  }
   isNarrow() {
     const n = this.cfg.narrow;
     if (!n) return false;
-    const cs = getComputedStyle(this.container);
-    const w = this.container.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    return (w > 0 ? w : innerWidth) < (n.below || 600);
+    const w = this.boxWidth();
+    return w < (n.below || 600) || w / this.cfg.width < 0.8;
   }
   build(narrow) {
     this.narrowOn = narrow;
     const c = this.cfg, alt = narrow ? c.narrow : null;
     const width = alt ? alt.width : c.width, height = alt ? alt.height : c.height;
     this.W = width; this.H = height;
+    // A layout drawn small (one with no phone alternative, on a small laptop): its text grows toward 10 px on screen,
+    // up to 20% and only as far as every box has room, so boxes keep their size and the layout stays as drawn.
+    // Set once per build; the layout is not rebuilt on resize.
+    const scale = this.boxWidth() / width;
+    this.gs = Math.min(1.2, Math.max(1, 0.8 / scale)) || 1;
+    if (this.gs > 1) {
+      for (const n0 of c.nodes) {
+        const n = alt?.nodes?.[n0.id] ? { ...n0, ...alt.nodes[n0.id] } : n0;
+        if (n.shape === 'circle' || n.shape === 'square' || !(n.label || n.sub)) continue;
+        const tw = Math.max(textWidth(n.label || '', n.bold ? 650 : 400, 12.5), textWidth(n.sub || '', 400, 11.5));
+        this.gs = Math.min(this.gs, Math.max(1, (Math.max(n.w || 0, tw + 24) - 10) / tw));
+      }
+    }
     const old = this.svg;
-    this.svg = el('svg', { class: alt ? 'graph narrow' : 'graph', viewBox: `0 0 ${width} ${height}`, role: 'img' });
+    this.svg = el('svg', { class: alt ? 'graph narrow' : 'graph', viewBox: `0 0 ${width} ${height}`, role: 'group' });
+    if (this.gs > 1) this.svg.style.setProperty('--gs', this.gs.toFixed(3));
+    // Phone layouts: band labels about 11 px on screen (between 10.5 and 13.5 units).
+    if (alt && scale > 0) this.svg.style.setProperty('--band-fs', `${Math.min(13.5, Math.max(10.5, 11 / scale)).toFixed(2)}px`);
+    if (c.label) this.svg.setAttribute('aria-label', c.label);
     if (old) old.replaceWith(this.svg); else this.container.appendChild(this.svg);
     const defs = el('defs', {}, this.svg);
     for (const [id, color] of [['arrow', 'var(--ink-2)'], ['arrow-hot', 'var(--accent)']]) {
@@ -75,7 +99,9 @@ export class Graph {
     return this._uid;
   }
   addNode(n) {
-    const g = el('g', { class: 'node', tabindex: 0, transform: `translate(${n.x},${n.y})` }, this.gNodes);
+    const g = el('g', { class: 'node', tabindex: 0, role: 'button', 'aria-pressed': 'false', transform: `translate(${n.x},${n.y})` }, this.gNodes);
+    const name = [n.label, n.sub].filter(Boolean).join(', ');
+    if (name) g.setAttribute('aria-label', name);
     // Boxes grow to fit their text, so a label is never cut off by its own box.
     const fit = Math.max(textWidth(n.label || '', n.bold ? 650 : 400, 12.5), textWidth(n.sub || '', 400, 11.5)) + 24;
     const w = Math.max(n.w || 0, fit, n.label || n.sub ? 0 : 110), h = n.h || (n.sub ? 46 : 34);
@@ -147,6 +173,7 @@ export class Graph {
     this.nodes.forEach((n, k) => {
       n.g.classList.toggle('dim', !!id && !near.has(k));
       n.g.classList.toggle('hot', k === id);
+      n.g.setAttribute('aria-pressed', String(k === id));
     });
     this.edges.forEach((e) => {
       const on = id && (e.from === id || e.to === id);

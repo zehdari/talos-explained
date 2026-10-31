@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The detector, frame by frame · How Talos sees</title>
+<title>The detector, frame by frame · How Talos works</title>
 <meta name="description" content="Talos's two ZED stereo cameras, pairing colour with depth, the YOLO26n segmentation models, TensorRT, camera switching, and what tensor_detector publishes for every frame.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">Vision · Chapter 3</div>
+    <div class="kicker">Perception · Chapter 3</div>
     <h1>The detector, frame by frame</h1>
     <p class="lede">Everything Talos knows about the course starts as a colour image and a depth image from one of two stereo cameras. One node, <code>yolo_orientation</code>, turns each pair into named objects with 3D poses.</p>
   </header>
@@ -32,6 +32,7 @@
         <li><code>rgb/camera_info</code>: the intrinsics.</li>
       </ul>
       <p>Depth is the <em>z</em> coordinate in the optical frame (x right, y down, z out of the lens), not distance along the ray. Nereus's forward camera has <span class="m">f_x = f_y = 1864</span> px (54.5° × 35.7° view); the robot's calibrated one (Chapter 1) has <span class="m">f_x = 1701.5</span> px, a 59° view. Only one camera is processed at a time.</p>
+      <p>The hardware, launch files and bandwidth are in <a href="../cameras.html">The cameras</a>.</p>
 
       <h2 id="sync">Pairing colour with depth</h2>
       <p>Depth (9.2 MB per frame) arrives well after its colour frame (a few hundred kB). "Newest depth" would pair a frame with an older view while Talos turns.</p>
@@ -45,7 +46,7 @@
     </div>
     <figure class="fig">
       <div class="panel"><div class="cols" id="class-tables"></div></div>
-      <figcaption><b>The two class maps</b>, from <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/config/yolo_orientation.yaml"><code>config/yolo_orientation.yaml</code></a>. The YAML is the source of truth for names (unlisted ids are dropped); swatches are the RViz colours used on these pages.</figcaption>
+      <figcaption><b>The two class maps</b>, from <a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/config/yolo_orientation.yaml"><code>config/yolo_orientation.yaml</code></a>. The YAML is the source of truth for names (unlisted ids are dropped); swatches are the detector's own marker colours (<code>src/colors.py</code>), used on these pages.</figcaption>
     </figure>
     <div class="prose">
       <div class="table-scroll"><table class="params">
@@ -82,6 +83,7 @@
       <p>Autonomy calls <code>set_camera_is_dfc</code> (a <code>SetBool</code>, true = downward). The switch must replace the model, class map, thresholds, topics, frame id and torpedo logic all at once, or a frame could publish wrong names.</p>
       <p>So the service only sets a 0.1 s timer. The timer (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/tensor_detector/src/yolo_orientation.py#L220-L258"><code>setup_camera</code></a>) loads the new model, swaps every field under <code>_camera_lock</code>, clears the depth buffer and replaces the subscriptions. Callbacks drop messages from the old camera. An <code>InvalidHandle</code> from rclpy during the swap is caught and the message dropped.</p>
       <p>Two more services: <code>set_slalom_type</code> renames the slalom detection, and <code>set_table_pair_enabled</code> merges warning + helmet into one table detection (off in the current tree; mapping fits the table from the baskets, Chapter 5).</p>
+      <p>Which task asks for which camera, and how long a switch takes: <a href="../cameras.html#switching">The cameras, One detector, two cameras</a>.</p>
     </div>
 
     <div class="prose">

@@ -52,6 +52,9 @@ export function createScene(canvas, { floorDepth = -3, onPick, cameraPos = [-1.9
   const toThree = (p) => v3(p).applyEuler(root.rotation);
   camera.position.copy(toThree(cameraPos));
   const controls = new OrbitControls(camera, canvas);
+  // Touch screens: a vertical swipe scrolls the page (the browser cancels the orbit), a sideways drag orbits.
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  if (coarse) canvas.style.touchAction = 'pan-y';
   controls.target.copy(toThree(target));
   controls.enableDamping = true;
   controls.maxPolarAngle = Math.PI * 0.58;
@@ -193,15 +196,18 @@ export function createScene(canvas, { floorDepth = -3, onPick, cameraPos = [-1.9
   function resize() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (!w || !h) return;
+    // A hero scene (shiftRight) keeps Talos clear of the copy column on the left: on a wide screen it is drawn
+    // right of centre; on a mid-size one further right and from further away; on a phone it sits under the copy.
+    const mid = shiftRight && w > 640 && w <= 1100;
     if (!fitted) {
-      // Narrow screens: back the camera off so the robot fits under the copy.
       fitted = true;
-      if (w < 700) camera.position.sub(controls.target).multiplyScalar(1.9).add(controls.target);
+      const back = !shiftRight ? 1 : w <= 640 ? 1.9 : mid ? 1.4 : 1;
+      if (back !== 1) camera.position.sub(controls.target).multiplyScalar(back).add(controls.target);
     }
     renderer.setSize(w, h, false);
     lineMats.forEach((m) => m.resolution.set(w, h));
     camera.aspect = w / h;
-    if (shiftRight && w > 900) camera.setViewOffset(w, h, -w * shiftRight, 0, w, h);
+    if (shiftRight && w > 640) camera.setViewOffset(w, h, -w * (mid ? 0.3 : shiftRight), 0, w, h);
     else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   }
@@ -225,6 +231,7 @@ export function createScene(canvas, { floorDepth = -3, onPick, cameraPos = [-1.9
     setDrawing(on) {
       drawing = on;
       controls.enabled = !on;
+      if (coarse) canvas.style.touchAction = on ? 'none' : 'pan-y'; // drawing takes every drag
       canvas.style.cursor = on ? 'crosshair' : '';
     },
     setSketch(points) { sketch.set(points); },

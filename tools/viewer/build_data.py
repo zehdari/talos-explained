@@ -45,9 +45,9 @@ ROBOT = {
     "command/actuator/arm": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c); refused while killed",
     "command/actuator/torpedo": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
     "command/actuator/dropper": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
-    "command/actuator/claw": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c)",
+    "command/actuator/claw": "Nothing: no POAC build subscribes to it, so Open / Close claw only act in sim",
     "command/actuator/notify_reload": "POAC board firmware (talos/PoacBoard/src/actuators/ros_torp.c): torpedo and dropper counts back to 2",
-    "command/actuator/claw_move_s": "No subscriber found in titan_firmware or the robot stack: only the simulator uses it",
+    "command/actuator/claw_move_s": "POAC firmware on the unmerged poac-multiple-servos branch only (not master). There 0 is an integer divide by zero: don't press Stop claw on the robot",
     "command/electrical": "POAC board firmware (talos/PoacBoard/src/ros.c) and other boards",
     "command/led": "LED firmware (talos/CameraCageBB/src/ros.c, talos/LEDBoard/src/ros.c)",
     "state/battery": "SmartBattery firmware (talos/SmartBattery/src/ros.c)",
@@ -123,13 +123,13 @@ groups = [
     ]},
     {"id": "motion", "title": "Motion and the pose gizmo", "node": "/talos/viewer_panels", "items": [
         iface(mo["mode_service"], "service", "out", "Asked before Position / Feedforward control starts"),
-        iface(mo["linear_topic"], "topic", "out", "Position half of each command (map frame)"),
+        iface(mo["linear_topic"], "topic", "out", "Position half of each command: typed in map, sent in world (= odom), the MPC's frame"),
         iface(mo["angular_topic"], "topic", "out", "Orientation half of each command"),
         iface(mo["linear_topic"], "topic", "in", "Also listens, so the gizmo follows a tree's setpoints"),
         iface("/tf", "topic", "out", f"Broadcasts the command as the frame {mo['setpoint_frame']}",
               peers_note=f"Every /tf listener gets it; {mo['setpoint_frame']} is there for anyone who wants the commanded "
                          "pose. Nothing in the stack uses it", robot=""),
-        iface("/tf", "topic", "in", f"Actual pose: {mo['command_frame']} → {mo['base_frame'].replace('{namespace}', 'talos')}"),
+        iface("/tf", "topic", "in", f"Actual pose: map → {mo['base_frame'].replace('{namespace}', 'talos')}, and {mo['command_frame']} → map to convert commands"),
     ]},
     {"id": "autonomy", "title": "Autonomy", "node": "/talos/viewer_panels", "items": [
         iface(au["list_service"], "service", "out", "Fills the tree picker"),

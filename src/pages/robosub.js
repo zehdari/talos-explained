@@ -67,7 +67,7 @@ const TASKS = [
     ],
     points: [['Heading coin flip (scored with the gate)', P.heading]],
     talos: [
-      `${tl('WaitForKillSwitch')} waits until the kill switch is in (<code>state/kill</code> false), then 5 s. ${tl('PrepForRun')} locks the map and disarms the actuators; ${tl('Dive')} goes down in place holding the starting heading: it asks for 0.56 m, which <code>PrimitiveMovePosition</code> raises to its 0.75 m minimum.`,
+      `${tl('WaitForKillSwitch')} waits until the kill switch is in (<code>state/kill</code> false), then 1 s and 5 s more (6 s). ${tl('PrepForRun')} locks the map and disarms the actuators; ${tl('Dive')} goes down in place holding the starting heading: it asks for 0.56 m, which <code>PrimitiveMovePosition</code> raises to its 0.75 m minimum.`,
       'Before the run, the AprilTag board on the wall sets where the <code>map</code> frame is. Every later move is a position in that map, so the tree itself does not care which way Talos starts facing.',
     ],
     read: [['commanding.html', 'Commanding Talos'], ['perception/frames.html', 'Frames, targets and the mission tree'], ['pool-test.html', 'Pool test day']],
@@ -495,7 +495,7 @@ function card(id) {
   const runs = phases.filter((p) => t.phases.includes(p[0]));
   const runText = runs.map(([n, a, b]) => `${t.phases.length > 1 ? n.toLowerCase() + ' ' : ''}${mmss(a - t0)}–${mmss(b - t0)}`).join(', ');
   const total = t.points.reduce((s, r) => s + r[1], 0);
-  const img = (im) => im ? `<figure class="rs-shot"><img src="${IMG(im[0])}" alt="${im[1].replace(/<[^>]+>/g, '')}" ${im[0].startsWith('cam_') ? 'width="1120" height="700"' : 'width="996" height="430"'}><figcaption>${im[1]}</figcaption></figure>` : '';
+  const img = (im) => im ? `<figure class="rs-shot"><img src="${IMG(im[0])}" loading="lazy" decoding="async" alt="${im[1].replace(/<[^>]+>/g, '')}" ${im[0].startsWith('cam_') ? 'width="1120" height="700"' : 'width="996" height="430"'}><figcaption>${im[1]}</figcaption></figure>` : '';
   host.innerHTML = `
     <h3>${t.title}</h3>
     ${img(t.img)}
@@ -694,18 +694,18 @@ select('gate');
 // ---------------------------------------------------------------- the robots
 {
   const robots = [
-    ['Riptide 1.0', '2016', null, 'The first AUV, built 2015–16: one main hull in a minimal aluminium chassis. The whole software stack is named after it.', 'robot_riptide1.webp'],
-    ['Riptide 2.0', '2017', null, 'The same main hull in a slightly redesigned chassis, with upgraded sensors and better manoeuvrability.', 'robot_riptide2.webp'],
-    ['Maelstrom', '2018', null, 'Riptide\'s main hull in a new aluminium chassis. 10th of 47 at RoboSub 2018.', 'robot_maelstrom.webp'],
-    ['Puddles', '2019, 2020', 'puddles', '11th of 55 in 2019, 10th of 33 in 2020.', 'robot_puddles.webp'],
-    ['Tempest', '2022', 'tempest', 'Started in 2020 for 2021; the pandemic moved its only competition to 2022. First-generation (Mark 1) electronics.', 'robot_tempest.webp'],
-    ['Talos', '2023 to 2026', 'talos', 'Designed from August 2022 to fix Tempest\'s weak points: stiffer chassis, Mark 2 electronics (a board stack talking over CAN), smart battery housings. Claw added for 2026.', 'robot_talos.webp'],
-    ['SS Flip Barker', '2025', 'liltank', 'A second vehicle for the 2025 table task: a ballast tank for depth and tracks to drive. Did not qualify.', 'robot_ssfb.webp'],
-    ['Triton', '2026', 'Mercury stack', 'Rebuilt around the SS Flip Barker\'s hull: smaller than Talos, eight thrusters, boards based on Talos\'s designs, no DVL (ZED X Mini visual odometry), and talks to Talos acoustically.', 'robot_triton.webp'],
+    ['Riptide 1.0', '2016', null, 'The first AUV, built 2015–16: one main hull in a minimal aluminium chassis. The whole software stack is named after it.', 'robot_riptide1.webp', 'Riptide 1.0 on a wet wooden dock: a black cylindrical hull in a low open frame, team members crouched around it'],
+    ['Riptide 2.0', '2017', null, 'The same main hull in a slightly redesigned chassis, with upgraded sensors and better manoeuvrability.', 'robot_riptide2.webp', 'Riptide 2.0 on a blue-covered table: a black cylindrical hull in a grey frame, team members in red shirts behind it'],
+    ['Maelstrom', '2018', null, 'Riptide\'s main hull in a new aluminium chassis. 10th of 47 at RoboSub 2018.', 'robot_maelstrom.webp', 'Maelstrom on a stone ledge: a black hull with a clear front dome inside an open, cut-out black aluminium frame'],
+    ['Puddles', '2019, 2020', 'puddles', '11th of 55 in 2019, 10th of 33 in 2020.', 'robot_puddles.webp', 'Puddles on a blue-covered table: one long black and clear hull with sponsor logos and a thruster at each end, team members behind'],
+    ['Tempest', '2022', 'tempest', 'Started in 2020 for 2021; the pandemic moved its only competition to 2022. First-generation (Mark 1) electronics.', 'robot_tempest.webp', 'Tempest on pavement: two clear-ended hulls side by side under white top plates, on a red frame'],
+    ['Talos', '2023 to 2026', 'talos', 'Designed from August 2022 to fix Tempest\'s weak points: stiffer chassis, Mark 2 electronics (a board stack talking over CAN), smart battery housings. Claw added for 2026.', 'robot_talos.webp', 'Talos on a lab bench, seen from the front: two round clear viewports with electronics inside, thrusters on angled arms'],
+    ['SS Flip Barker', '2025', 'liltank', 'A second vehicle for the 2025 table task: a ballast tank for depth and tracks to drive. Did not qualify.', 'robot_ssfb.webp', 'SS Flip Barker on a beach: black housings and a clear tube with a red end cap, on rubber tracks'],
+    ['Triton', '2026', 'Mercury stack', 'Rebuilt around the SS Flip Barker\'s hull: smaller than Talos, eight thrusters, boards based on Talos\'s designs, no DVL (ZED X Mini visual odometry), and talks to Talos acoustically.', 'robot_triton.webp', 'Triton on a stone ledge, seen from the front: a black box frame round a single viewport, white floats at the corners, a red handle on top'],
   ];
   const host = document.getElementById('robots');
-  for (const [name, years, code, text, img] of robots) {
-    host.appendChild(h('figure', {}, `<img class="media" src="${IMG(img)}" alt="${name}" loading="lazy" width="640" height="427">`
+  for (const [name, years, code, text, img, alt] of robots) {
+    host.appendChild(h('figure', {}, `<img class="media" src="${IMG(img)}" alt="${alt}" loading="lazy" width="640" height="427">`
       + `<figcaption><b>${name}</b> <span class="yr">${years}</span>${code ? ` <code>${code}</code>` : ''}<br>${text}</figcaption>`));
   }
 }

@@ -82,12 +82,9 @@
       </ul>
 
       <h2 id="ports">Ports and the blackboard</h2>
-      <p>Every value reaches a node through a <strong>port</strong>, an XML attribute. BehaviorTree.CPP v3 has four rules, three of them surprising:</p>
+      <p>The port rules (<code>{key}</code> versus a literal, every port a string, subtree ports naming a key) are in <a href="bt.html">Behaviour trees</a>: <a href="bt.html#blackboard">The blackboard and ports</a> and <a href="bt.html#subtrees">Subtrees and remapping</a>. One catches people out in practice:</p>
       <ul>
-        <li><strong>Leaf nodes</strong> (actions, conditions): <code>z="{ceiling}"</code> reads the blackboard entry <code>ceiling</code>; <code>z="-0.5"</code> is the literal value.</li>
-        <li><strong>SubTree ports</strong> name an <em>entry in the parent tree</em>, without braces: <code>depth="depth"</code>. A number is a name too, so <code>z="-1"</code> needs <code>&lt;SetBlackboard output_key="-1" value="-1"/&gt;</code> above it.</li>
-        <li><strong>Empty</strong> (<code>z=""</code>, which Groot writes for every unset port) means "use the default" on a leaf input (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/autonomy_lib.hpp#L205"><code>tryGetInput</code></a>). On a SubTree port it doesn't: it links to the parent's entry <em>named</em> <code>""</code>, which every empty output port writes to, so the subtree can get another node's value. <code>RepairCompMpcTree.xml</code> has such ports (<code>target_3=""</code>), and <code>checkBT</code> skips empty values.</li>
-        <li><strong>Every UWRT port is a string</strong>, converted when read: <code>std::stod</code> reads <code>"1.5m"</code> as 1.5 silently and throws on <code>"abc"</code>, aborting the tree.</li>
+        <li><strong>An empty SubTree port is not a default.</strong> Groot writes <code>z=""</code> for every unset port. On a leaf input that means "use the default" (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/autonomy_lib.hpp#L205"><code>tryGetInput</code></a>). On a SubTree port it links to the parent's entry <em>named</em> <code>""</code>, which every empty output port writes to, so the subtree can get another node's value. <code>RepairCompMpcTree.xml</code> has such ports (<code>target_3=""</code>), and <code>checkBT</code> skips empty values, so nothing warns you.</li>
       </ul>
     </div>
     <figure class="fig">
@@ -148,7 +145,7 @@
     <div class="prose">
       <h2 id="assistant">The BT assistant</h2>
       <p><a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/assistant/btassistant.py"><code>btassistant.py</code></a> does the chores. It finds the source package from its own path, so the installed copy edits <code>src/</code> too. Four commands:</p>
-<pre class="cmd" data-where="your machine"><code>ros2 run riptide_autonomy2 btassistant.py [-s] [-f] &lt;command&gt; ...</code></pre>
+<pre class="cmd" data-where="your laptop"><code>ros2 run riptide_autonomy2 btassistant.py [-s] [-f] &lt;command&gt; ...</code></pre>
       <table class="params assistant">
         <thead><tr><th>Command</th><th>What it does</th></tr></thead>
         <tbody>
@@ -166,7 +163,7 @@
       <p><code>DeeperThan</code> is a condition: SUCCESS while Talos is deeper than a given <span class="m">z</span>. In a <code>ReactiveSequence</code> it stops a running subtree when Talos rises too far. It is <em>not</em> in the team's repo; files in <a href="https://github.com/zehdari/talos-explained/tree/main/tools/bt-workflow/example"><code>tools/bt-workflow/example/</code></a>.</p>
 
       <h3 id="ex-create">1. Generate the files</h3>
-<pre class="cmd" data-where="your machine"><code>cd ~/osu-uwrt/release
+<pre class="cmd" data-where="your laptop"><code>cd ~/osu-uwrt/release
 ros2 run riptide_autonomy2 btassistant.py create condition DeeperThan --no-rebuild</code></pre>
       <p>That writes <code>bt_conditions/DeeperThan.btcondition.hpp</code> (a "Hello world" <code>tick()</code>) and <code>test/…/TestDeeperThan.cpp</code> with one skipped test. Without <code>--no-rebuild</code> it also runs the clean rebuild.</p>
 
@@ -264,7 +261,7 @@ TEST_F(BtTest, test_DeeperThan_fails_on_stale_odometry) {
       </details>
 
       <h3 id="ex-build">4. Build with tests, and run them</h3>
-<pre class="cmd" data-where="your machine"><code>cd ~/osu-uwrt/release
+<pre class="cmd" data-where="your laptop"><code>cd ~/osu-uwrt/release
 colcon build --packages-select riptide_autonomy2 --cmake-clean-cache \
   --cmake-args -DAUTONOMY_BUILD_TESTS=ON          <span class="c"># about 3.5 min here</span>
 source install/setup.bash
@@ -304,7 +301,7 @@ GTEST_FILTER='*DeeperThan*:*all_trees_load*' ros2 run riptide_autonomy2 test_nod
 
       <h3 id="ex-run">6. Run it</h3>
       <p>The goal needs doTask running and something publishing <code>/talos/odometry/filtered</code>: the <a href="#nereus">Nereus sim</a> or the robot give you both. For a bench-only test, start doTask alone (<code>ros2 launch riptide_autonomy2 autonomy.launch.py robot:=talos</code>; the default name is <code>tempest</code>) and publish fake odometry yourself. The output below came from a 10 Hz test publisher at <span class="m">z = -1</span> (<a href="https://github.com/zehdari/talos-explained/blob/main/tools/bt-workflow/sandbox.sh"><code>sandbox.sh</code></a>).</p>
-<pre class="cmd" data-where="your machine"><code>ros2 action send_goal \
+<pre class="cmd" data-where="your laptop"><code>ros2 action send_goal \
   /talos/autonomy/run_tree riptide_msgs2/action/ExecuteTree \
   "{tree: $HOME/osu-uwrt/release/src/riptide_autonomy/trees/DeeperThanDemo.xml}"</code></pre>
 <pre><code>[talos.autonomy]: At z = -1; holding 10 s while deeper than -0.5 m
@@ -341,8 +338,8 @@ GTEST_FILTER='*DeeperThan*:*all_trees_load*' ros2 run riptide_autonomy2 test_nod
       </dl>
 
       <h2 id="checkbt">Checking the XML: checkBT</h2>
-      <p>Run it on your machine: deploy builds leave it out (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/CMakeLists.txt#L186"><code>CMakeLists.txt</code></a>).</p>
-<pre class="cmd" data-where="your machine"><code>cd ~/osu-uwrt/release/src/riptide_autonomy
+      <p>Run it on your laptop: deploy builds leave it out (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/CMakeLists.txt#L186"><code>CMakeLists.txt</code></a>).</p>
+<pre class="cmd" data-where="your laptop"><code>cd ~/osu-uwrt/release/src/riptide_autonomy
 ros2 run riptide_autonomy2 checkBT                       <span class="c"># workspace, then every tree</span>
 ros2 run riptide_autonomy2 checkBT $PWD/trees/MyTree.xml <span class="c"># one file</span></code></pre>
       <ul>
@@ -408,7 +405,7 @@ ros2 run riptide_autonomy2 checkBT $PWD/trees/MyTree.xml <span class="c"># one f
 
       <h2 id="nereus">Testing in Nereus</h2>
       <p>Nereus runs Talos's real stack, doTask included, so a tree behaves there as it will in the pool, minus real water and noise (<a href="nereus.html">Nereus, the simulator</a>):</p>
-<pre class="cmd" data-where="your machine"><code>ros2 run rmw_zenoh_cpp rmw_zenohd          <span class="c"># terminal 1: the Zenoh router</span>
+<pre class="cmd" data-where="your laptop"><code>ros2 run rmw_zenoh_cpp rmw_zenohd          <span class="c"># terminal 1: the Zenoh router</span>
 ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim   <span class="c"># terminal 2</span></code></pre>
       <p>Then Enable, pick the tree, Start. To test one task without flying the whole course:</p>
       <ul>
@@ -416,7 +413,7 @@ ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim   <spa
         <li><strong>Start Talos next to the task.</strong> Copy <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/scenarios/talos_uwrt/scenario.yaml"><code>scenarios/talos_uwrt/scenario.yaml</code></a> into a new pack folder, change <code>initial.position_m</code> (or a task's <code>task_placements</code>), and launch with <code>scenario:=&lt;folder&gt;</code>. Pack paths in it must stay relative. Moving props: <a href="perception/workflow.html">Perception's "Working on it yourself"</a>.</li>
         <li><strong>Run it headless</strong> for a repeatable check. <a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/uwrt/acceptance/mission.py"><code>acceptance/mission.py</code></a> starts the sim and stack in a private ROS domain, releases the kill switch, runs <code>--tree</code>, and writes <code>mission.json</code> (result, visited stack, scores) and the bridge's <code>tasks.json</code> into <code>--output</code>.</li>
       </ul>
-<pre class="cmd" data-where="your machine"><code>cd ~/osu-uwrt/release/nereus
+<pre class="cmd" data-where="your laptop"><code>cd ~/osu-uwrt/release/nereus
 python3 integrations/uwrt/acceptance/mission.py --output /tmp/mission_run1   <span class="c"># folder must not exist yet</span></code></pre>
       <p>It runs <code>RepairCompTree.xml</code> unless you pass <code>--tree</code>, and gives up after <code>--timeout</code> (1800 s). It passes no controller arguments, so the stack comes up with the launch files' default controller (<code>hybrid</code>, the legacy one), not riptide_mpc. For the Mpc trees, use <code>sim.launch.py</code> with the MPC arguments above.</p>
       <p>Every sim run writes its records (<code>resolved.json</code>, <code>execution.json</code>, <code>summary.json</code>, <code>tasks.json</code>) to <code>/tmp/nereus_sim/&lt;timestamp&gt;</code>. Record a bag too, to tell a tree mistake from a perception or control one. Before the pool, run the exact file you will run there, start to finish.</p>

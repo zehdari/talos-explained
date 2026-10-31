@@ -68,6 +68,8 @@ pre.msgdef .sep { color: #7fa3ad; }
 .ks-chain .chip { background: var(--paper); border-radius: 6px; padding: 0.3rem 0.45rem; border-top: 3px solid var(--rule); min-width: 0; }
 .ks-chain .chip small { display: block; font-size: 0.7rem; color: var(--muted); }
 .ks-chain .chip b { display: block; font-size: 0.78rem; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.ks-chain .chip b .nw { white-space: nowrap; }
+.ks-chain .chip small { overflow-wrap: anywhere; }
 .ks-chain .chip.ok { border-top-color: var(--prediction); }
 .ks-chain .chip.no { border-top-color: var(--accent); }
 table.params.ks-slots { margin: 0 0 0.6rem; font-size: 0.8rem; }
@@ -92,9 +94,17 @@ table.params.ks-slots td.lock { font-family: var(--mono); font-size: 0.7rem; ove
 .ks-log li.bad { color: #8a2c08; }
 .ks-log li.good { color: #0f4d37; }
 
-@media (max-width: 760px) {
+/* The rail takes 240px, so five chips beside the controls get too narrow well above 760px:
+   three columns first, then the controls move below the status. */
+@media (max-width: 1180px) {
+  .ks-chain { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ks-chain .chip:last-child { grid-column: span 2; }
+}
+@media (max-width: 1100px) {
   .ks-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'status' 'controls' 'detail'; grid-template-rows: auto; }
   .ks-controls { margin-top: 0.4rem; }
+}
+@media (max-width: 760px) {
   .ks-chain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ks-chain .chip:last-child { grid-column: 1 / -1; }
 }
@@ -105,6 +115,4 @@ table.params.ks-slots td.lock { font-family: var(--mono); font-size: 0.7rem; ove
   table.params.ks-slots td.lock { font-size: 0.66rem; }
 }
 .flow-steps button { display: block; width: 100%; }
-.fig .media.sch { background: #fff; }
-.fig a.sch-link { display: block; cursor: zoom-in; }
 table.params td small { font-size: 0.76rem; color: var(--muted); }
