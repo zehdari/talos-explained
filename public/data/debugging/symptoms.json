@@ -7,7 +7,6 @@
   "ctrl": "Control and ESCs",
   "kill": "Kill switch",
   "vision": "Perception",
-  "sim": "Nereus",
   "data": "Bags and time",
   "tools": "Workflow"
  },
@@ -47,19 +46,6 @@
    ]
   },
   {
-   "id": "type-unknown",
-   "cat": "net",
-   "symptom": "<code>ros2 topic echo</code> says the message type is invalid; the viewer's plot row says <i>Can't read this topic</i>",
-   "cause": "The message type (usually a <code>riptide_msgs2</code> one) isn't installed in your shell: only <code>/opt/ros</code> is sourced.",
-   "check": "<code>source ~/osu-uwrt/release/install/setup.bash</code>, then start the tool (or the viewer) again from that shell.",
-   "src": [
-    {
-     "label": "viewer.md: Plots",
-     "href": "https://github.com/osu-uwrt/nereus/blob/main/docs/viewer.md?plain=1#L154-L200"
-    }
-   ]
-  },
-  {
    "id": "hz-over-link",
    "cat": "net",
    "symptom": "<code>ros2 topic hz</code> on a laptop says a camera stream is slow",
@@ -67,7 +53,11 @@
    "check": "Measure one topic at a time. For the true rate, run <code>ros2 topic hz</code> on the Orin over SSH.",
    "src": [
     {
-     "label": "pretest_checks: rates measured one topic at a time",
+     "label": "pretest_checks robot.yaml: rates measured one topic at a time (team tool, not on GitHub)",
+     "href": null
+    },
+    {
+     "label": "Pool test day: pre-test checks",
      "href": "pool-test.html#pretest"
     }
    ]
@@ -89,7 +79,7 @@
    "id": "launch-pending",
    "cat": "launch",
    "symptom": "A launch sits at <b>3/4 completed</b> on the launcher page instead of <b>Running</b>",
-   "cause": "The launcher counts a launch as running once every topic listed for it in the launch YAML has been seen. One hasn't: that node didn't start, or the topic was renamed. Hover the bar for <i>Pending Topics</i>. riptide_navigation's entry lists <code>/a</code>.",
+   "cause": "The launcher counts a launch as running once every topic listed for it in the launch YAML has been seen. One hasn't: that node didn't start, or the topic was renamed. Hover the bar for <i>Pending Topics</i>. One case is normal: riptide_navigation also waits for a placeholder topic <code>/a</code> that nothing publishes, so it always stops at <b>4/5 completed</b>.",
    "check": "Read the launch's output on the launcher page (cyan while starting). The page shows only lines printed while it is open: for earlier ones, restart the launch with the page open, or read <code>~/.ros/log/</code> on the Orin. <code>ros2 topic hz</code> on the pending topic.",
    "src": [
     {
@@ -97,8 +87,8 @@
      "href": "https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/pages/main.js#L67-L88"
     },
     {
-     "label": "talos_launch_bench_mpc.yaml",
-     "href": "https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_bench_mpc.yaml#L43-L57"
+     "label": "talos_launch_mpc.yaml: navigation waits for /a",
+     "href": "https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml#L55"
     }
    ]
   },
@@ -161,7 +151,7 @@
      "href": "firmware.html#debug"
     },
     {
-     "label": "pool-test.html pretest",
+     "label": "Pool test day: pre-test checks",
      "href": "pool-test.html#pretest"
     }
    ]
@@ -483,21 +473,8 @@
    ]
   },
   {
-   "id": "config-not-taking",
-   "cat": "tools",
-   "symptom": "You edited a config YAML and nothing changed",
-   "cause": "Nodes read the copy in <code>install/&lt;pkg&gt;/share</code>, not your source tree. Rebuild (or build with <code>--symlink-install</code>). On the robot, nothing changes until the code is deployed. (Building this site turned up a mapping prior that differed between the source and installed <code>config.yaml</code>.)",
-   "check": "<code>ros2 pkg prefix riptide_mapping2</code>, then diff that package's <code>share/</code> config against <code>src/</code>. On a running node, <code>ros2 param get</code>.",
-   "src": [
-    {
-     "label": "Setting up your machine",
-     "href": "setup.html#sourcing"
-    }
-   ]
-  },
-  {
    "id": "sim-offset-prior",
-   "cat": "sim",
+   "cat": "vision",
    "symptom": "In sim, mapping's course offset starts hugely uncertain (about 17,900 m²)",
    "cause": "A start-up bug: mapping stamps <code>last_predict_time</code> when the node starts, before <code>/clock</code> arrives, so the first drift prediction covers about 1.8 × 10<sup>9</sup> s (time zero to the sim clock). Only in sim; on the robot the clock is wall time.",
    "check": "Echo <code>/talos/mapping/&lt;object&gt;</code> covariance right after start. A fix would start the first prediction at the first <code>/clock</code> message.",
@@ -509,19 +486,6 @@
     {
      "label": "mapping.py predict_offset",
      "href": "https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/riptide_mapping2/mapping.py#L921-L927"
-    }
-   ]
-  },
-  {
-   "id": "clock-step",
-   "cat": "sim",
-   "symptom": "The viewer loses TF (robot frozen, frames missing) right after a clock change",
-   "cause": "A clock that steps backwards by more than about 10 s makes the Nereus viewer drop TF. That is why the opbox time setup lets the robot step its clock only in its first three updates after boot.",
-   "check": "<code>chronyc tracking</code> on each machine. Restart the viewer after a big step.",
-   "src": [
-    {
-     "label": "Time sync",
-     "href": "computers.html#time"
     }
    ]
   },
@@ -559,8 +523,8 @@
    "check": "Isolate the replay: <code>RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=&lt;unused&gt;</code> and unset the <code>ZENOH_*</code> variables.",
    "src": [
     {
-     "label": "Replay section",
-     "href": "#replay"
+     "label": "viewer_replay.sh (the isolated replay used for this chapter)",
+     "href": "https://github.com/zehdari/talos-explained/blob/main/tools/debugging/viewer_replay.sh"
     }
    ]
   },
@@ -572,8 +536,51 @@
    "check": "<code>chronyc tracking</code> on both machines, or record on the Orin itself.",
    "src": [
     {
-     "label": "Time section",
-     "href": "#time"
+     "label": "bag_stats.py (message ages read from the bag)",
+     "href": "https://github.com/zehdari/talos-explained/blob/main/tools/debugging/bag_stats.py"
+    }
+   ]
+  },
+  {
+   "id": "clock-step",
+   "cat": "data",
+   "symptom": "The viewer loses TF (robot frozen, frames missing) right after a clock change",
+   "cause": "A clock that steps backwards by more than about 10 s makes the Nereus viewer drop TF. That is why the opbox time setup lets the robot step its clock only in its first three updates after boot.",
+   "check": "<code>chronyc tracking</code> on each machine. Restart the viewer after a big step.",
+   "src": [
+    {
+     "label": "Opbox chrony client setup: makestep 1 3 on the robot (setup-client.sh, not on GitHub)",
+     "href": null
+    },
+    {
+     "label": "Computers and networks: time",
+     "href": "computers.html#time"
+    }
+   ]
+  },
+  {
+   "id": "config-not-taking",
+   "cat": "tools",
+   "symptom": "You edited a config YAML and nothing changed",
+   "cause": "Nodes read the copy in <code>install/&lt;pkg&gt;/share</code>, not your source tree. Rebuild (or build with <code>--symlink-install</code>). On the robot, nothing changes until the code is deployed. (Building this site turned up a mapping prior that differed between the source and installed <code>config.yaml</code>.)",
+   "check": "<code>ros2 pkg prefix riptide_mapping2</code>, then diff that package's <code>share/</code> config against <code>src/</code>. On a running node, <code>ros2 param get</code>.",
+   "src": [
+    {
+     "label": "Setting up your machine",
+     "href": "setup.html#sourcing"
+    }
+   ]
+  },
+  {
+   "id": "type-unknown",
+   "cat": "tools",
+   "symptom": "<code>ros2 topic echo</code> says the message type is invalid; the viewer's plot row says <i>Can't read this topic</i>",
+   "cause": "The message type (usually a <code>riptide_msgs2</code> one) isn't installed in your shell: only <code>/opt/ros</code> is sourced.",
+   "check": "<code>source ~/osu-uwrt/release/install/setup.bash</code>, then start the tool (or the viewer) again from that shell.",
+   "src": [
+    {
+     "label": "viewer.md: Plots",
+     "href": "https://github.com/osu-uwrt/nereus/blob/main/docs/viewer.md?plain=1#L154-L200"
     }
    ]
   },

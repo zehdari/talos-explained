@@ -1123,7 +1123,7 @@
   {
    "id": "ccbb",
    "name": "Camera cage breakout board",
-   "short": "Camera cage BB",
+   "short": "Camera cage breakout",
    "group": "hull",
    "groupLabel": "In the hull",
    "status": "On Talos",
@@ -1820,6 +1820,24 @@
       "r": 0.0345
      },
      {
+      "ref": "L1",
+      "label": "Inductors",
+      "part": "SRR1280-221K",
+      "desc": "220 uH buck inductors",
+      "x": 0.6683,
+      "y": 0.5336,
+      "r": 0.0576
+     },
+     {
+      "ref": "U3",
+      "label": "3.3 V regulator",
+      "part": "LM1117-3.3",
+      "desc": "5 V -> 3.3 V",
+      "x": 0.4348,
+      "y": 0.3803,
+      "r": 0.041
+     },
+     {
       "ref": "J1",
       "label": "LED module",
       "part": "Samtec LS2 10-pin",
@@ -1885,6 +1903,24 @@
       "r": 0.0345
      },
      {
+      "ref": "L1",
+      "label": "Inductors",
+      "part": "SRR1280-221K",
+      "desc": "220 uH buck inductors",
+      "x": 0.5336,
+      "y": 0.3317,
+      "r": 0.0576
+     },
+     {
+      "ref": "U3",
+      "label": "3.3 V regulator",
+      "part": "LM1117-3.3",
+      "desc": "5 V -> 3.3 V",
+      "x": 0.3803,
+      "y": 0.5652,
+      "r": 0.041
+     },
+     {
       "ref": "J1",
       "label": "LED module",
       "part": "Samtec LS2 10-pin",
@@ -1945,15 +1981,15 @@
      "ref": "L1-L4",
      "part": "SRR1280-221K",
      "role": "220 uH buck inductors",
-     "spot": null,
-     "spotRef": null
+     "spot": "top",
+     "spotRef": "L1"
     },
     {
      "ref": "U3",
      "part": "LM1117-3.3",
      "role": "5 V -> 3.3 V",
-     "spot": null,
-     "spotRef": null
+     "spot": "top",
+     "spotRef": "U3"
     }
    ],
    "connectors": [
@@ -2337,28 +2373,8 @@
       "r": 0.0403
      }
     ],
-    "bottom": [
-     {
-      "ref": "U17",
-      "label": "Bluetooth module",
-      "part": "Microchip BM83",
-      "desc": "Bluetooth 5.0 audio module",
-      "x": 0.1365,
-      "y": 0.7334,
-      "r": 0.0937
-     }
-    ],
-    "bottomL": [
-     {
-      "ref": "U17",
-      "label": "Bluetooth module",
-      "part": "Microchip BM83",
-      "desc": "Bluetooth 5.0 audio module",
-      "x": 0.7334,
-      "y": 0.8635,
-      "r": 0.0937
-     }
-    ]
+    "bottom": [],
+    "bottomL": []
    },
    "parts": [
     {
@@ -2414,8 +2430,8 @@
      "ref": "U17",
      "part": "Microchip BM83",
      "role": "Bluetooth 5.0 audio module",
-     "spot": "bottom",
-     "spotRef": "U17"
+     "spot": null,
+     "spotRef": null
     },
     {
      "ref": "U7",
@@ -3132,7 +3148,7 @@
   {
    "id": "agx_m2",
    "name": "Jetson AGX M.2 RS-422 card",
-   "short": "FOG card",
+   "short": "FOG board",
    "group": "orin",
    "groupLabel": "On the Orin",
    "status": "On Talos",

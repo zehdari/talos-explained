@@ -13,15 +13,32 @@ export const PARTS = [
     ],
   },
   {
-    id: 'vehicle',
-    title: 'The vehicle',
+    id: 'mechanical',
+    title: 'Mechanical',
     chapters: [
       { href: 'mechanical.html', title: 'Hull, frame and layout' },
+      { href: 'sealing.html', title: 'Seals, SubConns and leak tests' },
+      { href: 'buoyancy.html', title: 'Buoyancy and trim' },
+      { href: 'actuators.html', title: 'Torpedoes, dropper and claw' },
+      { href: 'mech-design.html', title: 'Designing and making parts' },
+    ],
+  },
+  {
+    id: 'electrical',
+    title: 'Electrical',
+    chapters: [
       { href: 'electrical.html', title: 'Power and wiring' },
+      { href: 'batteries.html', title: 'Batteries and charging' },
       { href: 'boards.html', title: 'The circuit boards' },
       { href: 'firmware.html', title: 'Firmware on the boards' },
       { href: 'thrusters-hw.html', title: 'Thrusters and ESCs' },
-      { href: 'actuators.html', title: 'Torpedoes, dropper and claw' },
+      { href: 'board-design.html', title: 'Designing a board' },
+    ],
+  },
+  {
+    id: 'sensing',
+    title: 'Sensors and computing',
+    chapters: [
       { href: 'sensors.html', title: 'Navigation sensors' },
       { href: 'cameras.html', title: 'The cameras' },
       { href: 'localization.html', title: 'Where am I? State estimation' },

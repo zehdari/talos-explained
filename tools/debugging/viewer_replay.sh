@@ -20,7 +20,7 @@ ros2 bag play $BAG --clock 100 --start-offset $START --disable-keyboard-controls
            /talos/state/kill /talos/controller/mpc/state /talos/depth/pose > /tmp/dbg_play.log 2>&1 & PLAY=$!
 FRAMES=$DUR   # the third argument is a frame count
 (cd $NEREUS && ./build/ros-viewer/nereus-viewer --scenario /tmp/dbg_resolved.json --pose-source estimate \
-   --use-sim-time true --thrust --mpc-path --layout standard --focus Vehicle --robot-only --orbit ${ORBIT:-2.4 0.45 2.6} --hidden --frames $FRAMES --screenshot $OUT) \
+   --use-sim-time true --thrust --mpc-path --layout ${LAYOUT:-standard} --focus Vehicle --robot-only --orbit ${ORBIT:-2.4 0.45 2.6} --hidden --frames $FRAMES --screenshot $OUT) \
    > /tmp/dbg_viewer.log 2>&1 || true
 kill -INT $PLAY 2>/dev/null; kill $STATIC 2>/dev/null; wait 2>/dev/null
 echo "saved $OUT"

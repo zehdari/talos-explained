@@ -67,7 +67,17 @@ for g in groups:
             info.append({'node': name, 'group': 'thrusters', 'label': meshes[-1][1], 'colour': g['colour'], 'tris_in': len(mm.faces), 'tris_out': len(F),
                          'bbox_m': {'min': np.round(lo, 4).tolist(), 'max': np.round(hi, 4).tolist(), 'size': np.round(hi - lo, 4).tolist()}})
         continue
-    V, F = decimate(m, BUDGET.get(g['id'], 6000))
+    if g['id'] == 'foam':
+        # The corner-module foam blocks are ~100-triangle boxes next to the bottles' 20k-triangle hardware: decimating
+        # the node as one mesh collapsed them to nothing. Keep small pieces as they are; decimate only the big ones.
+        parts = m.split(only_watertight=False)
+        small = [p for p in parts if len(p.faces) <= 300 and (p.bounds[1] - p.bounds[0]).max() >= 0.004]
+        big = [p for p in parts if len(p.faces) > 300]
+        Vb, Fb = decimate(trimesh.util.concatenate(big), BUDGET['foam'] - sum(len(p.faces) for p in small))
+        keep = trimesh.util.concatenate(small + [trimesh.Trimesh(Vb, Fb, process=False)])
+        V, F = np.asarray(keep.vertices, np.float32), np.asarray(keep.faces, np.int64)
+    else:
+        V, F = decimate(m, BUDGET.get(g['id'], 6000))
     meshes.append((g['id'], g['label'], g['colour'], V, F))
     lo, hi = m.bounds
     info.append({'node': g['id'], 'group': g['id'], 'label': g['label'], 'colour': g['colour'], 'tris_in': raw, 'tris_out': len(F),

@@ -12,176 +12,147 @@
   <header class="page-head">
     <div class="kicker">The vehicle · Chapter 6</div>
     <h1>Torpedoes, dropper and claw</h1>
-    <p class="lede">The parts of Talos that act on the course: a launcher that shoots two torpedoes and drops two markers, a claw that carries objects, and a magnet on a stick. One servo, one board and a handful of ROS names do all of the firing. Here is how a shot gets from the mission tree to the spring.</p>
+    <p class="lede">The parts of Talos that act on the course: a launcher that shoots two torpedoes and drops two markers, a claw that carries objects, and a magnet on a stick. Here is how a shot gets from the mission tree to the spring.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
       <li>Talos carries a <strong>launcher</strong> (two torpedoes pointing forward, two markers pointing down), a <strong>claw</strong> under the bow and a passive <strong>magnet poker</strong>.</li>
-      <li>One serial servo on the <strong>POAC</strong> board fires the whole launcher. From its 120° home it turns one way for torpedoes (200°, then 240°) and the other way for markers (50°, then 0°), then goes back home.</li>
-      <li>A tree calls a ROS <strong>service</strong>; <code>actuator_service_translator</code> turns it into a <strong>topic</strong>; micro-ROS carries that over CAN to the POAC, which says yes or no on <code>state/actuator/cmd_status</code>.</li>
-      <li>The firmware will not <strong>arm</strong> while the robot is killed, and will not fire a torpedo unless armed, enabled and idle. Trees arm just before a task and disarm right after.</li>
-      <li>Nereus takes the same services and topics, applies similar arming rules (a little stricter; see the table below) and flies real projectiles, so trees can be tested before the pool.</li>
+      <li>One servo on the <strong>POAC</strong> board fires the whole launcher. From its 120° home it turns one way for torpedoes (200°, then 240°) and the other way for markers (50°, then 0°), then goes back home.</li>
+      <li>A tree calls a ROS service; a small node turns it into a topic; that reaches the POAC over CAN, and the POAC answers yes or no.</li>
+      <li>The POAC refuses a torpedo unless the robot isn't killed (kill switch in, Enable pressed), the launcher is <strong>armed</strong> and the servo is idle. Trees arm just before a task and disarm right after.</li>
+      <li>Nereus takes the same commands with slightly stricter rules and flies real projectiles, so trees can be tested before the pool.</li>
     </ul></aside>
 
     <div class="prose">
-      <p>Several RoboSub tasks need Talos to touch the course: torpedoes through holes in a board, markers into bins, objects moved from a table into baskets, and magnets held against targets. <a href="robosub.html">RoboSub and the course</a> has the rules and points. This chapter is about the hardware and code that do it. The board itself is in <a href="boards.html">The circuit boards</a>, the trees in <a href="mission-tree.html">The competition mission</a>.</p>
+      <p>Several RoboSub tasks need Talos to touch the course: torpedoes through holes in a board, markers into bins, objects moved from a table into baskets, and magnets held against targets (<a href="robosub.html">RoboSub and the course</a>). This chapter is the hardware and code that do it.</p>
 
       <h2 id="mechanisms">What Talos carries</h2>
-      <table class="params">
+      <table class="params cards">
         <thead><tr><th>Mechanism</th><th>Does</th><th>Moved by</th><th>Command</th></tr></thead>
         <tbody>
-          <tr><td>Torpedo launcher</td><td>Shoots 2 torpedoes forward</td><td>Launcher servo + springs</td><td><code>command/actuator/torpedo</code></td></tr>
+          <tr><td>Torpedo launcher</td><td>Shoots 2 torpedoes forward</td><td>One servo + springs</td><td><code>command/actuator/torpedo</code></td></tr>
           <tr><td>Marker dropper</td><td>Drops 2 markers straight down</td><td>The same servo</td><td><code>command/actuator/dropper</code></td></tr>
           <tr><td>Claw</td><td>Grips and carries table objects</td><td>Its own servo, rack and pinion</td><td><code>command/actuator/claw_move_s</code></td></tr>
           <tr><td>Magnet poker</td><td>Holds a magnet against a target</td><td>Nothing: Talos flies it there</td><td>none</td></tr>
         </tbody>
       </table>
-      <p>All four are in the team's July 2026 CAD (<a href="mechanical.html">Hull, frame and layout</a>). Positions for the tree come from <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L353-L367"><code>talos.yaml</code></a>, which turns them into the TF frames <code>torpedo_0_link</code>, <code>torpedo_1_link</code>, <code>droppers_link</code>, <code>claw_link</code> and <code>magnet_link</code> that the trees aim with (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/urdf/robot_actuators.xacro#L62-L125"><code>robot_actuators.xacro</code></a>).</p>
-      <p>Watch the frame when you read that file: its poses are measured from <code>talos/origin</code>, not from <code>base_link</code>. <code>base_link</code> sits at (−0.14, 0.03, −0.09) in <code>origin</code>, so <code>origin</code> is 14 cm ahead of <code>base_link</code>, 3 cm to starboard and 9 cm up (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/urdf/robot_base.xacro#L29-L33"><code>robot_base.xacro</code></a>). The positions on this page are converted to <code>base_link</code>.</p>
+      <p>The trees aim each one with a <a class="gl" href="glossary.html#term-tf">TF</a> frame on the robot: <code>torpedo_0_link</code> and <code>torpedo_1_link</code> (one per tube), <code>droppers_link</code>, <code>claw_link</code> and <code>magnet_link</code>, all set in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L353-L367"><code>talos.yaml</code></a>. Distances on this page are from <a class="gl" href="glossary.html#term-base-link"><code>base_link</code></a>, Talos's body frame.</p>
     </div>
-    <figure class="fig">
-      <div class="media-grid">
-        <figure><img class="media" src="/media/cad/ctx-torpedo-marker-launcher-iso.webp" width="1600" height="1759" loading="lazy" alt="Talos CAD in grey from above the port bow, with the torpedo and marker launcher in orange low in the middle of the frame, two torpedo noses pointing forward."><figcaption>Launcher: under the port hull tube.</figcaption></figure>
-        <figure><img class="media" src="/media/cad/ctx-claw-iso.webp" width="1600" height="1759" loading="lazy" alt="Talos CAD in grey with the claw in orange, hanging below the bow on a long mount."><figcaption>Claw: below the bow, the lowest point of the robot.</figcaption></figure>
-        <figure><img class="media" src="/media/cad/ctx-magnet-poker-iso.webp" width="1600" height="1759" loading="lazy" alt="Talos CAD in grey with the magnet poker, a short rod with a disc magnet on the end, in orange."><figcaption>Magnet poker: a rod with a magnet on its tip.</figcaption></figure>
+    <figure class="fig narrow" id="where-fig">
+      <div class="where">
+        <img class="media" src="/img/actuators/where.webp" width="1100" height="962" loading="lazy" alt="The lower front of Talos in grey CAD. The launcher in orange sits under the hull with two torpedo noses pointing forward; the claw in purple hangs lowest, below the bow on a long mount; the magnet poker in blue is a rod sticking forward on the other side.">
+        <span class="where-tag" style="--c: var(--accent); left: 64%; top: 63%">Launcher</span>
+        <span class="where-tag" style="--c: var(--s7); left: 44%; top: 87%">Claw</span>
+        <span class="where-tag" style="--c: var(--state); left: 2%; top: 31%">Magnet poker</span>
       </div>
-      <figcaption><b>Where each mechanism sits.</b> The whole robot in grey with one group in orange, from the "Talos 7-11-26" SolidWorks CAD. The CAD is a design model from July 2026; later changes to the robot are not in it.</figcaption>
+      <figcaption><b>Where each mechanism sits.</b> The lower front of Talos in the team's July 2026 CAD ("Talos 7-11-26"), torpedoes pointing forward. The launcher is under the port hull, the claw hangs lowest below the bow, the poker sticks out ahead. Later changes to the robot are not in the CAD.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="launcher">The launcher: one servo, four shots</h2>
-      <p>The CAD calls it <code>Torpedoes + Markers V8</code>. A servo in an aluminium housing turns a spur gear, a shaft and a pair of helix gears that move a pushing arm. Going by the CAD and the firmware's angles, the arm lets go of one spring-loaded payload at a time: torpedoes from two tubes pointing forward, markers from two tubes pointing down.</p>
+      <p>The CAD calls it <code>Torpedoes + Markers V8</code>. Four compression springs hold the energy; the servo only lets go. It turns a spur gear and a pair of helix gears that move a pushing arm, which releases one payload at a time: torpedoes from two tubes pointing forward, markers from two tubes pointing down.</p>
     </div>
-    <figure class="fig">
-      <img class="media" src="/media/cad/sub-torpedo-marker-launcher-iso.webp" width="1600" height="996" loading="lazy" alt="The launcher on its own: two red torpedoes in printed tubes at the front, two spring-loaded marker tubes underneath, a spur gear on the servo shaft, the grey servo housing with its cable connector, and a long black mounting bracket.">
-      <figure class="act-sub"><img class="media" src="/media/cad/sub-torpedo-marker-launcher-port.webp" width="1600" height="574" loading="lazy" alt="Side view of the launcher: torpedo pointing left (forward), marker spring below, servo housing behind the gear, mount to the right."><figcaption>From port: torpedo forward, marker spring below, servo behind.</figcaption></figure>
-      <figure class="act-sub act-below"><img class="media" src="/media/cad/sub-torpedo-marker-launcher-below.webp" width="1600" height="1299" loading="lazy" alt="The launcher from below: the two marker tube openings, the helix gears and pushing arm between the torpedo and marker tubes."><figcaption>From below: the two marker exits and the gears.</figcaption></figure>
-      <figcaption><b>The V8 launcher</b>, from the CAD. The springs (McMaster 9435K123, four of them) store the energy; the servo only releases. The team has a newer launcher design (V10, V11) in CAD that has not been printed or tested, so this chapter describes V8.</figcaption>
+    <figure class="fig" id="launcher-cad">
+      <div class="cad-grid">
+        <figure class="cad-main"><img class="media" src="/img/actuators/launcher-iso.webp" width="1080" height="580" loading="lazy" alt="The launcher: two red torpedoes in their tubes at the front, the servo in its grey housing behind a spur gear, and the two marker tubes underneath."><figcaption>Torpedoes at the front, the servo behind its gear, marker tubes below.</figcaption></figure>
+        <figure><img class="media" src="/img/actuators/launcher-port.webp" width="930" height="450" loading="lazy" alt="Side view of the launcher: torpedo pointing left (forward), the spur gear and servo behind it, a marker spring below."><figcaption>From port: torpedo forward, gear and servo behind, marker spring below.</figcaption></figure>
+        <figure><img class="media" src="/img/actuators/launcher-below.webp" width="1070" height="770" loading="lazy" alt="The launcher from low in front: the torpedo tubes on top and the two round marker exits under them."><figcaption>Low front view: the two marker exits under the tubes.</figcaption></figure>
+      </div>
+      <figcaption><b>The V8 launcher, from the CAD.</b> The team has newer designs (V10, V11) in CAD that have not been printed or tested, so this chapter describes V8.</figcaption>
     </figure>
     <div class="prose">
       <dl class="spec">
-        <dt>Payloads</dt><dd>2 torpedoes forward, 2 markers down. CAD torpedo <code>Sinky Torp</code>: PBT, 83 mm long, 26 mm body.</dd>
-        <dt>Drive</dt><dd>One servo in a two-piece 6061 housing, spur gear, shaft, left/right helix gears, pushing arm. The CAD part is <code>SER-20XX</code>, a Blue Trail Engineering servo model; the firmware drives a Hiwonder-protocol bus servo. The two disagree, and which servo is fitted today is unconfirmed.</dd>
-        <dt>Energy</dt><dd>4 compression springs; the servo releases them</dd>
-        <dt>Mass</dt><dd>1.11 kg in CAD with servo housing and mount (CAD masses are rough)</dd>
-        <dt>Where</dt><dd><code>torpedo_link</code> 18.8 cm ahead of <code>base_link</code>, 14.4 cm to port, 6.4 cm down; the two tubes 35 mm apart (<code>baseline</code>), <code>torpedo_0_link</code> on the starboard side</dd>
+        <dt>Payloads</dt><dd>2 torpedoes forward, 2 markers down. CAD torpedo: PBT, 83 mm long, 26 mm across.</dd>
+        <dt>Energy</dt><dd>4 compression springs (McMaster 9435K123)</dd>
+        <dt>Where</dt><dd>18.8 cm ahead of <code>base_link</code>, 14.4 cm to port, 6.4 cm down; tubes 35 mm apart</dd>
+        <dt>Servo</dt><dd>The firmware drives a Hiwonder <em>bus servo</em> (one data wire shared by several servos, each with an ID). The CAD shows a Blue Trail <code>SER-20XX</code>. Which one is fitted today is unconfirmed.</dd>
       </dl>
-      <p>The firmware knows four angles and a home (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/ros_torp.c#L76-L83"><code>ros_torp.c</code></a>, <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/actuator.c#L20"><code>actuator.c</code></a>). The servo's full range is 0–240°:</p>
-      <ul>
-        <li><strong>Home 120°.</strong> Everything loaded and held.</li>
-        <li><strong>Torpedoes: 200°, then 240°.</strong> Each shot turns further the same way.</li>
-        <li><strong>Markers: 50°, then 0°.</strong> The other way from home.</li>
-        <li>After every shot it goes back to 120°. The board counts what is left; it cannot see the tubes.</li>
-      </ul>
-      <p>The tree assumes the first shot leaves the starboard tube: it aims <code>torpedo_0_link</code> at the first hole, and Nereus fires its starboard slot first. Which tube the 200° move releases on the robot is <strong>not confirmed</strong> anywhere in code or docs. Check it on the bench; if it is the port tube, the first torpedo is aimed 35 mm off.</p>
-      <p>Why one servo for four payloads? One motor, one housing and one cable through the hull instead of four. The cost is that torpedoes and markers can never fire at the same time, and that the order is fixed.</p>
+      <p>The firmware knows five angles on the servo's 0–240° range (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/ros_torp.c#L76-L83"><code>ros_torp.c</code></a>): <strong>home 120°</strong> holds everything; torpedoes fire at <strong>200°, then 240°</strong>; markers at <strong>50°, then 0°</strong>. After every shot the servo goes back home. The board only counts what is left; it can't see the tubes.</p>
+      <p>The tree aims the first torpedo from the starboard tube (<code>torpedo_0_link</code>). Nothing confirms which tube the 200° move empties: check it on the bench, or the first shot is aimed 35 mm off.</p>
     </div>
     <figure class="fig" id="bench-fig">
       <div class="panel lv" id="lv">
         <div class="lv-top">
           <div class="seg" role="group" aria-label="Rules" id="lv-rules"><button data-r="fw" aria-pressed="true">POAC firmware</button><button data-r="sim" aria-pressed="false">Nereus</button></div>
-          <label class="lv-kill"><input type="checkbox" id="lv-enabled"> Robot enabled</label>
+          <div class="seg" role="group" aria-label="Robot" id="lv-kill"><button data-k="0" aria-pressed="true">Killed</button><button data-k="1" aria-pressed="false">Enabled</button></div>
         </div>
-        <div class="lv-body">
-          <div class="lv-dial" id="lv-dial"></div>
-          <div class="lv-side">
-            <div class="lv-btns" id="lv-btns">
-              <button class="btn" data-cmd="arm">Arm</button>
-              <button class="btn" data-cmd="disarm">Disarm</button>
-              <button class="btn" data-cmd="torpedo">Fire torpedo</button>
-              <button class="btn" data-cmd="dropper">Drop marker</button>
-              <button class="btn" data-cmd="reload">Notify reload</button>
-            </div>
-            <table class="lv-status" id="lv-status" aria-label="state/actuator/status"></table>
-          </div>
+        <div class="lv-btns" id="lv-btns">
+          <button class="btn" data-cmd="arm">Arm</button>
+          <button class="btn" data-cmd="disarm">Disarm</button>
+          <button class="btn" data-cmd="torpedo">Fire torpedo</button>
+          <button class="btn" data-cmd="dropper">Drop marker</button>
+          <button class="btn" data-cmd="reload">Notify reload</button>
         </div>
-        <ol class="lv-log" id="lv-log" aria-live="polite"></ol>
+        <div class="lv-reply" id="lv-reply" aria-live="polite"></div>
+        <div class="lv-dial" id="lv-dial"></div>
+        <div class="lv-slots" id="lv-slots"></div>
+        <dl class="lv-status" id="lv-status" aria-label="state/actuator/status"></dl>
+        <details class="lv-older" id="lv-older"><summary>Earlier replies</summary><ol></ol></details>
       </div>
-      <figcaption><b>The launcher's rules, live.</b> Tap the buttons as the tree or the viewer would. The dial is the servo, moved at the firmware's planned 300°/s; the table is what <code>state/actuator/status</code> would say; the log is each reply (<code>cmd_status</code> and the <code>cmd_feedback</code> text). Switch to Nereus to see where the simulator's rules differ. Try firing before enabling, dropping a marker while disarmed, and reloading.</figcaption>
+      <figcaption><b>The launcher's rules, live.</b> Tap the buttons as a tree or the viewer would. The dial is the servo at the firmware's planned 300°/s, the chips are what <code>state/actuator/status</code> would say, and the line under the buttons is the board's reply. Switch to Nereus to see where the simulator differs.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="poac">The POAC drives the servo</h2>
-      <p>The launcher servo plugs into the <strong>POAC</strong> (power + actuator) board in the port hull, through its lid connector <code>LID_CONN1</code> (12 V, ground, signal, check). The board's RP2040 runs the actuator code alongside power and kill-switch duties (<a href="boards.html">The circuit boards</a>, <a href="firmware.html">Firmware on the boards</a>).</p>
+      <p>The launcher servo plugs into the <strong>POAC</strong> (power + actuator) board in the port board stack. Its <a class="gl" href="glossary.html#term-rp2040">RP2040</a> runs the actuator code next to power and kill-switch duties (<a href="boards.html">The circuit boards</a>, <a href="firmware.html">Firmware on the boards</a>).</p>
       <ul>
-        <li><strong>Serial bus servo.</strong> It speaks Hiwonder's bus-servo protocol (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/hiwonder_driver.c"><code>hiwonder_driver.c</code></a>): half-duplex UART at 115200 baud on GPIO 27, made by a PIO state machine, level-shifted to 5 V. The servo is ID 1. A position is 0–1000 for 0–240°.</li>
-        <li><strong>One packet every 10 ms.</strong> Commands queue up and go out on a 10 ms timer; every write is read back, and a mismatch is resent up to 10 times.</li>
-        <li><strong>Arming = torque on.</strong> <code>arm</code> sends the servo's load command and reads it back. <code>actuators_armed</code> turns true only once the servo confirms (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/actuator.c#L84-L114"><code>actuator.c</code></a>).</li>
-        <li><strong>A shot is a planned move.</strong> Move time = angle ÷ 300°/s, then 250 ms to settle, then back home and another 250 ms. <code>busy</code> is true the whole time (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/actuator.c#L116-L181"><code>actuator.c</code></a>).</li>
-        <li><strong>Heartbeat.</strong> The board pings the servo every second; after more than 10 failed replies it reports the launcher as <code>ERROR</code>.</li>
-        <li><strong>Timers.</strong> <code>state/actuator/status</code> and <code>busy</code> every 500 ms; the reply to a command on the next 100 ms tick (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/main.c#L37-L40"><code>main.c</code></a>).</li>
+        <li><strong>Serial servo.</strong> One data wire at 115200 baud (<a class="gl" href="glossary.html#term-uart">UART</a>, made in the chip's programmable I/O), level-shifted to 5 V. The servo is ID 1; a position of 0–1000 means 0–240° (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/hiwonder_driver.c"><code>hiwonder_driver.c</code></a>).</li>
+        <li><strong>Arming = torque on.</strong> <code>arm</code> switches the servo's torque on and reads it back; the board says armed only once the servo confirms (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/actuator.c#L84-L114"><code>actuator.c</code></a>).</li>
+        <li><strong>A shot is a planned move.</strong> Angle ÷ 300°/s, 250 ms to settle, back home, another 250 ms: under a second, with <code>busy</code> true throughout.</li>
+        <li><strong>Timers.</strong> Status and <code>busy</code> every 500 ms; the reply to a command on the next 100 ms tick (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/main.c#L37-L40"><code>main.c</code></a>). A servo that stops answering shows as <code>ERROR</code>.</li>
       </ul>
     </div>
     <figure class="fig narrow" id="poac-fig">
-      <div class="panel flush poac-wrap">
-        <div class="poac-stage" id="poac-stage"><img src="/media/boards/poac-top.webp" width="1400" height="1003" loading="lazy" alt="Render of the POAC circuit board, top side, with numbered rings over the parts on the actuator path."></div>
+      <div class="panel poac-panel">
+        <div class="poac-stage" id="poac-stage"><img src="/media/boards/poac-top.webp" width="1400" height="1003" loading="lazy" alt="Render of the POAC circuit board, top side, with numbered markers on the parts along the actuator path."></div>
+        <ol class="poac-legend" id="poac-legend"></ol>
+        <div class="graph-note" id="poac-note"></div>
       </div>
-      <div class="graph-note" id="poac-note">Tap a ring.</div>
-      <figcaption><b>The actuator path on the POAC</b>: CAN in, the RP2040, the 12 V regulator and the servo connector. Render of the current Altium design (a board in the robot can be an older revision). Tap or hover a ring.</figcaption>
+      <figcaption><b>The actuator path on the POAC.</b> CAN in, the chips that turn it into a servo command, and the power for the servo. Render of the current Altium design; a board in the robot can be an older revision. Tap a number or a row.</figcaption>
     </figure>
     <div class="prose">
-      <p>Every command is checked in firmware before the servo moves (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/ros_torp.c#L90-L293"><code>ros_torp.c</code></a>, <code>master</code>):</p>
-      <table class="params">
-        <thead><tr><th>Command</th><th>Refused when</th><th>Feedback text</th></tr></thead>
+      <p>Every command is checked before the servo moves (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/ros_torp.c#L90-L293"><code>ros_torp.c</code></a>, branch <code>master</code>). A refusal comes back as <code>cmd_status</code> false plus a reason on <code>cmd_feedback</code> (both explained in <a href="#ros">The ROS interface</a>):</p>
+      <table class="params cards">
+        <thead><tr><th>Command</th><th>Refused when</th><th>Reason text</th></tr></thead>
         <tbody>
           <tr><td>arm</td><td>already armed; robot killed</td><td><code>Already Armed</code>, <code>Kill Switch Removed</code></td></tr>
           <tr><td>torpedo</td><td>killed; not armed; none left; servo moving</td><td><code>Kill Switch Removed</code>, <code>Not Armed</code>, <code>All Torpedos Fired</code>, <code>Already Firing</code></td></tr>
           <tr><td>dropper</td><td>none left (nothing else is checked)</td><td><code>All Dropped</code></td></tr>
           <tr><td>notify_reload</td><td>servo moving</td><td><code>Busy</code></td></tr>
-          <tr><td>disarm</td><td>never</td><td></td></tr>
+          <tr><td>disarm</td><td>never</td><td>none</td></tr>
         </tbody>
       </table>
-      <div class="callout safety"><span class="label">Safety</span>
+      <div class="callout safety" id="safety"><span class="label">Safety</span>
         <ul>
-          <li>Treat the launcher as <strong>live whenever the POAC has power</strong>. The servo's 12 V comes from the board's own regulators, not the thruster power that the kill switch cuts.</li>
-          <li>On <code>master</code> a kill <strong>does not disarm</strong>: <code>safety_handle_kill</code> still has <code>// TODO: disarm actuators</code> (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L55-L62"><code>safety_interface.c</code></a>). Torpedoes are still refused while killed; the dropper is not. Disarm by hand.</li>
-          <li>The <strong>dropper does not check</strong> kill, arming or busy. Whether a servo with torque off moves when told to is up to the servo; don't count on it staying put.</li>
-          <li>Keep hands and faces out of the line of the torpedo tubes and from under the marker tubes whenever the board is on.</li>
+          <li>Treat the launcher as <strong>live whenever the POAC has power</strong>. The servo's 12 V comes from the board's own regulators, not the thruster power the <a class="gl" href="glossary.html#term-kill-switch">kill switch</a> cuts.</li>
+          <li><strong>A kill does not disarm.</strong> <code>safety_handle_kill</code> still says <code>// TODO: disarm actuators</code> (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L55-L62"><code>safety_interface.c</code></a>). After a kill, disarm by hand.</li>
+          <li><strong>The dropper checks nothing</strong> but the count: not kill, not arming, not busy. Don't count on a disarmed servo staying put.</li>
+          <li>Keep hands and faces out of line of the torpedo tubes and from under the marker tubes whenever the board is on.</li>
         </ul>
       </div>
-      <p>The claw firmware is <strong>not on <code>master</code></strong>. There, the claw topic names are defined but never subscribed, and <code>claw_state</code> is always sent as 0 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/ros_torp.c#L377"><code>#L377</code></a>). The unmerged branch <a href="https://github.com/osu-uwrt/titan_firmware/tree/poac-multiple-servos"><code>poac-multiple-servos</code></a> (last commit 2026-06-28, "Claw is ID 3") adds a second servo on the same bus, ID 3, run as a continuous-rotation motor from <code>command/actuator/claw_move_s</code>. The trees use that topic, but which build is flashed on Talos today isn't confirmed; <code>state/firmware</code> tells you on the robot.</p>
 
       <h2 id="ros">The ROS interface</h2>
-      <p>All names are under the robot namespace, so <code>command/actuator/torpedo</code> is <code>/talos/command/actuator/torpedo</code>. The POAC's micro-ROS client reaches ROS through the <code>copro_agent</code> on the Orin (<code>micro_ros_agent can -D can0</code>, <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/copro_agent.launch.py"><code>copro_agent.launch.py</code></a>).</p>
-      <table class="params">
-        <thead><tr><th>Name</th><th>Type</th><th>Who</th></tr></thead>
+      <p>The POAC talks to ROS through <a class="gl" href="glossary.html#term-micro-ros">micro-ROS</a>: its topics reach the Orin over <a class="gl" href="glossary.html#term-can">CAN</a> through the <a class="gl" href="glossary.html#term-copro-agent"><code>copro_agent</code></a>. All names are under the robot namespace, so <code>command/actuator/torpedo</code> is <code>/talos/command/actuator/torpedo</code>.</p>
+      <table class="params cards ros-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Meaning</th></tr></thead>
         <tbody>
-          <tr class="group"><td colspan="3">Firmware topics (the board's own interface)</td></tr>
-          <tr><td><code>command/actuator/arm</code></td><td><code>std_msgs/Bool</code></td><td>true arms, false disarms</td></tr>
-          <tr><td><code>command/actuator/torpedo</code>, <code>/dropper</code></td><td><code>std_msgs/Empty</code></td><td>fire the next one</td></tr>
-          <tr><td><code>command/actuator/notify_reload</code></td><td><code>std_msgs/Empty</code></td><td>"I reloaded by hand": counts back to 2</td></tr>
-          <tr><td><code>command/actuator/torpedo_marker/set_home</code>, <code>/go_home</code></td><td><code>std_msgs/Empty</code></td><td>re-home the servo (below)</td></tr>
-          <tr><td><code>state/actuator/status</code></td><td><code>riptide_msgs2/ActuatorStatus</code></td><td>armed, states, counts; 2 Hz, best effort</td></tr>
-          <tr><td><code>state/actuator/busy</code></td><td><code>std_msgs/Bool</code></td><td>servo moving; 2 Hz</td></tr>
-          <tr><td><code>state/actuator/cmd_status</code></td><td><code>std_msgs/Bool</code></td><td>reply to the last command: accepted or not</td></tr>
-          <tr><td><code>state/actuator/cmd_feedback</code></td><td><code>std_msgs/String</code></td><td>why it was refused</td></tr>
+          <tr class="group"><td colspan="3">Topics (the board's own interface)</td></tr>
+          <tr><td><code>command/actuator/arm</code></td><td><code>Bool</code></td><td>true arms, false disarms</td></tr>
+          <tr><td><code>command/actuator/torpedo</code>, <code>…/dropper</code></td><td><code>Empty</code></td><td>fire the next one</td></tr>
+          <tr><td><code>command/actuator/notify_reload</code></td><td><code>Empty</code></td><td>"I reloaded by hand": counts back to 2</td></tr>
+          <tr><td><code>state/actuator/status</code></td><td><code>ActuatorStatus</code></td><td>armed, states and counts, every 500 ms</td></tr>
+          <tr><td><code>state/actuator/busy</code></td><td><code>Bool</code></td><td>servo moving, every 500 ms</td></tr>
+          <tr><td><code>state/actuator/cmd_status</code></td><td><code>Bool</code></td><td>reply to the last command: accepted or not</td></tr>
+          <tr><td><code>state/actuator/cmd_feedback</code></td><td><code>String</code></td><td>why it was refused</td></tr>
           <tr class="group"><td colspan="3">Services (for trees and scripts)</td></tr>
-          <tr><td><code>command/actuator/arm</code></td><td><code>std_srvs/SetBool</code></td><td>by <code>actuator_service_translator</code></td></tr>
-          <tr><td><code>command/actuator/torpedo</code>, <code>/dropper</code>, <code>/notify_reload</code></td><td><code>std_srvs/Trigger</code></td><td>by <code>actuator_service_translator</code></td></tr>
+          <tr><td><code>command/actuator/arm</code></td><td><code>SetBool</code></td><td>arm or disarm, answered with <code>success</code></td></tr>
+          <tr><td><code>command/actuator/torpedo</code>, <code>…/dropper</code>, <code>…/notify_reload</code></td><td><code>Trigger</code></td><td>the same commands, answered with <code>success</code></td></tr>
         </tbody>
       </table>
-      <p><strong>Why a translator?</strong> The firmware only takes topics, and a topic gives the sender no answer. A tree wants to know whether the shot was accepted, so <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/actuator_service_translator.py"><code>actuator_service_translator.py</code></a> serves each command as a service. On a request it publishes the topic, then checks every 200 ms until <code>cmd_status</code> arrives, and returns that as <code>success</code>. It is launched with autonomy (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/launch/autonomy.launch.py#L29-L34"><code>autonomy.launch.py</code></a>), not with the hardware. Three things to know:</p>
-      <ul>
-        <li><strong>No timeout, and any reply counts.</strong> If no <code>cmd_status</code> comes (board off, agent down), the call hangs until one does. Whatever arrives next ends it, even the reply to a different command sent from the viewer, and becomes this call's <code>success</code>; calls queued behind it then pair with the wrong replies too. The tree gives up after its 1 s limit either way. Restarting the translator is the clean fix.</li>
-        <li><strong>One call at a time.</strong> The four services share one callback group, so a second request waits for the first.</li>
-        <li><strong>No reason.</strong> The reply's <code>message</code> is always empty. Read <code>state/actuator/cmd_feedback</code> to see why a command was refused.</li>
-      </ul>
-      <p><code>ActuatorStatus</code> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_msgs/msg/ActuatorStatus.msg"><code>ActuatorStatus.msg</code></a>) carries <code>actuators_armed</code>, a state and a count for torpedoes and droppers, and fields for a claw and a "rack" from older robots. The POAC fills the torpedo states like this:</p>
-      <table class="params">
-        <thead><tr><th>torpedo_state</th><th>When</th></tr></thead>
-        <tbody>
-          <tr><td>0 ERROR</td><td>servo not answering (the code also checks "homed", but that is set at boot)</td></tr>
-          <tr><td>1 DISARMED</td><td>torque off</td></tr>
-          <tr><td>4 FIRING</td><td>servo moving (for either payload)</td></tr>
-          <tr><td>3 CHARGED</td><td>armed, idle, at least one left</td></tr>
-          <tr><td>5 FIRED</td><td>armed, idle, none left</td></tr>
-        </tbody>
-      </table>
-      <p>The dropper uses the same pattern with its own numbers (0 ERROR, 1 DISARMED, 3 DROPPING, 2 READY, 4 DROPPED). 2 CHARGING is never sent: it belonged to an older, coil-fired launcher whose code is still there, commented out.</p>
-      <p>A third way in: <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/simple_actuator_interface.py"><code>simple_actuator_interface.py</code></a>, started by the hardware launch, listens on <code>command/simple_torpedo_fire</code> and <code>command/simple_dropper_fire</code> (<code>std_msgs/Empty</code>). It arms if needed, fires through the services, waits for <code>busy</code> to clear and leaves the launcher <strong>armed</strong> (its disarm step is commented out).</p>
+      <p><strong>Why both?</strong> The firmware only takes <a class="gl" href="glossary.html#term-topic">topics</a>, and a topic gives the sender no answer. A tree wants to know whether the shot was accepted, so <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/actuator_service_translator.py"><code>actuator_service_translator</code></a> offers each command as a <a class="gl" href="glossary.html#term-service">service</a>: it publishes the topic, waits for <code>cmd_status</code> and returns it as <code>success</code>. It starts with autonomy, not with the hardware. Two catches: it has <strong>no timeout</strong> (no reply, no answer; restart it if calls hang), and its reply <strong>never says why</strong> (the <code>message</code> is empty), so watch <code>cmd_feedback</code> for the reason.</p>
 
       <h2 id="shot">One torpedo shot, hop by hop</h2>
-      <p>Follow a single <code>FireTorpedo</code> from the tree to the spring. "On Talos" is worked out from the constants in the code above, not measured. "In Nereus" is measured, from the simulator run the media in this site come from.</p>
+      <p>Follow a single <code>FireTorpedo</code> from the tree to the spring. "On Talos" is worked out from the constants in the code, not measured; "In Nereus" is measured from the simulator run this site's media come from.</p>
     </div>
     <figure class="fig" id="shot-fig">
       <div class="panel shot" id="shot-panel">
@@ -192,143 +163,138 @@
         <div id="shot-gantt"></div>
         <div class="shot-card" id="shot-card" aria-live="polite"></div>
       </div>
-      <figcaption><b>A torpedo shot on a timeline.</b> Each bar is one hop. "On Talos" is computed from the code's constants, with zero at the tree's service call; "In Nereus" is measured, with zero at the torpedo's release. Tap a bar or its step number, or step through with the arrows, to see what that hop does and the code behind it. On a phone the first steps are only milliseconds apart, so tap their numbers or use the arrows.</figcaption>
+      <figcaption><b>A torpedo shot, step by step.</b> Each numbered step is one hop, with the time it starts. Tap a step or use the arrows to see what it does and the code behind it. On a wide screen the timeline's first 300 ms are stretched so the quick hops can be seen.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="trees">How the trees use them</h2>
-      <p>The competition tree is <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a>. Four small subtrees do all the actuator work, and the task trees wrap them:</p>
+      <p>The competition tree is <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a> (<a href="mission-tree.html">The competition mission</a>). Four small <a class="gl" href="glossary.html#term-subtree">subtrees</a> do all the actuator work:</p>
       <ul>
-        <li><strong><code>SetActuatorsArmed</code></strong>: wait 1 s, then call <code>command/actuator/arm</code> (1 s limit). Wrapped in a <code>ForceSuccess</code>, so a refusal doesn't stop the tree (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L2196-L2209">L2196</a>).</li>
-        <li><strong><code>FireTorpedo</code></strong>: call <code>command/actuator/torpedo</code> (<code>CallTriggerService</code>, 1 s limit), wait 2 s, then <code>WaitForActuators</code>, which as written gives up at once because its timeout key is never set (<a href="mission-tree.html#watch">The competition mission, Things to watch</a>). Wrapped in a <code>ForceSuccess</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L1004-L1015">L1004</a>).</li>
-        <li><strong><code>FireDropper</code></strong>: check the states aren't ERROR, wait until idle, check a marker is left, call <code>command/actuator/dropper</code>, wait 1 s, wait until idle. Also wrapped in a <code>ForceSuccess</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L977-L1003">L977</a>).</li>
-        <li><strong><code>ReloadActuators</code></strong>: call <code>notify_reload</code> up to 3 times. <code>PrepForRun</code> runs it, then disarms, at the start of every run.</li>
+        <li><strong><code>SetActuatorsArmed</code></strong>: wait 1 s, then call <code>command/actuator/arm</code> (1 s limit). A refused arm is silent (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L2196-L2209">L2196</a>).</li>
+        <li><strong><code>FireTorpedo</code></strong>: call <code>command/actuator/torpedo</code> (1 s limit), then wait 2 s (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L1004-L1015">L1004</a>). The <code>WaitForActuators</code> after that gives up at once, because its timeout is never set (<a href="mission-tree.html#watch">Things to watch</a>).</li>
+        <li><strong><code>FireDropper</code></strong>: check nothing is in ERROR, wait until idle, check a marker is left, call <code>command/actuator/dropper</code>, wait 1 s, wait until idle (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L977-L1003">L977</a>).</li>
+        <li><strong><code>ReloadActuators</code></strong>: call <code>notify_reload</code> up to 3 times. Every run starts with it, then a disarm.</li>
       </ul>
-      <p>The pattern: arm on the way in, disarm on the way out. Between tasks a stray torpedo command is then refused, and because the board refuses to arm while killed, nothing can be armed before the kill switch goes in.</p>
-      <ul>
-        <li><strong>Torpedoes</strong> disarm on both paths: <code>TorpedoTreeMpc</code> has its own success and failure branches, and both disarm (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L2983-L3030">L2983</a>).</li>
-        <li><strong>Bins</strong> can skip the disarm. The final <code>SetActuatorsArmed armed=0</code> comes after two classifier service calls (<code>start_binary_classifier_second</code>, <code>stop_binary_classifier</code>, 3 tries each). If either fails, the bins sequence stops there and the launcher stays armed (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L160-L203">L160</a>). The next task's arm then just gets <code>Already Armed</code>.</li>
-      </ul>
-      <table class="params">
-        <thead><tr><th>Task</th><th>What the tree does before firing</th></tr></thead>
+      <p>The pattern is <a class="gl" href="glossary.html#term-arm">arm</a> on the way in, disarm on the way out, so a stray command between tasks is refused. One gap: the bins task disarms only after two classifier service calls, so if either fails the launcher stays armed (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L160-L203">L160</a>).</p>
+      <table class="params cards tasks">
+        <thead><tr><th>Task</th><th>What the tree does</th></tr></thead>
         <tbody>
-          <tr><td>Torpedoes (<code>ShootBothObjectsMpc</code>)</td><td>Hold 1.5 m off the board until both holes' map estimates converge (covariance 0.0005). Line <code>torpedo_0_link</code> up on hole 1 at 1.1 m, then 0.6 m. Wait until the controller's trust is above 0.985 and the link is within 1 cm of the hole's axis. Fire. Slide across so <code>torpedo_1_link</code> faces hole 2, and fire again.</td></tr>
-          <tr><td>Markers (<code>ShootDownwardObjectMpc</code>)</td><td>Put the down camera over the bin until its estimate is tight, freeze the bin classifier, then move <code>droppers_link</code> 1 m straight above the bin (trust 0.90, 1 cm). Fire the dropper. Twice, one bin each.</td></tr>
-          <tr><td>Table (<code>NewTableTreeMpc</code>)</td><td>Arm once. For each object: open the claw for 2.0 s, put <code>claw_link</code> on it, close for 2.0 s and wait that long, surface with it, go to the basket, open for 0.3 s to drop it, close.</td></tr>
-          <tr><td>Magnets (<code>ActivateMagnetMpc</code>)</td><td>Fly <code>magnet_link</code> 0.7 m out from the target, turned to face it, then straight onto it, 4 cm up. Hold 2 s.</td></tr>
+          <tr><td>Torpedoes</td><td>Wait 1.5 m off the board until both holes' map estimates are tight (<a class="gl" href="glossary.html#term-covariance">covariance</a> 0.0005). Line <code>torpedo_0_link</code> up on hole 1, 0.6 m out, until the controller's <a class="gl" href="glossary.html#term-trust">trust</a> is above 0.985 and the link is within 1 cm of the hole's axis. Fire. Slide across so <code>torpedo_1_link</code> faces hole 2 and fire again.</td></tr>
+          <tr><td>Markers</td><td>Get a tight estimate of the bin with the down camera, then hold <code>droppers_link</code> 1 m straight above it (trust 0.90, 1 cm). Drop. Twice, one bin each.</td></tr>
+          <tr><td>Table</td><td>Arm once. For each object: open the claw for 2.0 s, put <code>claw_link</code> on it, close for 2.0 s, carry it to the basket, open for 0.3 s to drop it, close.</td></tr>
+          <tr><td>Magnets</td><td>Fly <code>magnet_link</code> 0.7 m out from the target, facing it, then straight onto it, 4 cm up. Hold 2 s.</td></tr>
         </tbody>
       </table>
-      <div class="callout"><span class="label">A shot that "succeeds" without firing</span>
-        <p><code>FireTorpedo</code> and <code>FireDropper</code> both sit inside a <code>ForceSuccess</code> named <code>REMOVE ME</code>, so they report success even when the board refuses. The <code>RetryUntilSuccessful</code> (3 attempts) around each therefore never retries, and a refused or missing marker reads as a drop just like a refused torpedo reads as a shot. In the Nereus media run, the second torpedo hit exactly this. 5.6 s after the first shot the tasks were reset (the scorecard run was being started by hand at that moment), and a task reset also reloads and disarms. The second call, 0.7 s later, was refused, and the tree went on to the table as if it had fired. Step 7 of the timeline above ("In Nereus") shows it.</p>
+      <div class="callout" id="force-success"><span class="label">A shot that "succeeds" without firing</span>
+        <p><code>SetActuatorsArmed</code>, <code>FireTorpedo</code> and <code>FireDropper</code> each sit inside a <code>ForceSuccess</code> (a <a class="gl" href="glossary.html#term-decorator">decorator</a> that turns any result into success) named <code>REMOVE ME</code>. So a refused arm or shot reads as success, and the 3 retries around each shot never run. The likeliest case is a refused arm (robot still killed, or the translator stuck): every shot after it is refused with <code>Not Armed</code> while the tree carries on. In the Nereus media run the second torpedo hit exactly this: the tasks had just been reset, which disarms, the call was refused, and the tree went on to the table (step 7 of "In Nereus" above).</p>
       </div>
 
       <h2 id="claw">The claw and the magnet poker</h2>
-      <p>The claw (CAD <code>EMERGENCYCLAWASSEMBLY</code>) hangs below the bow on a PET mount and an aluminium box channel. Its servo turns a pinion between two gear racks (McMaster 2662N57, 20° pressure angle); each rack carries one <code>Gripper_V6</code> jaw, so the jaws close symmetrically on the centre line.</p>
+      <p>The claw (CAD <code>EMERGENCYCLAWASSEMBLY</code>) hangs below the bow. Its servo turns a pinion between two gear racks; each rack carries one jaw, so the jaws close evenly on the centre line.</p>
     </div>
     <figure class="fig act-claw">
-      <div class="media-grid">
-        <figure><img class="media" src="/media/cad/sub-claw-iso.webp" width="982" height="1867" loading="lazy" alt="The claw on its own: a white mounting arm at the top, a grey box channel, the servo, and two ribbed grey jaws at the bottom on a rack-and-pinion base."><figcaption>The claw: mount, box channel, servo, rack-and-pinion jaws.</figcaption></figure>
-        <figure><img class="media" src="/img/actuators/claw-front.webp" width="1244" height="1720" loading="lazy" alt="The claw from the front: the two racks run side to side above two triangular ribbed jaws that meet in the middle."><figcaption>From the bow: two racks, one pinion, two jaws.</figcaption></figure>
+      <div class="claw-grid">
+        <figure class="claw-jaws"><img class="media" src="/img/actuators/claw-jaws.webp" width="1244" height="760" loading="lazy" alt="The claw's jaws from the bow: two racks run side to side above two triangular ribbed jaws that meet in the middle."><figcaption>From the bow: two racks above two jaws (the pinion is hidden between them).</figcaption></figure>
+        <figure class="claw-iso"><img class="media" src="/img/actuators/claw-iso.webp" width="760" height="820" loading="lazy" alt="The claw from above and to one side: the blue-grey servo sits on the white rack housing, with the two ribbed grey jaws below it."><figcaption>The servo on the rack housing, jaws below (mount arm cropped off).</figcaption></figure>
       </div>
-      <figcaption><b>The claw</b>, from the CAD. The servo is a separate unit (CAD <code>Servo - SER-20XX</code>, the same Blue Trail model name as the launcher's), not in a housing. The branch firmware drives the claw as Hiwonder bus servo ID 3, so here too the fitted servo is unconfirmed.</figcaption>
+      <figcaption><b>The claw, from the CAD.</b> The CAD servo is again a <code>SER-20XX</code>; the firmware branch drives a bus servo with ID 3, so the fitted servo is unconfirmed here too.</figcaption>
     </figure>
     <div class="prose">
-      <p>The claw is driven <strong>by time, not position</strong>. On <code>poac-multiple-servos</code> the claw servo runs as a continuous-rotation motor, which has no absolute position to go to. So the command is a signed number of seconds on <code>command/actuator/claw_move_s</code> (<code>std_msgs/Float32</code>): positive opens, negative closes, the board runs the motor at full speed for that long. The tree then waits as long as it asked for. Nereus models the same thing:</p>
+      <p>The claw is driven <strong>by time, not position</strong>. Its servo runs as a plain motor with no absolute position, so the command is a signed number of seconds on <code>command/actuator/claw_move_s</code>: positive opens, negative closes, full speed for that long. The tree then waits as long as it asked for.</p>
+      <p>That firmware is <strong>not on <code>master</code></strong>. It is on the unmerged branch <a href="https://github.com/osu-uwrt/titan_firmware/tree/poac-multiple-servos"><code>poac-multiple-servos</code></a> (last commit 2026-06-28). Which build is flashed on Talos today isn't confirmed; <code>state/firmware</code> tells you on the robot.</p>
     </div>
     <figure class="fig narrow" id="claw-fig">
       <div class="panel">
-        <div class="controls" id="claw-ctl">
+        <div class="claw-run">
+          <button class="btn primary" id="claw-seq">Run the table sequence</button>
+          <ol class="claw-steps" id="claw-steps"></ol>
+        </div>
+        <div id="claw-svg"></div>
+        <div class="claw-bar" id="claw-timer" aria-hidden="true">timer<i><span id="claw-bar"></span></i></div>
+        <div class="graph-note" id="claw-note"></div>
+        <div class="controls claw-ctl" id="claw-ctl">
+          <span>Or one command:</span>
           <button class="btn" data-s="2">Open 2.0 s</button>
           <button class="btn" data-s="-2">Close 2.0 s</button>
           <button class="btn" data-s="0.3">Drop 0.3 s</button>
           <button class="btn" data-s="0">Stop (0)</button>
         </div>
-        <div id="claw-svg"></div>
-        <div class="graph-note" id="claw-note"></div>
       </div>
-      <figcaption><b>A timed claw</b>, with Nereus's claw parameters: each jaw moves at 33 mm/s, the gap runs from 1.2 mm to 140 mm, and a move that starts while another runs replaces it. The three buttons are the durations <code>NewTableTreeMpc</code> uses. Tap a button.</figcaption>
+      <figcaption><b>A timed claw.</b> Nereus's claw numbers: each jaw moves 33 mm/s, the gap runs from 1.2 to 140 mm, and a new command replaces a running one. The sequence uses the table tree's durations. Because it is timed, the claw drifts: from fully open, a 2.0 s close leaves an 8 mm gap. In Nereus the claw also needs arming; on the robot branch it doesn't.</figcaption>
     </figure>
     <div class="prose">
-      <p>The <strong>magnet poker</strong> is a PET rod with a magnet held on its tip by two zip ties. Nothing on the robot moves: the course's magnet targets react to the magnet (in Nereus, an indicator light changes), so the tree only has to put <code>magnet_link</code> on the target and hold it there for 2 s. Nereus models it the same way, as a passive point that the task pack checks for distance.</p>
-      <p>One thing to check on the robot: the files disagree about where the magnet is. All three positions below are in <code>base_link</code>:</p>
-      <ul>
-        <li><strong><code>magnet_link</code></strong> (<code>talos.yaml</code> <code>magnet:</code>): 15.5 cm <em>behind</em>, near the centre line, 30 cm down. This is the frame the trees fly.</li>
-        <li><strong>The July CAD poker</strong>: from 15 to 33 cm <em>ahead</em>, 12–16 cm to starboard, tip about 10 cm down. (The CAD is placed in <code>base_link</code> by matching its eight thrusters to <code>talos.yaml</code>.)</li>
-        <li><strong><code>poker_link</code></strong> (<code>talos.yaml</code> <code>poker:</code>, also Nereus's <code>poker_mount</code>): 37 cm ahead, 2 cm to starboard, 8 cm down. Close to the CAD tip ahead and down, but not sideways, and no tree uses it.</li>
-      </ul>
-      <p>At least one of them is out of date. Measure the poker on the robot before trusting the magnet task.</p>
+      <p>The <strong>magnet poker</strong> is a plastic rod with a magnet zip-tied to its tip. Nothing on it moves: the course's magnet targets react to the magnet, so the tree only has to put <code>magnet_link</code> on the target and hold it there for 2 s. The files disagree about where the magnet is (see <a href="#details">Details</a>), so measure it on the robot before trusting the magnet task.</p>
     </div>
     <figure class="fig narrow">
       <img class="media" src="/media/cad/sub-magnet-poker-iso.webp" width="1600" height="967" loading="lazy" alt="The magnet poker: a long grey rod with a mounting flange at one end and a round magnet held on the other end by two black zip ties.">
-      <figcaption><b>The magnet poker</b>, from the CAD: 185 mm long, magnet on the tip.</figcaption>
+      <figcaption><b>The magnet poker.</b> 185 mm long in the CAD, magnet on the tip.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="nereus">In Nereus</h2>
-      <p>Nereus describes each mechanism in the Talos robot pack (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L247-L319"><code>robot.yaml</code></a>) and runs it in <a href="https://github.com/osu-uwrt/nereus/blob/main/libraries/session/src/mechanisms.cpp"><code>mechanisms.cpp</code></a>. The bridge (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/bridges/uwrt_talos/bridge.yaml#L120-L182"><code>bridge.yaml</code></a>) accepts both the firmware topics and the services, and publishes <code>state/actuator/status</code>, <code>busy</code> and <code>cmd_status</code> with the same numbers the POAC uses, so trees, the translator and the viewer work unchanged. <a href="nereus.html">Nereus, the simulator</a> covers the rest.</p>
+      <p><a href="nereus.html">Nereus</a> describes each mechanism in the Talos robot pack (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L247-L319"><code>robot.yaml</code></a>, run by <a href="https://github.com/osu-uwrt/nereus/blob/main/libraries/session/src/mechanisms.cpp"><code>mechanisms.cpp</code></a>). Its bridge (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/bridges/uwrt_talos/bridge.yaml#L120-L182"><code>bridge.yaml</code></a>) takes both the topics and the services and publishes the status with the POAC's numbers, so trees, the translator and the viewer work unchanged.</p>
       <ul>
-        <li><strong>Launcher and dropper.</strong> Two slots each, placed at the tubes (slot poses in <code>robot.yaml</code>), fired in slot order, starboard first. A shot releases the next slot as a free body with launch speed √(2E/(m + m<sub>added</sub>)) from a 0.047 J spring, plus the vehicle's own velocity: 2.49 m/s for a 12.2 g torpedo, 2.29 m/s for a 14.9 g marker. Torpedoes fly as finned bodies that turn under drag and buoyancy; markers keep their attitude. Anything still loose after 30 s counts as a miss.</li>
-        <li><strong>One cooldown.</strong> Torpedoes and markers share a 0.5 s cooldown group, standing in for the single servo.</li>
-        <li><strong>Claw.</strong> Two jaws with convex contact pads, 12 N grip and friction 1.2; an object counts as grasped after 40 ms in contact.</li>
-        <li><strong>Arming.</strong> One flag for launcher, dropper and claw. It starts disarmed, can't be armed while killed, and a kill disarms it (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L147-L155"><code>safety</code></a>).</li>
+        <li><strong>Launcher and dropper.</strong> Two slots each, starboard first. A shot releases a free body pushed by a 0.047 J spring: 2.49 m/s for a 12.2 g torpedo, 2.29 m/s for a 14.9 g marker, plus the vehicle's speed. Torpedoes and markers share a 0.5 s cooldown, standing in for the single servo.</li>
+        <li><strong>Claw.</strong> Two jaws with 12 N of grip; an object counts as held after 40 ms in contact.</li>
+        <li><strong>Arming.</strong> One flag for launcher, dropper and claw (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L147-L155"><code>safety</code></a>).</li>
       </ul>
-      <table class="params">
+      <table class="params cards">
         <thead><tr><th>Rule</th><th>POAC (<code>master</code>)</th><th>Nereus</th></tr></thead>
         <tbody>
           <tr><td>Arm while killed</td><td>refused</td><td>refused</td></tr>
           <tr><td>Kill after arming</td><td>stays armed</td><td>disarms</td></tr>
-          <tr><td>Marker while disarmed or killed</td><td>not checked</td><td>refused</td></tr>
-          <tr><td>Fire while busy</td><td>torpedo refused, marker not checked</td><td>refused (0.5 s cooldown)</td></tr>
+          <tr><td>Marker while disarmed or killed</td><td>accepted</td><td>refused</td></tr>
+          <tr><td>Fire while busy</td><td>torpedo refused, marker accepted</td><td>refused</td></tr>
           <tr><td>Arm when armed</td><td>refused, <code>Already Armed</code></td><td>accepted</td></tr>
           <tr><td>Reload</td><td>counts only, stays armed</td><td>refills and disarms</td></tr>
-          <tr><td>Busy per shot</td><td>about 0.75–0.9 s</td><td>0.5 s</td></tr>
+          <tr><td>Busy per shot</td><td>under 1 s</td><td>0.5 s</td></tr>
+          <tr><td>Why refused</td><td><code>cmd_feedback</code></td><td>only in the bridge's service reply (<code>message</code>); <code>cmd_feedback</code> isn't published</td></tr>
         </tbody>
       </table>
-      <p>So a tree that works in Nereus is a little stricter than it needs to be on the robot, not looser. The one gap that matters is the kill: on the robot, assume the launcher is still armed after a kill.</p>
+      <p>Nereus is stricter than the robot, except that the robot stays armed through a kill (see <a href="#safety">Safety</a>).</p>
     </div>
-    <figure class="fig">
-      <div class="media-grid">
-        <figure><video class="media" src="/video/actuators/sim-torpedo.mp4" poster="/video/actuators/sim-torpedo.jpg" width="960" height="736" controls muted playsinline preload="none"></video><figcaption>Torpedo: Talos lines up on the board and fires into the large fire hole.</figcaption></figure>
-        <figure><video class="media" src="/video/actuators/sim-dropper.mp4" poster="/video/actuators/sim-dropper.jpg" width="960" height="736" controls muted playsinline preload="none"></video><figcaption>Dropper: Talos holds over the bins, arms, and a marker falls into the bin.</figcaption></figure>
-        <figure><video class="media" src="/video/actuators/sim-claw.mp4" poster="/video/actuators/sim-claw.jpg" width="960" height="736" controls muted playsinline preload="none"></video><figcaption>Claw: Talos lowers onto the table, closes on an item and lifts it.</figcaption></figure>
-      </div>
-      <figcaption><b>The mechanisms in a full Nereus run</b> of <code>RepairCompMpcTree</code>, real time. The 3D view is on the left; the camera cards and the Actuators panel on the right are small on a phone, so go full screen to read them. Recorded 2026-10-30 on a loaded machine (the sim ran at about 0.95× real time).</figcaption>
+    <figure class="fig narrow" id="sim-fig">
+      <div class="sim-top"><div class="seg" role="group" aria-label="Clip" id="sim-pick"><button data-v="torpedo-side" aria-pressed="true">Torpedo</button><button data-v="claw-bow" aria-pressed="false">Claw</button></div><button type="button" class="btn sim-play" id="sim-play">Pause</button></div>
+      <video class="media" id="sim-video" src="/video/actuators/torpedo-side.mp4" poster="/video/actuators/torpedo-side.jpg" width="640" height="480" muted loop playsinline preload="metadata" aria-label="Nereus clip"></video>
+      <p class="sim-note" id="sim-note">From port, 8&times; slower than real time. The starboard torpedo leaves its tube and passes through the large fire hole 0.33 s later; the second torpedo stays in its tube.</p>
+      <figcaption><b>The mechanisms in Nereus.</b> Talos is held still by the simulator (no controller), so only the mechanism moves. Recorded 2026-10-31 with the viewer's labels and debug arrows off.</figcaption>
     </figure>
-    <figure class="fig narrow">
-      <div class="media-grid">
-        <figure><img class="media" src="/media/nereus/panel-actuators.webp" width="432" height="590" loading="lazy" alt="Nereus viewer Actuators panel, disarmed: Claw and Torpedo show Connected, an Arm actuators button, and greyed Fire torpedo, Drop marker and claw buttons, with markers and torpedoes remaining."><figcaption>Disarmed: only Arm and Reload work.</figcaption></figure>
-        <figure><img class="media" src="/media/nereus/panel-actuators-armed.webp" width="432" height="273" loading="lazy" alt="The Actuators panel while armed during a tree: Disarm, Fire torpedo and Drop marker are enabled."><figcaption>Armed during a tree.</figcaption></figure>
+    <figure class="fig narrow" id="panel-fig">
+      <div class="panel vp" id="vp">
+        <div class="vp-top"><div class="seg" role="group" aria-label="World" id="vp-world"><button data-w="robot" aria-pressed="true">On Talos</button><button data-w="sim" aria-pressed="false">In Nereus</button></div><div class="seg" role="group" aria-label="Panel state" id="vp-state"><button data-a="0" aria-pressed="true">Disarmed</button><button data-a="1" aria-pressed="false">Armed</button></div></div>
+        <div class="vp-mock" id="vp-mock"></div>
+        <div class="graph-note" id="vp-note"></div>
       </div>
-      <figcaption><b>The viewer's Actuators panel</b> is the operator's way in, on the robot as in the sim. Its buttons publish the firmware topics directly (no translator), and the fire buttons only work while the status says armed (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml#L35-L45"><code>talos_uwrt_panels.yaml</code></a>). Some buttons behave differently on the robot: <b>Open claw</b> and <b>Close claw</b> publish <code>command/actuator/claw</code>, which no POAC build subscribes to, so only Nereus acts on them; <b>Stop claw</b> sends <code>claw_move_s</code> = 0 (see the bench warning below); and <b>Reload / disarm</b> only resets the counts on the POAC, it does not disarm.</figcaption>
+      <figcaption><b>The viewer's Actuators panel, redrawn.</b> It is the operator's way in, on the robot as in the sim. Its buttons publish the topics directly (no translator), and the greyed ones only work while the status says armed (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml#L35-L45"><code>talos_uwrt_panels.yaml</code></a>). Pick a world, then tap a button to see what it does there. Buttons marked ≠ behave differently on the robot.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="bench-test">Testing on the bench</h2>
-      <p>Firing the torpedo and dropper on the bench is fine. The team's pre-pool-test tool (<code>pretest_checks</code>, guided step G5) does it the same way. The rule that matters is about the thrusters, not the launcher:</p>
+      <p>Firing the torpedo and dropper on the bench is fine; the team's pre-pool tool (<code>pretest_checks</code>, step G5) does it the same way. The rule that matters is about the thrusters:</p>
       <div class="callout safety"><span class="label">Before you enable</span>
         <ul>
-          <li>The <strong>controller must not be running</strong>. An enabled robot with the controller up spins the thrusters. The launcher can only arm while the robot is enabled, so this comes first.</li>
+          <li>The <strong>controller must not be running</strong>. An enabled robot with the controller up spins the thrusters, and the launcher can only arm while the robot is enabled.</li>
           <li>Clear the area in front of the torpedo tubes and below the marker tubes. Load only what you mean to fire.</li>
-          <li>On the <code>poac-multiple-servos</code> build the <strong>claw moves without arming and without enable</strong>: <code>claw_move_time()</code> checks neither and always accepts. Keep fingers out of the jaws whenever the board is on.</li>
+          <li>On the <code>poac-multiple-servos</code> build the <strong>claw moves without arming or enable</strong>. Keep fingers out of the jaws whenever the board is on.</li>
         </ul>
       </div>
       <ol>
-        <li>Robot on the bench supply, hardware stack up. Check the board answers: <code>state/actuator/status</code> at 2 Hz with <code>torpedo_state</code> not 0.</li>
-        <li>Kill switch in, then <strong>Enable</strong> in the <a href="viewer.html">Nereus viewer</a>.</li>
-        <li><strong>Arm</strong> from the viewer's Actuators panel, or from a shell.</li>
-        <li><strong>Fire</strong> one torpedo or marker. The count drops by one, <code>busy</code> goes true for under a second.</li>
+        <li>Robot on the bench supply, hardware stack up. Check the board answers: <code>state/actuator/status</code> every 500 ms, <code>torpedo_state</code> not 0.</li>
+        <li>Kill switch in, then <a class="gl" href="glossary.html#term-enable"><strong>Enable</strong></a> in the <a href="viewer.html">Nereus viewer</a>.</li>
+        <li><strong>Arm</strong> from the viewer's Actuators panel or a shell.</li>
+        <li><strong>Fire</strong> one torpedo or marker. The count drops by one; <code>busy</code> is true for under a second.</li>
         <li><strong>Disarm</strong>, then <strong>Disable</strong> in the viewer.</li>
-        <li>Reload by hand, then send <code>notify_reload</code> so the counts are 2 again. The viewer's <b>Reload / disarm</b> button sends the same message, and on the POAC it does <em>not</em> disarm.</li>
-        <li><strong>Claw</strong> (only on the <code>poac-multiple-servos</code> build): publish <code>claw_move_s</code> 2.0 to open for 2 s, then −2.0 to close. The viewer's Open claw and Close claw buttons do nothing on the robot (see the panel above).</li>
+        <li>Reload by hand, then send <code>notify_reload</code> so the counts are 2 again.</li>
+        <li><strong>Claw</strong> (<code>poac-multiple-servos</code> build only): <code>claw_move_s</code> 2.0 to open, then −2.0 to close.</li>
       </ol>
-      <p><strong>How to reload.</strong> The loading procedure (order, where the servo must be, how to compress the springs) is not written down in code or in the team's docs. Ask the mechanical lead to show you before your first time.</p>
+      <p><strong>How to reload.</strong> The loading procedure (order, servo position, compressing the springs) isn't written down in code or the team's docs. Ask the mechanical lead to show you before your first time.</p>
     </div>
     <div class="prose">
 <pre class="cmd" data-where="ROS shell"><code># watch the state and the reasons for any refusal
 ros2 topic echo /talos/state/actuator/status
 ros2 topic echo /talos/state/actuator/cmd_feedback
 
-# arm, fire, disarm through the firmware topics (always there)
+# arm, fire, disarm through the topics (always there)
 ros2 topic pub --once /talos/command/actuator/arm std_msgs/msg/Bool "{data: true}"
 ros2 topic pub --once /talos/command/actuator/torpedo std_msgs/msg/Empty "{}"
 ros2 topic pub --once /talos/command/actuator/arm std_msgs/msg/Bool "{data: false}"
@@ -339,29 +305,55 @@ ros2 service call /talos/command/actuator/dropper std_srvs/srv/Trigger
 # after reloading by hand
 ros2 topic pub --once /talos/command/actuator/notify_reload std_msgs/msg/Empty "{}"
 
-# claw, poac-multiple-servos build only: open 2 s, then close 2 s (never send 0, see below)
+# claw, poac-multiple-servos build only: open 2 s, then close 2 s (never send 0)
 ros2 topic pub --once /talos/command/actuator/claw_move_s std_msgs/msg/Float32 "{data: 2.0}"
 ros2 topic pub --once /talos/command/actuator/claw_move_s std_msgs/msg/Float32 "{data: -2.0}"</code></pre>
-      <p><strong>Don't send 0 to the claw on the robot.</strong> The branch firmware works out the direction as <code>time_ms / abs(time_ms)</code>, an integer divide by zero when the time is 0, and what the RP2040 does then is undefined. The viewer's <b>Stop claw</b> button sends exactly that (<code>claw_move_s</code> = 0). In Nereus, 0 is a clean stop.</p>
-      <p><strong>Re-homing.</strong> <code>torpedo_marker/set_home</code> (only while <em>disarmed</em>) reads where the servo is now and makes that home; <code>go_home</code> (armed, idle) drives it back there. The new home lives in RAM only: after a reboot it is 120° again. The firing angles are fixed numbers, so they don't move with home.</p>
+      <p id="claw-zero"><strong>Never send 0 to the claw on the robot.</strong> The branch firmware works out the direction as <code>time_ms / abs(time_ms)</code>, an integer divide by zero when the time is 0, and what the RP2040 does then is undefined. The viewer's <b>Stop claw</b> button sends exactly that. In Nereus, 0 is a clean stop.</p>
 
       <h2 id="trouble">When nothing fires</h2>
-      <table class="params">
+      <table class="params cards trouble">
         <thead><tr><th>What you see</th><th>Likely cause</th><th>Check</th></tr></thead>
         <tbody>
           <tr><td>No <code>state/actuator/status</code></td><td>POAC not on ROS</td><td><code>copro_agent</code> running, <code>state/firmware</code> from the POAC, CAN (<a href="firmware.html">Firmware on the boards</a>)</td></tr>
-          <tr><td><code>torpedo_state</code> 0 (ERROR)</td><td>Servo not answering</td><td>Servo cable at <code>LID_CONN1</code>; the firmware's <code>hwfind</code> debug command looks for a servo on the bus</td></tr>
-          <tr><td>Arm refused, <code>Kill Switch Removed</code></td><td>Robot killed</td><td>Kill switch in, Enable in the viewer</td></tr>
-          <tr><td>Fire refused, <code>Not Armed</code></td><td>Arm didn't take</td><td><code>actuators_armed</code>; it turns true only after the servo confirms torque on</td></tr>
-          <tr><td><code>Already Firing</code> / <code>Busy</code></td><td>Servo still moving</td><td>Wait for <code>busy</code> false</td></tr>
-          <tr><td><code>All Torpedos Fired</code> / <code>All Dropped</code></td><td>Counts at 0</td><td>Reload by hand, then <code>notify_reload</code></td></tr>
-          <tr><td>Service call hangs, or answers wrong</td><td>Translator waiting for a <code>cmd_status</code>; any reply ends the wait</td><td>Board up? Restart the translator</td></tr>
-          <tr><td>Tree logs "fired!", nothing moved</td><td><code>FireTorpedo</code> and <code>FireDropper</code> force success</td><td><code>cmd_feedback</code> at that moment; the arm state</td></tr>
-          <tr><td>Servo turns, payload stays</td><td>Horn or gear slipped on the servo, or the payload is binding</td><td>Check the mechanism by hand while disarmed. The firing angles are fixed in <code>ros_torp.c</code>; <code>set_home</code> only moves the rest position</td></tr>
-          <tr><td>Viewer Open/Close claw does nothing</td><td>Those buttons publish <code>command/actuator/claw</code>, which no POAC build takes</td><td>Use <code>claw_move_s</code> (needs the <code>poac-multiple-servos</code> build)</td></tr>
-          <tr><td>Still armed after bins</td><td>A classifier service call failed, so the tree skipped its disarm</td><td>Disarm from the viewer</td></tr>
+          <tr><td><code>torpedo_state</code> 0 (ERROR)</td><td>Servo not answering</td><td>The servo cable at the POAC's <code>LID_CONN1</code>; the firmware's <code>hwfind</code> debug command looks for a servo on the bus</td></tr>
+          <tr><td>Arm refused: <code>Kill Switch Removed</code></td><td>Robot killed</td><td>Kill switch in, Enable in the viewer</td></tr>
+          <tr><td>Fire refused: <code>Not Armed</code></td><td>Arm didn't take</td><td><code>actuators_armed</code>; it turns true only after the servo confirms torque on</td></tr>
+          <tr><td><code>Already Firing</code> or <code>Busy</code></td><td>Servo still moving</td><td>Wait for <code>busy</code> false</td></tr>
+          <tr><td><code>All Torpedos Fired</code> or <code>All Dropped</code></td><td>Counts at 0</td><td>Reload by hand, then <code>notify_reload</code></td></tr>
+          <tr><td>Service call hangs</td><td>The translator is still waiting for a <code>cmd_status</code></td><td>Board up? Restart the translator</td></tr>
+          <tr><td>Tree logs "fired!", nothing moved</td><td>An arm refused earlier, or a refused shot, hidden by the <code>ForceSuccess</code> (<a href="#force-success">above</a>)</td><td><code>cmd_feedback</code> at that moment; the arm state</td></tr>
+          <tr><td>Servo turns, payload stays</td><td>Horn or gear slipped, or the payload binds</td><td>Check the mechanism by hand while disarmed</td></tr>
+          <tr><td>Viewer Open or Close claw does nothing</td><td>No POAC build listens to those buttons (<a href="#panel-fig">the panel</a>)</td><td>Use <code>claw_move_s</code></td></tr>
+          <tr><td>Still armed after bins or a kill</td><td>The tree skipped its disarm, or the POAC kept arming through a kill</td><td>Disarm from the viewer</td></tr>
         </tbody>
       </table>
+
+      <h2 id="details">Details and known bugs</h2>
+      <p>Edge cases worth knowing once you work on this code.</p>
+      <details class="more"><summary>The translator can pair a call with the wrong reply</summary>
+        <p>The translator ends its wait on <em>any</em> <code>cmd_status</code>, even the reply to a command the viewer sent, and returns that as this call's <code>success</code>. Calls queued behind it then pair with the wrong replies too. It also handles one call at a time: the four services share one queue. The tree gives up after its 1 s limit either way; restarting the translator is the clean fix (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/actuator_service_translator.py#L36-L47">L36</a>).</p>
+      </details>
+      <details class="more"><summary>What the status numbers mean</summary>
+        <p><code>ActuatorStatus</code> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_msgs/msg/ActuatorStatus.msg"><code>ActuatorStatus.msg</code></a>) carries <code>actuators_armed</code>, a state and a count for torpedoes and droppers, and claw and "rack" fields from older robots (the POAC always sends the claw state as 0). Torpedo states: 0 ERROR (servo not answering), 1 DISARMED, 3 CHARGED (armed, idle, one left), 4 FIRING (servo moving, for either payload), 5 FIRED (none left). Dropper: 0 ERROR, 1 DISARMED, 2 READY, 3 DROPPING, 4 DROPPED. 2 CHARGING is never sent: it belonged to an older coil-fired launcher whose code is still there, commented out.</p>
+      </details>
+      <details class="more"><summary>Re-homing the servo</summary>
+        <p><code>command/actuator/torpedo_marker/set_home</code> (only while disarmed) makes the servo's current position home; <code>…/go_home</code> (armed, idle) drives it back there. The new home lives in RAM: after a reboot it is 120° again. The firing angles are fixed numbers, so they don't move with home.</p>
+      </details>
+      <details class="more"><summary>A third way to fire: simple_actuator_interface</summary>
+        <p><a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/simple_actuator_interface.py"><code>simple_actuator_interface.py</code></a>, started with the hardware, listens on <code>command/simple_torpedo_fire</code> and <code>command/simple_dropper_fire</code>. It arms if needed, fires through the services, waits for <code>busy</code> to clear and leaves the launcher <strong>armed</strong> (its disarm step is commented out).</p>
+      </details>
+      <details class="more"><summary>talos.yaml poses are not from base_link</summary>
+        <p>The poses in <code>talos.yaml</code> are measured from <code>talos/origin</code>. <code>base_link</code> sits at (−0.14, 0.03, −0.09) in <code>origin</code>, so subtract that before comparing them with anything else (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/urdf/robot_base.xacro#L29-L33"><code>robot_base.xacro</code></a>). This page has done that already.</p>
+      </details>
+      <details class="more"><summary>Where is the magnet?</summary>
+        <p>Three sources, all converted to <code>base_link</code>, and they disagree:</p>
+        <ul>
+          <li><strong><code>magnet_link</code></strong> (<code>talos.yaml</code> <code>magnet:</code>), the frame the trees fly: 15.5 cm <em>behind</em>, near the centre line, 30 cm down.</li>
+          <li><strong>The July CAD poker</strong>: 15 to 33 cm <em>ahead</em>, 12–16 cm to starboard, tip about 10 cm down (the CAD placed by matching its eight thrusters to <code>talos.yaml</code>).</li>
+          <li><strong><code>poker_link</code></strong> (<code>talos.yaml</code> <code>poker:</code>, also Nereus's <code>poker_mount</code>): 37 cm ahead, 2 cm to starboard, 8 cm down. No tree uses it.</li>
+        </ul>
+        <p>At least one is out of date.</p>
+      </details>
 
       <h2 id="source">Where this lives</h2>
       <ul class="src-list">
@@ -369,7 +361,7 @@ ros2 topic pub --once /talos/command/actuator/claw_move_s std_msgs/msg/Float32 "
         <li>ROS: <code>riptide_core/riptide_hardware/riptide_hardware2/</code> (<code>actuator_service_translator.py</code>, <code>simple_actuator_interface.py</code>), <code>riptide_msgs/msg/ActuatorStatus.msg</code>, poses in <code>riptide_descriptions/config/talos.yaml</code>.</li>
         <li>Trees: <code>riptide_autonomy/trees/RepairCompMpcTree.xml</code>; nodes <code>CallTriggerService</code>, <code>CallSetBoolService</code>, <code>GetActuatorStatus</code>, <code>PublishFloat32</code> (<a href="bt-nodes.html">Talos's tree nodes</a>).</li>
         <li>Nereus: <code>content/packs/robots/talos/robot.yaml</code> (mechanisms, safety), <code>content/packs/bridges/uwrt_talos/bridge.yaml</code>, <code>libraries/session/src/mechanisms.cpp</code>, viewer panel <code>integrations/ros2/viewer/panels/uwrt_actuators.cpp</code>.</li>
-        <li>CAD: the "Talos 7-11-26" assembly (<code>Torpedoes + Markers V8</code>, <code>EMERGENCYCLAWASSEMBLY</code>, <code>Magnet poker assembly</code>). Data for this page: <code>tools/actuators/build_data.py</code>.</li>
+        <li>CAD: the "Talos 7-11-26" assembly (<code>Torpedoes + Markers V8</code>, <code>EMERGENCYCLAWASSEMBLY</code>, <code>Magnet poker assembly</code>). Data for this page: <code>tools/actuators/build_data.py</code>; image crops and clips: <code>tools/actuators/make_media.py</code>.</li>
       </ul>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>

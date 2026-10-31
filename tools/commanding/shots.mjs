@@ -1,14 +1,15 @@
 // Screenshots of the Commanding chapter's figures (animated ones never settle, so this clips by rect instead of
-// waiting for "stable" elements).  node tools/commanding/shots.mjs [width] [height] [outdir] [selector ...]
-import { chromium } from 'playwright';
+// waiting for "stable" elements).  BASE=... node tools/commanding/shots.mjs [width] [height] [outdir] [selector ...]
+import { launch, newPage } from '../browser.mjs';
 const [w = 1400, h = 900, out = '/tmp/cmdshots', ...sels] = process.argv.slice(2);
-const SELS = sels.length ? sels : ['figure:has(#msg-tabs)', 'figure:has(#flow-graph)', 'figure:has(#can-frames)', 'figure:has(#killsim)'];
-const browser = await chromium.launch({ executablePath: process.env.HOME + '/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-const p = await browser.newPage({ viewport: { width: +w, height: +h }, deviceScaleFactor: 1 });
+const BASE = process.env.BASE || 'http://127.0.0.1:5301/talos-explained/';
+const SELS = sels.length ? sels : ['figure:has(#flow-body)', 'figure:has(#msg-tabs)', 'figure:has(#can-frames)', 'figure:has(#killsim)'];
+const browser = await launch();
+const p = await newPage(browser, { width: +w, height: +h });
 const errs = [];
 p.on('pageerror', (e) => errs.push(e.message));
 p.on('console', (m) => m.type() === 'error' && errs.push(m.text()));
-await p.goto('http://127.0.0.1:5300/talos-explained/commanding.html', { waitUntil: 'load' });
+await p.goto(BASE + 'commanding.html', { waitUntil: 'load' });
 await p.waitForTimeout(1500);
 let i = 0;
 for (const s of SELS) {

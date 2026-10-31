@@ -1,7 +1,7 @@
 import { setup } from '../layout.js';
 import '../css/chapter.css';
 import '../css/code-map.css';
-import { Graph } from '../viz/graph.js';
+import { StackGraph } from '../viz/code-map-stack.js';
 import { el } from '../viz/chart.js';
 import { ALL } from '../site.js';
 
@@ -79,7 +79,7 @@ const explorer = (() => {
   // legend
   const used = new Set();
   data.repos.forEach((r) => Object.keys(r.lang || {}).forEach((l) => used.add(LANG_COLOR[l] ? l : 'other')));
-  document.getElementById('cm-legend').innerHTML = [...Object.keys(LANG_COLOR).filter((l) => used.has(l)), 'other']
+  document.getElementById('cm-legend').innerHTML = '<span class="cm-legend-t">Bars: lines of code by language</span>' + [...Object.keys(LANG_COLOR).filter((l) => used.has(l)), 'other']
     .map((l) => `<span><i style="background:${l === 'other' ? OTHER : LANG_COLOR[l]}"></i>${l === 'other' ? 'CMake, GLSL, HTML, Lua' : l}</span>`).join('');
 
   const showOk = (status) => st.show === 'all' || (st.show === 'use' ? status === 'talos' || status === 'new' || status === 'tool' : status === 'legacy' || status === 'other');
@@ -110,13 +110,14 @@ const explorer = (() => {
       sec.className = 'cm-group';
       // Groups other than the release workspace start folded; a filter, a search or a selection opens them.
       const open = st.layer !== 'all' || st.q || st.show !== 'use' || st.open.has(g.id) || repos.some((r) => r.id === st.sel?.repo);
-      sec.innerHTML = `<h3 class="cm-group-label"><button type="button" aria-expanded="${!!open}">${esc(g.label)}<small>${repos.length} repo${repos.length > 1 ? 's' : ''}</small></button></h3>`;
+      const [main, subl] = g.label.split(': ');
+      sec.innerHTML = `<h3 class="cm-group-label"><button type="button" aria-expanded="${!!open}"><span class="cm-gl">${esc(main)}${subl ? `<span class="cm-gl-sub">${esc(subl)}</span>` : ''}</span><small>${repos.length} repo${repos.length > 1 ? 's' : ''}</small></button></h3>`;
       sec.querySelector('h3 button').onclick = () => { if (open) st.open.delete(g.id); else st.open.add(g.id); render(); };
       if (!open) {
         const peek = document.createElement('button');
         peek.type = 'button';
         peek.className = 'cm-peek';
-        peek.innerHTML = repos.map((r) => `<code>${brk(r.name)}</code>`).join(' ');
+        peek.innerHTML = repos.map((r) => `<code>${esc(r.name)}</code>`).join(' ');
         peek.onclick = () => { st.open.add(g.id); render(); };
         sec.appendChild(peek);
         list.appendChild(sec);
@@ -130,13 +131,16 @@ const explorer = (() => {
         card.dataset.repo = r.id;
         const branch = r.branch ? `<span class="cm-branch">${brk(r.branch)}</span>` : '';
         const tag = r.status !== 'talos' ? `<span class="cm-tag cm-${r.status}">${STATUS[r.status]}</span>` : '';
-        const pk = r.packages.filter((p) => pkgOk(r, p)).map((p) => {
+        // Phones start with repo rows only; a repo's packages show once it's tapped (or a filter or search is on).
+        const fold = narrow.matches && st.layer === 'all' && !st.q && st.sel?.repo !== r.id;
+        const okPk = r.packages.filter((p) => pkgOk(r, p));
+        const pk = fold ? '' : okPk.map((p) => {
           const on = st.sel?.repo === r.id && st.sel?.pkg === p.id;
           const hit = st.q && (p.id.toLowerCase().includes(st.q) || text(p).includes(st.q));
           return `<button type="button" class="cm-pkg${on ? ' on' : ''}${p.status === 'legacy' || p.status === 'other' ? ' old' : ''}${p.status === 'new' ? ' new' : ''}${hit ? ' hit' : ''}" data-pkg="${esc(p.id)}" aria-pressed="${on}">${brk(p.id)}${p.status === 'new' ? '<small>new</small>' : ''}</button>`;
         }).join('');
         card.innerHTML = `<button type="button" class="cm-repo-head" aria-pressed="${st.sel?.repo === r.id && !st.sel?.pkg}">
-            <span class="cm-name">${brk(r.name)}</span>${branch}${tag}<span class="cm-size">${sizeText(r)}</span>
+            <span class="cm-name">${brk(r.name)}</span>${branch}${tag}<span class="cm-size">${sizeText(r)}${fold && okPk.length ? `<span class="cm-npk"> · ${okPk.length} pkg${okPk.length > 1 ? 's' : ''}</span>` : ''}</span>
             ${r.code ? langBar(r.lang, r.code, r.code / maxCode) : ''}
           </button>${pk ? `<div class="cm-pkgs">${pk}</div>` : ''}`;
         card.querySelector('.cm-repo-head').onclick = () => select(r.id, null, true);
@@ -151,14 +155,22 @@ const explorer = (() => {
 
   function placeDetail() {
     // Wide: a sticky column beside the list. Narrow: right under the selected card.
-    const card = st.sel && list.querySelector(`.cm-repo[data-repo="${CSS.escape(st.sel.repo)}"]`);
+    // A selected package that the search or filter hides counts as hidden, even if its repo is still listed.
+    const selP = st.sel?.pkg && findPkg(st.sel.repo, st.sel.pkg);
+    const hiddenPkg = !!selP && !pkgOk(REPO[st.sel.repo], selP);
+    const card = st.sel && !hiddenPkg && list.querySelector(`.cm-repo[data-repo="${CSS.escape(st.sel.repo)}"]`);
     if (narrow.matches && card) card.after(detail);
     else if (narrow.matches) list.prepend(detail);
     else if (detail.parentElement !== body) body.appendChild(detail);
     detail.classList.toggle('inline', narrow.matches && !!card);
-    detail.hidden = narrow.matches && !card;
+    // Nothing selected: the overview. A selection hidden by a filter shows nothing on a phone.
+    detail.hidden = narrow.matches && !!st.sel && !card;
+    if (!st.sel || detail.hidden) detail.classList.remove('inline');
+    // Wide: the detail column shows the overview while the selection is hidden, and the selection again once it's back.
+    const showOv = !narrow.matches && hiddenPkg;
+    if (showOv !== detail.classList.contains('ov') && st.sel) { if (showOv) { detail.classList.add('ov'); detail.innerHTML = overview(); } else showDetail(); }
   }
-  narrow.addEventListener('change', placeDetail);
+  narrow.addEventListener('change', () => { render(); showDetail(); });
 
   function overview() {
     const inUse = data.repos.filter((r) => r.status === 'talos');
@@ -168,14 +180,14 @@ const explorer = (() => {
     const own = ['riptide_core', 'riptide_control', 'riptide_perception', 'riptide_autonomy', 'riptide_launch']
       .flatMap((id) => REPO[id].packages.filter((p) => p.status === 'talos')).reduce((a, p) => a + (p.code || 0), 0);
     const k = (n) => `${fmtN(Math.round(n / 1000))}k`;
-    return `<p class="cm-hint">Tap a repo or a package.</p>
-      <dl class="cm-stats">
-        <div><dt>Repos Talos runs or is built from</dt><dd>${inUse.length}</dd></div>
-        <div><dt>ROS packages among them</dt><dd>${pk.length}</dd></div>
-        <div><dt>Lines of code, all of them (incl. Nereus, firmware, third-party drivers)</dt><dd>${k(lines)}</dd></div>
-        <div><dt>In the five <code>riptide_*</code> ROS repos the robot runs</dt><dd>${k(own)}</dd></div>
+    return `<dl class="cm-stats">
+        <div><dd>${inUse.length}</dd><dt>repos Talos runs or is built from</dt></div>
+        <div><dd>${pk.length}</dd><dt>ROS packages among them</dt></div>
+        <div><dd>${k(lines)}</dd><dt>lines of code in all of them, Nereus and firmware included</dt></div>
+        <div><dd>${k(own)}</dd><dt>of those in the five <code>riptide_*</code> repos</dt></div>
       </dl>
-      <p class="cm-small">Counted from the checkouts on ${esc(data.generated)}; release commit ${esc(data.releaseCommit)} (${esc(data.releaseCommitDate)}). Lines are non-blank lines of tracked source files, comments included; vendored code left out.</p>`;
+      <p class="cm-hint">Tap a repo or a package for what it does.</p>
+      <p class="cm-small cm-counted">Counted from the checkouts on ${esc(data.generated)} (release commit ${esc(data.releaseCommit)}). Lines are non-blank lines of tracked source files, comments included; vendored code left out.</p>`;
   }
 
   // A package's text describes the branch tip; say so when the release pin is behind it.
@@ -190,6 +202,7 @@ const explorer = (() => {
 
   function showDetail() {
     const s = st.sel;
+    detail.classList.toggle('ov', !s);
     if (!s) { detail.innerHTML = overview(); return; }
     const r = REPO[s.repo];
     const p = s.pkg ? findPkg(s.repo, s.pkg) : null;
@@ -246,84 +259,163 @@ const explorer = (() => {
     if (st.sel && ((p && !pkgOk(r, p)) || (!p && !repoOk(r)))) { st.layer = 'all'; st.show = 'all'; st.q = ''; q.value = ''; }
     render();
     showDetail();
-    if (follow && narrow.matches) detail.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (follow && narrow.matches) {
+      // Phones: bring the selected card (its inline detail follows it) to the top of the screen.
+      const card = list.querySelector('.cm-repo.on');
+      (card || detail).scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
   }
 
   render();
   showDetail();
-  return { select, scroll: () => document.getElementById('explorer-fig').scrollIntoView({ behavior: 'smooth', block: 'start' }) };
+  // Wide screens: the detail is a sticky column, so show the explorer from its top. Phones scroll to the card in select().
+  return { select, scroll: () => { if (!narrow.matches) document.getElementById('explorer-fig').scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
 })();
 
 // ---------------------------------------------------------------- the stack in layers
 {
-  const N = (id, label, sub, x, y, ref, nx, ny) => ({ id, label, sub, x, y, ref, nx, ny });
+  // One box per program on the robot (and the two operator tools), labelled with the package that provides it.
+  // `ref`: the explorer entries "Show in explorer" opens; `blurb`: what the box does, in one or two lines.
   const nodes = [
-    N('viewer', 'nereus-viewer', 'nereus', 300, 57, ['nereus', 'integrations/ros2'], 275, 57),
-    N('launcher', 'remote_launch', 'riptide_launch', 640, 57, ['riptide_launch', 'remote_launch'], 95, 57),
-    N('mpc', 'riptide_mpc', 'riptide_control', 250, 153, ['riptide_control', 'riptide_mpc'], 90, 153),
-    N('bt', 'riptide_autonomy2', 'riptide_autonomy', 640, 153, ['riptide_autonomy', 'riptide_autonomy'], 268, 153),
-    N('map', 'riptide_mapping2', 'riptide_perception', 640, 249, ['riptide_perception', 'riptide_mapping'], 268, 249),
-    N('ekf', 'EKF (robot_localization)', 'riptide_hardware2', 380, 345, ['riptide_core', 'riptide_hardware'], 125, 345),
-    N('det', 'tensor_detector', 'riptide_perception', 780, 345, ['riptide_perception', 'tensor_detector'], 270, 345),
-    N('agent', 'micro_ros_agent', 'micro-ros-agent', 110, 441, ['micro-ros-agent', null], 75, 497),
-    N('imu', 'riptide_imu', 'riptide_core', 260, 441, ['riptide_core', 'riptide_imu'], 105, 437),
-    N('gyro', 'riptide_gyro', 'riptide_core', 405, 441, ['riptide_core', 'riptide_gyro'], 200, 437),
-    N('dvl', 'nortek_dvl', 'nortek_dvl', 550, 441, ['nortek_dvl', 'nortek_dvl'], 293, 437),
-    N('zed', 'zed_wrapper', 'zed-ros2-wrapper', 760, 441, ['zed-ros2-wrapper', null], 300, 497),
-    N('fw', 'titan_firmware', 'RP2040 boards', 300, 537, ['titan_firmware', null], 190, 597),
+    { id: 'viewer', label: 'nereus-viewer', sub: 'nereus · on your laptop', kick: 'YOUR LAPTOP', side: true, x: 360, y: 57, ref: [['nereus', 'integrations/ros2']],
+      blurb: 'The operator\'s GUI, on a laptop: shows the robot (or the sim), runs mission trees and can send the MPC goals directly.' },
+    { id: 'launcher', label: 'remote_launch', sub: 'riptide_launch · on the Orin', kick: 'ON THE ORIN', side: true, x: 640, y: 57, ref: [['riptide_launch', 'remote_launch']],
+      blurb: 'Runs on the Orin as <code>ros_launcher.service</code> and starts the launch entries the operator picks from <code>talos_launch_mpc.yaml</code>. Nothing else in this picture runs until it is started.', chapters: ['launch.html'] },
+    { id: 'bt', label: 'riptide_autonomy2', sub: 'riptide_autonomy', kick: 'AUTONOMY', x: 360, y: 153, ref: [['riptide_autonomy', 'riptide_autonomy']],
+      blurb: 'Runs the mission as a behaviour tree (at competition, <code>RepairCompMpcTree.xml</code>): it looks up where the props are and sends the MPC goals.' },
+    { id: 'mpc', label: 'riptide_mpc', sub: 'riptide_control', kick: 'CONTROL', x: 640, y: 153, ref: [['riptide_control', 'riptide_mpc']],
+      blurb: 'The controller. It plans thrust a few seconds ahead so Talos reaches the goal the tree sets, and sends RPM commands to the ESC boards. It keeps its own state estimate from the raw IMU, gyro, DVL and depth readings, anchored to the EKF.' },
+    { id: 'map', label: 'riptide_mapping2', sub: 'riptide_perception', kick: 'MAPPING', x: 360, y: 249, ref: [['riptide_perception', 'riptide_mapping']],
+      blurb: 'Turns many noisy detections into one position estimate per prop, and publishes each as a TF frame the mission can look up.' },
+    { id: 'det', label: 'tensor_detector', sub: 'riptide_perception', kick: 'PERCEPTION', x: 360, y: 345, ref: [['riptide_perception', 'tensor_detector']],
+      blurb: 'Runs YOLO on the Orin\'s GPU over one camera\'s images at a time (forward or down; the mission switches) and publishes 3D detections of the props.' },
+    { id: 'ekf', label: 'EKF', sub: 'robot_localization', kick: 'ESTIMATION', x: 640, y: 345, ref: [['riptide_core', 'riptide_hardware']],
+      blurb: 'Fuses IMU, gyro, DVL and depth into one pose and velocity estimate, <code>odometry/filtered</code>. It is robot_localization\'s EKF, an outside package, launched and configured by <code>riptide_hardware2</code> (<code>navigation.launch.py</code>, <code>talos_ekf.yaml</code>).' },
+    { id: 'zed', label: 'zed_wrapper', sub: 'zed-ros2-wrapper', kick: 'DRIVER', x: 360, y: 441, ref: [['zed-ros2-wrapper', null]],
+      blurb: 'Stereolabs\' ROS 2 driver for the two ZED X Mini cameras, forward and down: images, stereo depth and the cameras\' own IMU.' },
+    { id: 'agent', label: 'micro_ros_agent', sub: 'micro-ros-agent', kick: 'CAN BRIDGE', x: 500, y: 441, ref: [['micro-ros-agent', null]],
+      blurb: 'Carries the boards\' micro-ROS topics onto ROS 2 over CAN, both ways: depth, kill switch, power and actuators. Thruster RPMs don\'t pass through it.' },
+    { id: 'sensors', label: 'IMU · gyro · DVL', sub: '3 driver packages', kick: 'DRIVERS', x: 660, y: 441, ref: [['riptide_core', 'riptide_imu'], ['riptide_core', 'riptide_gyro'], ['nortek_dvl', 'nortek_dvl']],
+      blurb: 'Three drivers: <code>riptide_imu</code> (the VectorNav IMU), <code>riptide_gyro</code> (the fibre-optic gyro) and <code>nortek_dvl</code> (the Doppler velocity log: speed over the pool floor).', chapters: ['sensors.html'] },
+    { id: 'fw', label: 'titan_firmware', sub: 'RP2040 boards', kick: 'FIRMWARE', x: 500, y: 537, ref: [['titan_firmware', null]],
+      blurb: 'Firmware on the RP2040 boards in the hull: the two ESC boards spin the 8 thrusters; others read depth, power and the kill switch and fire the actuators.' },
   ];
   const edges = [
-    { from: 'fw', to: 'agent', label: 'CAN', bend: 22 },
-    { from: 'agent', to: 'fw', bend: 22 },
-    { from: 'agent', to: 'ekf', label: 'depth' },
-    { from: 'imu', to: 'ekf' }, { from: 'gyro', to: 'ekf' }, { from: 'dvl', to: 'ekf' },
-    { from: 'zed', to: 'det', label: 'images' },
-    { from: 'det', to: 'map', label: 'detections' },
+    { from: 'agent', to: 'fw', both: true, label: 'CAN', a: ['b'], b: ['t'], lx: 507, ly: 493, anchor: 'start' },
+    { from: 'agent', to: 'ekf', label: 'depth', lx: 556, ly: 386, anchor: 'end' },
+    { from: 'sensors', to: 'ekf', label: 'readings', a: ['t', 650], b: ['b', 650], lx: 657, ly: 397, anchor: 'start' },
+    { from: 'zed', to: 'det', label: 'images', a: ['t'], b: ['b'], lx: 367, ly: 397, anchor: 'start' },
+    { from: 'det', to: 'map', label: 'detections', a: ['t'], b: ['b'], lx: 367, ly: 301, anchor: 'start' },
     { from: 'ekf', to: 'map', label: 'odometry' },
-    { from: 'map', to: 'bt', label: 'prop frames (TF)' },
-    { from: 'bt', to: 'mpc', label: 'goals' },
-    { from: 'ekf', to: 'mpc', label: 'odometry' },
-    { from: 'mpc', to: 'agent', label: 'thrust', bend: 40 },
-    { from: 'viewer', to: 'bt', dash: true, label: 'run a tree' },
-    { from: 'viewer', to: 'mpc', dash: true },
+    { from: 'ekf', to: 'mpc', label: 'odometry (anchor)', a: ['t'], b: ['b'], lx: 633, ly: 262, anchor: 'end' },
+    { from: 'sensors', to: 'mpc', label: 'readings', a: ['r'], pts: [[740, 441], [740, 161]], b: ['r', 161], lx: 734, ly: 262, anchor: 'end' },
+    { from: 'map', to: 'bt', label: 'prop frames (TF)', a: ['t'], b: ['b'], lx: 367, ly: 205, anchor: 'start' },
+    { from: 'bt', to: 'mpc', label: 'goals', a: ['r'], b: ['l'] },
+    { from: 'mpc', to: 'fw', label: 'thruster RPMs', a: ['r', 145], pts: [[790, 145], [790, 537]], b: ['r'], lx: 782, ly: 489, anchor: 'end' },
+    { from: 'viewer', to: 'bt', label: 'run a tree', dash: true, a: ['b'], b: ['t'], lx: 367, ly: 109, anchor: 'start' },
   ];
-  const band = (label, top, h, w) => ({ label, points: [[10, top], [w - 10, top], [w - 10, top + h], [10, top + h]], lx: 18, ly: top + 13 });
-  const W = 900, NW = 380;
-  const bands = [['OPERATOR', 14], ['AUTONOMY AND CONTROL', 110], ['MAPPING', 206], ['ESTIMATION AND PERCEPTION', 302], ['DRIVERS', 398], ['FIRMWARE', 494]]
-    .map(([l, t]) => band(l, t, 76, W));
-  // Narrow: the MAPPING and DRIVERS labels move right, clear of the thrust and depth curves on the left.
-  const nbands = [band('OPERATOR', 14, 76, NW), band('AUTONOMY AND CONTROL', 110, 76, NW), { ...band('MAPPING', 206, 76, NW), lx: 122 },
-    band('ESTIMATION AND PERCEPTION', 302, 76, NW), { ...band('DRIVERS', 398, 136, NW), lx: 262 }, band('FIRMWARE', 554, 76, NW)];
-  const narrowNodes = Object.fromEntries(nodes.map((n) => [n.id, { x: n.nx, y: n.ny }]));
-  narrowNodes.ekf.label = 'EKF';
-  const note = document.getElementById('stack-note');
-  let last = null;
-  const g = new Graph(document.getElementById('stack-graph'), {
-    width: W, height: 590, nodes, edges, bands,
-    narrow: {
-      below: 640, width: NW, height: 650, bands: nbands, nodes: narrowNodes,
-      edges: {
-        'mpc>agent': { via: [-45, 330], lx: 42, ly: 296 }, 'fw>agent': { bend: 16 }, 'agent>fw': { bend: 16 },
-        'ekf>mpc': { lx: 128, ly: 262 }, 'viewer>mpc': { via: [175, 135] }, 'agent>ekf': { via: [25, 380], lx: 40, ly: 392 },
-        'zed>det': { via: [380, 420], lx: 366, ly: 398, anchor: 'end' },
-      },
+  const band = (label, y, h = 84) => ({ label, y, h });
+  const bands = [band('OPERATOR TOOLS', 15), band('AUTONOMY AND CONTROL', 111), band('MAPPING', 207), band('ESTIMATION AND PERCEPTION', 303), band('DRIVERS', 399), band('FIRMWARE', 495)];
+  // Phone: two columns (x 84 and 232), rows 74 apart, the layer named inside each box. The thrust return runs down
+  // the right edge (x 312) and the MPC's sensor feed just inside it (x 300), so no two edges cross.
+  const L = 84, R = 232;
+  const at = (x, y) => ({ x, y });
+  const row = (y, h = 64, side) => ({ y: y - 32, h, side });
+  const Y = { op: 40, ac: 114, map: 188, ep: 262, drv: 336, can: 410, fw: 490 };
+  const mid = (a, b) => (Y[a] + Y[b]) / 2; // the middle of the gap between two rows
+  const narrow = {
+    below: 800, width: 320, height: 526,
+    bands: [row(Y.op, 64, true), row(Y.ac), row(Y.map), row(Y.ep), row(Y.drv, Y.can - Y.drv + 64), row(Y.fw)],
+    nodes: { viewer: { ...at(L, Y.op), sub: 'nereus' }, launcher: { ...at(R, Y.op), sub: 'riptide_launch' }, bt: at(L, Y.ac), mpc: at(R, Y.ac),
+      map: at(L, Y.map), det: at(L, Y.ep), ekf: at(R, Y.ep), zed: at(L, Y.drv), sensors: at(R, Y.drv), agent: at(R, Y.can), fw: at(R, Y.fw) },
+    edges: {
+      'agent>fw': { lx: R + 8, ly: mid('can', 'fw') },
+      'agent>ekf': { a: ['l'], pts: [[162, Y.can], [162, Y.ep]], b: ['l'], lx: 155, ly: Y.can + 4, anchor: 'end' },
+      'sensors>ekf': { a: ['t'], b: ['b'], lx: R + 7, ly: mid('ep', 'drv'), anchor: 'start' },
+      'sensors>mpc': { a: ['r'], pts: [[300, Y.drv], [300, Y.ac + 8]], b: ['r', Y.ac + 8], lx: 295, ly: Y.map + 12, anchor: 'end' },
+      'zed>det': { lx: L + 7, ly: mid('ep', 'drv') }, 'det>map': { lx: L + 7, ly: mid('map', 'ep') }, 'map>bt': { lx: L + 7, ly: mid('ac', 'map') },
+      'ekf>map': { a: ['t', 214], pts: [[214, Y.map]], b: ['r'], hideLabel: true, labelOf: 'ekf>mpc' },
+      'ekf>mpc': { a: ['t', 214], b: ['b', 214], label: 'odometry', lx: 220, ly: mid('ac', 'map'), anchor: 'start' },
+      'bt>mpc': { ly: Y.ac - 7 },
+      'mpc>fw': { a: ['r', Y.ac - 8], pts: [[312, Y.ac - 8], [312, Y.fw]], label: 'thrust', lx: 308, ly: mid('drv', 'can'), anchor: 'end' },
+      'viewer>bt': { lx: L + 7, ly: mid('op', 'ac') },
     },
-    info: (n) => {
-      if (!n || n.id === last) return; // keep the last note, so its links stay reachable
-      last = n.id;
-      const [rid, pid] = n.ref;
+  };
+
+  // The loop, one hop at a time. The first step is shown before any tap.
+  const STEPS = [
+    { edges: ['sensors>ekf', 'agent>fw', 'agent>ekf'], title: 'Sensor readings → EKF',
+      text: 'The IMU, gyro and DVL drivers publish their readings; depth comes from the camera-cage board over CAN, through the micro-ROS agent. The EKF fuses them into one pose and velocity, <code>odometry/filtered</code>.' },
+    { edges: ['zed>det'], title: 'Images → detector',
+      text: 'The ZED wrapper publishes both cameras\' images. <code>tensor_detector</code> runs YOLO on one of them (the mission picks forward or down) and publishes <code>detected_objects</code>.' },
+    { edges: ['det>map', 'ekf>map'], title: 'Detections + pose → map',
+      text: '<code>riptide_mapping2</code> places each detection in the pool using the EKF\'s pose and keeps one estimate per prop, published as a TF frame.' },
+    { edges: ['map>bt'], title: 'Prop frames → mission tree',
+      text: 'The behaviour tree looks up those frames to decide what to do next: drive to the gate, line up over the bins, and so on.' },
+    { edges: ['bt>mpc', 'sensors>mpc', 'ekf>mpc'], title: 'Goals + readings → MPC',
+      text: 'The tree sends poses and paths (<code>controller/linear</code>, <code>controller/angular</code>, the <code>follow_path</code> action) to <code>riptide_mpc</code>. For its own state the MPC reads the raw IMU, gyro and DVL (and depth, which comes through the agent), and uses the EKF\'s odometry only to anchor position and heading and to stand in for a sensor that goes quiet.' },
+    { edges: ['mpc>fw'], title: 'Thrust → ESC boards',
+      text: 'Each control tick the MPC turns thrust into eight RPMs and writes them straight to the two ESC boards as raw CAN frames, skipping ROS (<code>command/requested_rpm</code> is a copy for bags). The thrusters move Talos, the sensors see it, and the loop starts again.' },
+  ];
+
+  const note = document.getElementById('stack-note');
+  const count = document.getElementById('stack-count');
+  const prev = document.getElementById('stack-prev');
+  const next = document.getElementById('stack-next');
+  let step = 0;
+  const N = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  let boxOn = false; // a tapped box is showing: Next goes back to the current step first
+  function showStep() {
+    boxOn = false;
+    g.focus(STEPS[step].edges);
+    count.textContent = `Step ${step + 1} of ${STEPS.length}`;
+    prev.disabled = step === 0;
+    next.disabled = step === STEPS.length - 1;
+    next.textContent = 'Next ›';
+    next.setAttribute('aria-label', 'Next step');
+    note.innerHTML = `<b>${step + 1} · ${STEPS[step].title}.</b> ${STEPS[step].text}`;
+  }
+  function showNode(id) {
+    const n = N[id];
+    boxOn = true;
+    count.innerHTML = `<b>${esc(n.label)}</b> selected`;
+    prev.disabled = true;
+    next.disabled = false;
+    next.textContent = `Step ${step + 1} ›`;
+    next.setAttribute('aria-label', `Back to step ${step + 1}`);
+    const refs = n.ref.map(([rid, pid]) => {
       const r = REPO[rid];
       const p = pid && findPkg(rid, pid);
-      const o = p || r;
-      const first = (o.desc || '').split(/(?<=\.)\s/)[0];
-      const where = p ? `package <code>${brk(p.ros || p.id)}</code> in <code>${brk(r.name)}</code>` : `<code>${brk(r.name)}</code>`;
-      const branch = r.branch ? ` (branch <code>${brk(r.branch)}</code>)` : '';
-      const ch = chapterLinks((o.chapters || []).slice(0, 2));
-      note.innerHTML = `<b>${esc(n.label)}</b>: ${where}${branch}. ${esc(first)} ${ch ? `More in ${ch}.` : ''} <button type="button" class="cm-ref cm-jump">Show in explorer</button>`;
-      note.querySelector('.cm-jump').onclick = () => { explorer.select(rid, pid || null, true, true); explorer.scroll(); };
+      return { rid, pid, r, name: p ? p.ros || p.id : r.name };
+    });
+    const where = refs.length > 1 ? '' : (() => {
+      const { r, pid, name } = refs[0];
+      const branch = r.branch ? `, branch <code>${brk(r.branch)}</code>` : '';
+      return pid ? ` <span class="cm-where">(package <code>${brk(name)}</code> in <code>${brk(r.name)}</code>${branch})</span>` : ` <span class="cm-where">(<code>${brk(r.name)}</code>${branch})</span>`;
+    })();
+    const o = refs.length === 1 ? (refs[0].pid ? findPkg(refs[0].rid, refs[0].pid) : refs[0].r) : null;
+    const ch = chapterLinks((n.chapters || o?.chapters || []).slice(0, 2));
+    const jumps = refs.map(({ name }, i) => `<button type="button" class="cm-ref cm-jump" data-i="${i}">${refs.length > 1 ? esc(name) : 'Show in explorer'}</button>`).join('');
+    note.innerHTML = `<b>${esc(n.label)}</b>${where}: ${n.blurb}${ch ? ` More in ${ch}.` : ''} <span class="cm-jumps">${refs.length > 1 ? 'In the explorer: ' : ''}${jumps}</span>`;
+    note.querySelectorAll('.cm-jump').forEach((b) => (b.onclick = () => {
+      const { rid, pid } = refs[+b.dataset.i];
+      explorer.select(rid, pid || null, true, true);
+      explorer.scroll();
+    }));
+  }
+  const g = new StackGraph(document.getElementById('stack-graph'), {
+    width: 820, height: 590, nodes, edges, bands, narrow,
+    label: 'Talos\'s software by layer: data flows up from the boards to the mission tree and back down as thruster commands',
+    onNode: (id, tap) => {
+      if (!id) { showStep(); return; }
+      showNode(id);
+      // Phones: the note sits under the picture; bring it up so a tap near the top gets a visible answer.
+      if (tap && innerWidth < 640) note.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     },
   });
-  g.pulse((e) => !e.dash, 2.4);
+  prev.onclick = () => { if (!boxOn) step = Math.max(0, step - 1); g.select(null); };
+  next.onclick = () => { if (!boxOn) step = Math.min(STEPS.length - 1, step + 1); g.select(null); };
+  showStep();
 }
 
 // ---------------------------------------------------------------- pins table
@@ -351,16 +443,50 @@ const explorer = (() => {
   let sel = history.length - 1, hover = null, svg = null, lastW = 0;
   const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+  const what = (m) => (m.added ? 'added' : m.commits ? `+${m.commits}` : 'moved back or sideways');
+  const short = (n) => n.replace(/^riptide_/, '');
+  let showAll = false;
+
+  // Phones: a list of commits, newest first, grouped by month (a 37-column matrix can't be read or tapped at 390 px).
+  function drawList() {
+    host.classList.add('cm-hlist');
+    read.hidden = true;
+    const rows = [...history].reverse();
+    const shown = showAll ? rows : rows.slice(0, 8);
+    let month = '', h = '';
+    for (const c of shown) {
+      const [yy, mm] = c.date.split('-').map(Number);
+      const mo = `${MONTH[mm - 1]} ${yy}`;
+      if (mo !== month) { h += `${month ? '</ol>' : ''}<p class="cm-hl-month">${mo}</p><ol class="cm-hl-rows">`; month = mo; }
+      const rs = /^RoboSub 20\d\d$/.test(c.msg);
+      const chips = c.moved.length
+        ? c.moved.map((m) => `<span class="cm-hchip${m.commits ? '' : ' ring'}">${esc(short(m.repo))} ${m.added ? 'added' : m.commits ? `<b>+${m.commits}</b>` : 'moved back'}</span>`).join('')
+        : '<span class="cm-hnone">no pins moved</span>';
+      h += `<li class="${rs ? 'rs' : ''}"><div class="cm-hl-top"><span class="cm-hl-date">${MONTH[mm - 1]} ${+c.date.slice(8)}</span>
+        <span class="cm-hl-msg">${rs ? '<b>' : ''}${esc(c.msg)}${rs ? '</b>' : ''}</span>
+        <a class="cm-hl-sha" href="https://github.com/osu-uwrt/riptide_release/commit/${esc(c.sha)}"><code>${esc(c.sha)}</code></a></div>
+        <div class="cm-hl-chips">${chips}</div></li>`;
+    }
+    h += '</ol>';
+    if (rows.length > 8) h += `<button type="button" class="btn cm-hl-more">${showAll ? 'Show the last 8' : `Show all ${rows.length}`}</button>`;
+    host.innerHTML = `<p class="cm-hl-key">Newest first. <span class="cm-hchip">core <b>+11</b></span> = the pin moved 11 commits forward; <span class="cm-hchip ring">gui moved back</span> = moved to a commit that isn't ahead.</p>${h}`;
+    const more = host.querySelector('.cm-hl-more');
+    if (more) more.onclick = () => { showAll = !showAll; drawList(); if (!showAll) host.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
+    svg = null;
+  }
+
   function draw() {
     const w = host.clientWidth - parseFloat(getComputedStyle(host).paddingLeft) - parseFloat(getComputedStyle(host).paddingRight);
     if (w <= 0) return;
     lastW = host.clientWidth;
-    const small = w < 520;
-    const labelW = small ? 84 : 150, rowH = small ? 19 : 22, top = 22, bottom = 30;
+    if (w < 520) { drawList(); return; }
+    host.classList.remove('cm-hlist');
+    read.hidden = false;
+    const labelW = 150, rowH = 22, top = 22, bottom = 34;
     const H = top + repos.length * rowH + bottom;
     const colW = (w - labelW - 6) / history.length;
     const cx = (i) => labelW + 6 + (i + 0.5) * colW;
-    host.innerHTML = '';
+    host.innerHTML = '<p class="cm-hl-key">A filled dot means the pin moved forward, bigger for more commits pulled in; a ring means the pin was added, or moved to a commit that isn\'t ahead. Tap a column, or use the arrows, to read the commit.</p>';
     svg = el('svg', { class: 'cm-hist', viewBox: `0 0 ${w} ${H}`, width: w, height: H, role: 'img', 'aria-label': 'Which submodule pins each release commit moved' }, host);
     // selected / hovered column
     const hl = el('rect', { class: 'cm-hl', x: 0, y: top - 4, width: colW, height: repos.length * rowH + 8, rx: 3 }, svg);
@@ -369,8 +495,24 @@ const explorer = (() => {
       const y = top + j * rowH + rowH / 2;
       el('line', { class: 'cm-hgrid', x1: labelW + 6, x2: w, y1: y, y2: y }, svg);
       const t = el('text', { class: 'cm-hlabel', x: labelW, y: y + 4 }, svg);
-      t.textContent = small ? name.replace(/^riptide_/, '') : name;
+      t.textContent = name;
     });
+    // Columns are commits, evenly spaced: months are separators between them, not a time scale.
+    const yAxis = top + repos.length * rowH + 14;
+    let lastLabel = -1e9;
+    history.forEach((c, i) => {
+      const prev = history[i - 1];
+      if (prev && prev.date.slice(0, 7) === c.date.slice(0, 7)) return;
+      const x = cx(i) - colW / 2;
+      if (prev) el('line', { class: 'cm-hsep', x1: x, x2: x, y1: top - 6, y2: yAxis - 9 }, svg);
+      const [yy, mm] = c.date.split('-').map(Number);
+      if (x - lastLabel < 30) return;
+      lastLabel = x;
+      const t = el('text', { class: 'cm-haxis', x: x + 3, y: yAxis }, svg);
+      t.textContent = mm === 1 || !prev ? `${MONTH[mm - 1]} ${String(yy).slice(2)}` : MONTH[mm - 1];
+    });
+    const note = el('text', { class: 'cm-haxis cm-hnote', x: w, y: yAxis + 15 }, svg);
+    note.textContent = 'one column per commit, evenly spaced (not to scale in time)';
     const maxC = Math.max(...history.flatMap((c) => c.moved.map((m) => m.commits || 0)));
     const rMax = Math.min(colW * 0.48, rowH * 0.42), rMin = Math.max(1.6, Math.min(2.6, colW * 0.22));
     history.forEach((c, i) => {
@@ -381,29 +523,10 @@ const explorer = (() => {
         el('circle', { class: m.commits ? 'cm-dot' : 'cm-dot ring', cx: cx(i), cy: y, r }, svg);
       });
     });
-    // event labels and the month axis
-    const yAxis = top + repos.length * rowH + 16;
-    // Month labels where a month starts, skipping crowded ones; the last month is always labelled.
-    const gap = small ? 34 : 30;
-    const ticks = [];
-    history.forEach((c, i) => {
-      const prev = history[i - 1];
-      if (prev && prev.date.slice(0, 7) === c.date.slice(0, 7)) return;
-      const [yy, mm] = c.date.split('-').map(Number);
-      const tk = { x: cx(i) - colW / 2, label: mm === 1 || !prev ? `${MONTH[mm - 1]} ${String(yy).slice(2)}` : MONTH[mm - 1] };
-      const lastTk = ticks[ticks.length - 1];
-      if (!lastTk || tk.x - lastTk.x > gap) ticks.push(tk);
-      else if (i === history.findIndex((h) => h.date.slice(0, 7) === history[history.length - 1].date.slice(0, 7)) && ticks.length > 1) ticks[ticks.length - 1] = tk;
-    });
-    ticks.forEach(({ x, label }) => {
-      const t = el('text', { class: 'cm-haxis', x: Math.min(x, w - (small ? 22 : 26)), y: yAxis }, svg);
-      t.textContent = label;
-      el('line', { class: 'cm-htick', x1: x, x2: x, y1: yAxis - 12, y2: yAxis - 9 }, svg);
-    });
     history.forEach((c, i) => {
       if (/^RoboSub 20\d\d$/.test(c.msg)) {
         const t = el('text', { class: 'cm-hevent', x: cx(i), y: 12 }, svg);
-        t.textContent = c.msg.replace('RoboSub ', small ? 'RS ' : 'RoboSub ');
+        t.textContent = c.msg;
       }
     });
     const place = (rect, i) => { rect.setAttribute('x', cx(i) - colW / 2); rect.style.display = i === null ? 'none' : ''; };
@@ -426,7 +549,7 @@ const explorer = (() => {
   function showRead(i) {
     const c = history[i];
     const moved = c.moved.length
-      ? c.moved.map((m) => `<span><code>${brk(m.repo)}</code> ${m.added ? 'added' : m.commits != null ? `+${m.commits}` : 'moved'}</span>`).join('')
+      ? c.moved.map((m) => `<span><code>${brk(m.repo)}</code> ${what(m)}</span>`).join('')
       : '<span>no submodule moved</span>';
     read.innerHTML = `<div class="cm-hist-nav"><button type="button" class="btn" data-d="-1" aria-label="Previous commit"${i === 0 ? ' disabled' : ''}>←</button>
       <button type="button" class="btn" data-d="1" aria-label="Next commit"${i === history.length - 1 ? ' disabled' : ''}>→</button></div>

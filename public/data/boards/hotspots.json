@@ -710,6 +710,22 @@
       "r": 0.0345
      },
      {
+      "ref": "L1",
+      "label": "Inductors",
+      "value": "SRR1280-221K",
+      "x": 0.6683,
+      "y": 0.5336,
+      "r": 0.0576
+     },
+     {
+      "ref": "U3",
+      "label": "3.3 V regulator",
+      "value": "LM1117IMPX-3.3/NOPB",
+      "x": 0.4348,
+      "y": 0.3803,
+      "r": 0.041
+     },
+     {
       "ref": "J1",
       "label": "LED module",
       "value": "10pos 3.8A conn",
@@ -766,6 +782,22 @@
       "x": 0.7039,
       "y": 0.4485,
       "r": 0.0345
+     },
+     {
+      "ref": "L1",
+      "label": "Inductors",
+      "value": "SRR1280-221K",
+      "x": 0.5336,
+      "y": 0.3317,
+      "r": 0.0576
+     },
+     {
+      "ref": "U3",
+      "label": "3.3 V regulator",
+      "value": "LM1117IMPX-3.3/NOPB",
+      "x": 0.3803,
+      "y": 0.5652,
+      "r": 0.041
      },
      {
       "ref": "J1",
@@ -997,26 +1029,8 @@
      843,
      1400
     ],
-    "spots": [
-     {
-      "ref": "U17",
-      "label": "Bluetooth module",
-      "value": "RF TXRX MOD BT PCB TH SMD",
-      "x": 0.1365,
-      "y": 0.7334,
-      "r": 0.0937
-     }
-    ],
-    "landscape": [
-     {
-      "ref": "U17",
-      "label": "Bluetooth module",
-      "value": "RF TXRX MOD BT PCB TH SMD",
-      "x": 0.7334,
-      "y": 0.8635,
-      "r": 0.0937
-     }
-    ]
+    "spots": [],
+    "landscape": []
    }
   },
   "sbh_mcu": {

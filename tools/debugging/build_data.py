@@ -36,7 +36,7 @@ def git_lines(repo, ref, path):
 
 
 def link(src):
-    if len(src) == 2:                                   # [label, href]
+    if len(src) == 2:                                   # [label, href], or [label, null] for a source with no public link
         return {'label': src[0], 'href': src[1]}
     label, key, path, lines = src
     if key == 'site':
@@ -78,9 +78,11 @@ GROUPS = [
                                            '/talos/controller/mpc/disturbance', '/talos/controller/mpc/solve_time_ms',
                                            '/talos/controller_debug_wrench', '/talos/controller/scale/trust'], 'pool', True),
     ('Thrust, RPM and ESC telemetry', ['/talos/thruster_forces', '/talos/command/requested_rpm',
-                                       '/talos/state/thrusters/telemetry', '/talos/controller/linear',
-                                       '/talos/controller/angular'], 'pool', True),
-    ('Kill and enable', ['/talos/state/kill', '/talos/controller/motion_enabled'], 'pool', True),
+                                       '/talos/state/thrusters/telemetry', '/talos/state/thrusters/rpm',
+                                       '/talos/controller/linear', '/talos/controller/angular',
+                                       '/talos/controller/identification/thrusters'], 'pool', True),
+    ('Kill, enable and session flags', ['/talos/state/kill', '/talos/controller/motion_enabled',
+                                        '/talos/pool_identify/done'], 'pool', True),
     ('Detections', ['/talos/detected_objects'], 'sim', False),
     ('Mapping estimates (every object)', ['re:^/talos/mapping/'], 'sim', False),
     ('Behaviour tree stack', ['/talos/autonomy/tree_stack'], 'sim', False),

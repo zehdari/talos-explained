@@ -16,20 +16,54 @@ repos:
   chameleon_tf:       {local: ~/osu-uwrt/release/src/chameleon_tf,        ref: HEAD,                         gh: coalman321/chameleon_tf,      branch: f1d3e19}
 
 subsystems:
-  - {id: sensors,    label: Sensors,              chapter: sensors.html}
-  - {id: cameras,    label: Cameras,              chapter: cameras.html#topics}
-  - {id: estimation, label: State estimation,     chapter: localization.html}
-  - {id: control,    label: Control,              chapter: control/index.html}
-  - {id: thrusters,  label: Thrusters,            chapter: thrusters-hw.html#path}
-  - {id: perception, label: Perception,           chapter: perception/detector.html}
-  - {id: mapping,    label: Mapping,              chapter: perception/map.html}
-  - {id: autonomy,   label: Autonomy,             chapter: bt-nodes.html#ros}
-  - {id: actuators,  label: Actuators,            chapter: actuators.html#ros}
-  - {id: power,      label: "Kill, power and boards", chapter: firmware.html#microros}
-  - {id: acoustics,  label: Acoustics and IVC,    chapter: sensors.html#acoustics}
-  - {id: operator,   label: Viewer,               chapter: viewer.html#ros}
-  - {id: simulator,  label: Simulator,            chapter: nereus.html#bridge}
-  - {id: ros,        label: ROS plumbing,         chapter: ros2.html}
+  - {id: sensors,    label: Sensors,              chapter: sensors.html, blurb: "IMU, FOG, DVL and depth: the raw motion data the EKF fuses."}
+  - {id: cameras,    label: Cameras,              chapter: "cameras.html#topics", blurb: "The two ZED X Mini cameras: colour images, depth, intrinsics."}
+  - {id: estimation, label: State estimation,     chapter: localization.html, blurb: "The EKF's pose and velocity, and the body frames it moves."}
+  - {id: control,    label: Control,              chapter: control/index.html, blurb: "Goals in (controller/linear, angular, follow_path); the MPC's output."}
+  - {id: thrusters,  label: Thrusters,            chapter: "thrusters-hw.html#path", blurb: "ESC telemetry, the RPM the MPC sent, and one frame per thruster."}
+  - {id: perception, label: Perception,           chapter: perception/detector.html, blurb: "The YOLO detector's objects, and the AprilTag detections."}
+  - {id: mapping,    label: Mapping,              chapter: perception/map.html, blurb: "One fused pose per course object, and the services trees call."}
+  - {id: autonomy,   label: Autonomy,             chapter: "bt-nodes.html#ros", blurb: "Run a behaviour tree and watch what it is doing."}
+  - {id: actuators,  label: Actuators,            chapter: "actuators.html#ros", blurb: "Torpedoes, droppers and the claw: commands, replies, tool frames."}
+  - {id: power,      label: "Kill, power and boards", chapter: "firmware.html#microros", blurb: "Kill state, software kill, power commands, LEDs, board status."}
+  - {id: acoustics,  label: Acoustics and IVC,    chapter: "sensors.html#acoustics", blurb: "Pinger listening and inter-vehicle comms through the IVC board."}
+  - {id: operator,   label: Viewer,               chapter: "viewer.html#ros", blurb: "The Nereus viewer's nodes, on the operator laptop."}
+  - {id: simulator,  label: Simulator,            chapter: "nereus.html#bridge", blurb: "Nereus only: truth, scoring, resets and the sim's own frames."}
+  - {id: ros,        label: ROS plumbing,         chapter: ros2.html, blurb: "/tf, /clock, /rosout: the names every node shares."}
+
+# The rows shown first in each group (row ids as on the page: <kind>-<name>), in this order.
+key:
+  sensors:    [topic-vectornav/imu, topic-gyro/twist, topic-dvl_twist, topic-depth/pose, topic-dvl/bottom_lock]
+  cameras:    [topic-ffc/zed_node/rgb/image_rect_color/compressed, topic-dfc/zed_node/rgb/image_rect_color/compressed, topic-ffc/zed_node/depth/depth_registered, topic-ffc/zed_node/rgb/camera_info]
+  estimation: [topic-odometry/filtered, frame-talos/base_link, frame-odom, service-set_pose]
+  control:    [topic-controller/linear, topic-controller/angular, action-follow_path, topic-thruster_forces, topic-controller/scale/trust, node-mpc_controller]
+  thrusters:  [topic-state/thrusters/telemetry, topic-command/requested_rpm, frame-talos/thruster_0]
+  perception: [topic-detected_objects, service-set_camera_is_dfc, topic-yolo_orientation/annotated/compressed, node-yolo_orientation]
+  mapping:    [topic-mapping/<object>, service-mapping_target, frame-<object>_frame, action-map/model_tf]
+  autonomy:   [action-autonomy/run_tree, topic-autonomy/tree_stack, service-autonomy/list_trees, node-autonomy]
+  actuators:  [service-command/actuator/arm, service-command/actuator/torpedo, service-command/actuator/dropper, topic-state/actuator/status]
+  power:      [topic-state/kill, topic-command/software_kill, topic-command/electrical, topic-command/led, topic-state/firmware]
+  acoustics:  [topic-acoustics/buffer_0_closer, topic-ivc/pinger/selected_freq_amp_stream, topic-ivc/rx, topic-ivc/tx]
+  operator:   [node-viewer_panels, node-nereus_viewer, frame-ghost/base_link]
+  simulator:  [node-physics_simulator, topic-simulator/ground_truth, service-reset_sim_to_start, topic-simulator/run_score]
+  ros:        [topic-tf, topic-tf_static, topic-clock, topic-rosout]
+
+# Rows folded away under "unused or debug" (besides topics nothing publishes, which are folded automatically).
+minor: [topic-dvl_sonar0, topic-dvl_sonar1, topic-dvl_sonar2, topic-dvl_sonar3, topic-vectornav/magnetometer, topic-vectornav/magheading,
+        topic-vectornav/pressure_bar, topic-vectornav/dump, topic-state/depth/temp, topic-gyro/raw, service-vectornav/config, action-vectornav/mag_cal,
+        service-controller_overseer/update_complete_controller_params, service-controller_overseer/update_pid_params,
+        service-controller_overseer/update_smc_params, service-controller_overseer/update_thruster_solver_params,
+        topic-controller/solver_weights, topic-controller/re_init_accumulators, topic-controller/stunt_state, topic-controller/active_body_force,
+        action-calibrate_drag_new, node-calibrate_drag, service-setTeleop,
+        topic-dshot_tune/set_raw, topic-dshot_tune/p_gain, topic-dshot_tune/i_gain, topic-dshot_tune/i_bound, topic-dshot_tune/hard_limit,
+        topic-dshot_tune/min_command, topic-command/thruster_rpm, topic-state/thrusters/rpm, topic-state/thrusters/cmd,
+        topic-state/temp/poacboard, topic-state/humidity/poacboard, topic-state/temp/cameracage, topic-state/humidity/cameracage,
+        topic-status/temp/smartbattery, topic-status/humidity/smartbattery, topic-state/battery, node-smart_battery, topic-state/leak,
+        topic-heartbeat, topic-state/fw_heartbeat, topic-state/aux,
+        topic-ivc/debug_rx_mag, topic-ivc/debug_tx_frequency, topic-ivc/tx_success,
+        topic-events/write_split, topic-diagnostics, topic-diagnostics_agg, node-diagnostics, topic-parameter_events,
+        topic-autonomy/bag_trigger, node-nereus_viewer_timing, frame-talos/base_inertia, frame-talos/pose_sensor_link,
+        frame-talos/imu_revolute_link, frame-talos/acoustics_port_link, frame-talos/acoustics_starboard_link]
 
 # Which subsystem a name belongs to: first matching prefix wins (names relative to /talos/, '/' = absolute).
 subsystem_rules:
@@ -118,7 +152,7 @@ chapter_rules:
   - [controller/identification/, control/identify.html#session]
   - [pool_identify/, control/identify.html#session]
   - [follow_path, commanding.html#paths]
-  - [setTeleop, commanding.html#teleop]
+  - [setTeleop, commanding.html#legacy]
   - [state/kill, commanding.html#kill]
   - [command/software_kill, commanding.html#kill]
   - [state/physkill_notify, commanding.html#kill]
@@ -169,6 +203,17 @@ chapter_rules:
   - [/parameter_events, ros2.html#params]
   - [/diagnostics, computers.html]
 
+# Calls and publications in the tree files (RepairCompMpcTree.xml, the tree the capture ran) that the capture never
+# saw (the run stopped before the torpedo, bin and table tasks; the acoustics calls are short-lived clients):
+# [kind, name, role, node, file, line regex].
+tree_ends:
+  - [service, command/actuator/torpedo, subs, autonomy, trees/RepairCompMpcTree.xml, 'value="command/actuator/torpedo"']
+  - [service, command/actuator/dropper, subs, autonomy, trees/RepairCompMpcTree.xml, 'value="command/actuator/dropper"']
+  - [topic, command/actuator/claw_move_s, pubs, autonomy, trees/RepairCompMpcTree.xml, 'value="command/actuator/claw_move_s"']
+  - [service, acoustics/start_sample, subs, autonomy, trees/RepairCompMpcTree.xml, 'srv_name="/talos/acoustics/start_sample"']
+  - [service, acoustics/stop_sample, subs, autonomy, trees/RepairCompMpcTree.xml, 'srv_name="/talos/acoustics/stop_sample"']
+  - [topic, acoustics/buffer_0_closer, subs, autonomy, trees/RepairCompMpcTree.xml, 'topic="/talos/acoustics/buffer_0_closer"']
+
 # One-line notes shown with an item (name relative to /talos/).
 notes:
   vectornav/imu: "VectorNav IMU: orientation, angular rate, acceleration. Fused by the EKF and read directly by the MPC's estimator."
@@ -178,7 +223,7 @@ notes:
   dvl_twist: "DVL velocity over the pool floor, only while it has bottom lock. About 125 ms old when it arrives."
   dvl/bottom_lock: "True while the DVL sees the floor; drives the viewer's DVL chip."
   dvl/water_twist: "DVL velocity relative to the water (water track), the fallback when there is no bottom lock."
-  dvl/status: "DVL health and settings. The launcher watches it."
+  dvl/status: "DVL health and settings. No node reads it; the remote launcher waits for it before it shows the hardware entry as Running (Launching the stack)."
   dvl: "Full DVL report (nortek_dvl_msgs/Dvl): all beams, figure of merit, altitude."
   depth/pose: "Depth as a pose: base_link's z, negative below the surface, corrected for where the pressure sensor sits. Fused by the EKF and the MPC."
   state/depth/raw: "Pressure-sensor depth from the camera cage board, before the lever-arm correction."
@@ -238,8 +283,8 @@ notes:
   command/actuator/torpedo: "Fire the next torpedo. A topic for the firmware, and a Trigger service of the same name from the translator."
   command/actuator/dropper: "Drop the next marker. Topic and service, like torpedo."
   command/actuator/notify_reload: "\"I reloaded by hand\": counts back to full. Topic and service."
-  command/actuator/claw: "Open (true) or close (false) the claw. Nereus takes it; on the robot the claw firmware is on the poac-multiple-servos branch."
-  command/actuator/claw_move_s: "Move the claw for a number of seconds (0 stops it). Same branch note as command/actuator/claw."
+  command/actuator/claw: "Open (true) or close (false) the claw, from the viewer. Only Nereus listens: on Talos the claw firmware is on the POAC's poac-multiple-servos branch, not master."
+  command/actuator/claw_move_s: "Move the claw for a number of seconds (0 stops it). The viewer and the table task's trees send it. Only Nereus listens: on Talos the claw firmware is on the POAC's poac-multiple-servos branch, not master."
   command/actuator/torpedo_marker/set_home: "Store the servo's current angle as home."
   command/actuator/torpedo_marker/go_home: "Turn the servo back to home."
   command/simple_torpedo_fire: "simple_actuator_interface: arm if needed and fire, for quick tests."
@@ -258,7 +303,7 @@ notes:
   ivc/pinger/set_freq_khz: "The pinger frequency the IVC board should listen at."
   ivc/pinger/selected_freq_khz: "The frequency the IVC board is listening at."
   ivc/pinger/selected_freq_amp_stream: "Hydrophone amplitude at the selected frequency, streamed by the IVC board."
-  acoustics/buffer_0_closer: "riptide_acoustics' answer, once a second: true if hydrophone 0 is closer to the pinger."
+  acoustics/buffer_0_closer: "riptide_acoustics' answer after two listening stops: true if the pinger sounded louder during the first stop (buffer 0) than the second. One hydrophone, so it compares loudness, not direction."
   ivc/tx: "Inter-vehicle comms: byte to send. The publishers depend on which IVC firmware is flashed (unconfirmed)."
   ivc/rx: "Inter-vehicle comms: byte received. Master's IVCBoard publishes std_msgs/Int8; the viewer subscribes with UInt8."
   ivc/tx_success: "Inter-vehicle comms: send confirmation."
@@ -286,8 +331,8 @@ notes:
   dfc/zed_node/rgb/image_rect_color: "Down camera, raw bgra8 (9.2 MB a frame); the JPEG's source."
   ffc/zed_node/depth/depth_registered: "Forward depth image, 32-bit float metres, aligned to the colour image (9.2 MB). The detector reads it for 3D poses."
   dfc/zed_node/depth/depth_registered: "Down depth image, 32-bit float metres (9.2 MB)."
-  ffc/zed_node/rgb/camera_info: "Forward camera intrinsics. The detector and the AprilTag node need it; the launcher watches it."
-  dfc/zed_node/rgb/camera_info: "Down camera intrinsics; the launcher watches it."
+  ffc/zed_node/rgb/camera_info: "Forward camera intrinsics. The detector and the AprilTag node need it; the remote launcher waits for it before it shows the zed entry as Running."
+  dfc/zed_node/rgb/camera_info: "Down camera intrinsics; the remote launcher waits for it before it shows the zed entry as Running."
   ffc/zed_node/point_cloud/cloud_registered: "Forward camera point cloud, for the viewer's Vision panel when switched on."
   dfc/zed_node/point_cloud/cloud_registered: "Down camera point cloud, for the viewer's Vision panel when switched on."
   ffc/zed_node/stereo_raw/image_raw_color: "Both forward lenses side by side, unrectified (18.4 MB). picture_taker subscribes from launch, for calibration."
@@ -612,7 +657,7 @@ boards:
   - {id: camera_cage_bb, dir: CameraCageBB,  label: Camera cage board, node: "/talos/camera_cage_bb",   chapter: boards.html#ccbb, firmware_id: ccbb}
   - {id: led_board,      dir: LEDBoard,      label: LED board,         node: "/talos/led_board",        chapter: boards.html#led-ivc, firmware_id: led}
   - {id: ivc_board,      dir: IVCBoard,      label: IVC board,         node: "/talos/ivc_board",        chapter: boards.html#led-ivc, firmware_id: ivc}
-  - {id: smart_battery,  dir: SmartBattery,  label: Smart battery housings, node: "/talos/smart_battery_<n>", chapter: boards.html#batteries, firmware_id: sbh, status: "agent off"}
+  - {id: smart_battery,  dir: SmartBattery,  label: Smart battery housings, node: "/talos/smart_battery_<n>", chapter: boards.html#batteries, firmware_id: sbh, status: "not connected", side: "off"}
 
 # The IVC pinger topics come from IVCBoard2 on titan_firmware branch blake/ivc (see sensors.html#acoustics),
 # not from master's IVCBoard; only the ones the stack uses are listed.
@@ -686,6 +731,7 @@ node_meta:
     config: []
     chapter: localization.html#frames
   mpc_controller:
+    role: "Model predictive controller: pose and velocity goals in. On Talos it sends RPM to the ESC boards over CAN itself; in Nereus the simulator applies its eight thruster forces (thruster_forces)."
     repo: riptide_control
     files: [riptide_mpc/src/mpc_controller_node.cpp]
     config: [riptide_mpc/config/mpc.yaml, riptide_mpc/config/models/talos.yaml, "riptide_core:riptide_descriptions/config/talos.yaml"]
@@ -748,6 +794,7 @@ node_meta:
     dump: params_autonomy.json
     chapter: bt-nodes.html#dotask
   ActuatorTranslator:
+    role: "actuator_service_translator.py, node name ActuatorTranslator. Serves the actuator services the trees call, publishes the topic of the same name for the POAC firmware, and replies with the board's state/actuator/cmd_status."
     repo: riptide_core
     files: [riptide_hardware/riptide_hardware2/actuator_service_translator.py]
     config: []

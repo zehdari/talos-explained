@@ -1,0 +1,2879 @@
+{
+ "about": "Front-page 3D hero. items: id -> name, nodes (GLB node names in models/talos-hero.glb) or children (item ids), open (a container you can go into), shell (nodes ghosted when it is open), anchorNode (where its dot sits), card. Built from the CAD (tools/cad/build_hero.py) and the chapters; boards identified in docs/media/cad.md section 3b.",
+ "model": "models/talos-hero.glb",
+ "systems": [
+  "thrusters",
+  "frame",
+  "hull",
+  "camera_cage",
+  "ecage",
+  "batteries",
+  "kill_switch",
+  "subconns",
+  "dvl",
+  "cameras",
+  "hydrophone",
+  "transducer",
+  "launcher",
+  "claw",
+  "magnet_poker",
+  "buoyancy"
+ ],
+ "extra": [
+  "cables"
+ ],
+ "items": {
+  "thr_vup": {
+   "name": "VUP · upper port outer",
+   "short": "VUP",
+   "nodes": [
+    "thr_vup"
+   ],
+   "card": {
+    "what": "A Blue Robotics T200 on the upper port corner module, one of the four outer thrusters.",
+    "does": "Its axis runs fore and aft, so it pushes Talos forward or back. Set far out from the centre line, it also has a long lever arm for turning.",
+    "facts": [
+     [
+      "Name in talos.yaml",
+      "VUP"
+     ],
+     [
+      "Position (CAD X, Y)",
+      "+406, +244 mm"
+     ],
+     [
+      "Axis",
+      "fore and aft"
+     ]
+    ],
+    "links": [
+     [
+      "thrusters-hw.html#layout",
+      "Eight thrusters, two jobs"
+     ],
+     [
+      "thrusters-hw.html#t200",
+      "The T200 thruster"
+     ]
+    ]
+   }
+  },
+  "thr_vus": {
+   "name": "VUS · upper stbd outer",
+   "short": "VUS",
+   "nodes": [
+    "thr_vus"
+   ],
+   "card": {
+    "what": "A Blue Robotics T200 on the upper starboard corner module, one of the four outer thrusters.",
+    "does": "Its axis runs fore and aft, so it pushes Talos forward or back. Set far out from the centre line, it also has a long lever arm for turning.",
+    "facts": [
+     [
+      "Name in talos.yaml",
+      "VUS"
+     ],
+     [
+      "Position (CAD X, Y)",
+      "−406, +244 mm"
+     ],
+     [
+      "Axis",
+      "fore and aft"
+     ]
+    ],
+    "links": [
+     [
+      "thrusters-hw.html#layout",
+      "Eight thrusters, two jobs"
+     ],
+     [
+      "thrusters-hw.html#t200",
+      "The T200 thruster"
+     ]
+    ]
+   }
+  },
+  "thr_vlp": {
+   "name": "VLP · lower port outer",
+   "short": "VLP",
+   "nodes": [
+    "thr_vlp"
+   ],
+   "card": {
+    "what": "A Blue Robotics T200 on the lower port corner module, one of the four outer thrusters.",
+    "does": "Its axis runs fore and aft, so it pushes Talos forward or back. Set far out from the centre line, it also has a long lever arm for turning.",
+    "facts": [
+     [
+      "Name in talos.yaml",
+      "VLP"
+     ],
+     [
+      "Position (CAD X, Y)",
+      "+406, −244 mm"
+     ],
+     [
+      "Axis",
+      "fore and aft"
+     ]
+    ],
+    "links": [
+     [
+      "thrusters-hw.html#layout",
+      "Eight thrusters, two jobs"
+     ],
+     [
+      "thrusters-hw.html#t200",
+      "The T200 thruster"
+     ]
+    ]
+   }
+  },
+  "thr_vls": {
+   "name": "VLS · lower stbd outer",
+   "short": "VLS",
+   "nodes": [
+    "thr_vls"
+   ],
+   "card": {
+    "what": "A Blue Robotics T200 on the lower starboard corner module, one of the four outer thrusters.",
+    "does": "Its axis runs fore and aft, so it pushes Talos forward or back. Set far out from the centre line, it also has a long lever arm for turning.",
+    "facts": [
+     [
+      "Name in talos.yaml",
+      "VLS"
+     ],
+     [
+      "Position (CAD X, Y)",
+      "−406, −244 mm"
+     ],
+     [
+      "Axis",
+      "fore and aft"
+     ]
+    ],
+    "links": [
+     [
+      "thrusters-hw.html#layout",
+      "Eight thrusters, two jobs"
+     ],
+     [
+      "thrusters-hw.html#t200",
+      "The T200 thruster"
+     ]
+    ]
+   }
+  },
+  "thr_hup": {
+   "name": "HUP · upper port inner",
+   "short": "HUP",
+   "nodes": [
+    "thr_hup"
+   ],
+   "card": {
+    "what": "A Blue Robotics T200 on the upper port corner module, one of the four inner thrusters.",
+    "does": "It is tilted 45° between up and sideways, so it pushes up or down and sideways at the same time. The controller works out all eight together.",
+    "facts": [
+     [
+      "Name in talos.yaml",
+      "HUP"
+     ],
+     [
+      "Position (CAD X, Y)",
+      "+298, +137 mm"
+     ],
+     [
+      "Axis",
+      "45° in the side-to-side plane"
+     ]
+    ],
+    "links": [
+     [
+      "thrusters-hw.html#layout",
+      "Eight thrusters, two jobs"
+     ],
+     [
+      "thrusters-hw.html#t200",
+      "The T200 thruster"
+     ]
+    ]
+   }
+  },
+  "thr_hus": {
+   "name": "HUS · upper stbd inner",
+   "short": "HUS",
+   "nodes": [
+    "thr_hus"
+   ],
+   "card": {
+    "what": "A Blue Robotics T200 on the upper starboard corner module, one of the four inner thrusters.",
+    "does": "It is tilted 45° between up and sideways, so it pushes up or down and sideways at the same time. The controller works out all eight together.",
+    "facts": [
+     [
+      "Name in talos.yaml",
+      "HUS"
+     ],
+     [
+      "Position (CAD X, Y)",
+      "−298, +137 mm"
+     ],
+     [
+      "Axis",
+      "45° in the side-to-side plane"
+     ]
+    ],
+    "links": [
+     [
+      "thrusters-hw.html#layout",
+      "Eight thrusters, two jobs"
+     ],
+     [
+      "thrusters-hw.html#t200",
+      "The T200 thruster"
+     ]
+    ]
+   }
+  },
+  "thr_hlp": {
+   "name": "HLP · lower port inner",
+   "short": "HLP",
+   "nodes": [
+    "thr_hlp"
+   ],
+   "card": {
+    "what": "A Blue Robotics T200 on the lower port corner module, one of the four inner thrusters.",
+    "does": "It is tilted 45° between up and sideways, so it pushes up or down and sideways at the same time. The controller works out all eight together.",
+    "facts": [
+     [
+      "Name in talos.yaml",
+      "HLP"
+     ],
+     [
+      "Position (CAD X, Y)",
+      "+298, −137 mm"
+     ],
+     [
+      "Axis",
+      "45° in the side-to-side plane"
+     ]
+    ],
+    "links": [
+     [
+      "thrusters-hw.html#layout",
+      "Eight thrusters, two jobs"
+     ],
+     [
+      "thrusters-hw.html#t200",
+      "The T200 thruster"
+     ]
+    ]
+   }
+  },
+  "thr_hls": {
+   "name": "HLS · lower stbd inner",
+   "short": "HLS",
+   "nodes": [
+    "thr_hls"
+   ],
+   "card": {
+    "what": "A Blue Robotics T200 on the lower starboard corner module, one of the four inner thrusters.",
+    "does": "It is tilted 45° between up and sideways, so it pushes up or down and sideways at the same time. The controller works out all eight together.",
+    "facts": [
+     [
+      "Name in talos.yaml",
+      "HLS"
+     ],
+     [
+      "Position (CAD X, Y)",
+      "−298, −137 mm"
+     ],
+     [
+      "Axis",
+      "45° in the side-to-side plane"
+     ]
+    ],
+    "links": [
+     [
+      "thrusters-hw.html#layout",
+      "Eight thrusters, two jobs"
+     ],
+     [
+      "thrusters-hw.html#t200",
+      "The T200 thruster"
+     ]
+    ]
+   }
+  },
+  "thrusters": {
+   "name": "Thrusters",
+   "children": [
+    "thr_vup",
+    "thr_vus",
+    "thr_vlp",
+    "thr_vls",
+    "thr_hup",
+    "thr_hus",
+    "thr_hlp",
+    "thr_hls"
+   ],
+   "color": "#d9480f",
+   "open": true,
+   "anchorNode": "thr_vup",
+   "card": {
+    "what": "Eight Blue Robotics T200 thrusters, all in one plane across the robot, two per corner module.",
+    "does": "The four corner ones push fore and aft; the four inner ones are tilted 45° and push up or down and sideways at once. The controller works out all eight together.",
+    "facts": [
+     [
+      "Limit",
+      "±24 N each, 73 N total"
+     ],
+     [
+      "Driven by",
+      "2 ESC boards, 4 thrusters each"
+     ],
+     [
+      "Mass",
+      "427 g each in air"
+     ]
+    ],
+    "links": [
+     [
+      "thrusters-hw.html#t200",
+      "The T200 thruster"
+     ],
+     [
+      "thrusters-hw.html#layout",
+      "Eight thrusters, two jobs"
+     ],
+     [
+      "mechanical.html#thrusters",
+      "Eight thrusters in one plane"
+     ]
+    ]
+   },
+   "inside": [
+    "The eight",
+    " thrusters"
+   ]
+  },
+  "frame_modules": {
+   "name": "Corner modules",
+   "nodes": [
+    "frame_mod_pu",
+    "frame_mod_su",
+    "frame_mod_pl",
+    "frame_mod_sl"
+   ],
+   "card": {
+    "what": "Four triangular modules at the corners: two upper (the CAD calls them Dorito) and two lower (Taco), mirrored port and starboard.",
+    "does": "Each carries two T200s, a foam block, rubber handles and stainless crane hooks, and meets the hull at a Hull Connector plate.",
+    "facts": [
+     [
+      "Made of",
+      "6063-O C-channel, 5052-H32 plate"
+     ],
+     [
+      "Each carries",
+      "2 T200s, foam, handles, crane hooks"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#frame",
+      "The frame"
+     ]
+    ]
+   }
+  },
+  "frame_guards": {
+   "name": "Thruster guards",
+   "nodes": [
+    "frame_guards"
+   ],
+   "card": {
+    "what": "The guards over the thrusters, one part per corner module (Thruster Protector in the CAD).",
+    "does": "They cover the propellers so nothing gets caught in them.",
+    "facts": [
+     [
+      "Count",
+      "4, one per module"
+     ],
+     [
+      "Material",
+      "5052-H32 aluminium (CAD)"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#frame",
+      "The frame"
+     ],
+     [
+      "thrusters-hw.html#t200",
+      "The T200 thruster"
+     ]
+    ]
+   }
+  },
+  "frame_bars": {
+   "name": "Cross bars",
+   "nodes": [
+    "frame_bars"
+   ],
+   "card": {
+    "what": "Two 432 mm aluminium angle bars across the bottom of the frame, one at the bow and one at the stern (Holy L Bar in the CAD).",
+    "does": "They tie the port and starboard lower modules together under the hull.",
+    "facts": [
+     [
+      "Length",
+      "432 mm"
+     ],
+     [
+      "Stock",
+      "6061 aluminium angle (McMaster 6941T113)"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#frame",
+      "The frame"
+     ]
+    ]
+   }
+  },
+  "frame_rails": {
+   "name": "Battery rails",
+   "nodes": [
+    "frame_rails"
+   ],
+   "card": {
+    "what": "Four rails, two on each side of the frame, that the battery pods ride on.",
+    "does": "Compliant clips snap each pod onto its rails. Sliding the pods fore or aft moves Talos's centre of mass.",
+    "facts": [
+     [
+      "Count",
+      "4, two per pod"
+     ],
+     [
+      "Length",
+      "269 mm (CAD)"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#batteries",
+      "Battery pods"
+     ],
+     [
+      "mechanical.html#frame",
+      "The frame"
+     ]
+    ]
+   }
+  },
+  "frame_tension": {
+   "name": "Tension cables",
+   "nodes": [
+    "frame_tension"
+   ],
+   "card": {
+    "what": "Stainless steel cables that brace the frame: four at the sides, two on top and two underneath, with turnbuckles.",
+    "does": "Turnbuckles tension the cables; slacken them to take the frame apart.",
+    "facts": [
+     [
+      "Cables",
+      "4 side, 2 top, 2 bottom"
+     ],
+     [
+      "Turnbuckles",
+      "3, 316 stainless (McMaster 30315T611)"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#frame",
+      "The frame"
+     ]
+    ]
+   }
+  },
+  "frame": {
+   "name": "Frame",
+   "children": [
+    "frame_modules",
+    "frame_guards",
+    "frame_bars",
+    "frame_rails",
+    "frame_tension"
+   ],
+   "color": "#7d8f99",
+   "open": true,
+   "anchorNode": "frame_mod_pl",
+   "card": {
+    "what": "The open aluminium structure that carries everything: four triangular corner modules joined by two cross bars and braced by stainless cables.",
+    "does": "The hull, thrusters, battery pods, sensors and tools all mount to it. Turnbuckles tension the cables; slacken them to take the frame apart.",
+    "facts": [
+     [
+      "Bare size",
+      "805 × 555 × 346 mm (CAD)"
+     ],
+     [
+      "Metal",
+      "6063 C-channel, 5052-H32 plate"
+     ],
+     [
+      "Modules",
+      "2 upper (Dorito), 2 lower (Taco)"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#frame",
+      "The frame"
+     ],
+     [
+      "mechanical.html#why",
+      "Why it looks like this"
+     ]
+    ]
+   },
+   "inside": [
+    "Parts",
+    " of the frame"
+   ]
+  },
+  "cc_orin": {
+   "name": "Jetson AGX Orin",
+   "nodes": [
+    "cc_orin"
+   ],
+   "card": {
+    "what": "An NVIDIA Jetson AGX Orin, Talos's only computer: an ARM board with a GPU.",
+    "does": "It runs every ROS 2 node on the robot: drivers, the EKF, the YOLO detector, ZED depth, mapping, behaviour trees and the MPC. The camera cage board switches its 15 V supply.",
+    "facts": [
+     [
+      "Host",
+      "orin2, 192.168.1.24"
+     ],
+     [
+      "Software",
+      "Ubuntu 22.04, ROS 2 Humble, Zenoh"
+     ],
+     [
+      "Bought",
+      "2022"
+     ]
+    ],
+    "links": [
+     [
+      "computers.html#orin",
+      "The Orin"
+     ],
+     [
+      "launch.html#launcher",
+      "The launcher, inside"
+     ]
+    ]
+   }
+  },
+  "cc_ffc": {
+   "name": "Forward camera (ffc)",
+   "short": "Forward camera",
+   "nodes": [
+    "cc_ffc"
+   ],
+   "card": {
+    "what": "A ZED X Mini stereo camera at the front of the camera cage, looking out of the starboard bow window.",
+    "does": "It sees gates, the torpedo board and other props ahead. The detector and the mapping use its colour and depth images.",
+    "facts": [
+     [
+      "Image",
+      "1920 × 1200 at 15 Hz"
+     ],
+     [
+      "Pitch",
+      "2.9° down"
+     ],
+     [
+      "Since",
+      "November 2025 (was a ZED X)"
+     ]
+    ],
+    "links": [
+     [
+      "cameras.html#two-cameras",
+      "Two ZED X Minis"
+     ],
+     [
+      "cameras.html#fov",
+      "What each camera sees"
+     ]
+    ]
+   }
+  },
+  "cc_vn100": {
+   "name": "VN-100 IMU",
+   "nodes": [
+    "cc_vn100"
+   ],
+   "card": {
+    "what": "A VectorNav VN-100-T inertial measurement unit at the stern end of the camera cage.",
+    "does": "It measures turn rates, acceleration and tilt; its own filter gives roll and pitch from gravity. Yaw rate comes from the fibre-optic gyro instead.",
+    "facts": [
+     [
+      "Rate",
+      "400 Hz (measured)"
+     ],
+     [
+      "Link",
+      "RS-232 via the Orin HAT, /dev/ttyTHS1"
+     ],
+     [
+      "Topic",
+      "vectornav/imu"
+     ]
+    ],
+    "links": [
+     [
+      "sensors.html#imu",
+      "IMU: VN-100"
+     ],
+     [
+      "sensors.html#fog",
+      "Fibre-optic gyro"
+     ]
+    ]
+   }
+  },
+  "cc_gmsl2": {
+   "name": "GMSL2 capture card",
+   "nodes": [
+    "cc_gmsl2"
+   ],
+   "card": {
+    "what": "A capture card on the Orin that takes both ZED X Mini cameras.",
+    "does": "GMSL2 carries each camera's video over one coax cable; the card hands the frames to the Orin, where the ZED SDK makes depth on the GPU.",
+    "facts": [
+     [
+      "Cameras",
+      "ffc and dfc"
+     ],
+     [
+      "Model",
+      "not recorded in the repos"
+     ]
+    ],
+    "links": [
+     [
+      "cameras.html#two-cameras",
+      "Two ZED X Minis"
+     ],
+     [
+      "glossary.html#term-gmsl2",
+      "Glossary: GMSL2"
+     ]
+    ]
+   }
+  },
+  "cc_cagebb": {
+   "name": "Camera cage board (CCBB)",
+   "short": "Cage board",
+   "nodes": [
+    "cc_cagebb"
+   ],
+   "card": {
+    "what": "The team's power and I/O board for the camera cage (CCBB), 50.8 × 136.6 mm.",
+    "does": "It takes 15 V, 5 V and CAN from the POAC and switches the Orin's power, powers the DVL over its Ethernet cable and the network switch, reads the depth sensor, and runs the fans and RGB status strip.",
+    "facts": [
+     [
+      "CAN ID",
+      "internal 4"
+     ],
+     [
+      "Depth sensor",
+      "on J15, short I²C cable"
+     ],
+     [
+      "Orin power",
+      "15 V, switched, on at boot"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#ccbb",
+      "Camera cage boards"
+     ],
+     [
+      "electrical.html#cage",
+      "Power in the camera cage"
+     ]
+    ]
+   }
+  },
+  "cc_switch": {
+   "name": "Network switch",
+   "nodes": [
+    "cc_switch",
+    "cc_switch_mount"
+   ],
+   "card": {
+    "what": "A small Ethernet switch in the camera cage.",
+    "does": "The Orin's one Ethernet port, the DVL and the tether all meet here, so everything is on one robot LAN. The camera cage board powers it with 5 V.",
+    "facts": [
+     [
+      "Joins",
+      "Orin, DVL, tether"
+     ],
+     [
+      "Power",
+      "5 V from CCBB J16"
+     ],
+     [
+      "LAN",
+      "192.168.1.0/24"
+     ]
+    ],
+    "links": [
+     [
+      "computers.html#lan",
+      "The robot LAN and the tether"
+     ],
+     [
+      "electrical.html#cage",
+      "Power in the camera cage"
+     ]
+    ]
+   }
+  },
+  "cc_fan": {
+   "name": "40 mm fan",
+   "nodes": [
+    "cc_fan"
+   ],
+   "card": {
+    "what": "A small fan at the stern end of the camera cage.",
+    "does": "It moves air through the cage. The camera cage board has four switched 5 V fan outputs, on at boot; this fan is probably on one of them.",
+    "facts": [
+     [
+      "Size",
+      "40 mm"
+     ],
+     [
+      "Fans command",
+      "ENABLE_FANS / DISABLE_FANS"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#cage",
+      "Power in the camera cage"
+     ],
+     [
+      "boards.html#ccbb",
+      "Camera cage boards"
+     ]
+    ]
+   }
+  },
+  "cc_bulkhead": {
+   "name": "Connector head",
+   "nodes": [
+    "cc_bulkhead"
+   ],
+   "card": {
+    "what": "A printed connector block on a rail at the stern end of the camera cage, with posts and grommets.",
+    "does": "The team says the cage meets the down camera and the board stack through a spring-loaded connector, so it slides in with no cables to plug by hand. This is probably that connector.",
+    "facts": [
+     [
+      "Where",
+      "bottom of the cage, stern end"
+     ],
+     [
+      "Status",
+      "identification not confirmed"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#inside",
+      "Inside: two cages"
+     ],
+     [
+      "cameras.html#two-cameras",
+      "Two ZED X Minis"
+     ]
+    ]
+   }
+  },
+  "cc_frame": {
+   "name": "Cage frame",
+   "nodes": [
+    "cc_frame",
+    "cc_keystone",
+    "cc_orin_panel"
+   ],
+   "card": {
+    "what": "The printed frame of the camera cage: braces, panels and the panel the Orin mounts to.",
+    "does": "It holds the computer and sensors as one unit that slides into the starboard tube on rails. Since 2025 the rails are press-fit into the hull, so no screws.",
+    "facts": [
+     [
+      "Made",
+      "3D-printed"
+     ],
+     [
+      "Slides on",
+      "rails in the hull (2025)"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#inside",
+      "Inside: two cages"
+     ],
+     [
+      "electrical.html#connectors",
+      "Connectors"
+     ]
+    ]
+   }
+  },
+  "camera_cage": {
+   "name": "Camera cage",
+   "children": [
+    "cc_orin",
+    "cc_ffc",
+    "cc_vn100",
+    "cc_gmsl2",
+    "cc_cagebb",
+    "cc_switch",
+    "cc_fan",
+    "cc_bulkhead",
+    "cc_frame"
+   ],
+   "color": "#008300",
+   "open": true,
+   "shell": [
+    "cc_frame",
+    "cc_orin_panel"
+   ],
+   "anchorNode": "cc_orin",
+   "card": {
+    "what": "The slide-out 3D-printed cage in the starboard hull tube, also called the computer cage.",
+    "does": "It holds the Jetson AGX Orin, its GMSL2 capture card, the forward ZED X Mini, the VN-100 IMU, the network switch and the camera cage breakout board. It rides on rails and plugs in through a spring-loaded connector, so no cables are connected by hand.",
+    "facts": [
+     [
+      "Computer",
+      "Jetson AGX Orin"
+     ],
+     [
+      "Power",
+      "15 V and 5 V from the POAC, via the CCBB"
+     ],
+     [
+      "Not in the CAD",
+      "the fibre-optic gyro"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#inside",
+      "Inside: two cages"
+     ],
+     [
+      "computers.html#orin",
+      "The Orin"
+     ],
+     [
+      "boards.html#ccbb",
+      "Camera cage boards"
+     ]
+    ]
+   },
+   "context": [
+    "hull_tubes",
+    "hull_rings",
+    "hull_windows",
+    "hull_window_rings"
+   ]
+  },
+  "ec_ledctl1": {
+   "name": "LED board",
+   "nodes": [
+    "ec_ledctl1"
+   ],
+   "card": {
+    "what": "The team's LED control board, 73.7 × 127 mm, at the top of the stack beside the LED module.",
+    "does": "Two buck LED drivers run the RGBW status light: colours and modes come from the behaviour trees. It flashes red when the kill switch is pulled and blue when it goes in.",
+    "facts": [
+     [
+      "CAN ID",
+      "internal 6"
+     ],
+     [
+      "Out of water",
+      "1 % brightness"
+     ],
+     [
+      "Heat",
+      "dims past 30 °C, off at 50 °C"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#led-ivc",
+      "The LED and IVC boards"
+     ],
+     [
+      "mission-tree.html#leds",
+      "What the LEDs say"
+     ]
+    ]
+   }
+  },
+  "ec_ledal1": {
+   "name": "LED module",
+   "nodes": [
+    "ec_ledal1"
+   ],
+   "card": {
+    "what": "An aluminium-core board with four RGBW LEDs and a temperature sensor, 104.2 × 127 mm, at the top of the stack.",
+    "does": "It is the status light itself, driven by the LED board beside it. Its thermistor lets the LED board dim the light when it gets hot.",
+    "facts": [
+     [
+      "LEDs",
+      "4 × RGBW (OSRAM)"
+     ],
+     [
+      "Sensor",
+      "22 kΩ NTC thermistor"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#led-ivc",
+      "The LED and IVC boards"
+     ]
+    ]
+   }
+  },
+  "ec_ledctl2": {
+   "name": "IVC board (probably)",
+   "short": "IVC board?",
+   "nodes": [
+    "ec_ledctl2"
+   ],
+   "card": {
+    "what": "The inter-vehicle communication board, an acoustic modem, 73.8 × 127 mm. The CAD draws this slot as a second LED control board.",
+    "does": "It drives the transducer to send tones to Triton and listens on the hydrophone, both for Triton's messages and for the competition pinger.",
+    "facts": [
+     [
+      "CAN ID",
+      "internal 8"
+     ],
+     [
+      "Transmit",
+      "OPA548 power op-amp, ±24 V"
+     ],
+     [
+      "Tones",
+      "17 and 19 kHz (master firmware)"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#led-ivc",
+      "The LED and IVC boards"
+     ],
+     [
+      "sensors.html#acoustics",
+      "Acoustics"
+     ]
+    ]
+   }
+  },
+  "ec_ledal2": {
+   "name": "Unidentified plate",
+   "nodes": [
+    "ec_ledal2"
+   ],
+   "card": {
+    "what": "A second plate with the LED module's outline. Talos has only one LED module, so this is probably a copy left in the CAD.",
+    "does": "Nothing known. The IVC board, which likely sits on this layer, is the narrow plate beside it.",
+    "facts": [
+     [
+      "Outline",
+      "104 × 127 mm"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#glance",
+      "Every board, in cable order"
+     ]
+    ]
+   }
+  },
+  "ec_full1": {
+   "name": "ESC board (upper)",
+   "nodes": [
+    "ec_full1"
+   ],
+   "card": {
+    "what": "One of two identical ESC boards, 177.8 × 127 mm, each carrying four motor controllers (ESCs).",
+    "does": "It spins four thrusters at the RPMs the MPC sends over CAN. A solder jumper sets which four: board 0 runs thrusters 0–3, board 1 runs 4–7.",
+    "facts": [
+     [
+      "ESCs",
+      "4 × APD 80F3"
+     ],
+     [
+      "Fuses",
+      "60 A board, 15 A per ESC"
+     ],
+     [
+      "Motor signal",
+      "bidirectional DShot600"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#esc",
+      "ESC boards"
+     ],
+     [
+      "thrusters-hw.html#esc",
+      "ESCs and DShot"
+     ],
+     [
+      "electrical.html#esc",
+      "Thruster power"
+     ]
+    ]
+   }
+  },
+  "ec_full2": {
+   "name": "ESC board (lower)",
+   "nodes": [
+    "ec_full2"
+   ],
+   "card": {
+    "what": "One of two identical ESC boards, 177.8 × 127 mm, each carrying four motor controllers (ESCs).",
+    "does": "It spins four thrusters at the RPMs the MPC sends over CAN. A solder jumper sets which four: board 0 runs thrusters 0–3, board 1 runs 4–7.",
+    "facts": [
+     [
+      "ESCs",
+      "4 × APD 80F3"
+     ],
+     [
+      "Fuses",
+      "60 A board, 15 A per ESC"
+     ],
+     [
+      "Motor signal",
+      "bidirectional DShot600"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#esc",
+      "ESC boards"
+     ],
+     [
+      "thrusters-hw.html#esc",
+      "ESCs and DShot"
+     ],
+     [
+      "electrical.html#esc",
+      "Thruster power"
+     ]
+    ]
+   }
+  },
+  "ec_full3": {
+   "name": "POAC board",
+   "nodes": [
+    "ec_full3"
+   ],
+   "card": {
+    "what": "The power + actuator board, 177.8 × 127 mm, the bottom board of the stack.",
+    "does": "It joins both batteries onto one bus, makes the 15 V, 5 V and 12 V rails, switches thruster power through the kill switch and drives the launcher servo.",
+    "facts": [
+     [
+      "Rails",
+      "15 V and 5 V (20 A modules), 12 V for the servo"
+     ],
+     [
+      "Kill",
+      "3 P-FETs on MOTOR_PWR"
+     ],
+     [
+      "CAN ID",
+      "internal 1"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#poac",
+      "POAC"
+     ],
+     [
+      "boards.html#kill",
+      "The kill switch, in hardware"
+     ],
+     [
+      "electrical.html#rails",
+      "Regulators and rails"
+     ]
+    ]
+   }
+  },
+  "ec_fan": {
+   "name": "90 mm fan",
+   "nodes": [
+    "ec_fan"
+   ],
+   "card": {
+    "what": "A 90 mm fan in a shroud on a printed plate at the bow end of the board stack.",
+    "does": "It moves air over the boards. The plate also carries the kill switch and AUX switch sensors. The POAC has the stack's one fan output (5 V, switched, with a speed sensor), on at boot; the fan is probably on it.",
+    "facts": [
+     [
+      "Size",
+      "90 mm"
+     ],
+     [
+      "Fans command",
+      "ENABLE_FANS / DISABLE_FANS"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#inside",
+      "Inside: two cages"
+     ],
+     [
+      "electrical.html#cage",
+      "Power in the camera cage"
+     ]
+    ]
+   }
+  },
+  "ec_kill_sensor": {
+   "name": "Kill switch sensor",
+   "nodes": [
+    "ec_kill_sensor"
+   ],
+   "card": {
+    "what": "A printed block on top of the fan plate holding the Hall-effect sensor for the kill switch, right behind the red handle on the window.",
+    "does": "With the handle inserted, the sensor pulls the POAC's kill line to ground. Thruster power then flows only if the POAC's microcontroller also allows it.",
+    "facts": [
+     [
+      "Sensor",
+      "Hall effect"
+     ],
+     [
+      "Wired to",
+      "POAC J1"
+     ],
+     [
+      "Reported",
+      "state/kill, every 150 ms"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#kill",
+      "The kill switch"
+     ],
+     [
+      "boards.html#kill",
+      "The kill switch, in hardware"
+     ]
+    ]
+   }
+  },
+  "ec_aux_sensor": {
+   "name": "AUX switch sensor",
+   "nodes": [
+    "ec_aux_sensor"
+   ],
+   "card": {
+    "what": "A printed block on the bottom of the fan plate, probably holding the second Hall-effect sensor, the AUX switch.",
+    "does": "The POAC reads it on the same connector as the kill switch and publishes it as state/aux. It was meant as a start button, but that node is commented out.",
+    "facts": [
+     [
+      "Sensor",
+      "Hall effect"
+     ],
+     [
+      "Topic",
+      "state/aux"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#kill",
+      "The kill switch"
+     ]
+    ]
+   }
+  },
+  "ec_frame": {
+   "name": "Stack frame",
+   "nodes": [
+    "ec_frame",
+    "ec_joiner"
+   ],
+   "card": {
+    "what": "The printed top and bottom frames, arms and plates of the board stack, with stainless 8-32 standoffs between the boards.",
+    "does": "It holds the boards in layers and slides into the port tube on rails, so the whole stack comes out as a unit.",
+    "facts": [
+     [
+      "Standoffs",
+      "8-32, 5/8 and 7/8 in, 18-8 stainless"
+     ],
+     [
+      "Made",
+      "3D-printed frame"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#inside",
+      "Inside: two cages"
+     ],
+     [
+      "electrical.html#connectors",
+      "Connectors"
+     ]
+    ]
+   }
+  },
+  "ecage": {
+   "name": "Electronics cage",
+   "children": [
+    "ec_ledctl1",
+    "ec_ledal1",
+    "ec_ledctl2",
+    "ec_ledal2",
+    "ec_full1",
+    "ec_full2",
+    "ec_full3",
+    "ec_fan",
+    "ec_kill_sensor",
+    "ec_aux_sensor",
+    "ec_frame"
+   ],
+   "color": "#008300",
+   "open": true,
+   "shell": [
+    "ec_frame"
+   ],
+   "anchorNode": "ec_full1",
+   "card": {
+    "what": "The 3D-printed cage of circuit boards on standoffs in the port hull tube, behind a 90 mm fan.",
+    "does": "It holds the POAC, the two ESC boards, the LED board and the IVC board. Each board has its own RP2040 and they share one CAN bus to the Orin.",
+    "facts": [
+     [
+      "Boards",
+      "POAC, 2 ESC, LED, IVC"
+     ],
+     [
+      "Bus",
+      "CAN FD, 1 Mbit/s (5 Mbit/s data)"
+     ],
+     [
+      "Cooling",
+      "one 90 mm fan"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#glance",
+      "Every board, in cable order"
+     ],
+     [
+      "mechanical.html#inside",
+      "Inside: two cages"
+     ],
+     [
+      "boards.html#system",
+      "Every board, in cable order"
+     ]
+    ]
+   },
+   "inside": [
+    "Inside",
+    " the electronics cage (top board first)"
+   ],
+   "context": [
+    "hull_tubes",
+    "hull_rings",
+    "hull_windows",
+    "hull_window_rings"
+   ]
+  },
+  "hull_tubes": {
+   "name": "Hull tubes",
+   "nodes": [
+    "hull_tubes"
+   ],
+   "card": {
+    "what": "Two clear polycarbonate cylinders, 146 mm long, each clamped between two aluminium rings by four stainless tension rods.",
+    "does": "They are the dry space. Because they are clear, the down camera can look straight out through the bottom of the starboard tube.",
+    "facts": [
+     [
+      "Material",
+      "polycarbonate"
+     ],
+     [
+      "Length",
+      "146 mm"
+     ],
+     [
+      "Rods",
+      "4 per tube, stainless"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#hull",
+      "The main hull"
+     ]
+    ]
+   }
+  },
+  "hull_windows": {
+   "name": "Bow windows",
+   "nodes": [
+    "hull_windows",
+    "hull_window_rings"
+   ],
+   "card": {
+    "what": "A flat 3 mm polycarbonate window about 202 mm across at the bow end of each tube, held by an aluminium ring.",
+    "does": "The forward camera looks out of the starboard window. The kill switch handle sits on the port window.",
+    "facts": [
+     [
+      "Thickness",
+      "3 mm"
+     ],
+     [
+      "Across",
+      "about 202 mm"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#hull",
+      "The main hull"
+     ],
+     [
+      "cameras.html#two-cameras",
+      "Two ZED X Minis"
+     ]
+    ]
+   }
+  },
+  "hull_rings": {
+   "name": "End rings",
+   "nodes": [
+    "hull_rings"
+   ],
+   "card": {
+    "what": "Machined 6061 aluminium rings at both ends of each tube, joined across the tubes by aluminium blocks at the bow and stern.",
+    "does": "They hold the tubes, the windows and the lids together.",
+    "facts": [
+     [
+      "Material",
+      "6061 aluminium"
+     ],
+     [
+      "Made",
+      "by Xometry, 2021"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#hull",
+      "The main hull"
+     ]
+    ]
+   }
+  },
+  "hull_lid_port": {
+   "name": "Port lid",
+   "nodes": [
+    "hull_lid_port"
+   ],
+   "card": {
+    "what": "The removable stern lid of the port tube, where most of the connectors are.",
+    "does": "It carries 17 small bulkheads, the two battery bulkheads and the vacuum valve used for the pressure test. The SubConn cover snaps over it.",
+    "facts": [
+     [
+      "Bulkheads",
+      "17 small + 2 battery"
+     ],
+     [
+      "Valve",
+      "vacuum valve for the pressure test"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#hull",
+      "The main hull"
+     ],
+     [
+      "mechanical.html#sealing",
+      "Keeping water out"
+     ],
+     [
+      "pool-test.html#pvt",
+      "The pressure test (PVT)"
+     ]
+    ]
+   }
+  },
+  "hull_lid_stbd": {
+   "name": "Starboard lid",
+   "nodes": [
+    "hull_lid_stbd"
+   ],
+   "card": {
+    "what": "The removable stern lid of the starboard tube.",
+    "does": "It carries the depth sensor and four bulkheads: two DBH8F and two MCBH4F.",
+    "facts": [
+     [
+      "Bulkheads",
+      "2 DBH8F, 2 MCBH4F"
+     ],
+     [
+      "Sensor",
+      "depth (Bar02)"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#hull",
+      "The main hull"
+     ],
+     [
+      "sensors.html#depth",
+      "Depth"
+     ]
+    ]
+   }
+  },
+  "hull_latches": {
+   "name": "Latches",
+   "nodes": [
+    "hull_latches"
+   ],
+   "card": {
+    "what": "Adjustable-grip draw latches, two on each lid (McMaster 6200A31 in the CAD).",
+    "does": "They pull the lid tight onto its O-rings. Release them and that tube's cage slides out.",
+    "facts": [
+     [
+      "Count",
+      "4 (2 per lid)"
+     ],
+     [
+      "Part",
+      "McMaster 6200A31"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#hull",
+      "The main hull"
+     ],
+     [
+      "mechanical.html#service",
+      "Opening Talos up"
+     ]
+    ]
+   }
+  },
+  "hull_seals": {
+   "name": "O-rings",
+   "nodes": [
+    "hull_seals"
+   ],
+   "card": {
+    "what": "Static seals: two X-profile nitrile O-rings in each lid, square-profile O-rings where the tubes meet the rings, and two flat gaskets.",
+    "does": "They keep the hull dry. Clean and check the lid sealing surfaces every time the hull is opened, then redo the pressure test.",
+    "facts": [
+     [
+      "Lid",
+      "4 X-profile, nitrile"
+     ],
+     [
+      "Tubes",
+      "4 square-profile"
+     ],
+     [
+      "Check",
+      "pressure test after every opening"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#sealing",
+      "Keeping water out"
+     ],
+     [
+      "mechanical.html#service",
+      "Opening Talos up"
+     ],
+     [
+      "pool-test.html#pvt",
+      "The pressure test (PVT)"
+     ]
+    ]
+   }
+  },
+  "depth_sensor": {
+   "name": "Depth sensor",
+   "nodes": [
+    "depth_sensor"
+   ],
+   "card": {
+    "what": "A Blue Robotics Bar02 pressure sensor (MS5837-02BA, 2 bar range) in the starboard lid. The CAD shows a Bar30 there.",
+    "does": "It measures water pressure, which gives depth. The camera cage board reads it and publishes it over CAN; it zeroes itself at power-up.",
+    "facts": [
+     [
+      "Rate",
+      "20 Hz"
+     ],
+     [
+      "Topic",
+      "state/depth/raw, then depth/pose"
+     ],
+     [
+      "Zeroed",
+      "at power-up (CLEAR_DEPTH re-zeroes)"
+     ]
+    ],
+    "links": [
+     [
+      "sensors.html#depth",
+      "Depth"
+     ],
+     [
+      "firmware.html#depth",
+      "The depth sensor"
+     ]
+    ]
+   }
+  },
+  "hull": {
+   "name": "Hull",
+   "children": [
+    "hull_tubes",
+    "hull_windows",
+    "hull_rings",
+    "hull_lid_port",
+    "hull_lid_stbd",
+    "hull_latches",
+    "hull_seals",
+    "depth_sensor",
+    "camera_cage",
+    "ecage"
+   ],
+   "color": "#2a78d6",
+   "open": true,
+   "anchorNode": "hull_rings",
+   "card": {
+    "what": "Two clear polycarbonate tubes side by side between machined aluminium rings, with flat windows at the bow and removable lids at the stern.",
+    "does": "It is the dry space for the computer, the boards and the cameras. Each tube's cage slides out of its stern; every cable comes in through connectors on the lids.",
+    "facts": [
+     [
+      "Port tube",
+      "board stack"
+     ],
+     [
+      "Starboard tube",
+      "camera cage with the Orin"
+     ],
+     [
+      "Made",
+      "by Xometry, 2021"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#hull",
+      "The main hull"
+     ],
+     [
+      "mechanical.html#sealing",
+      "Keeping water out"
+     ],
+     [
+      "mechanical.html#inside",
+      "Inside: two cages"
+     ]
+    ]
+   },
+   "context": []
+  },
+  "bat_port_pack": {
+   "name": "LiPo pack",
+   "nodes": [
+    "bat_port_pack"
+   ],
+   "card": {
+    "what": "A MaxAmps 8000 mAh 5S2P lithium-polymer pack: five cells in series, two in parallel.",
+    "does": "It is one of Talos's two power sources. The robot runs it from about 20.75 V full down to 16 V; swap it by 17.5 V.",
+    "facts": [
+     [
+      "Nominal",
+      "18.5 V, 148 Wh"
+     ],
+     [
+      "Current",
+      "45 A for 5 s, 80 A for 2 s"
+     ],
+     [
+      "Charge",
+      "no more than 5 A"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#batteries",
+      "The batteries"
+     ],
+     [
+      "electrical.html#charging",
+      "The batteries"
+     ]
+    ]
+   }
+  },
+  "bat_port_bms": {
+   "name": "BMS board",
+   "nodes": [
+    "bat_port_bms"
+   ],
+   "card": {
+    "what": "The battery-management board in each pod, 191.5 × 73.1 mm, built around a TI BQ40Z80.",
+    "does": "It watches and balances the five cells and opens two protection MOSFETs on under- or overvoltage, overcurrent or temperature. A 45 A protector fuse backs it up.",
+    "facts": [
+     [
+      "Chip",
+      "TI BQ40Z80"
+     ],
+     [
+      "Switches",
+      "2 × 80 V 100 A MOSFETs"
+     ],
+     [
+      "Fuse",
+      "45 A Littelfuse protector"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#batteries",
+      "Battery housings"
+     ],
+     [
+      "electrical.html#smart",
+      "The batteries"
+     ]
+    ]
+   }
+  },
+  "bat_port_lcd": {
+   "name": "Display board",
+   "nodes": [
+    "bat_port_lcd",
+    "bat_port_window"
+   ],
+   "card": {
+    "what": "The pod's microcontroller board, 54 × 54 mm, with an RP2040 and a 128 × 32 OLED behind an acrylic window. The CAD calls it LCD_Board.",
+    "does": "It reads the BMS, shows the state of charge on the OLED and reports the pack over the external CAN bus. A magnet on its reed switch wakes it.",
+    "facts": [
+     [
+      "Display",
+      "128 × 32 OLED"
+     ],
+     [
+      "Reports",
+      "state/battery, external CAN"
+     ],
+     [
+      "Note",
+      "not reaching ROS right now"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#smart",
+      "The batteries"
+     ],
+     [
+      "boards.html#batteries",
+      "Battery housings"
+     ]
+    ]
+   }
+  },
+  "bat_port_prv": {
+   "name": "Pressure-relief valve",
+   "short": "Relief valve",
+   "nodes": [
+    "bat_port_prv"
+   ],
+   "card": {
+    "what": "A small valve in each battery pod's shell.",
+    "does": "It lets air out if the pressure inside the sealed pod rises.",
+    "facts": [
+     [
+      "One per",
+      "battery pod"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#batteries",
+      "Battery pods"
+     ],
+     [
+      "electrical.html#batteries",
+      "The batteries"
+     ]
+    ]
+   }
+  },
+  "bat_port_sc": {
+   "name": "Pod SubConns",
+   "nodes": [
+    "subconn_bat_port"
+   ],
+   "card": {
+    "what": "Two SubConn bulkheads on each pod: a high-power one for the pack (hpbh4f in the CAD) and a small one for telemetry (mcbh5f).",
+    "does": "Cables with inline plugs run from them to the two battery bulkheads on the port lid, so a pod swaps without opening the main hull.",
+    "facts": [
+     [
+      "Power",
+      "HP-series, 4 pins"
+     ],
+     [
+      "Data",
+      "MC-series, 5 pins"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#batteries",
+      "The batteries"
+     ],
+     [
+      "electrical.html#connectors",
+      "Connectors"
+     ]
+    ]
+   }
+  },
+  "bat_port_shell": {
+   "name": "Pod shell",
+   "nodes": [
+    "bat_port_shell"
+   ],
+   "card": {
+    "what": "A CNC-milled 6061 aluminium base and lid, sealed by an O-ring, with a rubber bumper and printed clips.",
+    "does": "It keeps the pack dry. Compliant clips snap it onto indexed rails on the frame; sliding the pods fore and aft moves Talos's centre of mass.",
+    "facts": [
+     [
+      "Size",
+      "about 82 × 150 × 380 mm"
+     ],
+     [
+      "Seal",
+      "O-ring lid"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#batteries",
+      "Battery pods"
+     ],
+     [
+      "mechanical.html#why",
+      "Why it looks like this"
+     ]
+    ]
+   }
+  },
+  "bat_port": {
+   "name": "Port battery pod",
+   "short": "Port pod",
+   "children": [
+    "bat_port_pack",
+    "bat_port_bms",
+    "bat_port_lcd",
+    "bat_port_prv",
+    "bat_port_sc",
+    "bat_port_shell"
+   ],
+   "open": true,
+   "shell": [
+    "bat_port_shell"
+   ],
+   "anchorNode": "bat_port_shell",
+   "card": {
+    "what": "Two sealed aluminium pods, one on each side of the frame, each with a smart LiPo pack inside.",
+    "does": "They power everything. The POAC joins the two packs so whichever is higher carries the bus. The pods clip onto rails and swap without opening the main hull.",
+    "facts": [
+     [
+      "Each pack",
+      "MaxAmps 8000 mAh 5S2P, 18.5 V"
+     ],
+     [
+      "Energy",
+      "148 Wh each, 296 Wh total"
+     ],
+     [
+      "Size",
+      "about 82 × 150 × 380 mm"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#batteries",
+      "The batteries"
+     ],
+     [
+      "mechanical.html#batteries",
+      "Battery pods"
+     ],
+     [
+      "boards.html#batteries",
+      "Battery housings"
+     ]
+    ]
+   },
+   "context": []
+  },
+  "bat_stbd_pack": {
+   "name": "LiPo pack",
+   "nodes": [
+    "bat_stbd_pack"
+   ],
+   "card": {
+    "what": "A MaxAmps 8000 mAh 5S2P lithium-polymer pack: five cells in series, two in parallel.",
+    "does": "It is one of Talos's two power sources. The robot runs it from about 20.75 V full down to 16 V; swap it by 17.5 V.",
+    "facts": [
+     [
+      "Nominal",
+      "18.5 V, 148 Wh"
+     ],
+     [
+      "Current",
+      "45 A for 5 s, 80 A for 2 s"
+     ],
+     [
+      "Charge",
+      "no more than 5 A"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#batteries",
+      "The batteries"
+     ],
+     [
+      "electrical.html#charging",
+      "The batteries"
+     ]
+    ]
+   }
+  },
+  "bat_stbd_bms": {
+   "name": "BMS board",
+   "nodes": [
+    "bat_stbd_bms"
+   ],
+   "card": {
+    "what": "The battery-management board in each pod, 191.5 × 73.1 mm, built around a TI BQ40Z80.",
+    "does": "It watches and balances the five cells and opens two protection MOSFETs on under- or overvoltage, overcurrent or temperature. A 45 A protector fuse backs it up.",
+    "facts": [
+     [
+      "Chip",
+      "TI BQ40Z80"
+     ],
+     [
+      "Switches",
+      "2 × 80 V 100 A MOSFETs"
+     ],
+     [
+      "Fuse",
+      "45 A Littelfuse protector"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#batteries",
+      "Battery housings"
+     ],
+     [
+      "electrical.html#smart",
+      "The batteries"
+     ]
+    ]
+   }
+  },
+  "bat_stbd_lcd": {
+   "name": "Display board",
+   "nodes": [
+    "bat_stbd_lcd",
+    "bat_stbd_window"
+   ],
+   "card": {
+    "what": "The pod's microcontroller board, 54 × 54 mm, with an RP2040 and a 128 × 32 OLED behind an acrylic window. The CAD calls it LCD_Board.",
+    "does": "It reads the BMS, shows the state of charge on the OLED and reports the pack over the external CAN bus. A magnet on its reed switch wakes it.",
+    "facts": [
+     [
+      "Display",
+      "128 × 32 OLED"
+     ],
+     [
+      "Reports",
+      "state/battery, external CAN"
+     ],
+     [
+      "Note",
+      "not reaching ROS right now"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#smart",
+      "The batteries"
+     ],
+     [
+      "boards.html#batteries",
+      "Battery housings"
+     ]
+    ]
+   }
+  },
+  "bat_stbd_prv": {
+   "name": "Pressure-relief valve",
+   "short": "Relief valve",
+   "nodes": [
+    "bat_stbd_prv"
+   ],
+   "card": {
+    "what": "A small valve in each battery pod's shell.",
+    "does": "It lets air out if the pressure inside the sealed pod rises.",
+    "facts": [
+     [
+      "One per",
+      "battery pod"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#batteries",
+      "Battery pods"
+     ],
+     [
+      "electrical.html#batteries",
+      "The batteries"
+     ]
+    ]
+   }
+  },
+  "bat_stbd_sc": {
+   "name": "Pod SubConns",
+   "nodes": [
+    "subconn_bat_stbd"
+   ],
+   "card": {
+    "what": "Two SubConn bulkheads on each pod: a high-power one for the pack (hpbh4f in the CAD) and a small one for telemetry (mcbh5f).",
+    "does": "Cables with inline plugs run from them to the two battery bulkheads on the port lid, so a pod swaps without opening the main hull.",
+    "facts": [
+     [
+      "Power",
+      "HP-series, 4 pins"
+     ],
+     [
+      "Data",
+      "MC-series, 5 pins"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#batteries",
+      "The batteries"
+     ],
+     [
+      "electrical.html#connectors",
+      "Connectors"
+     ]
+    ]
+   }
+  },
+  "bat_stbd_shell": {
+   "name": "Pod shell",
+   "nodes": [
+    "bat_stbd_shell"
+   ],
+   "card": {
+    "what": "A CNC-milled 6061 aluminium base and lid, sealed by an O-ring, with a rubber bumper and printed clips.",
+    "does": "It keeps the pack dry. Compliant clips snap it onto indexed rails on the frame; sliding the pods fore and aft moves Talos's centre of mass.",
+    "facts": [
+     [
+      "Size",
+      "about 82 × 150 × 380 mm"
+     ],
+     [
+      "Seal",
+      "O-ring lid"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#batteries",
+      "Battery pods"
+     ],
+     [
+      "mechanical.html#why",
+      "Why it looks like this"
+     ]
+    ]
+   }
+  },
+  "bat_stbd": {
+   "name": "Starboard battery pod",
+   "short": "Starboard pod",
+   "children": [
+    "bat_stbd_pack",
+    "bat_stbd_bms",
+    "bat_stbd_lcd",
+    "bat_stbd_prv",
+    "bat_stbd_sc",
+    "bat_stbd_shell"
+   ],
+   "open": true,
+   "shell": [
+    "bat_stbd_shell"
+   ],
+   "anchorNode": "bat_stbd_shell",
+   "card": {
+    "what": "Two sealed aluminium pods, one on each side of the frame, each with a smart LiPo pack inside.",
+    "does": "They power everything. The POAC joins the two packs so whichever is higher carries the bus. The pods clip onto rails and swap without opening the main hull.",
+    "facts": [
+     [
+      "Each pack",
+      "MaxAmps 8000 mAh 5S2P, 18.5 V"
+     ],
+     [
+      "Energy",
+      "148 Wh each, 296 Wh total"
+     ],
+     [
+      "Size",
+      "about 82 × 150 × 380 mm"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#batteries",
+      "The batteries"
+     ],
+     [
+      "mechanical.html#batteries",
+      "Battery pods"
+     ],
+     [
+      "boards.html#batteries",
+      "Battery housings"
+     ]
+    ]
+   },
+   "context": []
+  },
+  "batteries": {
+   "name": "Batteries",
+   "children": [
+    "bat_port",
+    "bat_stbd"
+   ],
+   "color": "#eda100",
+   "open": true,
+   "anchorNode": "bat_port_shell",
+   "card": {
+    "what": "Two sealed aluminium pods, one on each side of the frame, each with a smart LiPo pack inside.",
+    "does": "They power everything. The POAC joins the two packs so whichever is higher carries the bus. The pods clip onto rails and swap without opening the main hull.",
+    "facts": [
+     [
+      "Each pack",
+      "MaxAmps 8000 mAh 5S2P, 18.5 V"
+     ],
+     [
+      "Energy",
+      "148 Wh each, 296 Wh total"
+     ],
+     [
+      "Size",
+      "about 82 × 150 × 380 mm"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#batteries",
+      "The batteries"
+     ],
+     [
+      "mechanical.html#batteries",
+      "Battery pods"
+     ],
+     [
+      "boards.html#batteries",
+      "Battery housings"
+     ]
+    ]
+   },
+   "inside": [
+    "The two",
+    " battery pods"
+   ]
+  },
+  "kill_switch": {
+   "name": "Kill switch",
+   "nodes": [
+    "kill_switch"
+   ],
+   "color": "#e34948",
+   "card": {
+    "what": "The red handle on the port bow window. A swimmer inserts it to let Talos move and pulls it to stop.",
+    "does": "A Hall-effect sensor behind the window, on the board stack's fan plate, reads it. Pulling it cuts thruster power and nothing else, so the computer and sensors stay on.",
+    "facts": [
+     [
+      "Cuts",
+      "MOTOR_PWR, the ESC supply only"
+     ],
+     [
+      "Needs",
+      "switch in and the POAC's OK"
+     ],
+     [
+      "Handle",
+      "printed, snap-fit (CAD)"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#kill",
+      "The kill switch"
+     ],
+     [
+      "boards.html#kill",
+      "The kill switch, in hardware"
+     ],
+     [
+      "commanding.html#kill",
+      "The kill system"
+     ]
+    ]
+   }
+  },
+  "sc_port_lid": {
+   "name": "Port lid connectors",
+   "nodes": [
+    "subconn_port_lid"
+   ],
+   "card": {
+    "what": "The SubConn bulkheads on the port lid and the inline plugs that mate with them.",
+    "does": "Most cables enter the hull here: the thrusters, the battery pods and the sensors outside.",
+    "facts": [
+     [
+      "Bulkheads",
+      "17 small + 2 battery (HP)"
+     ],
+     [
+      "Series in the CAD",
+      "MCBH3F, MCBH4F, BatterySubcons HPBH4F"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#connectors",
+      "Connectors"
+     ],
+     [
+      "mechanical.html#hull",
+      "The main hull"
+     ]
+    ]
+   }
+  },
+  "sc_cover": {
+   "name": "SubConn cover",
+   "nodes": [
+    "subconn_cover"
+   ],
+   "card": {
+    "what": "A snap-fit printed cover over the port lid's connectors at the stern. It is not the kill switch.",
+    "does": "It goes on only after the hull passes its pressure test.",
+    "facts": [
+     [
+      "Where",
+      "port lid, stern"
+     ],
+     [
+      "Fits",
+      "snap fits (CAD)"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#sealing",
+      "Keeping water out"
+     ],
+     [
+      "pool-test.html#pvt",
+      "The pressure test (PVT)"
+     ]
+    ]
+   }
+  },
+  "sc_stbd_lid": {
+   "name": "Starboard lid connectors",
+   "nodes": [
+    "subconn_stbd_lid"
+   ],
+   "card": {
+    "what": "Four SubConn bulkheads on the starboard lid, with their inline plugs.",
+    "does": "They bring cables into the camera cage's tube.",
+    "facts": [
+     [
+      "Bulkheads",
+      "2 DBH8F, 2 MCBH4F"
+     ],
+     [
+      "Plugs (CAD)",
+      "DIL8M, MCIL4M"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#connectors",
+      "Connectors"
+     ],
+     [
+      "mechanical.html#hull",
+      "The main hull"
+     ]
+    ]
+   }
+  },
+  "sc_pods": {
+   "name": "Battery pod connectors",
+   "nodes": [
+    "subconn_bat_port",
+    "subconn_bat_stbd"
+   ],
+   "card": {
+    "what": "Two SubConn bulkheads on each pod: a high-power one for the pack (hpbh4f in the CAD) and a small one for telemetry (mcbh5f).",
+    "does": "Cables with inline plugs run from them to the two battery bulkheads on the port lid, so a pod swaps without opening the main hull.",
+    "facts": [
+     [
+      "Power",
+      "HP-series, 4 pins"
+     ],
+     [
+      "Data",
+      "MC-series, 5 pins"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#batteries",
+      "The batteries"
+     ],
+     [
+      "electrical.html#connectors",
+      "Connectors"
+     ]
+    ]
+   }
+  },
+  "sc_hydro": {
+   "name": "Hydrophone pod connector",
+   "nodes": [
+    "subconn_hydrophone"
+   ],
+   "card": {
+    "what": "The hydrophone pod's own SubConn bulkhead (MCBH4F in the CAD).",
+    "does": "It carries the preamplified hydrophone signal to the hull.",
+    "facts": [
+     [
+      "Bulkhead",
+      "MCBH4F"
+     ]
+    ],
+    "links": [
+     [
+      "sensors.html#acoustics",
+      "Acoustics"
+     ],
+     [
+      "electrical.html#connectors",
+      "Connectors"
+     ]
+    ]
+   }
+  },
+  "sc_dvl": {
+   "name": "DVL connector",
+   "nodes": [
+    "subconn_dvl"
+   ],
+   "card": {
+    "what": "An 8-pin SubConn on the DVL's cable (MCDC8F and MCIL8F in the CAD).",
+    "does": "It carries the DVL's Ethernet and its 15 V supply, which the camera cage board sends down the same cable.",
+    "facts": [
+     [
+      "Pins",
+      "8"
+     ],
+     [
+      "Carries",
+      "Ethernet + 15 V"
+     ]
+    ],
+    "links": [
+     [
+      "sensors.html#dvl",
+      "DVL"
+     ],
+     [
+      "electrical.html#cage",
+      "Power in the camera cage"
+     ]
+    ]
+   }
+  },
+  "subconns": {
+   "name": "SubConns",
+   "children": [
+    "sc_port_lid",
+    "sc_cover",
+    "sc_stbd_lid",
+    "sc_pods",
+    "sc_hydro",
+    "sc_dvl"
+   ],
+   "color": "#0f2633",
+   "open": true,
+   "anchorNode": "subconn_port_lid",
+   "card": {
+    "what": "MacArtney SubConn wet-mate connectors: bulkheads on the lids, battery pods, hydrophone pod and DVL, plus the inline plugs on the cables.",
+    "does": "Every cable that leaves a housing goes through one, so a part can be unplugged without opening anything. They are colour-coded so each plug goes back where it came from. A snap-on cover protects the port lid's connectors.",
+    "facts": [
+     [
+      "Port lid",
+      "17 small bulkheads, 2 battery bulkheads"
+     ],
+     [
+      "Starboard lid",
+      "2 DBH8F, 2 MCBH4F"
+     ],
+     [
+      "Series",
+      "MC, HP and D"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#connectors",
+      "Connectors"
+     ],
+     [
+      "mechanical.html#sealing",
+      "Keeping water out"
+     ],
+     [
+      "glossary.html#term-subconn",
+      "Glossary: SubConn"
+     ]
+    ]
+   },
+   "inside": [
+    "SubConns",
+    " by place"
+   ]
+  },
+  "dvl": {
+   "name": "DVL",
+   "nodes": [
+    "dvl_body",
+    "dvl_mount"
+   ],
+   "color": "#1baf7a",
+   "anchorNode": "dvl_body",
+   "card": {
+    "what": "A Nortek DVL1000 (300 m model) on two brackets under the middle of the robot.",
+    "does": "It pings the pool floor through four slanted beams and measures Talos's velocity from the echoes' Doppler shift. That velocity goes into the EKF with the IMU, the gyro and the depth sensor.",
+    "facts": [
+     [
+      "Rate",
+      "8 Hz"
+     ],
+     [
+      "Link",
+      "Ethernet, 192.168.1.212"
+     ],
+     [
+      "Power",
+      "15 V on its Ethernet cable, from the CCBB"
+     ]
+    ],
+    "links": [
+     [
+      "sensors.html#dvl",
+      "DVL"
+     ],
+     [
+      "localization.html#ekf",
+      "Predict, correct"
+     ],
+     [
+      "electrical.html#cage",
+      "Power in the camera cage"
+     ]
+    ]
+   }
+  },
+  "cam_dfc": {
+   "name": "Down camera (dfc)",
+   "short": "Down camera",
+   "nodes": [
+    "dfc",
+    "dfc_mount"
+   ],
+   "card": {
+    "what": "A second ZED X Mini inside the starboard tube, against its bottom wall, looking down through it.",
+    "does": "It sees the bins, the table and the floor below Talos. It sits on the rails and plugs in through the cage's spring-loaded connector when the cage slides in.",
+    "facts": [
+     [
+      "Image",
+      "1920 × 1200 at 15 Hz"
+     ],
+     [
+      "Note",
+      "the robot's is rolled 180° from the CAD"
+     ]
+    ],
+    "links": [
+     [
+      "cameras.html#two-cameras",
+      "Two ZED X Minis"
+     ],
+     [
+      "glossary.html#term-dfc",
+      "Glossary: dfc"
+     ]
+    ]
+   }
+  },
+  "cameras": {
+   "name": "Cameras",
+   "children": [
+    "cc_ffc",
+    "cam_dfc"
+   ],
+   "color": "#1baf7a",
+   "open": true,
+   "anchorNode": "dfc",
+   "card": {
+    "what": "Two Stereolabs ZED X Mini stereo cameras: ffc looks forward through the starboard window, dfc looks down through the bottom of the starboard tube.",
+    "does": "Each gives a colour image and a depth image to the detector and the mapping on the Orin.",
+    "facts": [
+     [
+      "Image",
+      "1920 × 1200 at 15 Hz"
+     ],
+     [
+      "Link",
+      "GMSL2 to a capture card on the Orin"
+     ],
+     [
+      "Baseline",
+      "50 mm"
+     ]
+    ],
+    "links": [
+     [
+      "cameras.html#two-cameras",
+      "Two ZED X Minis"
+     ],
+     [
+      "cameras.html#fov",
+      "What each camera sees"
+     ],
+     [
+      "perception/index.html"
+     ]
+    ]
+   },
+   "inside": [
+    "The two",
+    " cameras"
+   ],
+   "context": [
+    "hull_tubes",
+    "hull_rings",
+    "hull_windows",
+    "hull_window_rings"
+   ]
+  },
+  "hydro_h1c": {
+   "name": "H1C hydrophone",
+   "nodes": [
+    "hydro_h1c"
+   ],
+   "card": {
+    "what": "An Aquarian Audio H1C underwater microphone in the hydrophone pod.",
+    "does": "It hears both the competition pinger and Triton's acoustic messages.",
+    "facts": [
+     [
+      "Model",
+      "Aquarian Audio H1C"
+     ],
+     [
+      "Feeds",
+      "the IVC board, through the preamp"
+     ]
+    ],
+    "links": [
+     [
+      "sensors.html#acoustics",
+      "Acoustics"
+     ],
+     [
+      "boards.html#led-ivc",
+      "The LED and IVC boards"
+     ]
+    ]
+   }
+  },
+  "hydro_preamp": {
+   "name": "Preamp board",
+   "nodes": [
+    "hydro_preamp"
+   ],
+   "card": {
+    "what": "A small team-made amplifier board, 33 × 14 mm, in the pod next to the hydrophone.",
+    "does": "It boosts the hydrophone's weak signal before band-pass filters and the IVC board's ADC.",
+    "facts": [
+     [
+      "Design",
+      "team's Acoustics Preamp module"
+     ],
+     [
+      "Amplifier",
+      "one op-amp, gain set by a trimmer (CAD version)"
+     ]
+    ],
+    "links": [
+     [
+      "sensors.html#acoustics",
+      "Acoustics"
+     ],
+     [
+      "boards.html#others",
+      "Other designs in the repo"
+     ]
+    ]
+   }
+  },
+  "hydro_pod": {
+   "name": "Pod and mount",
+   "nodes": [
+    "hydro_pod",
+    "hydro_mount"
+   ],
+   "card": {
+    "what": "A small housing with an acrylic lid and its own SubConn (MCBH4F), on an aluminium mount low at the stern on the starboard side.",
+    "does": "It keeps the preamp dry, right next to the hydrophone, and has its own connector to the hull.",
+    "facts": [
+     [
+      "Lid",
+      "acrylic"
+     ],
+     [
+      "Connector",
+      "MCBH4F SubConn"
+     ]
+    ],
+    "links": [
+     [
+      "sensors.html#acoustics",
+      "Acoustics"
+     ],
+     [
+      "mechanical.html#outside",
+      "Outside the hull"
+     ]
+    ]
+   }
+  },
+  "hydrophone": {
+   "name": "Hydrophone",
+   "children": [
+    "hydro_h1c",
+    "hydro_preamp",
+    "hydro_pod"
+   ],
+   "color": "#1baf7a",
+   "open": true,
+   "shell": [
+    "hydro_pod"
+   ],
+   "anchorNode": "hydro_h1c",
+   "card": {
+    "what": "An Aquarian Audio H1C hydrophone and its preamp in a small pod low at the stern, on the starboard side.",
+    "does": "It is Talos's one ear for two jobs: it listens for the competition pinger, and it receives inter-vehicle messages (IVC) from Triton. Its signal goes to the IVC board in the board stack.",
+    "facts": [
+     [
+      "Hydrophone",
+      "Aquarian Audio H1C"
+     ],
+     [
+      "Pinger",
+      "loudness at one chosen frequency, 25–40 kHz"
+     ],
+     [
+      "IVC receive",
+      "17 and 19 kHz tones (master firmware)"
+     ]
+    ],
+    "links": [
+     [
+      "sensors.html#acoustics",
+      "Acoustics"
+     ],
+     [
+      "boards.html#led-ivc",
+      "The LED and IVC boards"
+     ],
+     [
+      "mission-tree.html#pinger",
+      "The pinger picks the order"
+     ]
+    ]
+   },
+   "inside": [
+    "Inside",
+    " the hydrophone pod"
+   ]
+  },
+  "transducer": {
+   "name": "Transducer",
+   "nodes": [
+    "transducer"
+   ],
+   "color": "#1baf7a",
+   "card": {
+    "what": "The underwater speaker that sends Talos's acoustic messages. The team designed and built it.",
+    "does": "The IVC board drives it with a power op-amp to send tones to Triton. It only transmits; the hydrophone does the listening.",
+    "facts": [
+     [
+      "Driven by",
+      "IVC board, OPA548 on ±24 V"
+     ],
+     [
+      "Design",
+      "flooded core, samarium-cobalt magnets"
+     ],
+     [
+      "Where",
+      "low at the stern, port side"
+     ]
+    ],
+    "links": [
+     [
+      "boards.html#led-ivc",
+      "The LED and IVC boards"
+     ],
+     [
+      "sensors.html#acoustics",
+      "Acoustics"
+     ]
+    ]
+   }
+  },
+  "launcher": {
+   "name": "Launcher",
+   "nodes": [
+    "launcher_body",
+    "launcher_torpedoes",
+    "launcher_servo",
+    "launcher_mount"
+   ],
+   "color": "#6250d6",
+   "anchorNode": "launcher_body",
+   "card": {
+    "what": "The V8 torpedo and marker launcher under the port hull tube: two torpedo tubes pointing forward and two marker tubes pointing down.",
+    "does": "Springs store the energy and one servo releases one payload at a time. The POAC drives the servo and refuses to fire unless Talos is enabled and the launcher armed.",
+    "facts": [
+     [
+      "Payloads",
+      "2 torpedoes, 2 markers"
+     ],
+     [
+      "Servo",
+      "home 120°; torpedoes 200°, 240°; markers 50°, 0°"
+     ],
+     [
+      "Springs",
+      "4, McMaster 9435K123"
+     ]
+    ],
+    "links": [
+     [
+      "actuators.html#launcher",
+      "The launcher: one servo, four shots"
+     ],
+     [
+      "boards.html#poac",
+      "POAC"
+     ]
+    ]
+   }
+  },
+  "claw": {
+   "name": "Claw",
+   "nodes": [
+    "claw"
+   ],
+   "color": "#6250d6",
+   "card": {
+    "what": "A servo-driven gripper hanging below the bow, added for 2026 to pick up the table objects. It is the lowest point of the robot.",
+    "does": "One servo turns a pinion between two gear racks, each carrying a jaw, so the jaws close symmetrically. The firmware runs it by time: seconds of opening or closing, not an angle.",
+    "facts": [
+     [
+      "Drive",
+      "1 servo, rack and pinion"
+     ],
+     [
+      "Command",
+      "claw_move_s, in seconds (branch firmware)"
+     ],
+     [
+      "Hangs",
+      "81 mm below the rest of Talos"
+     ]
+    ],
+    "links": [
+     [
+      "actuators.html#claw",
+      "The claw and the magnet poker"
+     ],
+     [
+      "mission-tree.html#table",
+      "Table"
+     ]
+    ]
+   }
+  },
+  "magnet_poker": {
+   "name": "Magnet poker",
+   "nodes": [
+    "magnet_poker"
+   ],
+   "color": "#6250d6",
+   "card": {
+    "what": "A printed rod with a magnet held on its tip by two zip ties.",
+    "does": "Nothing on it moves. Talos flies the magnet onto a course target and holds it there for 2 s.",
+    "facts": [
+     [
+      "Length",
+      "185 mm (CAD)"
+     ],
+     [
+      "Moved by",
+      "the whole robot"
+     ]
+    ],
+    "links": [
+     [
+      "actuators.html#claw",
+      "The claw and the magnet poker"
+     ],
+     [
+      "mission-tree.html#magnets",
+      "Magnets"
+     ]
+    ]
+   }
+  },
+  "buoyancy": {
+   "name": "Buoyancy",
+   "nodes": [
+    "buoy_foam_pu",
+    "buoy_foam_su",
+    "buoy_foam_pl",
+    "buoy_foam_sl",
+    "buoy_center",
+    "buoy_bottles",
+    "buoy_holders"
+   ],
+   "color": "#e87ba4",
+   "anchorNode": "buoy_bottles",
+   "card": {
+    "what": "Foam blocks in the four corner modules, a centre foam block between the hull tubes, and two Nalgene bottles on top of the hull.",
+    "does": "With the air in the hull they make Talos float very slightly and set where the lift acts. The bottles were added in 2024 when new mechanisms made Talos heavier.",
+    "facts": [
+     [
+      "Net",
+      "+1.63 N up (MPC model)"
+     ],
+     [
+      "COB",
+      "22.5 mm above the centre of mass"
+     ],
+     [
+      "Foam",
+      "Blue Robotics R-3312"
+     ]
+    ],
+    "links": [
+     [
+      "mechanical.html#trim",
+      "Buoyancy and trim"
+     ]
+    ]
+   }
+  },
+  "cables": {
+   "name": "Cables",
+   "nodes": [
+    "cables_thruster",
+    "cables_battery",
+    "cables_dvl"
+   ],
+   "color": "#8fb3bf",
+   "card": {
+    "what": "The cables drawn in the CAD: eight thruster cables, the battery cables and the DVL cable.",
+    "does": "Every cable that leaves a housing ends in a SubConn plug, so a part can be unplugged without opening anything.",
+    "facts": [
+     [
+      "Modelled",
+      "8 thruster, 4 battery, 1 DVL"
+     ]
+    ],
+    "links": [
+     [
+      "electrical.html#connectors",
+      "Connectors"
+     ]
+    ]
+   }
+  }
+ }
+}

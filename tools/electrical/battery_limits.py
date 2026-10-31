@@ -22,11 +22,11 @@ CELLS = 5
 # (id, file key, regex on the line, per-cell volts or pack volts, label, what happens)
 MARKS = [
     ('pf_suv', 'cfg', r'Threshold: 3\.0V \(Absolute minimum', 3.0, 'cell', 'Permanent failure',
-     'Below 3.0 V per cell for 10 s the gas gauge locks the pack out for good (a permanent failure). The notes aim this at a pack left on a shelf too long: it is charging a pack this flat that is dangerous.'),
+     'Below 3.0 V per cell for 10 s the BMS locks the pack out for good (a permanent failure). The notes aim this at a pack left on a shelf too long: it is charging a pack this flat that is dangerous.'),
     ('cuv', 'cfg', r'Hard stop discharge at 3\.2V', 3.2, 'cell', 'Empty: output off',
      'Cell undervoltage. Below 3.2 V per cell (16 V for the pack, MaxAmps\' recommended cutoff) for 2 s the BMS turns the output off. It stays off until the pack is charged past 3.5 V per cell.'),
     ('td', 'cfg', r'Maxamps recommends landing voltage of 17\.5V', 3.5, 'cell', 'Swap packs',
-     'Swap the packs by 17.5 V (3.5 V per cell, MaxAmps\' recommended landing voltage). The gauge sets its terminate-discharge alarm flag here, meant as "the alert for software to swap battery", but nothing on Talos reads or shows it. Watch balanced_voltage in state/electrical or the voltage in the ESC telemetry instead.'),
+     'MaxAmps\' recommended stopping point. The BMS sets its terminate-discharge alarm flag here, meant as "the alert for software to swap battery", but nothing on Talos reads or shows it. Watch balanced_voltage in state/electrical or the voltage in the ESC telemetry instead.'),
     ('warn', 'diag', r'^\s*warn: 18\.5', 18.5, 'pack', 'Diagnostics warning',
      'battery_volt.warn in diagnostic_thresholds.yaml. The diagnostics node is no longer run, but the pre-test checks reuse 18.5 V as the minimum bus voltage on batteries.'),
     ('nominal', 'cfg', r'Design Voltage: 18\.5V', 18.5, 'pack', 'Nominal',

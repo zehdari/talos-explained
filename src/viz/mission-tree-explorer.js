@@ -72,23 +72,28 @@ const SHORT = { Action: ['act', 'act'], Condition: ['cond', 'cnd'], Decorator: [
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const fmtT = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+// p is a or lies under it (paths are dot-joined indices, so '2.0.10' is not under '2.0.1')
+const under = (p, a) => a === '' || p === a || p.startsWith(`${a}.`);
 const fmtS = (s) => (s < 60 ? `${s.toFixed(1)} s` : fmtT(s));
 
 export class TreeExplorer {
-  constructor({ tree, run, treeEl, crumbsEl, detailEl, searchEl, catalogue = 'bt-nodes.html', builtins = 'bt.html' }) {
-    Object.assign(this, { tree, run, treeEl, crumbsEl, detailEl, searchEl, catalogue, builtins });
+  constructor({ tree, run, treeEl, crumbsEl, detailEl, searchEl, hitsEl, catalogue = 'bt-nodes.html', builtins = 'bt.html' }) {
+    Object.assign(this, { tree, run, treeEl, crumbsEl, detailEl, searchEl, hitsEl, catalogue, builtins });
     this.ST = tree.subtrees;
     this.root = this.ST[tree.main];
     this.open = new Set(['']);     // rows the reader opened
     this.auto = new Set();          // rows opened to follow the run
     this.focus = '';                // the row the view starts from
     this.sel = null;
+    this.pinned = null;             // null: the detail follows the running node; 'task' or 'row': the reader picked one
+    this.holdUntil = 0;             // no automatic scrolling of the tree until then (the reader is touching it)
     this.query = '';
     this.runPath = new Set();
     this.leaf = null;
     this.t = 0;
     this.follow = true;
     this.cache = new Map();
+    if (run) this.mergeSpans();
     this.buildIndex();
 
     treeEl.addEventListener('click', (e) => {
@@ -98,6 +103,9 @@ export class TreeExplorer {
       if (e.target.closest('.mt-caret')) { this.toggle(p); return; }
       this.select(p);
     });
+    // while a finger or wheel is on the tree, following the run doesn't scroll it
+    const hold = () => { this.holdUntil = performance.now() + 4000; };
+    for (const ev of ['pointerdown', 'wheel', 'touchstart', 'touchmove']) treeEl.addEventListener(ev, hold, { passive: true });
     treeEl.addEventListener('keydown', (e) => {
       const row = e.target.closest('.mt-row');
       if (!row) return;
@@ -112,9 +120,21 @@ export class TreeExplorer {
       }
     });
     detailEl.addEventListener('click', (e) => {
+      if (e.target.closest('.mt-back')) { this.backToLeaf(); return; }
       const b = e.target.closest('button[data-p]');
       if (b) { this.reveal(b.dataset.p); this.select(b.dataset.p, true); }
     });
+    if (hitsEl) {
+      hitsEl.addEventListener('click', (e) => {
+        if (e.target.closest('.mt-all')) { this.allHits = true; this.renderHits(); return; }
+        const b = e.target.closest('[data-p]');
+        if (!b) return;
+        this.focus = '';
+        this.reveal(b.dataset.p);
+        this.select(b.dataset.p, true);
+        if (this.onPick) this.onPick(b.dataset.p);
+      });
+    }
     crumbsEl.addEventListener('click', (e) => {
       const b = e.target.closest('button[data-p]');
       if (b) { this.focus = b.dataset.p; this.render(); }
@@ -122,7 +142,7 @@ export class TreeExplorer {
     let qt = 0;
     searchEl.addEventListener('input', () => {
       clearTimeout(qt);
-      qt = setTimeout(() => { this.query = searchEl.value.trim().toLowerCase(); this.render(); this.treeEl.scrollTop = 0; }, 120);
+      qt = setTimeout(() => { this.setQuery(searchEl.value); }, 120);
     });
   }
 
@@ -166,7 +186,7 @@ export class TreeExplorer {
     }
     return out;
   }
-  isOpen(p) { return this.query ? true : this.open.has(p) || this.auto.has(p); }
+  isOpen(p) { return this.open.has(p) || this.auto.has(p); }
   toggle(p) {
     if (this.isOpen(p)) { this.open.delete(p); this.auto.delete(p); } else this.open.add(p);
     this.render();
@@ -175,7 +195,7 @@ export class TreeExplorer {
   reveal(p) {
     const r = this.rowOf(p);
     for (const a of this.rowAncestors(r)) this.open.add(a);
-    if (!r.startsWith(this.focus)) this.focus = '';
+    if (!under(r, this.focus)) this.focus = '';
   }
 
   // Search text of every row, once: names, ids, attribute values.
@@ -202,7 +222,8 @@ export class TreeExplorer {
   label(n) {
     const a = n.a || {};
     const v = (k) => (a[k] !== undefined && a[k] !== '' ? a[k] : null);
-    const c = (s) => `<code>${esc(s)}</code>`;
+    // long topic and frame names may break after a / or _ rather than mid-word
+    const c = (s) => `<code>${esc(s).replace(/([/_])/g, '$1<wbr>')}</code>`;
     let name = esc(this.title(n)), arg = '';
     switch (n.id || n.k) {
       case 'SetBlackboard': name = esc(a.output_key); arg = `= ${c(a.value)}`; break;
@@ -257,21 +278,84 @@ export class TreeExplorer {
       for (let k = 0; k <= parts.length; k++) this.runPath.add(this.rowOf(parts.slice(0, k).join('.')));
       this.leaf = this.rowOf(leaf);
     } else this.leaf = null;
-    if (this.follow && !this.query && this.leaf !== null) {
-      const want = new Set(this.rowAncestors(this.leaf));
-      this.auto = want;
-      if (!this.leaf.startsWith(this.focus)) this.focus = '';
+    if (this.follow && this.leaf !== null) {
+      if (this.focus && !under(this.leaf, this.focus)) this.focus = '';
+      // Under a node the reader chose to show on its own, following opens only that node: its running child is
+      // marked, and opening it further is up to the reader.
+      const anc = this.rowAncestors(this.leaf);
+      this.auto = new Set(this.focus ? anc.filter((a) => a.length <= this.focus.length) : anc);
     }
     return true;
   }
-  spans(p) { return (this.run && this.run.spans[p]) || null; }
-  runningLabel() {
+  spans(p) { return (this.merged && this.merged[p]) || null; }
+  // When each node ran: its own recorded spans together with its descendants' (tree_stack has gaps while a child is
+  // ticking, and a parent is running whenever a child is), with gaps under 1.5 s closed.
+  mergeSpans() {
+    const all = {};
+    for (const [p, sp] of Object.entries(this.run.spans)) {
+      const parts = p === '' ? [] : p.split('.');
+      for (let k = 0; k <= parts.length; k++) {
+        const a = parts.slice(0, k).join('.');
+        (all[a] || (all[a] = [])).push(...sp);
+      }
+    }
+    this.merged = {};
+    for (const [p, sp] of Object.entries(all)) {
+      sp.sort((x, y) => x[0] - y[0]);
+      const out = [];
+      for (const [a, b] of sp) {
+        const last = out[out.length - 1];
+        if (last && a - last[1] < 1.5) last[1] = Math.max(last[1], b);
+        else out.push([a, b]);
+      }
+      this.merged[p] = out;
+    }
+    // A Sequence or Fallback runs one child at a time. A blip of one child inside a sibling's run is a stack the
+    // recording matched to the wrong copy of a shared subtree: drop it, from that child and everything under it.
+    const inside = ([a, b], [c, d]) => a >= c - 0.05 && b <= d + 0.05 && b - a < d - c;
+    const paths = Object.keys(this.merged).sort((x, y) => x.split('.').length - y.split('.').length);
+    for (const p of paths) {
+      const n = this.def(p);
+      if (n.k !== 'Sequence' && n.k !== 'Fallback') continue;
+      const kids = (n.c || []).map((_, i) => this.child(p, i)).filter((c) => this.merged[c]);
+      for (const c of kids) {
+        if (!this.merged[c]) continue;
+        const others = kids.filter((o) => o !== c).flatMap((o) => this.merged[o] || []);
+        const bad = this.merged[c].filter((iv) => others.some((o) => inside(iv, o)));
+        if (!bad.length) continue;
+        for (const q of Object.keys(this.merged)) {
+          if (q !== c && !q.startsWith(`${c}.`)) continue;
+          const keep = this.merged[q].filter((iv) => !bad.some((b) => inside(iv, [b[0] - 0.01, b[1] + 0.01])));
+          if (keep.length) this.merged[q] = keep; else delete this.merged[q];
+        }
+      }
+    }
+  }
+  // The running node with the subtrees above it, always ending with the node itself. With from (a task's row), the
+  // short form for a phone: that task › … › the nearest subtree › the node.
+  runningLabel(from = null) {
     if (this.leaf === null) return '–';
-    const rows = [...this.rowAncestors(this.leaf), this.leaf].map((p) => this.def(p));
-    const subs = rows.filter((n) => n.k === 'SubTree').map((n) => n.id);
+    const paths = [...this.rowAncestors(this.leaf), this.leaf];
+    const rows = paths.map((p) => this.def(p));
     const leaf = rows[rows.length - 1];
-    const names = subs.slice(-3);
-    if (leaf.k !== 'SubTree') names.push(leaf.id || leaf.k);
+    const leafName = leaf.k === 'SubTree' ? leaf.id : leaf.id || leaf.k;
+    const subIdx = rows.map((n, i) => (n.k === 'SubTree' && i < rows.length - 1 ? i : -1)).filter((i) => i >= 0);
+    // start from the task's own subtree (a task row may be a Sequence inside it)
+    let fi = from === null ? -1 : paths.indexOf(from);
+    while (fi > 0 && rows[fi].k !== 'SubTree') fi--;
+    if (fi > 0) {
+      if (fi === paths.length - 1) return leafName;
+      const names = [this.title(rows[fi])];
+      const near = subIdx.filter((i) => i > fi).pop();
+      if (near !== undefined) {
+        if (subIdx.some((i) => i > fi && i < near)) names.push('…');
+        names.push(rows[near].id);
+      }
+      names.push(leafName);
+      return names.join(' › ');
+    }
+    const names = subIdx.map((i) => rows[i].id).slice(-3);
+    names.push(leafName);
     return names.join(' › ');
   }
 
@@ -281,21 +365,8 @@ export class TreeExplorer {
     const focus = this.focus;
     let shown = 0;
     const LIMIT = 600;
-    let visible = null;
-    if (this.query.length >= 2) {
-      visible = new Set();
-      this.hits = new Set();
-      for (const [p, text] of this.index) {
-        if (!text.includes(this.query)) continue;
-        if (this.hits.size >= 400) break;
-        this.hits.add(p);
-        visible.add(p);
-        for (const a of this.rowAncestors(p)) visible.add(a);
-      }
-    } else this.hits = null;
     const walk = (p, d) => {
       if (shown >= LIMIT) return;
-      if (visible && !visible.has(p)) return;
       const n = this.def(p);
       // runs of SetBlackboard siblings fold into one row
       rows.push(this.row(p, n, d));
@@ -304,7 +375,7 @@ export class TreeExplorer {
       const kids = this.rowKids(p);
       for (let i = 0; i < kids.length; i++) {
         const kn = this.def(kids[i]);
-        if (kn.k === 'SetBlackboard' && !visible) {
+        if (kn.k === 'SetBlackboard') {
           let j = i;
           while (j + 1 < kids.length && this.def(kids[j + 1]).k === 'SetBlackboard') j++;
           if (j > i) { rows.push(this.bbRow(kids.slice(i, j + 1), d + 1)); shown++; i = j; continue; }
@@ -315,15 +386,55 @@ export class TreeExplorer {
     walk(focus, 0);
     let html = rows.join('');
     if (shown >= LIMIT) html += `<div class="mt-more">First ${LIMIT} rows shown. Search, or open fewer nodes.</div>`;
-    if (this.hits && !this.hits.size) html = `<div class="mt-more">Nothing matches “${esc(this.query)}”.</div>`;
     this.treeEl.innerHTML = html;
     // where the view starts
-    if (focus === '') this.crumbsEl.innerHTML = this.hits ? `${this.hits.size >= 400 ? '400+' : this.hits.size} matching nodes, every place they run` : 'The main tree. Tap ▸ to open a node.';
+    if (focus === '') this.crumbsEl.innerHTML = 'The whole mission. Tap ▸ to open a node, a row for what it does.';
     else {
       const anc = this.rowAncestors(focus).filter((p) => p === '' || this.def(p).k === 'SubTree');
       this.crumbsEl.innerHTML = 'Showing ' + [...anc, focus].map((p) => `<button class="btn-link" data-p="${p}">${esc(p === '' ? 'main tree' : this.title(this.def(p)))}</button>`).join(' › ');
     }
   }
+  // ---------- search: a flat list of every place a name, frame or number appears ----------
+  setQuery(q) {
+    this.query = q.trim().toLowerCase();
+    this.allHits = false;
+    this.hits = null;
+    if (this.query.length >= 2) {
+      this.hits = new Set();
+      const found = this.index.filter(([, text]) => text.includes(this.query)).map(([p]) => p);
+      // the places this run went through first, in the order it reached them; then the rest in file order
+      const first = (p) => { const sp = this.spans(p); return sp ? sp[0][0] : Infinity; };
+      found.sort((a, b) => first(a) - first(b));
+      this.hits = new Set(found);
+    }
+    this.renderHits();
+    this.render();
+  }
+  renderHits() {
+    const el = this.hitsEl;
+    if (!el) return;
+    if (!this.hits) { el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    const all = [...this.hits];
+    if (!all.length) { el.innerHTML = `<p class="mt-hits-n">Nothing matches “${esc(this.query)}”.</p>`; return; }
+    const SHOW = 8;
+    const list = this.allHits ? all.slice(0, 300) : all.slice(0, SHOW);
+    const where = (p) => {
+      const subs = this.rowAncestors(p).filter((a) => a !== '' && this.def(a).k === 'SubTree').map((a) => this.def(a).id);
+      return subs.slice(-2).join(' › ') || 'main tree';
+    };
+    el.innerHTML = `<p class="mt-hits-n">${all.length} place${all.length > 1 ? 's' : ''} in the tree. Tap one to open it below.</p><ul>`
+      + list.map((p) => {
+        const n = this.def(p);
+        const [badge, cls] = this.kind(n);
+        const sp = this.spans(p);
+        const ran = this.run ? (sp ? `ran at ${fmtT(sp[0][0])}` : 'not run here') : '';
+        return `<li><button type="button" data-p="${p}"><span class="mt-badge k-${cls}">${badge}</span>`
+          + `<span class="mt-hit-txt">${this.label(n)}<small>${esc(where(p))}${ran ? ` · ${ran}` : ''}</small></span></button></li>`;
+      }).join('') + '</ul>'
+      + (all.length > list.length ? `<button type="button" class="btn-link mt-all">Show all ${all.length}</button>` : '');
+  }
+
   row(p, n, d) {
     const [badge, cls] = this.kind(n);
     const kids = this.hasKids(p);
@@ -356,31 +467,65 @@ export class TreeExplorer {
     return chain.length ? ` <span class="mt-wrap">› ${chain.join(' › ')}</span>` : '';
   }
   bbRow(ps, d) {
-    const items = ps.map((p) => this.def(p).a || {});
-    const text = items.map((a) => `${esc(a.output_key)}=${esc(a.value)}`).join(' · ');
-    const st = this.sel === ps[0] ? ' sel' : '';
+    const marked = (p) => p === this.sel || (this.hits && this.hits.has(p));
+    // Keys that only hold their own name ("1" = 1) exist to pass a number into a subtree: count them, show the rest,
+    // a search hit or the selected one first.
+    const real = ps.filter((p) => marked(p) || (this.def(p).a || {}).output_key !== (this.def(p).a || {}).value)
+      .sort((a, b) => marked(b) - marked(a)).map((p) => this.def(p).a || {});
+    const text = `${ps.length} values set${real.length ? ': ' : ''}` + real.slice(0, 3).map((a) => `${esc(a.output_key)} = <code>${esc(a.value)}</code>`).join(', ') + (real.length > 3 ? ', …' : '');
+    const st = (ps.includes(this.sel) ? ' sel' : '') + (this.hits && ps.some((p) => this.hits.has(p)) ? ' hit' : '');
     const never = this.run && !ps.some((p) => this.spans(p)) ? ' never' : '';
-    return `<div class="mt-row${st}${never}" data-p="${ps[0]}" data-bb="${ps.length}" style="--d:${d}" role="treeitem" tabindex="0">`
+    return `<div class="mt-row${st}${never}" data-p="${ps[0]}" data-in="${ps.join(' ')}" data-bb="${ps.length}" style="--d:${d}" role="treeitem" tabindex="0">`
       + `<button class="mt-caret none" type="button" tabindex="-1" aria-hidden="true"></button>`
-      + `<span class="mt-badge k-bb">set ×${ps.length}</span><span class="mt-label mt-arg">${text}</span></div>`;
+      + `<span class="mt-badge k-bb">set</span><span class="mt-label mt-arg mt-bb">${text}</span></div>`;
   }
-  scrollToLeaf() {
-    if (this.leaf === null) return;
-    const el = this.treeEl.querySelector(`.mt-row[data-p="${this.leaf}"]`);
+  scrollToLeaf(force = false) {
+    if (this.leaf === null || (!force && performance.now() < this.holdUntil)) return;
+    // the deepest row of the running path that is drawn
+    let el = null;
+    for (const p of [this.leaf, ...this.rowAncestors(this.leaf).reverse()]) {
+      el = this.rowEl(p);
+      if (el) break;
+    }
     if (!el) return;
     const top = el.offsetTop, h = this.treeEl.clientHeight;
     if (top < this.treeEl.scrollTop + 20 || top > this.treeEl.scrollTop + h - 40) this.treeEl.scrollTop = Math.max(0, top - h * 0.35);
   }
+  // the row a node is drawn in: its own, or the folded "values set" row it sits in
+  rowEl(p) { return this.treeEl.querySelector(`.mt-row[data-p="${p}"]`) || this.treeEl.querySelector(`.mt-row[data-in~="${p}"]`); }
   scrollToRow(p) {
-    const el = this.treeEl.querySelector(`.mt-row[data-p="${p}"]`);
+    const el = this.rowEl(p);
     if (el) this.treeEl.scrollTop = Math.max(0, el.offsetTop - this.treeEl.clientHeight * 0.25);
   }
 
   // ---------- details ----------
-  select(p, scroll = false) {
+  select(p, scroll = false, pin = 'row') {
     this.sel = p;
+    this.pinned = pin;
     this.render();
     if (scroll) this.scrollToRow(p);
+    this.detail();
+  }
+  // "Back to the running node": drop any "show only this" view, open the tree down to the running node and scroll it
+  // into view, and let the detail follow the run again.
+  backToLeaf() {
+    this.pinned = null;
+    if (this.leaf === null) return;
+    this.focus = '';
+    this.reveal(this.leaf);
+    this.auto = new Set(this.rowAncestors(this.leaf));
+    this.sel = this.leaf;
+    this.render();
+    this.scrollToLeaf(true);
+    this.detail();
+    if (this.onBack) this.onBack(this.leaf);
+  }
+  // With nothing picked, the detail panel shows the node that is running.
+  followDetail(force = false) {
+    if (this.pinned || this.leaf === null) return;
+    if (this.sel === this.leaf && !force) return;
+    this.sel = this.leaf;
+    if (force) this.render();
     this.detail();
   }
   // The node with this ID or name. A subtree used in several places (the torpedo and table trees sit in both branches
@@ -400,13 +545,16 @@ export class TreeExplorer {
       this.detailEl.innerHTML = '<p class="mt-hint">Tap a row to see what the node does, its ports, its line in the XML and when it ran.</p>';
       return;
     }
+    const head = this.pinned && this.leaf !== null && this.leaf !== p
+      ? '<button type="button" class="btn-link mt-back">← Back to the running node</button>'
+      : `<p class="mt-hint mt-follow-note">${this.pinned ? 'Your pick' : 'Running now'}. Tap any row for its details.</p>`;
     const row = this.treeEl.querySelector(`.mt-row[data-p="${p}"]`);
     const bb = row && row.dataset.bb ? +row.dataset.bb : 0;
     const n = this.def(p);
     const XML = XML_URL + this.tree.file;
     const anc = this.rowAncestors(p).filter((a) => a !== '' && (this.def(a).k === 'SubTree' || this.def(a).n));
     const path = anc.length ? `<div class="path">${anc.slice(-4).map((a) => `<button data-p="${a}">${esc(this.def(a).k === 'SubTree' ? this.def(a).id : this.def(a).n)}</button>`).join(' › ')}</div>` : '';
-    let html = path;
+    let html = head + path;
     if (bb) {
       // a folded run of SetBlackboard nodes
       const parts = p.split('.');
@@ -430,7 +578,11 @@ export class TreeExplorer {
     } else doc = esc((m && m.doc) || DOCS[n.id] || (BUILTIN[n.k] && BUILTIN[n.k][2]) || '');
     html += `<h4><span class="mt-badge k-${cls}">${badge}</span> ${esc(this.title(n))}</h4>`;
     if (n.n) html += `<p><i>${esc(n.n)}</i></p>`;
-    if (doc) html += `<p>${doc}</p>`;
+    if (doc) {
+      // long header docs (FollowPath's runs to a page): the first sentences, the rest behind "More"
+      const cut = doc.length > 280 ? doc.slice(0, 260).lastIndexOf('. ') : -1;
+      html += cut > 60 ? `<p>${doc.slice(0, cut + 1)}</p><details><summary>More about this node</summary><p>${doc.slice(cut + 2)}</p></details>` : `<p>${doc}</p>`;
+    }
     // ports
     const attrs = Object.entries(n.a || {}).filter(([k]) => k !== '__shared_blackboard');
     const desc = Object.fromEntries(((m && m.ports) || []).map((q) => [q.name, q]));
@@ -452,7 +604,8 @@ export class TreeExplorer {
       else {
         const now = sp.some(([a, b]) => this.t >= a && this.t <= b);
         const total = sp.reduce((s, [a, b]) => s + (b - a), 0);
-        const list = sp.slice(0, 4).map(([a, b]) => (b - a < 0.15 ? fmtT(a) : `${fmtT(a)}–${fmtT(b)}`)).join(', ');
+        // a run under a second, or one that starts and ends in the same second, prints as one time
+        const list = sp.slice(0, 4).map(([a, b]) => (b - a < 1 || fmtT(a) === fmtT(b) ? fmtT(a) : `${fmtT(a)}–${fmtT(b)}`)).join(', ');
         html += `<p class="when${now ? ' now' : ''}">${now ? 'Running now. ' : ''}Ran ${sp.length > 1 ? `${sp.length} times, ` : ''}at ${list}${sp.length > 4 ? ', …' : ''}${total >= 1 ? ` (${fmtS(total)} in all)` : ''}.</p>`;
       }
     }
@@ -466,7 +619,18 @@ export class TreeExplorer {
     html += `<div class="links">${links.join('')}</div>`;
     this.detailEl.innerHTML = html;
     const only = this.detailEl.querySelector('[data-root]');
-    if (only) only.onclick = () => { this.focus = only.dataset.root; this.open.add(this.focus); this.render(); };
+    if (only) only.onclick = () => { this.showOnly(only.dataset.root); };
+  }
+  // Show one node on its own, one level open; following the run marks its running child without opening it.
+  showOnly(p) {
+    this.focus = p;
+    this.open.add(p);
+    if (this.leaf !== null && this.follow) {
+      const anc = this.rowAncestors(this.leaf);
+      this.auto = new Set(under(this.leaf, p) ? anc.filter((a) => a.length <= p.length) : anc);
+    }
+    this.render();
+    this.treeEl.scrollTop = 0;
   }
 }
 

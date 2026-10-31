@@ -1,8 +1,7 @@
 import { setup, BASE } from '../layout.js';
 import '../css/chapter.css';
 import '../css/cameras.css';
-import { Graph } from '../viz/graph.js';
-import { el, tapOutside } from '../viz/chart.js';
+import { el } from '../viz/chart.js';
 
 setup();
 
@@ -11,6 +10,9 @@ const IMG = `${BASE}img/cameras/`;
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const getJSON = (name) => fetch(DATA + name).then((r) => r.json());
 const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const narrowMQ = matchMedia('(max-width: 520px)');
+const CORE = 'https://github.com/osu-uwrt/riptide_core';
+const commit = (h) => `<a href="${CORE}/commit/${h}">${h}</a>`;
 
 function seg(host, options, value, onPick, label) {
   const sp = document.createElement('span');
@@ -33,7 +35,8 @@ function seg(host, options, value, onPick, label) {
 }
 function slider(host, label, min, max, step, value, fmt, onInput) {
   const l = document.createElement('label');
-  l.innerHTML = `${label} <input type="range" min="${min}" max="${max}" step="${step}" value="${value}"> <output></output>`;
+  l.className = 'cam-slider';
+  l.innerHTML = `<span>${label}</span> <input type="range" min="${min}" max="${max}" step="${step}" value="${value}"> <output></output>`;
   const input = l.querySelector('input'), out = l.querySelector('output');
   const upd = () => { out.textContent = fmt(+input.value); onInput(+input.value); };
   input.addEventListener('input', upd);
@@ -50,8 +53,31 @@ document.querySelectorAll('img[data-src]').forEach((i) => { i.src = IMG + i.data
   const img = document.getElementById('eye-img');
   const tag = document.getElementById('eye-tag');
   const note = document.getElementById('eye-note');
+  const zoom = document.getElementById('eye-zoom');
+  const stage = document.getElementById('eye-stage');
   const src = { left: IMG + 'pool_left.webp', right: IMG + 'pool_right.webp' };
   preload(src.right);
+  // Close-ups, in the 1280 × 800 image's pixels: crop box and the feature's column in the left eye.
+  const spots = [
+    { n: 1, name: 'Pole', crop: [100, 400, 260, 195], x: 312, y: 470, mx: 410, my: 470 },
+    { n: 2, name: 'Board', crop: [430, 652, 100, 75], x: 479, y: 690, mx: 440, my: 640 },
+    { n: 3, name: 'Far wall', crop: [373, 303, 80, 60], x: 413, y: 333, mx: 475, my: 333 },
+  ];
+  const tiles = spots.map((s) => {
+    const [x0, y0, w, h] = s.crop;
+    const f = document.createElement('figure');
+    f.className = 'cam-tile';
+    f.innerHTML = `<div class="pic" style="aspect-ratio:${w}/${h};background-size:${(1280 / w) * 100}% auto;background-position:${(x0 / (1280 - w)) * 100}% ${(y0 / (800 - h)) * 100}%"><i style="left:${((s.x - x0) / w) * 100}%"></i></div><figcaption><b>${s.n}</b> ${s.name}</figcaption>`;
+    zoom.appendChild(f);
+    // the matching marker on the full image
+    const m = document.createElement('span');
+    m.className = 'cam-spot';
+    m.textContent = s.n;
+    m.style.left = `${(s.mx / 1280) * 100}%`;
+    m.style.top = `${(s.my / 800) * 100}%`;
+    stage.appendChild(m);
+    return f.querySelector('.pic');
+  });
   let eye = 'left', timer = null;
   const ctl = document.getElementById('eye-controls');
   const eyes = seg(ctl, [['left', 'Left eye'], ['right', 'Right eye']], 'left', (v) => { stop(); show(v); }, 'Which eye');
@@ -64,106 +90,193 @@ document.querySelectorAll('img[data-src]').forEach((i) => { i.src = IMG + i.data
   function show(v) {
     eye = v;
     img.src = src[v];
+    tiles.forEach((t) => { t.style.backgroundImage = `url(${src[v]})`; });
     tag.textContent = v === 'left' ? 'Left eye' : 'Right eye';
+    stage.classList.toggle('right', v === 'right');
     eyes.set(v);
   }
   function stop() { clearInterval(timer); timer = null; flick.setAttribute('aria-pressed', 'false'); }
   flick.onclick = () => {
     if (timer) return stop();
     flick.setAttribute('aria-pressed', 'true');
-    timer = setInterval(() => show(eye === 'left' ? 'right' : 'left'), 480);
+    timer = setInterval(() => show(eye === 'left' ? 'right' : 'left'), 520);
   };
-  document.getElementById('eye-stage').addEventListener('click', () => { stop(); show(eye === 'left' ? 'right' : 'left'); });
-  note.innerHTML = 'Disparity measured in this pair (full-resolution pixels): <b>~250 px</b> on the pole, <b>~45 px</b> on the checkerboard, <b>10–25 px</b> on the far wall. Bigger shift, closer object.';
+  stage.addEventListener('click', () => { stop(); show(eye === 'left' ? 'right' : 'left'); });
+  [...zoom.children].forEach((t) => t.addEventListener('click', () => { stop(); show(eye === 'left' ? 'right' : 'left'); }));
+  show('left');
+  note.innerHTML = 'How far each one shifts between the eyes, in full-resolution pixels: <b>1</b> the pole about <b>250 px</b>, <b>2</b> the board about <b>35 px</b>, <b>3</b> the far wall about <b>25 px</b>. Bigger shift, closer object.';
 }
 
-// ---------- the camera data path ----------
+// ---------- the camera data path: a top-to-bottom flow, tap a box for its note ----------
 {
-  const host = document.getElementById('pipe-graph');
-  const note = document.getElementById('pipe-note');
-  const R = 'https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/';
-  const nodes = [
-    { id: 'ffc', x: 85, y: 70, label: 'Forward ZED X Mini', sub: 'ffc · camera_id 0', info: 'Looks ahead, pitched 2.9° down. Two image sensors 50 mm apart behind one window. Its <code>serial_number</code> (55348591) in <code>ffc_config.yaml</code> is how the SDK knows this one is ffc.' },
-    { id: 'dfc', x: 85, y: 170, label: 'Down ZED X Mini', sub: 'dfc · camera_id 1', info: 'Looks straight down, 12 cm to starboard of <code>base_link</code>. Serial 51491740 in <code>dfc_config.yaml</code>.' },
-    { id: 'card', x: 290, y: 120, label: 'GMSL2 capture card', sub: 'on the Orin', info: 'Turns each camera\'s GMSL2 serial link back into video frames for the Orin. GMSL2 carries uncompressed high-rate video, power and control over one coax cable, so raw pixels never cross USB or Ethernet.' },
-    { id: 'zed', x: 455, y: 120, label: 'zed_node ×2', sub: 'ZED SDK on the GPU', info: `Two <code>stereolabs::ZedCamera</code> components in one process, <code>zed_container</code>, started by <a href="${R}launch/zed.launch.py">zed.launch.py</a>. Each grabs 1920 × 1200 at 15 Hz, rectifies with the underwater calibration and computes depth (NEURAL_PLUS on ffc) on every frame, because positional tracking is on. It only publishes the topics someone subscribes to.` },
-    { id: 'topics', x: 650, y: 120, label: '/talos/<cam>/zed_node/…', sub: 'rgb · depth · camera_info', info: 'Raw images (<code>bgra8</code>, <code>32FC1</code>) plus a JPEG <code>/compressed</code> twin of each colour image made by <code>image_transport</code>. Topic names and frames are listed in the next sections.' },
-    { id: 'det', x: 830, y: 52, label: 'yolo_orientation', sub: 'detector, one camera', info: 'Reads the active camera\'s compressed colour image, its depth image and <code>camera_info</code>, all on the Orin. <code>set_camera_is_dfc</code> picks the camera.' },
-    { id: 'pic', x: 830, y: 114, label: 'picture_taker', sub: 'calibration pairs', info: `Saves raw stereo pairs from <code>stereo_raw/image_raw_color</code> on its <code>capture_image</code> service (<a href="${R}riptide_hardware2/picture_taker.py">picture_taker.py</a>). Forward camera only. Started subscribed, so the forward node sends it the raw side-by-side image (18.4 MB, about 2.2 Gbit/s at 15 Hz) the whole time; its <code>enable_subscription</code> service turns that off.` },
-    { id: 'tag', x: 830, y: 176, label: 'AprilTag node', sub: 'forward JPEG', info: `<code>apriltag_ros</code>, started by <code>hardware.launch.py</code> through <a href="${R}launch/apriltag.launch.py">apriltag.launch.py</a>. Reads the forward camera's compressed colour image and <code>camera_info</code>.` },
-    { id: 'tether', x: 650, y: 250, label: 'Tether', sub: 'Zenoh to the laptop', info: 'The link between the robot and the laptop: everything the laptop subscribes to crosses it. Only JPEG colour images belong on it; one raw image stream is about 1.1 Gbit/s.' },
-    { id: 'viewer', x: 650, y: 336, label: 'Nereus viewer', sub: 'camera cards', info: 'The operator UI on the laptop. Its "Forward camera" and "Downward camera" cards show the compressed images (and depth, if you switch a card to Depth).' },
-    { id: 'sim', x: 400, y: 336, label: 'Nereus bridge', sub: 'simulator only', info: 'Runs on the simulator machine, not the Orin. In simulation there are no ZED nodes: the bridge renders both cameras and publishes the topics the stack uses, with the same names and frames, JPEG at quality 93.' },
-  ];
-  const edges = [
-    { from: 'ffc', to: 'card', label: 'GMSL2' },
-    { from: 'dfc', to: 'card', label: 'GMSL2' },
-    { from: 'card', to: 'zed' },
-    { from: 'zed', to: 'topics' },
-    { from: 'topics', to: 'det' },
-    { from: 'topics', to: 'pic' },
-    { from: 'topics', to: 'tag' },
-    { from: 'topics', to: 'tether', label: 'JPEG', lx: 640, ly: 196, anchor: 'end' },
-    { from: 'tether', to: 'viewer' },
-    { from: 'sim', to: 'topics', dash: true },
-  ];
-  const narrow = {
-    below: 620, width: 380, height: 722,
-    bands: [
-      { label: 'CAMERAS', points: [[14, 18], [366, 18], [366, 112], [14, 112]] },
-      { label: 'ORIN', points: [[14, 126], [366, 126], [366, 220], [214, 220], [214, 324], [366, 324], [366, 592], [184, 592], [184, 404], [14, 404]] },
-      { label: 'SIMULATOR', points: [[226, 234], [366, 234], [366, 314], [226, 314]] },
-      { label: 'LAPTOP', points: [[14, 612], [366, 612], [366, 708], [14, 708]] },
-    ],
-    nodes: {
-      ffc: { x: 98, y: 70 }, dfc: { x: 282, y: 70 }, card: { x: 190, y: 170 },
-      zed: { x: 112, y: 286 }, sim: { x: 296, y: 280 }, topics: { x: 120, y: 362 },
-      det: { x: 284, y: 440 }, pic: { x: 284, y: 502 }, tag: { x: 284, y: 564 },
-      tether: { x: 98, y: 562 }, viewer: { x: 190, y: 660 },
-    },
-    edges: {
-      'ffc>card': { label: '' }, 'dfc>card': { label: '' },
-      'topics>pic': { via: [196, 500] },
-      'topics>tag': { via: [180, 566] },
-      'topics>tether': { lx: 106, ly: 470, anchor: 'start' },
-    },
+  const host = document.getElementById('pipe-flow');
+  const ctl = document.getElementById('pipe-controls');
+  const R = `${CORE}/blob/followpath-speed/riptide_hardware/`;
+  const N = {
+    ffc: { t: 'Forward ZED X Mini', s: 'looks ahead', info: `Behind the starboard tube's flat bow window, pitched 2.9° down. It is <code>ffc</code> (<code>camera_id</code> 0) because its serial number, 55348591, is in <code>ffc_config.yaml</code>. Swap the serials and forward and down swap too.` },
+    dfc: { t: 'Down ZED X Mini', s: 'looks down', info: `Inside the starboard tube, looking out through its clear bottom. It is <code>dfc</code> (<code>camera_id</code> 1) because its serial number, 51491740, is in <code>dfc_config.yaml</code>.` },
+    card: { t: 'GMSL2 capture card', s: 'turns the links back into frames', info: 'Each camera sends uncompressed video, power and control over one coax cable (GMSL2). The card turns that back into frames for the Orin, so raw pixels never cross USB or Ethernet.' },
+    zed: { t: 'zed_node ×2', s: 'ZED SDK, on the GPU', info: `Two <code>ZedCamera</code> components in one process, <code>zed_container</code>, started by <a href="${R}launch/zed.launch.py">zed.launch.py</a>. Each grabs 1920 × 1200 at 15 Hz, rectifies with the underwater calibration and computes depth on every frame. It only publishes topics someone subscribes to.` },
+    topics: { t: 'Camera topics', s: 'colour, depth, calibration', info: 'Under <code>/talos/ffc/zed_node/</code> and <code>/talos/dfc/zed_node/</code>: raw colour and depth images, <code>camera_info</code> (the lens model), and a JPEG <code>/compressed</code> copy of each colour image. <a href="#topics">The full list</a>.',
+      sim: 'The same names and frames as on the robot, at 15 Hz. Colour comes only as JPEG (quality 93); there is no raw colour and no <code>stereo_raw</code>.' },
+    det: { t: 'yolo_orientation', s: 'the detector, one camera at a time', info: 'Reads the active camera\'s JPEG, depth image and <code>camera_info</code>. <code>set_camera_is_dfc</code> picks the camera (<a href="#switching">below</a>).' },
+    pic: { t: 'picture_taker', s: 'saves calibration pairs', info: `Saves raw stereo pairs from the forward camera on its <code>capture_image</code> service (<a href="${R}riptide_hardware2/picture_taker.py">picture_taker.py</a>). It subscribes from launch, so the forward node makes the raw side-by-side image (about 2.2 Gbit/s) the whole time; its <code>enable_subscription</code> service turns that off.`,
+      sim: 'Not running: it is started by <code>zed.launch.py</code>, which sim doesn\'t launch.' },
+    tag: { t: 'AprilTag node', s: 'forward JPEG', info: `<code>apriltag_ros</code>, started by <code>hardware.launch.py</code> through <a href="${R}launch/apriltag.launch.py">apriltag.launch.py</a>. Reads the forward camera's JPEG and <code>camera_info</code>.`,
+      sim: 'Not running: it is started by <code>hardware.launch.py</code>, which sim doesn\'t launch.' },
+    tether: { t: 'JPEGs over the tether', info: 'The Ethernet tether joins Talos to the team network. Everything your laptop subscribes to crosses it, as one Zenoh connection to the router on the Orin. Only JPEG colour images belong on it: one raw image stream is about 1.1 Gbit/s.',
+      simT: 'JPEGs to the viewer', sim: 'The viewer\'s camera cards in <em>ROS</em> mode subscribe to the same JPEG topics; in <em>Truth</em> mode they show the simulator\'s own render instead.' },
+    viewer: { t: 'Nereus viewer', s: 'camera cards on your laptop', info: 'The operator screen. Its <em>Forward camera</em> and <em>Downward camera</em> cards show the JPEGs, or depth if you switch a card to Depth (that pulls raw images: close it during a run).',
+      simS: 'the simulator\'s own window' },
+    sim: { t: 'Nereus bridge', s: 'renders both cameras', info: 'Runs on the simulator machine. There are no ZED nodes in sim: the bridge renders both cameras from the Talos robot pack and publishes the topics the stack uses (<a href="#nereus">below</a>).' },
   };
-  new Graph(host, {
-    width: 920, height: 380, nodes, edges, narrow,
-    bands: [
-      { label: 'CAMERAS', points: [[8, 22], [178, 22], [178, 214], [8, 214]] },
-      { label: 'ORIN', points: [[192, 22], [918, 22], [918, 210], [192, 210]] },
-      { label: 'SIMULATOR', points: [[300, 292], [500, 292], [500, 372], [300, 372]] },
-      { label: 'LAPTOP', points: [[560, 292], [918, 292], [918, 372], [560, 372]] },
+  const LAYOUT = {
+    robot: [
+      { band: 'Cameras', rows: [['ffc', 'dfc']] },
+      { arrow: 'GMSL2, one coax each' },
+      { band: 'On the Orin', rows: [['card'], 'down', ['zed'], 'down', ['topics'], { label: 'Read on the Orin', items: ['det', 'pic', 'tag'] }] },
+      { arrow: 'tether' },
+      { band: 'Your laptop', rows: [['viewer']] },
     ],
-    info: (n) => { note.innerHTML = n ? `<b>${esc(n.label)}.</b> ${n.info}` : 'Tap or hover a box.'; },
-  });
+    sim: [
+      { band: 'Simulator', rows: [['sim']] },
+      { arrow: 'the same topics' },
+      { band: 'The stack', sub: 'on your machine, or on the Orin in a hardware-in-the-loop test', rows: [['topics'], { label: 'Read by', items: ['det', 'pic', 'tag'] }] },
+      { arrow: 'tether' },
+      { band: 'Viewer', rows: [['viewer']] },
+    ],
+  };
+  let mode = 'robot', sel = 'zed';
+  seg(ctl, [['robot', 'On the robot'], ['sim', 'In simulation']], mode, (v) => { mode = v; if (v === 'sim' && ['ffc', 'dfc', 'card', 'zed'].includes(sel)) sel = 'sim'; if (v === 'robot' && sel === 'sim') sel = 'zed'; draw(); }, 'Where');
+  const note = document.createElement('div');
+  note.className = 'cam-fnote';
+  note.setAttribute('aria-live', 'polite');
+  const btns = {};
+  function node(id) {
+    const n = N[id], sim = mode === 'sim';
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'fn';
+    b.dataset.id = id;
+    if (sim && (id === 'pic' || id === 'tag')) b.classList.add('off');
+    const off = sim && (id === 'pic' || id === 'tag');
+    b.innerHTML = `<b>${esc(n.t)}</b><span>${esc(off ? 'not running in sim' : sim && n.simS ? n.simS : n.s)}</span>`;
+    b.onclick = () => { sel = sel === id ? null : id; place(); };
+    btns[id] = b;
+    return b;
+  }
+  function draw() {
+    host.replaceChildren();
+    for (const k in btns) delete btns[k];
+    for (const part of LAYOUT[mode]) {
+      if (part.arrow) {
+        const a = document.createElement('div');
+        a.className = 'fa out';
+        if (part.arrow === 'tether') {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'fa-btn';
+          b.dataset.id = 'tether';
+          b.textContent = mode === 'sim' ? N.tether.simT : N.tether.t;
+          b.onclick = () => { sel = sel === 'tether' ? null : 'tether'; place(); };
+          btns.tether = b;
+          a.appendChild(b);
+        } else a.innerHTML = `<span>${esc(part.arrow)}</span>`;
+        host.appendChild(a);
+        continue;
+      }
+      const band = document.createElement('section');
+      band.className = 'fb';
+      band.innerHTML = `<div class="fl">${esc(part.band)}${part.sub ? ` <small>${esc(part.sub)}</small>` : ''}</div>`;
+      for (const r of part.rows) {
+        if (r === 'down') { const a = document.createElement('div'); a.className = 'fa'; band.appendChild(a); continue; }
+        if (Array.isArray(r)) {
+          const row = document.createElement('div');
+          row.className = 'fr';
+          r.forEach((id) => row.appendChild(node(id)));
+          band.appendChild(row);
+          continue;
+        }
+        const a = document.createElement('div');
+        a.className = 'fa';
+        band.appendChild(a);
+        const g = document.createElement('div');
+        g.className = 'fgroup';
+        g.innerHTML = `<div class="fgl">${esc(r.label)}</div>`;
+        const items = document.createElement('div');
+        items.className = 'fitems';
+        r.items.forEach((id) => items.appendChild(node(id)));
+        g.appendChild(items);
+        band.appendChild(g);
+      }
+      host.appendChild(band);
+    }
+    place();
+  }
+  // The note goes right under the tapped box (under its row, or under the whole group on a wide screen).
+  function place() {
+    for (const [id, b] of Object.entries(btns)) b.setAttribute('aria-expanded', String(id === sel));
+    if (!sel || !btns[sel]) { note.remove(); return; }
+    const n = N[sel], b = btns[sel];
+    const text = mode === 'sim' && n.sim ? n.sim : n.info;
+    const title = sel === 'tether' ? (mode === 'sim' ? n.simT : n.t) : n.t;
+    note.innerHTML = `<b>${esc(title)}.</b> ${text}`;
+    const inGroup = b.closest('.fitems');
+    const anchor = inGroup ? (narrowMQ.matches ? b : inGroup) : b.closest('.fr') || b.closest('.fa');
+    anchor.after(note);
+  }
+  narrowMQ.addEventListener('change', place);
+  draw();
 }
 
-// ---------- parameter layers ----------
+// ---------- the settings each ZED node ends up with ----------
 getJSON('params.json').then((P) => {
   const list = document.getElementById('param-list');
   const ctl = document.getElementById('param-controls');
   document.getElementById('param-rev').textContent = `${P.wrapper.rev} (${P.wrapper.date})`;
-  let cam = 'ffc', filter = 'all';
+  let cam = 'ffc', filter = 'main';
+  const MAIN = ['general.serial_number', 'general.grab_resolution', 'general.pub_resolution', 'general.grab_frame_rate', 'general.optional_opencv_calibration_file', 'general.self_calib', 'depth.depth_mode', 'depth.min_depth', 'depth.max_depth', 'pos_tracking.pos_tracking_enabled', 'pos_tracking.publish_tf'];
+  // Why each main setting is what it is (per camera where they differ); other rows use the data file's note.
+  const WHY = {
+    'general.grab_resolution': 'The full 1920 × 1200 sensor: the most pixels on a small, far prop.',
+    'general.pub_resolution': 'Publish at the full grab size. The wrapper default would halve it.',
+    'general.grab_frame_rate': `Was 30 until June 2026 (${commit('9a249b2')}). No reason was recorded; a lower rate does leave more GPU time for depth and the detector.`,
+    'general.optional_opencv_calibration_file': 'The team’s underwater calibration, used instead of the factory one. The path is absolute on the Orin, so a new file needs a deploy and a restart.',
+    'general.self_calib': `Off on the forward camera since July 2025 (${commit('131b61c')}) and the down camera since June 2026 (${commit('9a249b2')}). Start-up self-calibration could replace the underwater calibration.`,
+    'depth.depth_mode': {
+      ffc: `The slowest, most accurate mode, <a href="https://docs.stereolabs.com/docs/depth-sensing/depth-modes">for small or distant objects</a> (${commit('09d5c55')}, July 2026).`,
+      dfc: 'Not set by Talos, so the wrapper decides. Its <code>common_stereo.yaml</code> says <code>NEURAL_LIGHT</code> (the fastest neural mode) as committed, but the team’s dev checkout has it edited to <code>NEURAL_PLUS</code>. Check the robot: <code>ros2 param get /talos/dfc/zed_node depth.depth_mode</code>.',
+    },
+    'depth.min_depth': 'Wrapper default. Nothing closer gets depth.',
+    'depth.max_depth': { ffc: 'Forward depth stops at 4 m: stereo error grows with distance squared.', dfc: 'Not set by Talos; the down camera keeps the wrapper’s 10 m.' },
+    'pos_tracking.pos_tracking_enabled': 'Not set by Talos. The SDK’s own visual odometry keeps running, and it needs depth, so depth is computed every frame even with nobody subscribed.',
+    'pos_tracking.publish_tf': 'Only the tracking’s TF is off: the EKF owns <code>odom → base_link</code>.',
+  };
+  const CHECK = { 'depth.depth_mode': ['dfc'] };
   seg(ctl, [['ffc', 'Forward (ffc)'], ['dfc', 'Down (dfc)']], cam, (v) => { cam = v; draw(); }, 'Camera');
-  seg(ctl, [['all', 'All'], ['talos', 'Set by Talos'], ['wrapper', 'Wrapper defaults']], filter, (v) => { filter = v; draw(); }, 'Filter');
+  seg(ctl, [['main', 'Main settings'], ['all', `All ${P.rows.length}`]], filter, (v) => { filter = v; draw(); }, 'Which settings');
   const files = () => ['common_stereo.yaml', 'zedxm.yaml', `${cam}_config.yaml`];
-  const show = (v) => (v === null || v === undefined ? '—' : typeof v === 'string' ? v : JSON.stringify(v));
+  const show = (v) => (v === null || v === undefined ? '—' : v === '' ? '"" (empty)' : typeof v === 'string' ? v : JSON.stringify(v));
+  const UNIT = { 'general.grab_frame_rate': ' Hz', 'general.pub_frame_rate': ' Hz', 'depth.point_cloud_freq': ' Hz', 'depth.min_depth': ' m', 'depth.max_depth': ' m' };
+  const withUnit = (key, v) => (typeof v === 'number' && UNIT[key] ? `${v}${UNIT[key]}` : show(v));
+  const brk = (t) => esc(t).replace(/_/g, '_<wbr>');
   function draw() {
+    const open = new Set([...list.querySelectorAll('details[open]')].map((d) => d.dataset.key));
     list.replaceChildren();
-    const open = new Set([...document.querySelectorAll('#param-list details[open]')].map((d) => d.dataset.key));
-    for (const r of P.rows) {
-      const c = r[cam];
-      if (c.win === null) continue;
-      if (filter === 'talos' && c.win !== 2) continue;
-      if (filter === 'wrapper' && c.win === 2) continue;
+    const keys = filter === 'main' ? MAIN : P.rows.map((r) => r.key);
+    for (const key of keys) {
+      const r = P.rows.find((x) => x.key === key);
+      const c = r && r[cam];
+      if (!c || c.win === null) continue;
       const d = document.createElement('details');
       d.dataset.key = r.key;
       if (open.has(r.key)) d.open = true;
       const short = r.key.replace(/^[a-z_]+\./, '');
-      d.innerHTML = `<summary><code class="k">${short}</code><span class="v">${show(c.value)}</span><span class="src src-${c.win}">${c.win === 2 ? 'Talos' : files()[c.win].replace('.yaml', '')}</span></summary>
-        <div class="more"><p>${r.why}</p><ol class="layers">${c.layers.map((v, i) => `<li class="${i === c.win ? 'win' : v === null ? 'none' : 'lost'}"><span>${files()[i]}</span><code>${show(v)}</code></li>`).join('')}</ol><p class="full"><code>${r.key}</code></p></div>`;
+      const w = WHY[r.key];
+      const why = w ? (typeof w === 'string' ? w : w[cam]) : r.why;
+      const check = (CHECK[r.key] || []).includes(cam);
+      d.innerHTML = `<summary><span class="chev" aria-hidden="true"></span><code class="k"><span class="pre">${brk(r.key.slice(0, r.key.length - short.length))}</span>${brk(short)}</code><span class="v">${brk(withUnit(r.key, c.value))}${check ? ' <em class="flag">check</em>' : ''}</span><span class="src src-${c.win}">${c.win === 2 ? 'Talos' : files()[c.win].replace('.yaml', '')}</span></summary>
+        <div class="more"><p>${why}</p><ol class="layers">${c.layers.map((v, i) => `<li class="${i === c.win ? 'win' : v === null ? 'none' : 'lost'}"><span>${files()[i]}</span><code>${brk(withUnit(r.key, v))}</code></li>`).join('')}</ol></div>`;
       list.appendChild(d);
     }
   }
@@ -171,16 +284,15 @@ getJSON('params.json').then((P) => {
 });
 
 // ---------- field of view ----------
-Promise.all([getJSON('fov.json')]).then(([F]) => {
+getJSON('fov.json').then((F) => {
   const svg = document.getElementById('fov-svg');
   const note = document.getElementById('fov-note');
   const ctl = document.getElementById('fov-controls');
+  const legend = document.getElementById('fov-legend');
   let view = 'side', H = 1.5, D = 3.0;
   seg(ctl, [['side', 'Side view'], ['top', 'Top view']], view, (v) => { view = v; draw(); }, 'View');
-  slider(ctl, 'Height', 0.5, 4, 0.05, H, (v) => `${v.toFixed(2)} m`, (v) => { H = v; draw(); });
-  slider(ctl, 'Distance', 0.5, 6, 0.05, D, (v) => `${v.toFixed(2)} m`, (v) => { D = v; draw(); });
-  document.getElementById('fov-legend').innerHTML =
-    '<span><i style="background:var(--state)"></i>Forward camera</span><span><i style="background:var(--prediction)"></i>Down camera</span><span><i style="background:var(--ink)"></i>Target at Distance</span><span><i style="background:var(--water-deep)"></i>Pool floor</span>';
+  slider(ctl, 'Height above floor', 0.5, 4, 0.05, H, (v) => `${v.toFixed(2)} m`, (v) => { H = v; draw(); });
+  slider(ctl, 'Target distance', 0.5, 6, 0.05, D, (v) => `${v.toFixed(2)} m`, (v) => { D = v; draw(); });
 
   const cams = F.cams;
   const mv = (R, v) => [0, 1, 2].map((i) => R[i][0] * v[0] + R[i][1] * v[1] + R[i][2] * v[2]);
@@ -214,40 +326,45 @@ Promise.all([getJSON('fov.json')]).then(([F]) => {
     const fA = side ? ray(ffc, ffc.rect[2], 0) : ray(ffc, 0, ffc.rect[3]);
     const fB = side ? ray(ffc, ffc.rect[2], ffc.h) : ray(ffc, ffc.w, ffc.rect[3]);
     const fMid = ray(ffc, ffc.rect[2], ffc.rect[3]);
-    // down camera: columns run fore and aft, rows port-starboard
     const dA = side ? ray(dfc, 0, dfc.rect[3]) : null, dB = side ? ray(dfc, dfc.w, dfc.rect[3]) : null;
     const corners = [[0, 0], [dfc.w, 0], [dfc.w, dfc.h], [0, dfc.h]].map(([u, v]) => ray(dfc, u, v));
     const foot = corners.map((d) => at(dfc, d, tFloor(dfc, d)));
-    const ffcFloorT = side ? tFloor(ffc, fB) : Infinity;
-    const ffcFloor = isFinite(ffcFloorT) ? at(ffc, fB, ffcFloorT) : null;
+    const ffcFloorT = tFloor(ffc, side ? fB : ray(ffc, ffc.rect[2], ffc.h));
+    const ffcFloor = isFinite(ffcFloorT) ? at(ffc, side ? fB : ray(ffc, ffc.rect[2], ffc.h), ffcFloorT) : null;
 
-    // view window, metres
+    // view window, metres: always out past the 4 m depth limit and the target, and the floor entry if it is near
     const sb = sil.bounds;
-    const phone = (svg.clientWidth || 900) < 520; // a phone keeps the view tight around the target
-    const xFar = Math.min(7, phone ? Math.max(D + 0.35, 1.6) : Math.max(D + 0.7, 2.2, ffcFloor && ffcFloor[0] < 6.5 ? ffcFloor[0] + 0.4 : 0));
-    let x0 = Math.min(sb[0][0], ...foot.map((p) => p[0])) - 0.25, x1 = xFar, y0, y1;
-    if (side) { y0 = -H - 0.3; y1 = Math.max(sb[1][1] + 0.25, 0.9); }
-    else {
-      const w = Math.max(...foot.map((p) => Math.abs(p[1])), Math.abs(at(ffc, fA, D)[1]), Math.abs(at(ffc, fB, D)[1]), sb[1][1], -sb[0][1]);
-      y0 = -w - 0.3; y1 = w + 0.3;
+    const Wv = 900;
+    const x0 = Math.min(sb[0][0], ...foot.map((p) => p[0])) - 0.25;
+    const x1 = Math.min(7.2, Math.max(D + 0.7, range[1] + 0.55, side && ffcFloor && ffcFloor[0] < 6.6 ? ffcFloor[0] + 0.35 : 0));
+    const k = Wv / (x1 - x0);
+    const cw = svg.clientWidth || Wv;
+    const maxH = parseFloat(getComputedStyle(svg).maxHeight) || Infinity;
+    // label size in viewBox units for about 12.5 px on screen; the bottom margin is sized from it
+    let scale = cw / Wv, fz = 13, y0, y1, Hv;
+    for (let it = 0; it < 3; it++) {
+      fz = Math.max(13, 12.5 / scale);
+      if (side) { y0 = -H - (fz * 1.9) / k; y1 = Math.max(sb[1][1], 0.45) + (fz * 2.4) / k; }
+      else {
+        const tw = Math.max(...foot.map((p) => Math.abs(p[1])), Math.abs(at(ffc, fA, D)[1]), Math.abs(at(ffc, fB, D)[1]), sb[1][1], -sb[0][1]);
+        y0 = -tw - (fz * 3.0) / k; y1 = tw + (fz * 2.9) / k;
+      }
+      Hv = Math.round((y1 - y0) * k);
+      scale = Math.min(cw / Wv, maxH / Hv);
     }
-    const k = 900 / (x1 - x0), Wv = 900, Hv = Math.round((y1 - y0) * k);
+    const u = 1 / scale; // viewBox units per screen pixel
     svg.setAttribute('viewBox', `0 0 ${Wv} ${Hv}`);
     const X = (x) => (x - x0) * k, Y = (y) => (y1 - y) * k;
     const pts = (ps) => ps.map((p) => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(' ');
-    // drawn scale: the svg fills the width unless max-height caps it
-    const maxH = parseFloat(getComputedStyle(svg).maxHeight) || Infinity;
-    const scale = Math.min((svg.clientWidth || Wv) / Wv, maxH / Hv);
-    const fz = Math.max(13, 12.5 / scale);
-    const label = (x, y, text, attrs = {}) => { const t = el('text', { x, y, class: 'halo', ...attrs }, svg); t.style.fontSize = `${fz}px`; t.textContent = text; return t; };
+    const label = (x, y, text, attrs = {}, parent = svg) => { const t = el('text', { x, y, class: 'halo', ...attrs }, parent); t.style.fontSize = `${fz}px`; t.style.strokeWidth = `${4 * u}px`; t.textContent = text; return t; };
     const defs = el('defs', {}, svg);
     const cp = el('clipPath', { id: 'fov-clip' }, defs);
     el('rect', { x: 0, y: 0, width: Wv, height: Hv }, cp);
     const g = el('g', { 'clip-path': 'url(#fov-clip)' }, svg);
 
     // metre grid
-    for (let x = Math.ceil(x0); x <= x1; x++) el('line', { x1: X(x), x2: X(x), y1: 0, y2: Hv, stroke: css('--grid'), 'stroke-width': 1 }, g);
-    for (let y = Math.ceil(y0); y <= y1; y++) el('line', { x1: 0, x2: Wv, y1: Y(y), y2: Y(y), stroke: css('--grid'), 'stroke-width': 1 }, g);
+    for (let x = Math.ceil(x0); x <= x1; x++) el('line', { x1: X(x), x2: X(x), y1: 0, y2: Hv, stroke: css('--grid'), 'stroke-width': u }, g);
+    for (let y = Math.ceil(y0); y <= y1; y++) el('line', { x1: 0, x2: Wv, y1: Y(y), y2: Y(y), stroke: css('--grid'), 'stroke-width': u }, g);
 
     const blue = css('--state'), green = css('--prediction'), ink = css('--ink');
     const L = 40; // a long way, clipped by the view
@@ -258,60 +375,134 @@ Promise.all([getJSON('fov.json')]).then(([F]) => {
       const shape = (t0, t1) => clip([A(t0), A(t1), B(t1), B(t0)], f);
       const sDepth = shape(near, far), sFar = shape(far, L);
       if (sFar.length > 2) el('polygon', { points: pts(sFar), fill: color, opacity: 0.08 }, g);
-      if (sDepth.length > 2) el('polygon', { points: pts(sDepth), fill: color, opacity: 0.22 }, g);
+      if (sDepth.length > 2) el('polygon', { points: pts(sDepth), fill: color, opacity: 0.24 }, g);
       for (const d of [a, b]) {
         const t = floorClip ? Math.min(L, tFloor(c, d)) : L;
-        el('line', { x1: X(p[0]), y1: Y(p[1]), x2: X(P2(at(c, d, t))[0]), y2: Y(P2(at(c, d, t))[1]), stroke: color, 'stroke-width': 1.6 }, g);
+        el('line', { x1: X(p[0]), y1: Y(p[1]), x2: X(P2(at(c, d, t))[0]), y2: Y(P2(at(c, d, t))[1]), stroke: color, 'stroke-width': 1.6 * u }, g);
       }
     };
 
     if (side) {
-      // pool floor
       el('rect', { x: 0, y: Y(-H), width: Wv, height: Hv - Y(-H), fill: css('--water') }, g);
-      el('line', { x1: 0, x2: Wv, y1: Y(-H), y2: Y(-H), stroke: css('--water-deep'), 'stroke-width': 3 }, g);
+      el('line', { x1: 0, x2: Wv, y1: Y(-H), y2: Y(-H), stroke: css('--water-deep'), 'stroke-width': 3 * u }, g);
       cone(ffc, fA, fB, blue, range[0], range[1], true);
       cone(dfc, dA, dB, green, 0.3, F.depth_range.dfc[1], true);
-      // down-camera footprint on the floor
       const fx = foot.map((p) => p[0]);
-      el('line', { x1: X(Math.min(...fx)), x2: X(Math.max(...fx)), y1: Y(-H), y2: Y(-H), stroke: green, 'stroke-width': 6, 'stroke-linecap': 'round' }, g);
-      if (ffcFloor) el('circle', { cx: X(ffcFloor[0]), cy: Y(-H), r: 5, fill: blue }, g);
+      el('line', { x1: X(Math.min(...fx)), x2: X(Math.max(...fx)), y1: Y(-H), y2: Y(-H), stroke: green, 'stroke-width': 5 * u, 'stroke-linecap': 'round' }, g);
     } else {
       cone(ffc, fA, fB, blue, range[0], range[1], false);
-      el('polygon', { points: pts(foot.map(P2)), fill: green, opacity: 0.25, stroke: green, 'stroke-width': 2 }, g);
+      el('polygon', { points: pts(foot.map(P2)), fill: green, opacity: 0.25, stroke: green, 'stroke-width': 2 * u }, g);
     }
     // the target: the image's extent at depth D (a plane square to the forward camera)
     const tA = P2(at(ffc, fA, D)), tB = P2(at(ffc, fB, D));
-    el('line', { x1: X(tA[0]), y1: Y(tA[1]), x2: X(tB[0]), y2: Y(tB[1]), stroke: ink, 'stroke-width': 3, 'stroke-linecap': 'round' }, g);
+    el('line', { x1: X(tA[0]), y1: Y(tA[1]), x2: X(tB[0]), y2: Y(tB[1]), stroke: ink, 'stroke-width': 3 * u, 'stroke-linecap': 'round' }, g);
     // Talos
     const path = sil.polys.map((poly) => `M${pts(poly).replace(/ /g, 'L')}Z`).join('');
     el('path', { d: path, fill: css('--ink-2'), 'fill-rule': 'evenodd', opacity: 0.9 }, g);
     for (const [c, col] of [[ffc, blue], [dfc, green]]) {
       const p = P2(c.pos);
-      el('circle', { cx: X(p[0]), cy: Y(p[1]), r: 5.5, fill: col, stroke: css('--paper'), 'stroke-width': 2 }, g);
+      el('circle', { cx: X(p[0]), cy: Y(p[1]), r: Math.max(5.5, 4.5 * u), fill: col, stroke: css('--paper'), 'stroke-width': 1.5 * u }, g);
     }
-    // which dot is which (on a phone Talos is small)
-    {
-      const tag = (x, y, text, anchor, col) => { label(x, y, text, { 'text-anchor': anchor, 'font-weight': 650 }).style.fill = col; };
-      if (side) {
-        const up = P2(at(ffc, fA, 0.45)), lo = P2(at(dfc, dB, 0.42));
-        tag(X(up[0]), Y(up[1]) - 8, 'ffc', 'middle', blue);
-        tag(X(lo[0]) - 6, Y(lo[1]), 'dfc', 'end', green);
-      } else {
-        const e1 = P2(at(ffc, fA, 0.7)), e2 = P2(at(ffc, fB, 0.7)), up = Y(e1[1]) < Y(e2[1]) ? e1 : e2;
-        tag(X(up[0]), Y(up[1]) - 10, 'ffc', 'middle', blue);
-        const fp = foot.map(P2), fx = Math.min(...fp.map((q) => q[0])), fy = Math.max(...fp.map((q) => q[1]));
-        tag(X(fx) + 6, Y(fy) + fz + 2, 'dfc', 'start', green);
+    // Labels are placed from candidate spots: the first one that stays in the view and clear of
+    // everything placed so far (other labels, Talos, the dots, the target, cone edges) wins.
+    const boxes = [], segs = [];
+    const reserve = (x, y, w, h) => boxes.push({ x, y, width: w, height: h, shape: true });
+    const seg2 = (p, q) => segs.push([X(p[0]), Y(p[1]), X(q[0]), Y(q[1])]);
+    const overlaps = (a, b, pad) => a.x < b.x + b.width + pad && b.x < a.x + a.width + pad && a.y < b.y + b.height + pad && b.y < a.y + a.height + pad;
+    // does segment (x1,y1)-(x2,y2) cross the box? (Liang-Barsky)
+    const crosses = (bb, [x1, y1, x2, y2], pad) => {
+      const dx = x2 - x1, dy = y2 - y1;
+      let t0 = 0, t1 = 1;
+      for (const [pp, q] of [[-dx, x1 - (bb.x - pad)], [dx, bb.x + bb.width + pad - x1], [-dy, y1 - (bb.y - pad)], [dy, bb.y + bb.height + pad - y1]]) {
+        if (pp === 0) { if (q < 0) return false; continue; }
+        const r = q / pp;
+        if (pp < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
       }
+      return true;
+    };
+    const free = (bb) => bb.x >= 3 * u && bb.x + bb.width <= Wv - 3 * u && bb.y >= 1 * u && bb.y + bb.height <= Hv - 1 * u &&
+      !boxes.some((b) => overlaps(bb, b, b.shape ? 1.5 * u : 5 * u)) && !segs.some((sg) => crosses(bb, sg, 1.5 * u));
+    function put(text, cands, { color, bold = 650, optional = false } = {}) {
+      const t = label(0, 0, text, { 'font-weight': bold });
+      if (color) t.style.fill = color;
+      const at3 = ([x, y, anchor, alt]) => { t.textContent = alt || text; t.setAttribute('x', x); t.setAttribute('y', y); t.setAttribute('text-anchor', anchor || 'start'); return t.getBBox(); };
+      for (const c of cands) { const bb = at3(c); if (free(bb)) { boxes.push(bb); return t; } }
+      if (optional) { t.remove(); return null; }
+      boxes.push(at3(cands[0]));
+      return t;
     }
-    // labels
-    const fwdEnd = P2(at(ffc, fMid, range[1]));
-    if (fwdEnd[0] < x1 - 0.1) label(X(fwdEnd[0]) - 6, Y(fwdEnd[1]) - 8, 'depth ends at 4 m', { 'text-anchor': 'end', fill: blue });
-    label(X(tB[0]) + 8, Y(tB[1]) - 8, `${D.toFixed(2)} m`, { 'text-anchor': X(tB[0]) > Wv - 90 ? 'end' : 'start' });
-    if (side) label(8, Y(-H) + fz + 6, `floor, ${H.toFixed(2)} m below base_link`, {});
-    // scale bar
-    const sx = Wv - 20 - k, sy = Hv - 14;
-    el('line', { x1: sx, x2: sx + k, y1: sy, y2: sy, stroke: ink, 'stroke-width': 2 }, svg);
-    label(sx + k / 2, sy - 6, '1 m', { 'text-anchor': 'middle' });
+    // things labels must not cover
+    reserve(X(sb[0][0]), Y(sb[1][1]), (sb[1][0] - sb[0][0]) * k, (sb[1][1] - sb[0][1]) * k);
+    seg2(tA, tB);
+    for (const [c, a2, b2, fc] of side ? [[ffc, fA, fB, true], [dfc, dA, dB, true]] : [[ffc, fA, fB, false]]) {
+      for (const d of [a2, b2]) seg2(P2(c.pos), P2(at(c, d, fc ? Math.min(L, tFloor(c, d)) : L)));
+    }
+    if (side) reserve(0, Y(-H) - 2 * u, Wv, 4 * u); // the floor line
+    else { const fp = foot.map(P2); fp.forEach((q, i) => seg2(q, fp[(i + 1) % fp.length])); }
+
+    const floorDot = side && ffcFloor && ffcFloor[0] < x1;
+    if (floorDot) {
+      el('circle', { cx: X(ffcFloor[0]), cy: Y(-H), r: 4.5 * u, fill: blue, stroke: css('--paper'), 'stroke-width': 1.5 * u }, svg);
+      reserve(X(ffcFloor[0]) - 5 * u, Y(-H) - 5 * u, 10 * u, 10 * u);
+    }
+    const sx0 = X(sb[0][0]), sx1 = X(sb[1][0]), sMid = (sx0 + sx1) / 2, sTop = Y(sb[1][1]), sBot = Y(sb[0][1]);
+    if (side) {
+      // the floor first (bottom-left), then Talos with the bow arrow beside it
+      put(`floor, ${H.toFixed(2)} m down`, [[6 * u, Y(-H) + fz + 3 * u, 'start']], { bold: 450 });
+      const tl = put('Talos', [[Math.max(sMid, 3 * u + fz * 1.3), sTop - 6 * u, 'middle'], [6 * u, sTop - 6 * u, 'start']]);
+      const tb = tl.getBBox();
+      put('bow →', [[tb.x + tb.width + 12 * u, sTop - 6 * u, 'start'], [6 * u, fz * 1.1, 'start']]);
+    } else {
+      const port = put('↑ port', [[6 * u, fz + 2 * u, 'start']]);
+      put('bow →', [[6 * u + port.getComputedTextLength() + 18 * u, fz + 2 * u, 'start']]);
+      put('↓ starboard', [[6 * u, Hv - 6 * u, 'start']]);
+      put('Talos', [[sMid, sTop - 6 * u, 'middle'], [sMid, sBot + fz + 2 * u, 'middle'], [Math.max(sx0, 6 * u), sTop - 6 * u, 'start']]);
+    }
+    // the target's distance, by one end of its line
+    {
+      const [lo, hi] = Y(tA[1]) > Y(tB[1]) ? [tA, tB] : [tB, tA]; // lower end on screen first
+      const xs = X(tA[0]), lowY = Math.min(Y(lo[1]), side ? Y(-H) - 6 * u : Hv), hiY = Math.max(Y(hi[1]), 0);
+      const txt = `${D.toFixed(2)} m`;
+      const along = [0.2, 0.35, 0.5, 0.65].flatMap((f) => { const y = hiY + (lowY - hiY) * f + fz * 0.35; return [[xs + 8 * u, y, 'start'], [xs - 8 * u, y, 'end']]; });
+      const cands = side
+        ? [[xs + 8 * u, lowY - 6 * u, 'start'], [xs - 8 * u, lowY - 6 * u, 'end'], [xs + 8 * u, hiY + fz + 4 * u, 'start'], [xs - 8 * u, hiY + fz + 4 * u, 'end'], ...along]
+        : [[xs + 8 * u, hiY + fz + 2 * u, 'start'], [xs - 8 * u, hiY + fz + 2 * u, 'end'], [xs, hiY - 6 * u, 'middle'], ...along];
+      put(txt, cands, { bold: 600 });
+    }
+    // where the floor comes into the bottom of the forward view
+    if (floorDot) {
+      const fx = X(ffcFloor[0]), by = Y(-H) + fz + 3 * u;
+      put(`floor in view, ${(ffcFloor[0] - ffc.pos[0]).toFixed(1)} m`, [[fx - 5 * u, by + 2 * u, 'end'], [fx + 8 * u, by, 'start'], [fx - 8 * u, Y(-H) - 8 * u, 'end']], { color: blue, bold: 500 });
+    }
+    // where forward depth stops: by the 4 m edge of the darker shading, shorter text if space is tight
+    {
+      const top = P2(at(ffc, fA, range[1])), bot = P2(at(ffc, fB, range[1]));
+      const ys = [0.5, 0.35, 0.65, 0.2, 0.8].map((f) => Y(top[1]) + (Y(bot[1]) - Y(top[1])) * f + fz * 0.35).filter((y) => y > fz && y < (side ? Y(-H) - 4 * u : Hv - fz));
+      const xb = (y) => X(top[0]) + (X(bot[0]) - X(top[0])) * ((y - Y(top[1])) / (Y(bot[1]) - Y(top[1]) || 1));
+      const cands = [];
+      for (const text of ['depth ends, 4 m', 'depth to 4 m']) for (const y of ys) cands.push([xb(y) - 6 * u, y, 'end', text]);
+      for (const y of ys) cands.push([xb(y) + 6 * u, y, 'start', 'depth to 4 m']);
+      for (const y of ys) cands.push([xb(y) - 4 * u, y, 'end', '4 m'], [xb(y) + 4 * u, y, 'start', '4 m']);
+      put('depth ends, 4 m', cands, { color: blue, bold: 600 });
+    }
+    // which cone is which camera: optional, the legend says it too
+    {
+      const cands = [];
+      for (const t of [0.9, 1.4, 1.9, 2.5, 3.2]) { const q = P2(at(ffc, fMid, t)); cands.push([X(q[0]), Y(q[1]) + fz * 0.35, 'middle']); }
+      put('ffc', cands, { color: blue, optional: true });
+    }
+    if (side) {
+      const cands = [[X(dfc.pos[0]), Y(-H) - 10 * u, 'middle']];
+      for (const f of [0.6, 0.75, 0.9, 0.45]) { const q = P2(at(dfc, dA, f * tFloor(dfc, dA))); cands.push([X(q[0]) - 6 * u, Y(q[1]), 'end']); }
+      put('dfc', cands, { color: green, optional: true });
+    } else {
+      const fp = foot.map(P2), fx0 = Math.min(...fp.map((q) => q[0])), fy0 = Math.min(...fp.map((q) => q[1])), fy1 = Math.max(...fp.map((q) => q[1]));
+      put('dfc', [[X(fx0) + 4 * u, Y(fy0) - 6 * u, 'start'], [X(fx0) + 4 * u, Y(fy0) + fz + 3 * u, 'start'], [X(fx0) + 4 * u, Y(fy1) + fz + 4 * u, 'start'], [X(fx0) + 4 * u, Y(fy1) - 5 * u, 'start']], { color: green, optional: true });
+    }
+
+    legend.innerHTML = '<span><i style="background:var(--state)"></i>Forward camera (ffc)</span><span><i style="background:var(--prediction)"></i>Down camera (dfc)</span><span><i class="cam-grid-sw"></i>Grid: 1 m squares</span><span><i class="cam-shade-sw"></i>Darker shade: also gets depth</span>' +
+      (side ? '<span><i style="background:var(--water-deep)"></i>Pool floor</span>' : '') +
+      '<span><i style="background:var(--ink)"></i>Target: what fits in the frame at that distance</span>';
 
     // readout
     const w = D * (ffc.w / ffc.rect[0]), h = D * (ffc.h / ffc.rect[1]);
@@ -321,9 +512,9 @@ Promise.all([getJSON('fov.json')]).then(([F]) => {
     const fl = foot.map((p) => p[0]), fwdth = foot.map((p) => p[1]);
     const len = Math.max(...fl) - Math.min(...fl), wid = Math.max(...fwdth) - Math.min(...fwdth);
     note.innerHTML =
-      `<p><b><i class="cam-sw" style="--c:var(--state)"></i>Forward</b>, ${hfov(ffc).toFixed(1)}° × ${vfov(ffc).toFixed(1)}°. At ${D.toFixed(2)} m the image covers <b>${w.toFixed(2)} m × ${h.toFixed(2)} m</b>, ${(1000 * D / ffc.rect[0]).toFixed(1)} mm per pixel. ` +
-      `The ${F.props.gate_width.toFixed(1)} m gate fits across from ${gateFrom.toFixed(2)} m; the ${F.props.torpedo_board.toFixed(2)} m torpedo board fills the height at ${boardAt.toFixed(2)} m.` +
-      (ffcFloor ? ` The floor enters the bottom of the image ${(ffcFloor[0] - ffc.pos[0]).toFixed(1)} m ahead.` : '') + '</p>' +
+      `<p><b><i class="cam-sw" style="--c:var(--state)"></i>Forward</b>, ${hfov(ffc).toFixed(1)}° × ${vfov(ffc).toFixed(1)}°. At ${D.toFixed(2)} m the frame covers <b>${w.toFixed(2)} m × ${h.toFixed(2)} m</b>, ${(1000 * D / ffc.rect[0]).toFixed(1)} mm per pixel. ` +
+      `The whole gate (${F.props.gate_width.toFixed(2)} m across its posts) fits in the frame from ${gateFrom.toFixed(1)} m away; the ${F.props.torpedo_board.toFixed(2)} m torpedo board fills the height at ${boardAt.toFixed(2)} m.` +
+      (ffcFloor ? ` The floor enters the bottom of the frame ${(ffcFloor[0] - ffc.pos[0]).toFixed(1)} m ahead.` : '') + '</p>' +
       `<p><b><i class="cam-sw" style="--c:var(--prediction)"></i>Down</b>, ${hfov(dfc).toFixed(1)}° fore–aft × ${vfov(dfc).toFixed(1)}° across, ${hd.toFixed(2)} m above the floor: footprint <b>${len.toFixed(2)} m × ${wid.toFixed(2)} m</b>, ${(1000 * hd / dfc.rect[0]).toFixed(2)} mm per pixel.</p>`;
   }
   draw();
@@ -338,9 +529,10 @@ getJSON('bandwidth.json').then((B) => {
   const note = document.getElementById('bw-note');
   let scene = 'bench', rate = 15, q = 95;
   seg(ctl, [['bench', 'Lab (real)'], ['pool', 'Pool (from video)'], ['nereus', 'Nereus']], scene, (v) => { scene = v; draw(); }, 'Scene');
-  slider(ctl, 'Rate', 1, 15, 1, rate, (v) => `${v} Hz`, (v) => { rate = v; draw(); });
+  slider(ctl, 'Frame rate', 1, 15, 1, rate, (v) => `${v} Hz`, (v) => { rate = v; draw(); });
   slider(ctl, 'JPEG quality', 50, 100, 5, q, (v) => `${v}`, (v) => { q = v; draw(); });
   const jpeg = () => {
+    if (scene === 'bench' && q === 95) return B.jpeg.real_ffc_bench; // the frame as the robot sent it
     const c = B.curves[scene];
     const i = c.findIndex(([qq]) => qq >= q);
     if (c[i][0] === q || i === 0) return c[i][1];
@@ -348,82 +540,129 @@ getJSON('bandwidth.json').then((B) => {
     return s0 + ((s1 - s0) * (q - q0)) / (q1 - q0);
   };
   const mbit = (bytes) => (bytes * 8 * rate) / 1e6;
-  const tip = document.createElement('div');
-  tip.className = 'tip';
-  tip.hidden = true;
+  const fmt = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1));
+  const MB = (bytes) => `${(bytes / 1e6).toFixed(2)} MB`;
   function draw() {
     const j = jpeg();
-    const rows = [
-      { label: 'JPEG colour, one camera', v: mbit(j), color: css('--s7') },
-      { label: 'JPEG colour, both cameras', v: mbit(2 * j), color: css('--s7') },
-      { label: 'Raw colour (bgra8), one', v: mbit(B.raw.bgra8), color: css('--s8') },
-      { label: 'Raw depth (32FC1), one', v: mbit(B.raw.depth32), color: css('--s8') },
-      { label: 'Raw side-by-side, ffc (picture_taker, on the Orin)', v: mbit(B.raw.stereo_raw_bgra8), color: css('--s8') },
-      { label: 'Raw colour + depth, both', v: mbit(2 * (B.raw.bgra8 + B.raw.depth32)), color: css('--s8') },
+    const groups = [
+      { title: 'Over the tether to your laptop', lines: true, rows: [
+        { label: 'JPEG colour, one camera', v: mbit(j), color: css('--s7') },
+        { label: 'JPEG colour, both cameras', v: mbit(2 * j), color: css('--s7') },
+        { label: 'Raw colour, one camera', v: mbit(B.raw.bgra8), color: css('--s8') },
+        { label: 'Raw depth, one camera', v: mbit(B.raw.depth32), color: css('--s8') },
+      ] },
+      { title: 'Stays on the Orin', rows: [
+        { label: 'Raw stereo pair for picture_taker', v: mbit(B.raw.stereo_raw_bgra8), color: css('--s8') },
+        { label: 'Raw colour + depth, both cameras', v: mbit(2 * (B.raw.bgra8 + B.raw.depth32)), color: css('--s8') },
+      ] },
     ];
     host.replaceChildren();
-    const wrap = document.createElement('div');
-    wrap.style.position = 'relative';
-    host.appendChild(wrap);
-    const narrow = host.clientWidth < 560;
-    const W = narrow ? 380 : 720, rowH = narrow ? 50 : 30, labelW = narrow ? 0 : 300, top = 6, axisH = 26;
-    const Hc = top + rows.length * rowH + axisH;
-    const svg = el('svg', { class: 'chart', viewBox: `0 0 ${W} ${Hc}` }, wrap);
-    wrap.appendChild(tip);
-    const lo = 0.5, hi = 20000, x0 = labelW + 4, x1 = W - 8;
+    const W = Math.max(300, Math.round(host.clientWidth || 700));
+    const narrow = W < 560;
+    const labelW = narrow ? 0 : 250, rowH = narrow ? 44 : 30, barH = 16, headH = 26, refH = 22, axisH = 28;
+    let Hc = 4;
+    for (const g of groups) Hc += headH + (g.lines ? refH : 0) + g.rows.length * rowH + 8;
+    Hc += axisH;
+    const svg = el('svg', { class: 'chart cam-bw', viewBox: `0 0 ${W} ${Hc}`, width: W, height: Hc }, host);
+    const lo = 0.5, hi = 12000, x0 = labelW + 4, x1 = W - 6;
     const sx = (v) => x0 + ((Math.log10(Math.max(v, lo)) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo))) * (x1 - x0);
-    const plotTop = top, plotBot = top + rows.length * rowH;
-    for (const t of [1, 10, 100, 1000, 10000]) {
+    const plotTop = 4, plotBot = Hc - axisH;
+    for (const t of narrow ? [1, 10, 100, 1000] : [1, 10, 100, 1000, 10000]) {
       el('line', { x1: sx(t), x2: sx(t), y1: plotTop, y2: plotBot, stroke: css('--grid') }, svg);
-      el('text', { class: 'label', x: sx(t), y: plotBot + 17, 'text-anchor': 'middle' }, svg).textContent = t >= 1000 ? `${t / 1000} Gbit/s` : `${t}${t === 1 ? ' Mbit/s' : ''}`;
+      const tx = el('text', { class: 'tick', x: sx(t), y: plotBot + 18, 'text-anchor': t === 1 ? 'start' : t === 10000 ? 'end' : 'middle' }, svg);
+      tx.textContent = t >= 1000 ? `${t / 1000} Gbit/s` : `${t}${t === 1 ? ' Mbit/s' : ''}`;
+      if (t === 1) tx.setAttribute('x', sx(t) - 4);
     }
-    for (const [t, name] of [[100, '100 Mbit Ethernet'], [1000, 'Gigabit']]) {
-      el('line', { x1: sx(t), x2: sx(t), y1: plotTop - 2, y2: plotBot, stroke: css('--ink-2'), 'stroke-dasharray': '4 4', 'stroke-width': 1.3 }, svg);
+    // Value labels never sit on a dashed Ethernet line: inside the bar if it fits, else right of the bar
+    // or just past a line. On phones the lines only run through the bars, and a value that can't sit on
+    // its bar row goes on the row's label line, right-aligned.
+    const REFS = [[100, '100 Mbit/s', -1], [1000, '1 Gbit/s', 1]];
+    const refX = REFS.map(([v]) => sx(v));
+    const crossesRef = (a, b, lines) => lines && refX.some((x) => x > a - 4 && x < b + 4);
+    let y = plotTop;
+    for (const g of groups) {
+      el('text', { class: 'head', x: 0, y: y + 17 }, svg).textContent = g.title;
+      y += headH;
+      const top = y;
+      if (g.lines) {
+        el('text', { class: 'ref muted', x: 0, y: top + 13 }, svg).textContent = 'Ethernet:';
+        for (const [v, name, side] of REFS) el('text', { class: 'ref', x: sx(v) + side * 5, y: top + 13, 'text-anchor': side < 0 ? 'end' : 'start' }, svg).textContent = name;
+        y += refH;
+      }
+      const lineLayer = el('g', {}, svg);
+      const spans = []; // per row: the y range and the x ranges taken by text
+      for (const r of g.rows) {
+        const barY = narrow ? y + 20 : y + (rowH - barH) / 2;
+        let nameW = 0;
+        if (narrow) { const n = el('text', { class: 'rl', x: 0, y: y + 14 }, svg); n.textContent = r.label; nameW = n.getComputedTextLength(); }
+        else el('text', { class: 'rl', x: labelW - 8, y: y + rowH / 2 + 4.5, 'text-anchor': 'end' }, svg).textContent = r.label;
+        const bx = sx(r.v);
+        el('rect', { x: x0, y: barY, width: Math.max(2, bx - x0), height: barH, rx: 3, fill: r.color }, svg);
+        const t = el('text', { class: 'bw-val', x: bx + 6, y: barY + 12.5 }, svg);
+        t.textContent = `${fmt(r.v)} Mbit/s · ${fmt(r.v / 8)} MB/s`;
+        const tw = t.getComputedTextLength();
+        const fitsIn = bx - x0 >= tw + 14;
+        const cands = [];
+        if (!crossesRef(bx + 6, bx + 6 + tw, g.lines) && bx + 6 + tw <= x1) cands.push(['out', bx + 6]);
+        if (fitsIn) cands.push(['in', bx - 6]);
+        if (!narrow && g.lines) for (const rx of refX) if (rx > bx && rx + 6 + tw <= x1 && !crossesRef(rx + 6 + 1, rx + 6 + tw, true)) cands.push(['out', rx + 6]);
+        if (!cands.length && narrow) {
+          // a phone with no room: Mbit/s only, right of the bar (the readout below has the bytes)
+          const full = t.textContent;
+          t.textContent = `${fmt(r.v)} Mbit/s`;
+          const sw = t.getComputedTextLength();
+          if (!crossesRef(bx + 6, bx + 6 + sw, g.lines) && bx + 6 + sw <= x1) cands.push(['out', bx + 6]);
+          else t.textContent = full;
+        }
+        let pick = cands[0];
+        if (!pick && narrow && nameW + 12 + tw <= x1) pick = ['line', x1];
+        if (!pick) pick = fitsIn ? ['in', bx - 6] : ['out', bx + 6];
+        if (pick[0] === 'in') { t.setAttribute('x', pick[1]); t.setAttribute('text-anchor', 'end'); t.classList.add('in'); }
+        else if (pick[0] === 'line') { t.setAttribute('x', pick[1]); t.setAttribute('y', y + 14); t.setAttribute('text-anchor', 'end'); }
+        else t.setAttribute('x', pick[1]);
+        const busy = [];
+        if (narrow) busy.push([0, nameW]);
+        if (pick[0] === 'line') busy.push([x1 - tw, x1]);
+        spans.push({ a: y, b: y + rowH, busy, bar: [barY - 4, barY + barH + 4] });
+        y += rowH;
+      }
+      if (g.lines) {
+        // The lines sit behind the bars and stop short of any text on a row's label line.
+        for (const x of refX) {
+          const runs = [[top + 17, top + refH]];
+          for (const sp of spans) {
+            const hit = sp.busy.some(([l, r]) => x > l - 5 && x < r + 5);
+            runs.push(hit ? sp.bar : [sp.a, sp.b]);
+          }
+          const merged = [];
+          for (const r of runs) { const last = merged[merged.length - 1]; if (last && r[0] - last[1] < 1) last[1] = Math.max(last[1], r[1]); else merged.push([...r]); }
+          for (const [a, b] of merged) el('line', { x1: x, x2: x, y1: a, y2: b, stroke: css('--ink-2'), 'stroke-dasharray': '4 4', 'stroke-width': 1.3 }, lineLayer);
+        }
+      }
+      y += 8;
     }
-    rows.forEach((r, i) => {
-      const y = top + i * rowH;
-      const barY = narrow ? y + 22 : y + (rowH - 16) / 2;
-      if (narrow) el('text', { class: 'label', x: 4, y: y + 14 }, svg).textContent = r.label;
-      else el('text', { class: 'label', x: labelW - 6, y: y + rowH / 2 + 4, 'text-anchor': 'end' }, svg).textContent = r.label;
-      const rect = el('rect', { x: x0, y: barY, width: Math.max(2, sx(r.v) - x0), height: 16, rx: 3, fill: r.color, style: 'cursor:pointer' }, svg);
-      const txt = r.v >= 100 ? r.v.toFixed(0) : r.v.toFixed(1);
-      const vx = sx(r.v) + 6, inside = vx > x1 - 70;
-      el('text', { class: inside ? 'bw-val in' : 'bw-val', x: inside ? sx(r.v) - 6 : vx, y: barY + 12.5, 'text-anchor': inside ? 'end' : 'start' }, svg).textContent = `${txt} Mbit/s`;
-      const show = () => {
-        tip.innerHTML = `${r.label}: <b>${txt} Mbit/s</b> (${(r.v / 8).toFixed(1)} MB/s)`;
-        tip.hidden = false;
-        const b = rect.getBoundingClientRect(), wb = wrap.getBoundingClientRect();
-        tip.style.left = `${Math.min(Math.max(b.left + b.width / 2 - wb.left, 90), wb.width - 90)}px`;
-        tip.style.top = `${b.top - wb.top}px`;
-        tip.style.transform = 'translate(-50%, -110%)';
-      };
-      rect.addEventListener('pointerdown', show);
-      rect.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') show(); });
-      rect.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') tip.hidden = true; });
-    });
-    tapOutside(svg, () => (tip.hidden = true));
-    const sceneName = { pool: 'the July 2025 pool frame (decoded from H.265 video, so smaller than a live frame)', bench: 'the lab bench frame', nereus: 'a Nereus torpedo frame' }[scene];
-    note.innerHTML = `One 1920 × 1200 JPEG of ${sceneName} at quality ${q}: <b>${(j / 1000).toFixed(0)} KB</b>, against <b>${(B.raw.bgra8 / 1e6).toFixed(1)} MB</b> raw (${(B.raw.bgra8 / j).toFixed(0)}× smaller). ` +
-      `Nereus's published JPEGs (quality 93) measured over a whole mission: median <b>${(median(B.jpeg.sim_ffc) / 1000).toFixed(0)} KB</b> forward, <b>${(median(B.jpeg.sim_dfc) / 1000).toFixed(0)} KB</b> down.`;
+    const sceneName = { pool: 'the July 2025 pool frame (decoded from video, so smaller than a live frame)', bench: 'the lab bench frame', nereus: 'a Nereus torpedo frame' }[scene];
+    const median = (a) => { const s = [...a].sort((p, r) => p - r); return s[Math.floor(s.length / 2)]; };
+    note.innerHTML = `One 1920 × 1200 JPEG of ${sceneName} at quality ${q}: <b>${MB(j)}</b>, against <b>${(B.raw.bgra8 / 1e6).toFixed(1)} MB</b> raw (${(B.raw.bgra8 / j).toFixed(0)}× smaller). ` +
+      `Nereus's JPEGs (quality 93) over a whole mission: median <b>${MB(median(B.jpeg.sim_ffc))}</b> forward, <b>${MB(median(B.jpeg.sim_dfc))}</b> down.`;
   }
-  const median = (a) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
   draw();
   let lastW = host.clientWidth;
-  new ResizeObserver(() => { if (Math.abs(host.clientWidth - lastW) > 20) { lastW = host.clientWidth; draw(); } }).observe(host);
+  new ResizeObserver(() => { if (Math.abs(host.clientWidth - lastW) > 8) { lastW = host.clientWidth; draw(); } }).observe(host);
 });
 
 // ---------- which camera each task uses ----------
 getJSON('trees.json').then((T) => {
   const host = document.getElementById('tree-cams');
   const names = {
-    GateTreeMpc: 'Gate', TorpedoTreeMpc: 'Torpedo', MagnetTreeMpc: 'Magnet lights',
+    GateTreeMpc: 'Gate', TorpedoTreeMpc: 'Torpedo', MagnetTreeMpc: 'Magnet poker',
     BinTreeMpc: 'Bins', dropObjectMpc: 'Drop a marker', pickupObjectMpc: 'Pick up an object', NewTableTreeMpc: 'Table',
   };
   const rows = T.trees.filter((t) => t.reachable && names[t.tree]); // only subtrees the main tree can reach
   rows.sort((a, b) => Object.keys(names).indexOf(a.tree) - Object.keys(names).indexOf(b.tree));
   const chip = (c) => `<span class="cam-chip cam-${c}">${c === 'ffc' ? 'Forward' : 'Down'}</span>`;
-  host.innerHTML = `<table class="params cam-trees"><thead><tr><th>Task</th><th>Subtree</th><th>Camera</th></tr></thead><tbody>${rows
-    .map((t) => `<tr><td>${names[t.tree]}</td><td><code>${t.tree}</code></td><td>${[...new Set(t.cams)].map(chip).join(' → ')}</td></tr>`)
+  host.innerHTML = `<table class="params cam-trees"><thead><tr><th>Task</th><th>Camera</th></tr></thead><tbody>${rows
+    .map((t) => `<tr><td>${names[t.tree]}<code>${t.tree}</code></td><td>${[...new Set(t.cams)].map(chip).join(' → ')}</td></tr>`)
     .join('')}</tbody></table>`;
 });
 
@@ -432,17 +671,22 @@ getJSON('trees.json').then((T) => {
   const img = document.getElementById('sim-img');
   const key = document.getElementById('sim-key');
   const ctl = document.getElementById('sim-controls');
+  const stage = document.getElementById('sim-stage');
+  const tag = document.createElement('span');
+  tag.className = 'cam-eye-tag';
+  stage.appendChild(tag);
   let cam = 'ffc', kind = 'rgb';
   for (const c of ['ffc', 'dfc']) for (const k of ['rgb', 'depth']) if (c !== 'ffc' || k !== 'rgb') preload(`${IMG}nereus_${c}_${k}.webp`);
   seg(ctl, [['ffc', 'Forward'], ['dfc', 'Down']], cam, (v) => { cam = v; show(); }, 'Camera');
-  const kinds = seg(ctl, [['rgb', 'Colour (JPEG)'], ['depth', 'Depth (32FC1)']], kind, (v) => { kind = v; show(); }, 'Image');
+  const kinds = seg(ctl, [['rgb', 'Colour'], ['depth', 'Depth']], kind, (v) => { kind = v; show(); }, 'Image');
   function show() {
     img.src = `${IMG}nereus_${cam}_${kind}.webp`;
     img.alt = `Nereus ${cam === 'ffc' ? 'forward' : 'down'} camera ${kind === 'rgb' ? 'colour image' : 'depth image, coloured by distance'}`;
+    tag.textContent = `${cam === 'ffc' ? 'Forward' : 'Down'} · ${kind === 'rgb' ? 'Colour' : 'Depth'}`;
     key.hidden = kind !== 'depth';
     const max = cam === 'ffc' ? 4 : 2;
-    key.innerHTML = `<span>0 m</span><i class="ramp"></i><span>${max} m</span><span class="none"><i></i>no depth</span>`;
+    key.innerHTML = `<span>near, 0 m</span><i class="ramp"></i><span>${max} m</span>${cam === 'ffc' ? '<span class="none"><i></i>no depth</span>' : ''}`;
   }
-  document.getElementById('sim-stage').addEventListener('click', () => { kind = kind === 'rgb' ? 'depth' : 'rgb'; kinds.set(kind); show(); });
+  stage.addEventListener('click', () => { kind = kind === 'rgb' ? 'depth' : 'rgb'; kinds.set(kind); show(); });
   show();
 }

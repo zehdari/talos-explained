@@ -1,8 +1,8 @@
 // Drives the glossary's interactives and screenshots each state. Usage: node tools/glossary/check.mjs [outDir]
-// Uses the shared dev server (:5300). Checks: search, part filter, empty state, A-Z jump, deep link, cross-link
+// Set BASE to the dev server. Checks: search, part filter, empty state, A-Z jump, deep link, cross-link
 // into a filtered-out entry, the phone A-Z drop-down and the toolbar making room for the "Chapters" button.
 import { launch, newPage } from '../browser.mjs';
-const BASE = process.env.BASE || 'http://127.0.0.1:5300/talos-explained/';
+const BASE = process.env.BASE || 'http://127.0.0.1:5301/talos-explained/';
 const OUT = process.argv[2] || '/tmp/gl';
 const browser = await launch();
 const errs = [];
@@ -32,17 +32,17 @@ const visible = (p) => p.evaluate(() => [...document.querySelectorAll('.gl-entry
   await p.evaluate(() => document.getElementById('gl-empty').scrollIntoView({ block: 'center' }));
   await p.screenshot({ path: `${OUT}/d_empty.png` });
   await p.click('#gl-clear');
-  await p.click('#gl-filter button[data-part="control"]');
+  await p.selectOption('#gl-part', 'control');
   await p.waitForTimeout(300);
   log('part control:', (await visible(p)).length);
   // cross-link to a term hidden by the filter (MPC entry links to riptide_mpc, same part; use Fossen -> nereus? pick Path -> follow_path)
-  await p.click('#gl-filter button[data-part="perception"]');
+  await p.selectOption('#gl-part', 'perception');
   await p.waitForTimeout(300);
   const x = await p.evaluate(() => { const a = [...document.querySelectorAll('.gl-entry:not([hidden]) a.gl-x')].find((a) => document.querySelector(a.getAttribute('href')).hidden); return a && a.getAttribute('href'); });
   if (x) {
     await p.click(`.gl-entry:not([hidden]) a.gl-x[href="${x}"]`);
     await p.waitForTimeout(500);
-    log('cross-link', x, 'visible after click:', await p.isVisible(x), '| filter reset:', await p.getAttribute('#gl-filter button[data-part=""]', 'aria-pressed'), '| top:', Math.round(await p.evaluate((s) => document.querySelector(s).getBoundingClientRect().top, x)), 'bar:', await p.evaluate(() => document.getElementById('gl-tools').offsetHeight));
+    log('cross-link', x, 'visible after click:', await p.isVisible(x), '| filter reset:', (await p.inputValue('#gl-part')) === '', '| top:', Math.round(await p.evaluate((s) => document.querySelector(s).getBoundingClientRect().top, x)), 'bar:', await p.evaluate(() => document.getElementById('gl-tools').offsetHeight));
     await p.screenshot({ path: `${OUT}/d_xlink.png` });
   } else log('no hidden cross-link target found');
   await p.click('.gl-az a:text-is("R")');
@@ -77,14 +77,18 @@ const visible = (p) => p.evaluate(() => [...document.querySelectorAll('.gl-entry
   await p.screenshot({ path: `${OUT}/p_letter.png` });
   await p.fill('#gl-q', 'dfc');
   await p.waitForTimeout(500);
-  log('phone search dfc:', (await visible(p)).join(' '));
+  log('phone search dfc:', (await visible(p)).join(' '), '| first:', await p.evaluate(() => [...document.querySelectorAll('.gl-entry')].filter((e) => !e.hidden).sort((a, b) => (+a.style.order || 0) - (+b.style.order || 0))[0]?.id), '| toolbar top:', Math.round(await p.evaluate(() => document.getElementById('gl-tools').getBoundingClientRect().top)));
   await p.screenshot({ path: `${OUT}/p_search.png` });
   await p.fill('#gl-q', '');
   await p.waitForTimeout(300);
   await p.evaluate(() => window.scrollTo(0, 0));
-  await p.evaluate(() => document.getElementById('gl-filter').scrollIntoView({ block: 'start' }));
-  await p.waitForTimeout(300);
+  await p.selectOption('#gl-part', 'sensing');
+  await p.waitForTimeout(400);
+  log('phone part sensing:', (await visible(p)).length, '| toolbar top:', Math.round(await p.evaluate(() => document.getElementById('gl-tools').getBoundingClientRect().top)));
   await p.screenshot({ path: `${OUT}/p_filter.png` });
+  await p.click('#gl-part-x');
+  await p.waitForTimeout(300);
+  log('phone part cleared:', (await visible(p)).length);
   await p.close();
 }
 log(errs.join('\n') || 'no console errors');

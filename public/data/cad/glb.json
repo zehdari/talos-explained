@@ -258,7 +258,7 @@
    "label": "Buoyancy foam",
    "colour": "#e87ba4",
    "tris_in": 197652,
-   "tris_out": 14160,
+   "tris_out": 14968,
    "bbox_m": {
     "min": [
      -0.3555,

@@ -190,6 +190,55 @@ Decimation: board-level pieces smaller than 4 mm (resistors, pins) were dropped 
 Round edges are faceted at close range. Not exported: the
 top-level duplicate foam blocks, the hidden ZED 2i and bulkhead plate, and the `DVL Sensor Cone`.
 
+## 3b. Hero model (`public/models/talos-hero.glb`)
+
+The front page's 3D Talos (`index.html` hero, `src/viz/talos-hero.js`, tree and cards in
+`public/data/index/hero.json`). Much finer than `talos-cad.glb`, with one node per part and the CAD's own colours.
+`talos-cad.glb` stays as it was for the mechanical chapter.
+
+- **Made from** SolidWorks' own display tessellation, read face by face through the API (`tools/cad/tess.cs`), so
+  every face keeps its appearance colour (face > feature > body > component > part, the order SolidWorks uses).
+  Exported: every leaf component visible in the team's saved display state and at least 2 mm across
+  (`make_tess_args.py`, __NCOMP__ components, __RAW__ raw triangles). Not exported: the hidden ZED 2i and bulkhead
+  plate, the DVL beam cone, the duplicate top-level foam blocks and sub-2 mm board parts (resistors, pins).
+- **Built by** `tools/cad/build_hero.py` (memory-capped, `~/tools/cadvenv`): node per part (`hero_nodes.py`), triangle
+  budget shared out by size and detail (fasteners and the Orin's inner chips get less, parts under budget keep their
+  tessellation), quadric decimation per part and colour, creased normals (32°), vertex colours (sRGB converted to
+  linear) with one material per node and finish (metal, plastic, rubber; clear parts get their own `BLEND` material
+  with `extras.kind = 'glass'`). Then `gltfpack -cc -kn -ke` (meshopt compression, quantised; three's
+  `MeshoptDecoder` loads it).
+- **Size:** __TRIS__ triangles in __NNODES__ nodes, __MB__ MB.
+- **Frame:** the same as `talos-cad.glb` (assembly frame in metres, +X port, +Y up, +Z bow).
+- **Nodes** are grouped under one glTF node per system. Node names (ids in `hero.json`):
+
+| System node | Part nodes |
+|---|---|
+| `thrusters` | `thr_vup`, `thr_vus`, `thr_vlp`, `thr_vls` (outer), `thr_hup`, `thr_hus`, `thr_hlp`, `thr_hls` (inner): talos.yaml names (Dorito-2 = upper port, MirroredDorito-3 = upper starboard, Taco-2 = lower starboard, Mirrored_Taco-5 = lower port) |
+| `frame` | `frame_mod_pu/su/pl/sl` (corner modules without thrusters, foam, guards, cables), `frame_guards`, `frame_bars` (Holy L Bars), `frame_rails`, `frame_tension` (cables, turnbuckles) |
+| `hull` | `hull_tubes`, `hull_windows`, `hull_window_rings`, `hull_rings` (end rings, tension rods, housing connections), `hull_lid_port`, `hull_lid_stbd`, `hull_latches`, `hull_seals`, `depth_sensor` (BAR30 part, a Bar02 on the robot) |
+| `camera_cage` | `cc_orin`, `cc_orin_panel`, `cc_ffc`, `cc_vn100`, `cc_gmsl2`, `cc_cagebb`, `cc_switch`, `cc_switch_mount` (TEG-S50g, TEG-Space), `cc_fan`, `cc_keystone`, `cc_bulkhead` (Bulkhead_Mounting_Assembly, Connector_Head_Rail), `cc_frame` |
+| `ecage` | `ec_full1`, `ec_full2`, `ec_full3`, `ec_ledctl1`, `ec_ledctl2`, `ec_ledal1`, `ec_ledal2`, `ec_fan`, `ec_kill_sensor`, `ec_aux_sensor`, `ec_joiner`, `ec_frame` (ECageClean braces and standoffs plus `Cage Assembly 4`) |
+| `batteries` | `bat_<port/stbd>_pack`, `_bms`, `_lcd`, `_window`, `_prv`, `_shell` |
+| `subconns` | `subconn_port_lid`, `subconn_stbd_lid`, `subconn_bat_port`, `subconn_bat_stbd`, `subconn_hydrophone`, `subconn_dvl`, `subconn_cover` |
+| others | `kill_switch`, `dvl_body`, `dvl_mount`, `dfc`, `dfc_mount`, `hydro_h1c`, `hydro_preamp`, `hydro_pod`, `hydro_mount`, `transducer`, `launcher_body`, `launcher_torpedoes`, `launcher_servo`, `launcher_mount`, `claw`, `magnet_poker`, `buoy_*`, `cables_*` |
+
+**Which board is which.** The CAD's board stack (`ECageClean`) is blank 1 mm plates, so the labels come from the
+board library and the team's reports, not from the CAD:
+
+| CAD part | Label on the site | How | Confidence |
+|---|---|---|---|
+| `Full Board-3` (bottom, Y -39) | POAC | only the POAC and the two ESC boards are 177.8 × 127 mm; the 2023 photo and the 2024 and 2026 reports all put the POAC at the bottom | medium |
+| `Full Board-1`, `-2` (Y +2, -15) | ESC board (upper / lower) | the other two full-size boards; which ESC is which can't be told | medium |
+| `LED Control-1` (top layer, bow half) | LED board | 73.7 × 127 mm outline | high |
+| `LED AL-1` (top layer, stern half) | LED module (aluminium-core RGBW board) | 104.2 × 127 mm outline | high |
+| `LED Control-2` (second layer) | IVC board (probably) | the IVC board has the LED control board's outline; the 2026 diagram puts it under the LED board | low |
+| `LED AL-2` (second layer) | Unidentified plate | Talos has one LED module; probably a copy left in the CAD | low |
+| `FanPlate/KillSwitch-1`, `-2` | kill switch / AUX switch sensor mounts | the 2024 report's render: kill sensor on top of the fan block, AUX at the bottom | medium-high / medium |
+| `CameraCageBB` | camera cage breakout board (CCBB) | name and 50.8 × 136.6 mm outline | high |
+| `TEG-S50g` (+ `TEG-Space`) | network switch | the chapters put a 5 V switch in the camera cage; TEG-S50g looks like a TRENDnet model number, which no source confirms, so the site doesn't name it | high (switch) |
+| `Bulkhead_Mounting_Assembly` | Connector head | probably the spring-loaded connector the team describes | low-medium |
+| `Keystone_Cover`, `O-1` | (part of the cage / stack frame) | unknown | low |
+
 ## 4. Mechanical facts
 
 ### Measured from CAD

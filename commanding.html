@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Commanding Talos: goals, teleop, kill · How Talos works</title>
-<meta name="description" content="How autonomy and people give Talos's MPC a goal (ControllerCommand setpoints and the follow_path action), how its output becomes RPM on two raw CAN frames to the ESC boards, and how the physical switch, four software kill slots and the Nereus viewer decide whether a propeller may turn.">
+<meta name="description" content="How autonomy and people give Talos's MPC a goal (ControllerCommand setpoints and the follow_path action), how its output becomes RPM on two raw CAN frames to the ESC boards, and how the physical switch, three software kill slots and the Nereus viewer decide whether a propeller may turn.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
@@ -18,58 +18,70 @@
     <aside class="short"><span class="label">The short version</span><ul>
       <li>The MPC takes a goal two ways: a setpoint per half on <code>controller/linear</code> and <code>controller/angular</code>, or a <code>follow_path</code> action that flies waypoints as one curve. Autonomy uses both; people use the Nereus viewer.</li>
       <li>Every 50 ms the MPC turns its thrust into RPM and writes one raw CAN frame per ESC board.</li>
-      <li>The POAC board kills if the physical switch is out, or if any of its three software slots asserts kill or (for heartbeat slots) goes silent for 500 ms. The viewer owns slot 1.</li>
+      <li>The POAC board kills if the physical switch is out, or if any of its three software slots asserts kill or (for heartbeat slots, which must repeat) goes silent for 500 ms. The viewer owns slot 1.</li>
       <li>Several layers stop the thrusters on their own: ESC power, the ESC boards' 0.5 s command timeout, and the MPC's zeros when killed, disabled or without odometry.</li>
-      <li>A kill doesn't clear the MPC's goal. It cuts a running path short and leaves the path's last point as the setpoint. Only a <code>DISABLED</code> command clears it.</li>
+      <li>A kill doesn't clear the MPC's goal: when the switch goes back in, Talos flies to its last setpoint. Only a <code>DISABLED</code> command clears it.</li>
     </ul></aside>
 
     <div class="prose">
-      <p>Everything here happens around <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp"><code>mpc_controller_node.cpp</code></a>. Topic names are relative to the robot's namespace: <code>controller/linear</code> is <code>/talos/controller/linear</code>.</p>
+      <p>The MPC side of this lives in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp"><code>mpc_controller_node.cpp</code></a>; the kill side lives in the POAC and ESC board firmware. Topic names are relative to the robot's namespace: <code>controller/linear</code> is <code>/talos/controller/linear</code>.</p>
 
+      <h2 id="flow">From a goal to spinning props</h2>
+      <p>Between "go there" and a turning propeller sit several programs on the Orin and two kinds of circuit board. Pick a story and step through it. Each step shows only the boxes it involves; <em>Every box</em> lists all the links.</p>
+    </div>
+    <figure class="fig flow-fig">
+      <div class="panel">
+        <div class="controls" id="flow-stories"></div>
+        <div class="flow-body" id="flow-body"></div>
+      </div>
+      <figcaption><b>One story at a time.</b> Arrows carry the topic or bus, with its rate underneath; <em>Every box</em> lists each box's links instead. Every ROS message to or from a board goes through the <a class="gl" href="glossary.html#term-copro-agent">micro-ROS agent</a> on the Orin, which bridges ROS to the internal CAN bus (<code>can0</code>); the thruster commands skip it and go straight onto the bus.</figcaption>
+    </figure>
+
+    <div class="prose">
       <h2 id="goals">Giving the MPC a goal</h2>
       <p>The node holds one <strong>reference</strong> (where to be, or how fast to move). Three inputs set it:</p>
-      <table class="params">
-        <thead><tr><th>Input</th><th>What it does</th></tr></thead>
+      <table class="params cards" id="senders">
+        <thead><tr><th>Input</th><th>What it does</th><th>Sent by</th></tr></thead>
         <tbody>
-          <tr><td><code>controller/linear</code>, <code>controller/angular</code><br><small>topic, ControllerCommand</small></td><td>Sets one half of the reference: position or velocity, attitude or turn rates. Ends any running path. Sent by autonomy and the viewer.</td></tr>
-          <tr><td><code>follow_path</code><br><small>action, FollowPath</small></td><td>A list of waypoints flown as one curve. The result comes back once Talos has settled on the last one. Sent by autonomy.</td></tr>
-          <tr><td><code>controller/FF_body_force</code><br><small>topic, Twist</small></td><td>A fixed body wrench, only used in <code>FEEDFORWARD</code> mode. Sent by <code>controller_overseer</code> at 1 Hz.</td></tr>
+          <tr><td><code>controller/linear</code>, <code>controller/angular</code><br><small>topic, <a class="gl" href="glossary.html#term-controllercommand">ControllerCommand</a></small></td><td>Sets one half of the reference: position or velocity, attitude or turn rates. Ends any running path.</td><td data-label="Sent by">Autonomy's <code>PublishToController</code> node, the viewer, <code>pool_identify</code> (<a href="control/identify.html">Chapter 8</a>), a terminal</td></tr>
+          <tr><td><code>follow_path</code><br><small>action, FollowPath</small></td><td>A list of waypoints flown as one curve. The result comes back once Talos has settled on the last one.</td><td data-label="Sent by">Autonomy's <code>FollowPath</code> node, a terminal</td></tr>
+          <tr><td><code>controller/FF_body_force</code><br><small>topic, Twist</small></td><td>A fixed body <a class="gl" href="glossary.html#term-wrench">wrench</a> (force and torque), used only in <code>FEEDFORWARD</code> mode.</td><td data-label="Sent by"><code>controller_overseer</code>, at 1 Hz</td></tr>
         </tbody>
       </table>
-      <p>Autonomy reads back settle trust on <code>controller/scale/trust</code> (<a href="control/estimation.html#trust">Chapter 7</a>) and the action's result.</p>
+      <p>Autonomy reads back <a href="control/estimation.html#trust">settle trust</a> (0 to 1: has Talos arrived and stayed?) on <code>controller/scale/trust</code>, and the action's result. Its tree files wrap these in three subtrees: <code>WaitForController</code> (trust and distance), <code>KillController</code> (<code>DISABLED</code> on both halves) and <code>WaitForKillSwitch</code> (until <code>state/kill</code> reads false). See <a href="bt-nodes.html">tree nodes</a>.</p>
+      <p id="teleop"><strong>Driving by hand means the viewer.</strong> Drag the pose gizmo, type a target and press Command, or use Dive in place, Zero roll &amp; pitch, or Drive with keys (W/S, A/D, Space/Shift, Q/E, one step per press). Ctrl+P takes typed moves such as <code>forward 0.5</code>. All of them send <code>POSITION</code> commands, and the viewer locks them while a tree runs. There is no gamepad input (<a href="viewer.html">viewer chapter</a>).</p>
 
       <h3 id="modes">ControllerCommand: one message per half</h3>
-      <table class="params">
-        <thead><tr><th>mode</th><th>On <code>controller/linear</code></th><th>On <code>controller/angular</code></th></tr></thead>
+      <table class="params cards">
+        <thead><tr><th>mode</th><th>On linear</th><th>On angular</th></tr></thead>
         <tbody>
           <tr><td><code>DISABLED</code> = 0</td><td colspan="2">Either half disabled: zero thrust from the whole controller.</td></tr>
           <tr><td><code>FEEDFORWARD</code> = 1</td><td colspan="2">Both halves feedforward: the <code>FF_body_force</code> wrench is split straight onto the thrusters, with no MPC.</td></tr>
-          <tr><td><code>VELOCITY</code> = 2</td><td><code>setpoint_vect</code> in m/s, body frame</td><td><code>setpoint_vect</code> as body rates, rad/s</td></tr>
-          <tr><td><code>POSITION</code> = 3</td><td><code>setpoint_vect</code>: where <code>base_link</code> should be, in <code>odom</code></td><td><code>setpoint_quat</code>: the attitude. All zeros means "hold the current attitude".</td></tr>
+          <tr><td><code>VELOCITY</code> = 2</td><td data-label="Linear"><code>setpoint_vect</code> in m/s, body frame</td><td data-label="Angular"><code>setpoint_vect</code> as body rates, rad/s</td></tr>
+          <tr><td><code>POSITION</code> = 3</td><td data-label="Linear"><code>setpoint_vect</code>: where <code>base_link</code> should be, in <code>odom</code></td><td data-label="Angular"><code>setpoint_quat</code>: the attitude. All zeros means "hold the current attitude".</td></tr>
         </tbody>
       </table>
       <ul>
         <li>The node starts with both halves <code>DISABLED</code> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/include/riptide_mpc/mpc.hpp#L15"><code>mpc.hpp</code></a>), and either half disabled gives zero thrust (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc.cpp#L353"><code>mpc.cpp</code></a>), so nothing moves until both have a mode.</li>
         <li>A <code>POSITION</code> setpoint isn't chased directly. The reference glides to it along the S-curve from <a href="control/reference.html">Chapter 4</a>.</li>
-        <li><strong>The reference outlives a kill.</strong> Only a <code>DISABLED</code> command clears it, so after the switch goes back in, Talos returns to its last setpoint.</li>
-        <li><strong>A kill mid-path skips the rest of the path.</strong> The kill aborts it (<code>PROGRESS_FAIL</code>, in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1324"><code>tick</code></a>) and <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1045"><code>finishPath</code></a> makes the path's <em>last</em> point the setpoint. For a path you sent by hand, Talos flies straight there when the switch goes back in, past the waypoints in between. In a tree, <code>FollowPath</code> fails instead. If that ends the tree, the tree runner sends <code>DISABLED</code> on both halves, as it does whenever a tree ends (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L248"><code>DoTask.cpp</code></a>).</li>
+        <li id="survives"><strong>The reference outlives a kill.</strong> Only a <code>DISABLED</code> command clears it, so when the switch goes back in, Talos returns to its last setpoint. A kill mid-path aborts the path (<code>PROGRESS_FAIL</code>, in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1324"><code>tick</code></a>) and makes its <em>last</em> point the setpoint (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1045"><code>finishPath</code></a>): Talos then flies straight there, past the waypoints in between. A tree's <code>FollowPath</code> fails instead, and whenever a tree ends, the tree runner sends <code>DISABLED</code> on both halves (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L248"><code>DoTask.cpp</code></a>).</li>
         <li>The viewer sends <code>DISABLED</code> on every Enable and KILL, so anything it starts begins from a disabled controller.</li>
       </ul>
     </div>
     <figure class="fig narrow">
       <div class="panel">
-        <div class="seg msg-tabs" role="group" aria-label="Message" id="msg-tabs"></div>
+        <div class="msg-tabs" role="group" aria-label="Message" id="msg-tabs"></div>
         <pre class="msgdef" id="msg-text" aria-live="polite"></pre>
         <div class="msg-src" id="msg-src"></div>
       </div>
-      <figcaption><b>The messages, exactly as they are in <code>riptide_msgs</code>.</b> Read from the <code>followpath-speed</code> branch of riptide_core. Tap a name to switch. <code>PathSegment</code>, and the <code>segments</code> and <code>max_speed</code> fields of <code>FollowPath</code>, exist only on that branch.</figcaption>
+      <figcaption><b>The messages, as they are in <code>riptide_msgs</code>.</b> Read from the <code>followpath-speed</code> branch of riptide_core. Tap a name to switch. <code>PathSegment</code>, and the <code>segments</code> and <code>max_speed</code> fields of <code>FollowPath</code>, exist only on that branch. On <code>command/requested_rpm</code> a <code>DshotCommand</code> carries RPM; its ±999 constants are raw-throttle limits from the older DShot thruster test.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="paths">Paths: the follow_path action</h2>
       <p>A single setpoint stops at the end of every move. To fly through a list of points, autonomy sends a <code>FollowPath</code> goal, and the MPC plans it as one curve with one speed profile (<a href="control/reference.html#paths">Chapter 4</a>).</p>
       <dl class="spec">
-        <dt><code>path_points</code></dt><dd>Poses, each in its own TF frame. If a point's frame moves (a mapped object, say), the path moves with it. A zero quaternion keeps the previous point's attitude.</dd>
+        <dt><code>path_points</code></dt><dd>Poses, each in its own <a class="gl" href="glossary.html#term-tf">TF</a> frame. If a point's frame moves (a mapped object, say), the path moves with it. A zero quaternion keeps the previous point's attitude.</dd>
         <dt><code>segments</code></dt><dd>Empty (straight lines), or one <code>PathSegment</code> per point: a line or an arc, a heading rule (blend, face the travel direction, or look at a point or frame), plus extra spin.</dd>
         <dt><code>max_speed</code></dt><dd>A cruise cap in m/s for this path. 0 keeps the controller's 0.6 m/s.</dd>
       </dl>
@@ -78,184 +90,193 @@
         <tbody>
           <tr><td>Rejected</td><td><code>BAD_WYPTS</code> or <code>MISSING_FRAME_ID</code>: no points, a frame TF can't resolve, no odometry, a path the planner can't build.</td></tr>
           <tr><td>Succeeds</td><td>At the end with settle trust 0.8, or within 10 cm and 0.1 rad of it, nearly still.</td></tr>
-          <tr><td>Fails</td><td><code>PROGRESS_FAIL</code>: under 5 cm of progress in 10 s, a kill, stale odometry or disabled motion. The last point becomes the setpoint.</td></tr>
+          <tr><td>Fails</td><td><code>PROGRESS_FAIL</code>: under 5 cm of progress in 10 s, a kill, stale odometry or disabled motion. The last point becomes the setpoint (<a href="#survives">see above</a>).</td></tr>
           <tr><td>Canceled</td><td>Holds where the reference can stop smoothly.</td></tr>
           <tr><td>Preempted</td><td>A new path, or any <code>ControllerCommand</code>.</td></tr>
         </tbody>
       </table>
-      <p>The tree's <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/FollowPath.btaction.hpp"><code>FollowPath</code></a> node sends a list built by <code>AddWaypoint</code> and <code>AddArc</code>, as in <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/PreQualMpcTree.xml#L60"><code>PreQualMpcTree.xml</code></a> (trimmed):</p>
-<pre><code><span class="k">&lt;SubTree</span> ID="WaitForKillSwitch"/&gt;          <span class="c">&lt;!-- until state/kill reads false --&gt;</span>
+      <p>The tree's <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/FollowPath.btaction.hpp"><code>FollowPath</code></a> node sends a list built by <code>AddWaypoint</code> and <code>AddArc</code>, as in <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/PreQualMpcTree.xml#L60"><code>PreQualMpcTree.xml</code></a> (trimmed; <code>…</code> marks left-out attributes):</p>
+<pre class="narrowcode"><code><span class="c">&lt;!-- until state/kill reads false --&gt;</span>
+<span class="k">&lt;SubTree</span> ID="WaitForKillSwitch"/&gt;
 <span class="k">&lt;SubTree</span> ID="Dive" depth="-1"/&gt;
-<span class="k">&lt;Action</span> ID="AddWaypoint" frame="{gate_frame}" heading="path" x="{gate_offset}" … out="prequal_path"/&gt;
-<span class="k">&lt;Action</span> ID="AddWaypoint" frame="{gate_frame}" heading="path" x="{neg_gate_offset}" … /&gt;
-<span class="k">&lt;Action</span> ID="AddWaypoint" frame="{gate_frame}" heading="path" x="{pole_x}" y="{arc_start_y}" … /&gt;  <span class="c">&lt;!-- out beside the pole --&gt;</span>
-<span class="k">&lt;Action</span> ID="AddArc" frame="{gate_frame}" cx="{pole_x}" cy="{pole_y}" radius="{pole_radius}"
-        sweep="3.1416" look_frame="{pole_frame}" … /&gt;   <span class="c">&lt;!-- round the pole, facing it --&gt;</span>
-<span class="c">&lt;!-- … two more waypoints back through the gate … --&gt;</span>
-<span class="k">&lt;Action</span> ID="FollowPath" timeout="300" waypoints="{prequal_path}"/&gt;
-<span class="k">&lt;SubTree</span> ID="KillController"/&gt;           <span class="c">&lt;!-- DISABLED on both halves --&gt;</span></code></pre>
+<span class="c">&lt;!-- 1: behind the gate; a new list --&gt;</span>
+<span class="k">&lt;Action</span> ID="AddWaypoint"
+  out="prequal_path"
+  frame="{gate_frame}" heading="path"
+  x="{gate_offset}" y="0" z="0"/&gt;
+<span class="c">&lt;!-- 2: through the gate --&gt;</span>
+<span class="k">&lt;Action</span> ID="AddWaypoint" …
+  x="{neg_gate_offset}" y="0" z="0"/&gt;
+<span class="c">&lt;!-- 3: out beside the pole --&gt;</span>
+<span class="k">&lt;Action</span> ID="AddWaypoint" …
+  x="{pole_x}" y="{arc_start_y}"/&gt;
+<span class="c">&lt;!-- 4: round the pole, facing it --&gt;</span>
+<span class="k">&lt;Action</span> ID="AddArc" frame="{gate_frame}"
+  cx="{pole_x}" cy="{pole_y}"
+  radius="{pole_radius}" sweep="3.1416"
+  look_frame="{pole_frame}" …/&gt;
+<span class="c">&lt;!-- 5, 6: back through the gate --&gt;</span>
+<span class="k">&lt;Action</span> ID="AddWaypoint" …/&gt; ×2
+<span class="c">&lt;!-- fly all six as one curve --&gt;</span>
+<span class="k">&lt;Action</span> ID="FollowPath" timeout="300"
+  waypoints="{prequal_path}"/&gt;
+<span class="c">&lt;!-- DISABLED on both halves --&gt;</span>
+<span class="k">&lt;SubTree</span> ID="KillController"/&gt;</code></pre>
 
-      <h2 id="senders">Who sends commands</h2>
-      <table class="params">
-        <thead><tr><th>Sender</th><th>What it sends</th></tr></thead>
-        <tbody>
-          <tr><td>Autonomy (<a href="bt-nodes.html">tree nodes</a>)</td><td><code>PublishToController</code> and <code>FollowPath</code> nodes. Subtrees in the tree files: <code>WaitForController</code> (trust and distance), <code>KillController</code> (<code>DISABLED</code>), <code>WaitForKillSwitch</code>.</td></tr>
-          <tr><td>Nereus viewer (<a href="viewer.html">viewer chapter</a>)</td><td><code>POSITION</code> pairs (or <code>FEEDFORWARD</code>), <code>DISABLED</code> on Enable and KILL. Locked while a tree runs.</td></tr>
-          <tr><td><code>pool_identify</code></td><td>Thruster commands for model identification (<a href="control/identify.html">Chapter 8</a>).</td></tr>
-          <tr><td>You, from a terminal</td><td>The same topics and action (<a href="#terminal">last section</a>).</td></tr>
-        </tbody>
-      </table>
-
-      <h2 id="flow">From a goal to spinning props</h2>
-      <p>Several programs and two kinds of board sit between "go there" and a turning propeller. Pick a story to light up its path, or tap any box to see what goes in and out of it.</p>
-    </div>
-    <figure class="fig">
-      <div class="panel">
-        <div class="controls"><span class="seg" role="group" aria-label="Story" id="flow-stories"></span></div>
-        <div id="flow-graph"></div>
-        <div class="graph-note" id="flow-note"></div>
-        <ol class="flow-steps" id="flow-steps"></ol>
-      </div>
-      <figcaption><b>Who talks to whom.</b> Edges are labelled with the topic or bus. Dots run along the selected story's links. Every ROS message to or from a board goes through the micro-ROS agent on the Orin, which bridges ROS to the internal CAN bus (<code>can0</code>). The thruster commands skip it. Tap or hover a box for its inputs, outputs and rates.</figcaption>
-    </figure>
-
-    <div class="prose">
       <h3 id="can">Forces, RPM and two CAN frames</h3>
-      <p>Each tick the MPC publishes its thrust on <code>thruster_forces</code> (8 values in newtons, ordered VUS, VUP, HUS, HUP, HLS, HLP, VLS, VLP as in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L399"><code>talos.yaml</code></a>). In Nereus the simulator reads that topic. On the robot, <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L761"><code>sendRpm</code></a> goes further:</p>
+      <p>Each tick the MPC publishes its thrust on <code>thruster_forces</code>: 8 values in newtons, in the order VUS, VUP, HUS, HUP, HLS, HLP, VLS, VLP from <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L399"><code>talos.yaml</code></a>. The letters read <b>V</b>ector/<b>H</b>eave, <b>U</b>pper/<b>L</b>ower, <b>S</b>tarboard/<b>P</b>ort, so HLP is heave, lower, port (<a href="thrusters-hw.html#layout">where each one sits</a>). In Nereus the simulator reads that topic. On the robot, <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L761"><code>sendRpm</code></a> goes further:</p>
       <ol>
         <li>Converts each force to RPM by inverting the propeller law (<a href="control/thrusters.html#rpm">Chapter 2</a>). Zero force gives 0 rpm.</li>
-        <li>Publishes them on <code>command/requested_rpm</code>, only so bags record them.</li>
-        <li>Writes two raw CAN frames on <code>can0</code> with the C function the Simulink controller used (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c#L121"><code>send_thruster_cmd_canbus.c</code></a>): <code>0xB0</code> to ESC board 0 (thrusters 0 to 3), <code>0xF0</code> to board 1 (4 to 7), four big-endian <code>int16</code> RPMs each.</li>
+        <li>Publishes them as a <code>DshotCommand</code> on <code>command/requested_rpm</code>, only so bags record them.</li>
+        <li>Writes two raw CAN frames on <code>can0</code> with the C function the <a class="gl" href="glossary.html#term-legacy-controller">old Simulink controller</a> used (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c#L121"><code>send_thruster_cmd_canbus.c</code></a>): <code>0xB0</code> to ESC board 0 (thrusters 0 to 3) and <code>0xF0</code> to board 1 (4 to 7). Each frame holds four RPMs as signed 16-bit numbers, high byte first.</li>
       </ol>
-      <p>Step 3 needs a <code>hardware:</code> section in the model, wall time (so a simulator on the Orin never drives real thrusters) and a <code>can0</code> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L684"><code>configureHardwareOutput</code></a>). Two parameters change it:</p>
+      <p>Step 3 needs a <code>hardware:</code> section in the model, wall time (so a simulator on the Orin never drives real thrusters) and a <code>can0</code> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L684"><code>configureHardwareOutput</code></a>). Three parameters change it:</p>
       <dl class="spec">
         <dt><code>hardware_output</code></dt><dd><code>auto</code> (default) runs those checks, <code>off</code> never writes CAN, <code>on</code> skips the wall-time check.</dd>
-        <dt><code>table_mode</code></dt><dd>For the bench: RPM = 500 (1 − e<sup>−|F|/2</sup>), never more than 500 rpm. Off by default (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/mpc.yaml#L51"><code>mpc.yaml</code></a>).</dd>
+        <dt><code>table_mode</code></dt><dd>For the bench: RPM = 500 (1 − e<sup>−|F|/2</sup>), never more than 500 rpm. Off by default (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/mpc.yaml#L53"><code>mpc.yaml</code></a>).</dd>
+        <dt><code>hardware.rpm_offset</code></dt><dd>Added to every nonzero RPM, away from zero (not in table mode). Default 0; it was 140 while an ESC CAN decoding bug, now fixed in firmware, needed it (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/mpc.yaml#L51"><code>mpc.yaml</code></a>).</dd>
       </dl>
     </div>
     <figure class="fig narrow">
       <div class="panel">
-        <div class="controls" id="can-controls"></div>
+        <div class="controls can-controls" id="can-controls"></div>
         <div class="can-readout" id="can-readout"></div>
         <div class="can-frames" id="can-frames"></div>
+        <details class="can-id">
+          <summary>How the id is built</summary>
+          <div id="can-id"></div>
+        </details>
       </div>
-      <figcaption><b>What goes on the wire.</b> Pick a thruster and a force. The RPM comes from the same inverse as <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/fossen_model.cpp#L207"><code>forceToRpm</code></a>, with the coefficients in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml#L60"><code>talos.yaml</code></a>. The CAN id packs the board's client id with titan_canmore's type, direction and channel bits.</figcaption>
+      <figcaption><b>What goes on the wire.</b> Pick a thruster (V/H vector or heave, U/L upper or lower, S/P starboard or port) and a force. The RPM comes from the same inverse as <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/fossen_model.cpp#L207"><code>forceToRpm</code></a>, with the coefficients in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml#L60"><code>talos.yaml</code></a>; <code>rpm_offset</code> is 0.</figcaption>
     </figure>
     <div class="prose">
-      <p>On each ESC board (<a href="thrusters-hw.html">Thrusters and ESCs</a>), targets are kept for 500 ms, and a PI loop per thruster tracks the RPM each ESC reports over bidirectional DShot600 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/core1.c#L489"><code>core1.c</code></a>).</p>
-      <table class="params">
-        <thead><tr><th>Link</th><th>Rate</th></tr></thead>
-        <tbody>
-          <tr><td>MPC tick, <code>thruster_forces</code>, CAN frames, action feedback, trust</td><td>20 Hz</td></tr>
-          <tr><td><code>state/thrusters/telemetry</code></td><td>2 Hz per board</td></tr>
-          <tr><td><code>state/kill</code> from the POAC board</td><td>Every 150 ms, and at once on a change</td></tr>
-          <tr><td>Viewer's slot-1 report</td><td>20 Hz</td></tr>
-        </tbody>
-      </table>
+      <p>Each ESC board (<a href="thrusters-hw.html#esc">Thrusters and ESCs</a>) keeps its targets for 500 ms. A PI loop per thruster tracks the RPM that each of its four on-board APD ESCs reports over bidirectional <a class="gl" href="glossary.html#term-dshot">DShot600</a> (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/core1.c#L489"><code>core1.c</code></a>), and the ESCs drive the T200s out on the frame.</p>
 
       <h2 id="stops" data-short="What stops the thrusters">What can stop the thrusters</h2>
       <p>Stopping doesn't depend on any one program. These layers act on their own:</p>
-      <table class="params">
+      <table class="params cards">
         <thead><tr><th>Layer</th><th>Stops when</th><th>Effect</th></tr></thead>
         <tbody>
-          <tr><td>Physical kill switch</td><td>Pulled out</td><td>ESC power off.</td></tr>
-          <tr><td>POAC board, software slots</td><td>Any slot asserts kill, or a heartbeat slot goes 500 ms without a report</td><td>ESC power off, <code>state/kill</code> true.</td></tr>
-          <tr><td>POAC board, ROS link</td><td>More than 7 failed heartbeats to the micro-ROS agent, 100 ms apart</td><td>Killed until it reconnects.</td></tr>
-          <tr><td>ESC boards</td><td><code>state/kill</code> true or silent 500 ms; no ESC power, or under 5 s since it returned; no RPM target for 500 ms (then a 1 s lockout); speed loop not yet configured</td><td>Throttle 0 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/core1.c#L227"><code>core1.c</code></a>).</td></tr>
-          <tr><td><code>controller_overseer</code></td><td>More than two flagged telemetry messages in a row, or none for 2 s</td><td><code>controller/motion_enabled</code> false.</td></tr>
-          <tr><td>MPC</td><td>Killed, motion disabled, odometry older than 0.5 s, estimator not ready, solver error, a <code>DISABLED</code> half</td><td>Zero thrust. The first four also abort a path, leaving its last point as the setpoint.</td></tr>
+          <tr><td>Physical kill switch</td><td>Pulled out</td><td data-label="Effect">ESC power off.</td></tr>
+          <tr><td>POAC board, software slots</td><td>Any slot asserts kill, or a heartbeat slot goes 500 ms without a report</td><td data-label="Effect">ESC power off, <code>state/kill</code> true.</td></tr>
+          <tr><td>POAC board, ROS link</td><td>More than 7 failed heartbeats to the micro-ROS agent, 100 ms apart</td><td data-label="Effect">Killed until it reconnects.</td></tr>
+          <tr><td>ESC boards</td><td><code>state/kill</code> true or silent 500 ms; no ESC power, or under 5 s since it returned; no RPM target for 500 ms (then a 1 s lockout); speed loop not yet configured</td><td data-label="Effect">Throttle 0 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/core1.c#L227"><code>core1.c</code></a>).</td></tr>
+          <tr><td><code>controller_overseer</code></td><td>More than two flagged telemetry messages in a row, or none for 2 s</td><td data-label="Effect"><code>controller/motion_enabled</code> false.</td></tr>
+          <tr><td>MPC</td><td>Killed, motion disabled, odometry older than 0.5 s, estimator not ready, solver error, a <code>DISABLED</code> half</td><td data-label="Effect">Zero thrust. The first four also abort a path (<a href="#survives">what that leaves</a>).</td></tr>
         </tbody>
       </table>
       <div class="callout safety"><span class="label">On the bench</span>
-        <p>An enabled robot with <code>control_system</code> running spins the thrusters. On the bench, never start it as a plain launch. The pre-test tool starts it only while it holds a software kill on slot 3 and both ESC boards report <code>SAFETY_KILLED</code>. With hands near the propellers, pulling the physical switch is the only kill that works with no software running at all.</p>
+        <p>An enabled robot with <code>control_system</code> running spins the thrusters. On the bench, never start it as a plain launch. The pre-test tool starts it only while it holds a software kill on slot 3 and both ESC boards report <code>SAFETY_KILLED</code>. With hands near the propellers, use the physical switch: it cuts ESC power in hardware and doesn't depend on any software or firmware working.</p>
       </div>
 
       <h2 id="kill">The kill system</h2>
-      <p>The kill is decided in firmware on the <a href="boards.html">POAC board</a> (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/kill_switch.c#L25"><code>kill_switch.c</code></a>). It has four <strong>slots</strong>:</p>
-      <table class="params">
-        <thead><tr><th>Slot</th><th>Name</th><th>Used by, today</th></tr></thead>
+      <p>The kill is decided in firmware on the <a href="boards.html">POAC board</a> (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_safety/src/kill_switch.c#L25"><code>kill_switch.c</code></a>). It has four <a class="gl" href="glossary.html#term-kill-slot">slots</a>, one per source of kill reports:</p>
+      <table class="params wrap-first slots">
+        <thead><tr><th>Slot</th><th>Used by, today</th></tr></thead>
         <tbody>
-          <tr><td>0</td><td><code>KILL_SWITCH_PHYSICAL</code></td><td>The switch on the hull, read by the board itself.</td></tr>
-          <tr><td>1</td><td><code>KILL_SWITCH_RQT_CONTROLLER</code></td><td>The Nereus viewer (named after the old rqt/RViz panel).</td></tr>
-          <tr><td>2</td><td><code>KILL_SWITCH_TOPSIDE_BUTTON</code></td><td>A topside kill box, <code>riptide_kill_switch</code> (last changed 2023). The opbox client's slot-2 publisher is commented out.</td></tr>
-          <tr><td>3</td><td><code>KILL_SWITCH_DEBUG</code></td><td>The command line and scripts, like the pre-test tool.</td></tr>
+          <tr><td>0 <small class="const">KILL_<wbr>SWITCH_<wbr>PHYSICAL</small></td><td>The red handle on the port bow window (<a href="mechanical.html">photo</a>), read by the board itself.</td></tr>
+          <tr><td>1 <small class="const">KILL_<wbr>SWITCH_<wbr>RQT_<wbr>CONTROLLER</small></td><td>The Nereus viewer (the name is from the old rqt panel).</td></tr>
+          <tr><td>2 <small class="const">KILL_<wbr>SWITCH_<wbr>TOPSIDE_<wbr>BUTTON</small></td><td>A topside kill box, <code>riptide_kill_switch</code> (last changed 2023). The opbox client's slot-2 publisher is commented out.</td></tr>
+          <tr><td>3 <small class="const">KILL_<wbr>SWITCH_<wbr>DEBUG</small></td><td>The command line and scripts, like the pre-test tool.</td></tr>
         </tbody>
       </table>
       <p>The rule, checked on every safety tick:</p>
       <div class="M" data-narrow="\begin{aligned} \text{killed} = {} &amp; \text{no slot enabled} \\ \lor\ &amp; \exists\,\text{enabled slot}: \text{asserting} \\ &amp; \qquad \lor\ (\text{needs\_update} \land \text{silent} &gt; 500\text{ ms}) \end{aligned}">\text{killed} = \text{no slot enabled} \;\lor\; \exists\,\text{enabled slot}: \big(\text{asserting} \lor (\text{needs\_update} \land \text{silent} &gt; 500\text{ ms})\big)</div>
       <ul>
-        <li>A slot is <strong>enabled</strong> from its first report until the board reboots.</li>
-        <li><code>switch_needs_update = true</code> makes the report a heartbeat: it must repeat within 500 ms, so if the sender dies, the robot is killed. <code>false</code> latches until the next report on that slot.</li>
+        <li>A slot is <strong>enabled</strong> from its first report until the board reboots. Slot 0 is always enabled (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L107"><code>safety_interface.c</code></a>), so with the switch in and no software slot asserting, Talos is enabled: software slots can only add kills.</li>
+        <li><code>switch_needs_update = true</code> makes a report a <strong>heartbeat</strong>: it must repeat within 500 ms, so if the sender dies, the robot is killed. <code>false</code> <strong>latches</strong>: the slot keeps that value until the next report on it.</li>
         <li>A kill takes a <strong>lock</strong>: only the same <code>sender_id</code> can clear it. Anyone else's clear is rejected with <code>FAULT_ROS_BAD_COMMAND</code>, and a new kill from anyone takes the lock over (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L99"><code>ros.c</code></a>).</li>
-        <li><code>sender_id</code> must be shorter than 32 characters, or the board rejects the report with the same fault (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L89"><code>ros.c</code></a>). Nothing tells the sender.</li>
-        <li>Slot 0 is always enabled (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L107"><code>safety_interface.c</code></a>), so with the switch in and no software slot asserting, Talos is enabled. Software slots can only add kills.</li>
-        <li>The board starts killed, and stays killed while it has no micro-ROS connection (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/main.c#L317"><code>main.c</code></a>).</li>
-        <li>A kill blocks arming and torpedo fire (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/ros_torp.c#L92"><code>ros_torp.c</code></a>), but not the dropper, and it doesn't disarm armed actuators (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L61">a <code>TODO</code></a>). Treat them as live.</li>
       </ul>
-      <p>The result drives a soft-kill pin that cuts ESC power (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L91"><code>safety_interface.c</code></a>) and goes out on <code>state/kill</code>. The ESC boards treat that as a heartbeat: killed, silent for 500 ms or not yet heard, and they kill too (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/ros.c#L85"><code>ros.c</code></a>). After power returns they wait 5 s (<code>ESC_POWERON_DELAY</code>) for the ESCs to start. The hardware path (switch, DG448, P-FETs) is in <a href="boards.html#kill">The circuit boards, The kill switch, in hardware</a>.</p>
-    </div>
-    <div class="prose">
-      <h3 id="viewer-slot">Slot 1 belongs to the Nereus viewer</h3>
-      <ul>
-        <li>From its first tick, the viewer reports on slot 1 every 50 ms: asserting kill unless enabled, <code>needs_update</code> false (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/uwrt_motion.cpp#L102"><code>uwrt_motion.cpp</code></a>). Opening the viewer kills the robot until someone presses Enable.</li>
-        <li>Its sender is <code>viewer_&lt;host&gt;_&lt;pid&gt;_&lt;n&gt;</code>. With a long host name it can pass 31 characters, and then the board ignores every report from it, KILL included.</li>
-        <li>Enable latches ("untethered runs continue"). Unplug the tether or close the viewer and slot 1 stays clear.</li>
-        <li>Any other sender on slot 1 counts as a competing operator: the viewer drops its enable and refuses Enable until that sender has been quiet for 1 s.</li>
-        <li>The Enable key turns into KILL whenever the robot is seen enabled, even if this viewer didn't enable it (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/motion_panel.cpp#L128"><code>motion_panel.cpp</code></a>). KILL also stops any running behaviour tree, even one started elsewhere (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/composition.cpp#L275"><code>composition.cpp</code></a>, <a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/uwrt_autonomy.cpp#L161"><code>uwrt_autonomy.cpp</code></a>). It is a button, never a keyboard shortcut.</li>
-        <li>The viewer's watchdogs only release manual control. They never kill.</li>
-        <li>History: the old RViz Control Panel also used slot 1, with <code>rviz_control_&lt;hostname&gt;</code> as sender (<a href="https://github.com/osu-uwrt/riptide_gui/blob/newsim/riptide_rviz/riptide_rviz/src/ControlPanel.cpp#L1102"><code>ControlPanel.cpp</code></a>).</li>
-      </ul>
-      <p>Try the whole chain below, with the real rules and timeouts. <em>Pool run</em> walks through a run the way the code sees it.</p>
+      <p id="viewer-slot"><strong>Slot 1 belongs to the Nereus viewer.</strong> It reports every 50 ms, asserting kill until you press Enable (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/uwrt_motion.cpp#L102"><code>uwrt_motion.cpp</code></a>). Enable latches, so unplugging the tether or closing the viewer leaves slot 1 clear and an untethered run continues. Any other sender on slot 1 counts as a competing operator: the viewer drops its enable and refuses Enable until that sender has been quiet for 1 s.</p>
+      <p>Try it below, with the real rules and timeouts: step through a story, or open the controls and work them yourself.</p>
     </div>
     <figure class="fig" id="pool-run">
       <div class="panel killsim" id="killsim"></div>
-      <figcaption><b>The kill system, simulated.</b> Pick a story, or work the controls yourself. The table shows the POAC board's four slots, the chips show each layer's verdict, and the strips record the last 20 s. Constants come from the firmware, overseer and viewer sources. Both ESC boards are drawn as one, and messages arrive instantly.</figcaption>
+      <figcaption><b>The kill system, simulated.</b> <em>Next</em> jumps to the next action; between actions the clock runs in real time, so you can watch a timeout or the 5 s power-on delay play out. Steps that show a single moment pause it. The strips record the last 20 s (left of the dashed line is the state the story starts from), and the chips show each layer's verdict now. Constants come from the firmware, overseer and viewer sources. Both ESC boards are drawn as one, and messages arrive instantly.</figcaption>
     </figure>
 
     <div class="prose">
-      <h2 id="teleop">Teleop, then and now</h2>
-      <p><strong>Today the viewer is the teleop.</strong> Drag the pose gizmo, type a target and press Command, or use Dive in place, Zero roll &amp; pitch, or Drive with keys (W/S, A/D, Space/Shift, Q/E, one step per press). Ctrl+P takes typed moves such as <code>forward 0.5</code>. All send <code>POSITION</code> commands. There is no gamepad input.</p>
-      <p>The old joystick code doesn't work with the MPC:</p>
-      <ul>
-        <li><code>riptide_teleop2</code> (PS3, Xbox, keyboard) has a <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_teleop/COLCON_IGNORE"><code>COLCON_IGNORE</code></a> and isn't built. It reads a config key <code>talos.yaml</code> doesn't have, and its kill goes to the wrong topic.</li>
-        <li><a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/src/riptide_controllers/RocketLeague.py"><code>RocketLeague.py</code></a>, the RViz panel's gamepad teleop, is still installed with <code>riptide_controllers2</code>, but was written for the Simulink controller. Under the MPC it would fly Talos to the <code>odom</code> origin (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/src/riptide_controllers/RocketLeague.py#L314">L314</a>).</li>
-      </ul>
+      <p>The POAC board's verdict drives a soft-kill pin that cuts ESC power (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L91"><code>safety_interface.c</code></a>) and goes out on <code>state/kill</code>. The ESC boards treat that as a heartbeat of their own: killed, silent for 500 ms or not yet heard, and they kill too (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/ros.c#L85"><code>ros.c</code></a>). After power returns they wait 5 s (<code>ESC_POWERON_DELAY</code>) for the ESCs to start. The hardware path (switch, DG448, P-FETs) is in <a href="boards.html#kill">The circuit boards</a>.</p>
 
-      <h2 id="legacy" data-short="Legacy controllers">Legacy controllers: riptide_controllers2</h2>
-      <p>The launch argument <code>active_control_model</code> picks the controller in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/launch/control_system.launch.py#L32"><code>control_system.launch.py</code></a>: <code>mpc</code> starts riptide_mpc, and anything else the old Simulink <code>complete_controller</code>, which is no longer built.</p>
-      <div class="callout"><span class="label">Watch the default</span>
-        <p>The argument defaults to <code>hybrid</code>, so nothing flies. Bringup's launch files default to <code>hybrid</code> too, and Nereus keeps that unless you say otherwise, so in the simulator run:</p>
-        <pre class="cmd" data-where="laptop"><code>ros2 launch nereus sim.launch.py active_control_model:=mpc mpc_model:=sim</code></pre>
-        <p>Of the <a href="https://github.com/osu-uwrt/riptide_launch/tree/newsim/remote_launch/launches">remote-launch files</a>, only the three ending in <code>_mpc.yaml</code> pass <code>mpc</code>. The rest, plain <code>talos_launch.yaml</code> included, start the legacy controller. Check which one you're starting.</p>
-      </div>
+      <h3 id="gotchas">Gotchas</h3>
       <ul>
-                <li><strong>Still launched with the MPC</strong>: <code>controller_overseer.py</code> (<code>motion_enabled</code>, <code>FF_body_force</code>, and a <code>setTeleop</code> service the viewer calls that now just answers success) and <code>calibrate_drag.py</code>.</li>
-        <li><strong>Still used</strong>: <code>thruster_test_canbus</code>, the bench thruster test: 300 rpm on each thruster in turn for 3 s, and Ctrl-C sends zeros (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c#L160">source</a>). See <a href="pool-test.html">Pool test day</a>.</li>
+        <li><strong>Short sender ids.</strong> <code>sender_id</code> must be under 32 characters, or the board rejects the report with <code>FAULT_ROS_BAD_COMMAND</code> and nothing tells the sender (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L89"><code>ros.c</code></a>). The viewer's is <code>viewer_&lt;host&gt;_&lt;pid&gt;_&lt;n&gt;</code>: on a machine with a long host name the board ignores every report from it, KILL included.</li>
+        <li><strong>The Enable key becomes KILL</strong> whenever the robot is seen enabled, even if this viewer didn't enable it (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/motion_panel.cpp#L128"><code>motion_panel.cpp</code></a>). KILL also stops any running behaviour tree, even one started elsewhere (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/composition.cpp#L275"><code>composition.cpp</code></a>). It is a button, never a keyboard shortcut.</li>
+        <li><strong>The viewer's watchdogs never kill.</strong> They only release manual control.</li>
+        <li><strong>The board starts killed</strong>, and stays killed while it has no micro-ROS connection (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/main.c#L317"><code>main.c</code></a>).</li>
+        <li><strong>Actuators stay live.</strong> A kill blocks arming and torpedo fire (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/ros_torp.c#L92"><code>ros_torp.c</code></a>), but not the dropper, and it doesn't disarm armed actuators (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/safety_interface.c#L61">a <code>TODO</code></a>).</li>
+      </ul>
+    </div>
+
+    <div class="prose">
+      <h2 id="legacy" data-short="Old tools">Old tools you'll see in the repo</h2>
+      <ul>
+        <li><strong>Joystick teleop doesn't work with the MPC.</strong> <code>riptide_teleop2</code> has a <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_teleop/COLCON_IGNORE"><code>COLCON_IGNORE</code></a> and isn't built. <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/src/riptide_controllers/RocketLeague.py"><code>RocketLeague.py</code></a> is still installed, but was written for the old controller: under the MPC it would fly Talos to the <code>odom</code> origin (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/src/riptide_controllers/RocketLeague.py#L314">L314</a>).</li>
+        <li><strong>The launch default is the old controller.</strong> <code>active_control_model</code> in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/launch/control_system.launch.py#L32"><code>control_system.launch.py</code></a> starts riptide_mpc only when it is <code>mpc</code>. It defaults to <code>hybrid</code>, the old Simulink-built <code>complete_controller</code>, which is no longer built, so nothing flies. Bringup and Nereus keep that default unless you say otherwise. In the simulator:
+<pre class="cmd narrowcode" data-where="laptop"><code>ros2 launch nereus sim.launch.py \
+  active_control_model:=mpc \
+  mpc_model:=sim</code></pre>
+          Of the <a href="https://github.com/osu-uwrt/riptide_launch/tree/newsim/remote_launch/launches">remote-launch files</a>, only the three ending in <code>_mpc.yaml</code> pass <code>mpc</code>; plain <code>talos_launch.yaml</code> does not.</li>
+        <li><strong>Still used from <code>riptide_controllers2</code>:</strong> <code>controller_overseer.py</code> (<code>motion_enabled</code>, <code>FF_body_force</code>, and a <code>setTeleop</code> service the viewer calls that now just answers success), <code>calibrate_drag.py</code>, and <code>thruster_test_canbus</code>, the bench thruster test: 300 rpm on each thruster in turn for 3 s, and Ctrl-C sends zeros (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c#L160">source</a>, <a href="pool-test.html">Pool test day</a>).</li>
       </ul>
 
       <h2 id="terminal">Try it from a terminal</h2>
       <p>In Nereus, or on the robot with the propellers clear and someone at the switch. First, who is killing it?</p>
-<pre class="cmd" data-where="laptop"><code>ros2 topic echo /talos/state/kill                <span class="c"># true = killed</span>
-ros2 topic echo /talos/command/software_kill     <span class="c"># every slot report, with its sender</span>
-ros2 topic echo /talos/state/firmware            <span class="c"># kill_switches_* bitmasks, per board</span></code></pre>
+<pre class="cmd narrowcode" data-where="laptop"><code><span class="c"># true = killed</span>
+ros2 topic echo /talos/state/kill
+<span class="c"># every slot report, with its sender</span>
+ros2 topic echo /talos/command/software_kill
+<span class="c"># kill_switches_* bitmasks, per board</span>
+ros2 topic echo /talos/state/firmware</code></pre>
       <p>Move 1 m forward of where Talos is now, slowly, keeping its attitude. A point in the robot's own frame is resolved once, when the goal arrives:</p>
-<pre class="cmd" data-where="laptop"><code>ros2 action send_goal --feedback /talos/follow_path riptide_msgs2/action/FollowPath \
-  "{path_points: [{header: {frame_id: talos/base_link},
-                   pose: {position: {x: 1.0}, orientation: {w: 0.0}}}], max_speed: 0.2}"</code></pre>
+<pre class="cmd narrowcode" data-where="laptop"><code>ros2 action send_goal --feedback \
+  /talos/follow_path \
+  riptide_msgs2/action/FollowPath \
+  "{path_points: [{
+     header: {frame_id: talos/base_link},
+     pose: {position: {x: 1.0},
+            orientation: {w: 0.0}}}],
+    max_speed: 0.2}"</code></pre>
       <p>Hold a setpoint with the topics. A <code>POSITION</code> setpoint is a point in <code>odom</code>, not an offset, so read where Talos is first:</p>
-<pre class="cmd" data-where="laptop"><code>ros2 topic echo --once /talos/odometry/filtered --field pose.pose.position</code></pre>
+<pre class="cmd narrowcode" data-where="laptop"><code>ros2 topic echo --once \
+  /talos/odometry/filtered \
+  --field pose.pose.position</code></pre>
       <p>Send both halves. An unset quaternion becomes <code>w: 1</code> ("face +x"), so write <code>w: 0.0</code> to hold the attitude. Here Talos is at x = 2.1, y = −0.4 and goes to 1 m depth:</p>
-<pre class="cmd" data-where="laptop"><code>ros2 topic pub --once /talos/controller/angular riptide_msgs2/msg/ControllerCommand "{mode: 3, setpoint_quat: {w: 0.0}}"
-ros2 topic pub --once /talos/controller/linear  riptide_msgs2/msg/ControllerCommand "{mode: 3, setpoint_vect: {x: 2.1, y: -0.4, z: -1.0}}"
-ros2 topic pub --once /talos/controller/linear  riptide_msgs2/msg/ControllerCommand "{mode: 0}"   <span class="c"># thrusters off: Talos floats</span></code></pre>
+<pre class="cmd narrowcode" data-where="laptop"><code>ros2 topic pub --once \
+  /talos/controller/angular \
+  riptide_msgs2/msg/ControllerCommand \
+  "{mode: 3, setpoint_quat: {w: 0.0}}"
+ros2 topic pub --once \
+  /talos/controller/linear \
+  riptide_msgs2/msg/ControllerCommand \
+  "{mode: 3, setpoint_vect:
+     {x: 2.1, y: -0.4, z: -1.0}}"
+<span class="c"># thrusters off: Talos floats</span>
+ros2 topic pub --once \
+  /talos/controller/linear \
+  riptide_msgs2/msg/ControllerCommand \
+  "{mode: 0}"</code></pre>
       <p>A software kill of your own goes on slot 3, with a short sender id of your own (under 32 characters):</p>
-<pre class="cmd" data-where="laptop"><code>ros2 topic pub -r 20 /talos/command/software_kill riptide_msgs2/msg/KillSwitchReport \
-  "{sender_id: cli_$USER, kill_switch_id: 3, switch_asserting_kill: true, switch_needs_update: true}"</code></pre>
-      <p>Stopping that publisher doesn't un-kill: slot 3 times out, which counts as a kill. To clear it, publish <code>switch_asserting_kill: false</code> with <code>switch_needs_update: false</code> from the same sender. That latches slot 3 clear until the board reboots.</p>
-      <p>In Nereus this does nothing: the simulator only honours slot 1 (the viewer's) and has no timeout (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/bridges/uwrt_talos/bridge.yaml#L103"><code>bridge.yaml</code></a>), so practise slot 3 only against the real POAC board, with the propellers clear.</p>
+<pre class="cmd narrowcode" data-where="laptop"><code>ros2 topic pub -r 20 \
+  /talos/command/software_kill \
+  riptide_msgs2/msg/KillSwitchReport \
+  "{sender_id: cli_$USER,
+    kill_switch_id: 3,
+    switch_asserting_kill: true,
+    switch_needs_update: true}"</code></pre>
+      <p>Stopping that publisher doesn't un-kill: slot 3 times out, which counts as a kill. To clear it, stop the publisher, then send a latched clear from the same sender. That keeps slot 3 clear until the next report on it (or a reboot).</p>
       <div class="callout safety"><span class="label">Before you clear slot 3</span>
-        <p>If no other slot is asserting kill when you clear it, Talos is enabled at once, with nobody driving. Make sure something else holds a kill first: the viewer open and not enabled, or a <code>needs_update</code> kill of your own on slot 1 that will time out into a kill. That is the order in the simulator's <em>Bench hold</em> story above.</p>
+        <p>If no other slot is asserting kill when you clear it, Talos is enabled at once, with nobody driving. Make sure something else holds a kill first: the viewer open and not enabled, or a <code>needs_update</code> kill of your own on slot 1 that will time out into a kill. That is the order in the simulator's <a href="#pool-run"><em>Bench hold</em></a> story.</p>
       </div>
+<pre class="cmd narrowcode" data-where="laptop"><code><span class="c"># after Ctrl-C on the kill publisher</span>
+ros2 topic pub --times 10 \
+  /talos/command/software_kill \
+  riptide_msgs2/msg/KillSwitchReport \
+  "{sender_id: cli_$USER,
+    kill_switch_id: 3,
+    switch_asserting_kill: false,
+    switch_needs_update: false}"</code></pre>
+      <p>In Nereus none of this does anything: the simulator only honours slot 1 (the viewer's) and has no timeout (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/bridges/uwrt_talos/bridge.yaml#L103"><code>bridge.yaml</code></a>), so practise slot 3 only against the real POAC board, with the propellers clear.</p>
 
       <h2 id="files">Where this lives</h2>
       <ul class="src-list">

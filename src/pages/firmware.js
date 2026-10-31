@@ -1,8 +1,7 @@
 import { setup } from '../layout.js';
 import '../css/chapter.css';
 import '../css/firmware.css';
-import { Graph } from '../viz/graph.js';
-import { LineChart } from '../viz/chart.js';
+import { LineChart } from '../viz/firmware-chart.js';
 
 setup();
 
@@ -12,6 +11,10 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 // Line breaks after / and _ only, so long topic and fault names never split mid-word on a phone.
 const brk = (s) => esc(s).replace(/([/_])/g, '$1<wbr>');
 const hex = (v, n) => v.toString(16).toUpperCase().padStart(n, '0');
+const TF = 'https://github.com/osu-uwrt/titan_firmware/blob/master/';
+const narrowScreen = () => matchMedia('(max-width: 640px)').matches;
+// After a tap on a phone, bring the response into view without jumping if it is already visible.
+const reveal = (node) => { if (narrowScreen()) node.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
 
 // Segmented buttons: items [{id, label}], calls onPick(id); returns a setter.
 function seg(host, items, current, onPick) {
@@ -26,10 +29,9 @@ function seg(host, items, current, onPick) {
   return set;
 }
 
-// Public assets get the base in JS: Vite's dev server prefixes the base a second time on absolute paths in HTML.
-document.querySelectorAll('[data-asset]').forEach((e) => e.setAttribute(e.tagName === 'A' ? 'href' : 'src', BASE + e.dataset.asset));
-
 const SHORT = { poac: 'POAC', esc: 'ESC', ccbb: 'Camera cage', led: 'LED', ivc: 'IVC', sbh: 'Battery' };
+const LED = { RED: '#e34948', YEL: '#eda100', GRN: '#1baf7a', BLU: '#2a78d6', WHT: '#ffffff', CYA: '#2bc4c9', OFF: '#0f2633' };
+const dot = (c, title = '') => `<i class="sw" style="--c:${c}"${title ? ` title="${title}"` : ''}></i>`;
 
 Promise.all([
   fetch(BASE + 'data/firmware/firmware.json').then((r) => r.json()),
@@ -37,68 +39,78 @@ Promise.all([
   fetch(BASE + 'data/firmware/esc_spots.json').then((r) => r.json()),
 ]).then(([fw, pool, spots]) => {
   escBoard(spots);
-  libList(fw);
-  lifeGraph(fw);
+  libs(fw);
+  life(fw);
   timerList(fw);
   canExplorer(fw, pool);
-  killGraph();
+  killFlow();
   poolChart(pool);
   decoder(fw);
 });
 
-// ===================================================================== the ESC board, as the firmware sees it
+// ===================================================================== the ESC board, part by part
 function escBoard(data) {
-  const TF = 'https://github.com/osu-uwrt/titan_firmware/blob/master/';
   const a = (path, text) => `<a href="${TF}${path}">${text}</a>`;
-  // Parts in the order they are numbered. zoom: drawn on the close-up of the microcontroller corner, else on the whole board.
+  // Parts in numbered order. zoom: drawn on the close-up of the microcontroller corner, else on the whole board.
+  // at: the part the marker points to; b: where its numbered badge sits, as fractions of that picture,
+  // offset from the part so the part itself stays visible (a leader line joins the two).
   const PARTS = [
-    { refs: ['U1R'], zoom: true, t: 'RP2040 microcontroller', body: `Two Cortex-M0+ cores. Core 0 runs the main loop; core 1 runs the thruster loop. The PIO blocks make the DShot signals (PIO 0) and read the ESCs' telemetry lines (PIO 1) (${a('talos/ESCBoard/include/dshot.h#L53-L56', 'dshot.h')}).` },
-    { refs: ['U2R'], zoom: true, t: 'Flash, 16 MB', body: `Holds the bootloader (first 16 kB) and the application after it. Builds assume 2 MB (<code>PICO_FLASH_SIZE_BYTES</code>, ${a('lib/titan_boards/include/boards/mk2/blocks/rp2040_uwrt_block.h#L23', 'rp2040_uwrt_block.h')}), so most of the chip goes unused.` },
-    { refs: ['Y1R'], zoom: true, t: '12 MHz crystal', body: `The RP2040's clock. The CAN chip gets its own: the RP2040 divides its 48 MHz USB clock to 4 MHz on GPIO 21, and the CAN chip multiplies that to 40 MHz (${a('lib/driver_canbus/src/can_mcp251XFD.c#L53-L54', 'can_mcp251XFD.c')}).` },
-    { refs: ['U1C'], zoom: true, t: 'MCP2517FD CAN controller', body: `On SPI 0 (GPIO 17–20) at 20 MHz, interrupt on GPIO 22, driven by <code>driver_canbus</code>. It can do CAN FD; Talos runs it as classic CAN.` },
-    { refs: ['U2C'], zoom: true, t: 'CAN transceiver', body: 'Turns the controller\'s logic levels into the two-wire bus. No firmware of its own.' },
-    { refs: ['SW1C'], zoom: true, t: 'Termination switch', body: 'Puts the 120 Ω terminator across the bus. The firmware reads its position through the CAN chip and reports it in every CAN heartbeat. Only the two boards at the ends of the bus should have it on.' },
-    { refs: ['D1C'], zoom: true, t: 'Status LED', body: 'RGB, on GPIO 13–15 (red is also the fault LED). Blue enabled, green killed, yellow no agent, red no CAN, flashing red a fault; the bootloader adds white and cyan.' },
-    { refs: ['J1R'], zoom: true, t: 'Tag-Connect debug pad', body: 'SWD for flashing and GDB, plus the debug UART (TX on GPIO 16, 115200 baud), through a Pico running Picoprobe. It can also power the board, but only when nothing else is plugged in (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/docs/02_Testing_Firmware.md#connection-setup-1">testing docs, SWD</a>).' },
-    { refs: ['SW1R'], zoom: true, t: 'RESET button', body: 'Restarts the RP2040, into the bootloader\'s boot delay like any reset.' },
-    { refs: ['SW2R'], zoom: true, t: 'BOOT button', body: 'Held during a reset, it starts the RP2040\'s built-in USB loader instead (an <code>RPI-RP2</code> drive). The testing docs warn that some Mark 2 boards have damaged BOOT buttons.' },
-    { refs: ['J11'], zoom: true, t: 'USB', body: 'On this board, only for the RP2040\'s built-in USB loader: the ESC firmware has no USB console. On most Mark 2 boards USB doesn\'t power the board, so power it first.' },
-    { refs: ['SB1'], zoom: true, t: 'Board ID jumper', body: `Read on GPIO 29 at boot, by the bootloader and the application. Open: board 0, CAN client 2, thrusters 1–4 on the silk (0–3 in code). Bridged: board 1, client 3, thrusters 5–8 (${a('talos/ESCBoard/src/main.c#L36-L49', 'main.c')}).` },
-    { refs: ['J12'], zoom: true, t: 'Signal breakout', body: 'The DShot and telemetry line of every ESC on one header, for a scope or logic analyser. ESC 1 is on GPIO 6 and 7, ESC 2 on 4 and 5, ESC 3 on 2 and 3, ESC 4 on 0 and 1.' },
-    { refs: ['M1', 'M2', 'M3', 'M4'], t: 'APD 80F3 ESCs', body: 'One per thruster; "ESC 1/5" is slot 1 on board 0 and slot 5 on board 1. Each gets DShot600 on its signal pin and answers on the same wire with its RPM. A second, one-way line sends temperature, voltage, current and RPM as serial data. The ESCs run APD\'s own firmware, patched by the team for reversible DShot.' },
-    { refs: ['J7', 'J8', 'J9', 'J10'], t: 'FLASH CONN headers', body: `5 V, RX, TX and GND into each ESC. Not for the RP2040: the ESCs' own firmware and settings (<code>Talos_Config.cfg</code>) are loaded with APD's tools (${a('talos/ESCBoard/esc_firmware_patching/README.md', 'README')}).` },
-    { refs: ['J6'], t: 'Stack link', body: 'CAN high and low (two pins each), 5 V and ground: the board\'s bus and its logic power.' },
-    { refs: ['R3'], t: 'Supply sense', body: `R3 and R4 divide the thruster supply by 11 into the ADC on GPIO 28. Under 9 V the firmware sets <code>ESC_BOARD_OFF</code>; when power returns it holds <code>ESC_POWERON_DELAY</code> for 5 s while the ESCs start (${a('talos/ESCBoard/include/dshot.h#L28-L39', 'dshot.h')}).` },
+    { at: 'U1R', b: [0.27, 0.53], zoom: true, t: 'RP2040 microcontroller', body: `Two Cortex-M0+ cores. Core 0 runs the main loop; core 1 runs the thruster loop. Its <a href="glossary.html#term-pio">PIO</a> blocks make the DShot signals and read the ESCs' telemetry lines (${a('talos/ESCBoard/include/dshot.h#L53-L56', 'dshot.h')}).` },
+    { at: 'U2R', b: [0.88, 0.66], zoom: true, t: 'Flash, 16 MB', body: `Holds the bootloader (first 16 kB) and the application after it. Builds assume 2 MB (${a('lib/titan_boards/include/boards/mk2/blocks/rp2040_uwrt_block.h#L23', 'rp2040_uwrt_block.h')}), so most of the chip goes unused.` },
+    { at: 'Y1R', b: [0.5, 0.29], zoom: true, t: '12 MHz crystal', body: `The RP2040's clock. The CAN chip gets its own: the RP2040 divides its 48 MHz USB clock to 4 MHz on GPIO 21, and the CAN chip multiplies that to 40 MHz (${a('lib/driver_canbus/src/can_mcp251XFD.c#L53-L54', 'can_mcp251XFD.c')}).` },
+    { at: 'U1C', b: [0.12, 0.43], zoom: true, t: 'MCP2517FD CAN controller', body: 'On SPI 0 (GPIO 17–20) at 20 MHz, interrupt on GPIO 22, driven by <code>driver_canbus</code>. It can do CAN FD; Talos runs it as classic CAN.' },
+    { at: 'U2C', b: [0.12, 0.25], zoom: true, t: 'CAN transceiver', body: 'Turns the controller\'s logic levels into the two-wire bus. No firmware of its own.' },
+    { at: 'SW1C', b: [0.2, 0.05], zoom: true, t: 'Termination switch', body: 'Puts the 120 Ω terminator across the bus. The firmware reads its position and reports it in every CAN heartbeat. Only the two boards at the ends of the bus should have it on.' },
+    { at: 'D1C', b: [0.9, 0.42], zoom: true, t: 'Status LED', body: 'RGB, on GPIO 13–15. Its colour is the board\'s state: the <a href="#loop">life cycle</a> below has every colour.' },
+    { at: 'J1R', b: [0.4, 0.16], zoom: true, t: 'Tag-Connect debug pad', body: 'SWD for flashing and GDB, plus the debug UART (GPIO 16, 115200 baud), through a Picoprobe: a Pico flashed as a debug probe. It can also power the board, but only when nothing else is plugged in (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/docs/02_Testing_Firmware.md#connection-setup-1">testing docs</a>).' },
+    { at: 'SW1R', b: [0.92, 0.1], zoom: true, t: 'RESET button', body: 'Restarts the RP2040, into the bootloader\'s boot delay like any reset.' },
+    { at: 'SW2R', b: [0.92, 0.25], zoom: true, t: 'BOOT button', body: 'Held during a reset, it starts the RP2040\'s built-in USB loader instead (an <code>RPI-RP2</code> drive). Some Mark 2 boards have damaged BOOT buttons.' },
+    { at: 'J11', b: [0.14, 0.9], zoom: true, t: 'USB', body: 'On this board, only for the RP2040\'s built-in USB loader: the ESC firmware has no USB console.' },
+    { at: 'SB1', b: [0.12, 0.61], zoom: true, t: 'Board ID jumper', body: `Read on GPIO 29 at boot. Open: board 0, CAN client 2, thrusters 0–3. Bridged: board 1, client 3, thrusters 4–7. The silkscreen counts from 1 (ESC 1/5 … 4/8); software counts from 0 (${a('talos/ESCBoard/src/main.c#L36-L49', 'main.c')}).` },
+    { at: 'J12', b: [0.84, 0.88], zoom: true, t: 'Signal breakout', body: 'The DShot and telemetry line of every ESC on one header, for a scope or logic analyser.' },
+    { at: 'M1', b: [0.327, 0.4], t: 'APD 80F3 ESCs (four)', body: 'One per thruster; "ESC 1/5" is slot 1 on board 0 and slot 5 on board 1. Each gets DShot600 on its signal pin and answers on the same wire with its RPM. A second, one-way line sends temperature, voltage and current. The ESCs run APD\'s firmware, patched by the team so they reverse in DShot mode.' },
+    { at: 'J7', b: [0.37, 0.84], t: 'FLASH CONN headers (one per ESC)', body: `Not for the RP2040: the ESCs' own firmware and settings are loaded through these with APD's tools (${a('talos/ESCBoard/esc_firmware_patching/README.md', 'README')}).` },
+    { at: 'J6', b: [0.355, 0.075], t: 'Stack link', body: 'CAN high and low, 5 V and ground: the board\'s bus and its logic power.' },
+    { at: 'R3', b: [0.1, 0.9], t: 'Supply sense', body: `R3 and R4 divide the thruster supply by 11 into the ADC on GPIO 28, so the firmware sees when a kill has cut thruster power (under 9 V; ${a('talos/ESCBoard/include/dshot.h#L28-L39', 'dshot.h')}) and waits for the ESCs to start once it returns (<a href="#poweron">below</a>).` },
   ];
   PARTS.forEach((p, i) => { p.n = i + 1; });
   const S = data.spots;
   const img = BASE + data.image;
   const [IW, IH] = data.image_px;
-  // close-up window, as fractions of the image
-  const Z = { x0: 0.005, x1: 0.17, y0: 0.215, y1: 0.715 };
-  const pct = (v) => (v * 100).toFixed(3) + '%';
-  const marker = (p, ref, x, y) => `<button type="button" class="escx-m" data-n="${p.n}" style="left:${pct(x)};top:${pct(y)}" aria-label="${p.n}: ${esc(p.t)}${p.refs.length > 1 ? ' (' + ref + ')' : ''}">${p.n}</button>`;
-  const whole = $('#escx-whole');
-  whole.innerHTML = `<div class="escx-pic" style="aspect-ratio:${IW}/${IH}"><img src="${img}" width="${IW}" height="${IH}" alt="Render of the ESC MK II board: the microcontroller corner on the left, four APD ESC modules across the middle, the thruster connector on the right and the power terminals along the bottom." loading="lazy">
-    <span class="escx-box" style="left:${pct(Z.x0)};top:${pct(Z.y0)};width:${pct(Z.x1 - Z.x0)};height:${pct(Z.y1 - Z.y0)}"></span>
-    ${PARTS.filter((p) => !p.zoom).flatMap((p) => p.refs.filter((r) => S[r]).map((r) => marker(p, r, S[r].x, S[r].y))).join('')}</div>`;
+  const Z = { x0: 0.005, x1: 0.17, y0: 0.215, y1: 0.735 }; // the close-up window, as fractions of the image
   const zw = Z.x1 - Z.x0, zh = Z.y1 - Z.y0;
+  const pct = (v) => (v * 100).toFixed(3) + '%';
+  const where = (p) => { const s = S[p.at]; return p.zoom ? [(s.x - Z.x0) / zw, (s.y - Z.y0) / zh] : [s.x, s.y]; };
+  const layer = (parts) => `<svg class="escx-lead" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${parts.map((p) => {
+    const [x, y] = where(p);
+    return `<line data-n="${p.n}" x1="${x * 100}" y1="${y * 100}" x2="${p.b[0] * 100}" y2="${p.b[1] * 100}" vector-effect="non-scaling-stroke"/>`;
+  }).join('')}</svg>` + parts.map((p) => {
+    const [x, y] = where(p);
+    return `<span class="escx-dot" data-n="${p.n}" style="left:${pct(x)};top:${pct(y)}"></span><button type="button" class="escx-m" data-n="${p.n}" style="left:${pct(p.b[0])};top:${pct(p.b[1])}" aria-label="${p.n}: ${esc(p.t)}">${p.n}</button>`;
+  }).join('');
+  $('#escx-whole').innerHTML = `<div class="escx-pic" style="aspect-ratio:${IW}/${IH}"><img src="${img}" width="${IW}" height="${IH}" alt="Render of the ESC MK II board: the microcontroller corner on the left, four APD ESC modules across the middle, the thruster connector on the right and the power terminals along the bottom." loading="lazy">
+    <span class="escx-box" style="left:${pct(Z.x0)};top:${pct(Z.y0)};width:${pct(zw)};height:${pct(zh)}"></span>${layer(PARTS.filter((p) => !p.zoom))}</div>`;
   $('#escx-zoom').innerHTML = `<div class="escx-pic zoomed" style="aspect-ratio:${(zw * IW).toFixed(1)}/${(zh * IH).toFixed(1)}">
-    <img src="${img}" alt="Close-up of the microcontroller corner of the ESC board." loading="lazy" style="width:${pct(1 / zw)};left:${pct(-Z.x0 / zw)};top:${pct(-Z.y0 / zh)}">
-    ${PARTS.filter((p) => p.zoom).flatMap((p) => p.refs.filter((r) => S[r]).map((r) => marker(p, r, (S[r].x - Z.x0) / zw, (S[r].y - Z.y0) / zh))).join('')}</div>`;
-  const list = $('#escx-list');
-  list.innerHTML = PARTS.map((p) => `<button type="button" data-n="${p.n}"><b>${p.n}</b>${esc(p.t)}</button>`).join('');
+    <img src="${img}" alt="Close-up of the microcontroller corner of the ESC board." loading="lazy" style="width:${pct(1 / zw)};left:${pct(-Z.x0 / zw)};top:${pct(-Z.y0 / zh)}">${layer(PARTS.filter((p) => p.zoom))}</div>`;
+  const step = $('#escx-step');
+  step.innerHTML = `<button type="button" class="btn" data-d="-1" aria-label="Previous part">‹</button><span id="escx-count"></span><button type="button" class="btn" data-d="1" aria-label="Next part">›</button>`;
   const note = $('#escx-note');
   const fig = $('#escx');
+  let cur = 1;
   const pick = (n) => {
+    cur = n;
     const p = PARTS[n - 1];
     fig.querySelectorAll('[data-n]').forEach((b) => b.classList.toggle('on', +b.dataset.n === n));
-    list.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.n === n)));
-    note.innerHTML = `<b>${p.n} · ${esc(p.t)}</b> <span class="ref">${p.refs.join(', ')}</span><br>${p.body}`;
+    $('#escx-count').textContent = `${n} / ${PARTS.length}`;
+    note.innerHTML = `<b>${p.n} · ${esc(p.t)}</b> <span class="ref">${p.zoom ? 'in the close-up' : 'on the whole board'}</span><br>${p.body}`;
   };
+  step.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-d]');
+    if (b) pick(((cur - 1 + +b.dataset.d + PARTS.length) % PARTS.length) + 1);
+  });
   fig.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-n]');
-    if (b) pick(+b.dataset.n);
+    const b = e.target.closest('.escx-m');
+    if (b) { pick(+b.dataset.n); reveal(note); }
   });
   fig.addEventListener('mouseover', (e) => {
     const b = e.target.closest('.escx-m');
@@ -108,92 +120,76 @@ function escBoard(data) {
 }
 
 // ===================================================================== libraries
-function libList(fw) {
-  const host = $('#lib-list');
-  const projects = fw.projects;
-  const KIND = { titan: 'titan', driver: 'driver', ros: 'micro-ROS', sdk: 'SDK' };
-  const order = { sdk: 0, ros: 1, titan: 2, driver: 3 };
-  const libs = fw.libs.filter((l) => l.used_by.length).sort((a, b) => order[a.kind] - order[b.kind] || b.used_by.length - a.used_by.length || a.name.localeCompare(b.name));
+function libs(fw) {
+  const host = $('#libs');
+  const all = fw.projects.map((p) => p.id);
+  const used = fw.libs.filter((l) => l.used_by.length);
+  const common = used.filter((l) => all.every((id) => l.used_by.includes(id))).sort((a, b) => a.name.localeCompare(b.name));
+  const some = used.filter((l) => !common.includes(l)).sort((a, b) => b.used_by.length - a.used_by.length || a.name.localeCompare(b.name));
   const unused = fw.libs.filter((l) => !l.used_by.length).map((l) => l.name);
-  let pick = 'all';
-  const draw = () => {
-    host.innerHTML = `<p class="lib-key">Dots, left to right: ${projects.map((p) => `<b>${esc(SHORT[p.id][0])}</b> ${esc(SHORT[p.id])}`).join(' · ')}.</p>` +
-      `<div class="lib-head"><span>library</span><span class="hd">what it does</span><span class="lu" aria-label="used by">${projects.map((p) => `<span title="${esc(p.name)}">${esc(SHORT[p.id][0])}</span>`).join('')}</span></div>` +
-      libs.map((l) => `<div class="lib-row${pick !== 'all' && !l.used_by.includes(pick) ? ' off' : ''}">
-        <span class="ln"><a href="${l.url}">${esc(l.name)}</a></span>
-        <span class="ld"><span class="kind">${KIND[l.kind] || ''}</span>${esc(l.desc)}</span>
-        <span class="lu">${projects.map((p) => `<i class="${l.used_by.includes(p.id) ? 'on' : ''}" title="${esc(p.name)}"></i>`).join('')}</span>
-      </div>`).join('') +
-      `<p class="src" style="margin:.6rem 0 0">Not used by any Talos board: ${unused.map((n) => `<code>${esc(n)}</code>`).join(', ')}.</p>`;
+  host.innerHTML = `<div class="lib-h">In every board <small>tap one</small></div>
+    <div class="lib-common" role="group" aria-label="Libraries in every board">${common.map((l, i) => `<button type="button" data-i="${i}" aria-pressed="false">${esc(l.name)}</button>`).join('')}</div>
+    <div class="lib-desc" id="lib-desc" aria-live="polite"></div>
+    <div class="lib-h">Only in some boards</div>
+    <ul class="lib-some">${some.map((l) => `<li><span class="ln"><a href="${l.url}">${esc(l.name)}</a></span><span class="ld">${esc(l.desc)}</span><span class="lb">${l.used_by.map((id) => `<span>${esc(SHORT[id] === 'Battery' ? 'Battery housing' : SHORT[id])}</span>`).join('')}</span></li>`).join('')}</ul>
+    ${(() => { const only = fw.projects.filter((p) => !some.some((l) => l.used_by.includes(p.id))); return only.length ? `<p class="lib-only">${only.map((p) => esc(p.name)).join(', ')}: only the ${common.length} above.</p>` : ''; })()}
+    <p class="lib-unused">In the repository, used by no Talos board: ${unused.map((n) => `<code>${esc(n)}</code>`).join(', ')}.</p>`;
+  const desc = $('#lib-desc');
+  const show = (i) => {
+    host.querySelectorAll('.lib-common button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.i === i)));
+    const l = common[i];
+    desc.innerHTML = `<a href="${l.url}"><code>${esc(l.name)}</code></a> ${esc(l.desc)}`;
   };
-  seg($('#lib-pick'), [{ id: 'all', label: 'All' }, ...projects.map((p) => ({ id: p.id, label: SHORT[p.id] }))], pick, (id) => { pick = id; draw(); });
-  draw();
+  host.querySelector('.lib-common').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) show(+b.dataset.i); });
+  show(common.findIndex((l) => l.name === 'titan_safety'));
 }
 
 // ===================================================================== life cycle
-function lifeGraph(fw) {
+function life(fw) {
   const s = fw.safety, bl = fw.bootloader;
-  const sw = (c) => `<i class="sw" style="--c:${c}"></i>`;
-  const RED = '#e34948', YEL = '#eda100', GRN = '#1baf7a', BLU = '#2a78d6', WHT = '#ffffff', CYA = '#2bc4c9';
-  const INFO = {
-    power: { led: '#0f2633', t: 'Power on or reset', body: '<ul><li>The RP2040\'s boot ROM starts the titan bootloader in the first 16 kB of flash.</li><li>Every reset comes here: power-up, a crash, a reflash, or <code>reboot</code> from <code>canmore_cli</code>.</li></ul>' },
-    delay: { led: WHT, t: 'Boot delay (bootloader)', body: `<ul><li>Starts the CAN chip and sends one heartbeat in "boot delay" mode, so tools can see it.</li><li>Listens ${bl.boot_delay_ms} ms for the bootloader request on channel 14 (<code>B0 07 10 AD</code>). <code>upload_tool -w</code> sends it to rescue a board whose application crashes at once.</li><li>Then checks the CRC-32 in the application's first flash page and jumps to it.</li><li>Its own watchdog: ${bl.watchdog_timeout_ms / 1000} s.</li></ul>` },
-    blmode: { led: CYA, t: 'Bootloader mode', body: `<ul><li>Takes a new image over the register interface on channel 14: write a buffer, write it to flash, verify.</li><li>Heartbeats say "bootloader mode" every 500 ms; the LED is cyan, blinking blue.</li><li>Reboots when the upload finishes, or after ${bl.bootloader_timeout_sec} s with no traffic, so a board can't get stuck here.</li></ul>` },
-    start: { led: RED, t: 'Start-up', body: `<ul><li><code>safety_setup()</code> first: watchdog at ${s.watchdog_setup_ms / 1000} s, prints the last reset cause, and raises <code>WATCHDOG_RESET</code> if that was a crash.</li><li>The POAC board sets its soft-kill pin to "kill" here, before anything else.</li><li>Drivers, then the CAN chip. If the CAN chip won't start, the firmware panics and resets to try again.</li><li>The board is killed: no kill slot has reported yet.</li></ul>` },
-    wait: { led: YEL, t: 'Waiting for the agent', body: '<ul><li>Pings the micro-ROS agent once a second.</li><li>Sends a CAN heartbeat every 500 ms, with its mode, fault state and termination switch.</li><li>Still killed. The LED is yellow once another node acknowledges its frames, red if none does.</li></ul>' },
-    run: { led: BLU, t: 'Connected', body: `<ul><li>Creates its node, publishers and subscribers, then <code>safety_init()</code>: watchdog down to ${s.watchdog_active_ms} ms, kill switches live.</li><li>Each loop: background tasks, executor, ROS tasks, <code>safety_tick()</code>.</li><li>Publishes a heartbeat topic every 100 ms and <code>state/firmware</code> every second.</li><li>LED green while killed, blue while enabled.</li></ul>` },
-    lost: { led: YEL, t: 'Lost the agent', body: `<ul><li>More than 7 heartbeat publishes in a row failed (they go out every 100 ms): the agent is gone or the bus is broken.</li><li>Tears down the node, then <code>safety_deinit()</code>, which kills the board and relaxes the watchdog to ${s.watchdog_setup_ms / 1000} s.</li><li>Back to pinging. Nothing needs a reboot.</li></ul>` },
-    crash: { led: RED, t: 'Crash', body: `<ul><li>A watchdog timeout (a pass took over ${s.watchdog_active_ms} ms), a panic, a hard fault, a failed assert, or core 1 missing its ${s.core1_checkin_ms} ms check-in.</li><li>The reason, uptime and fault bits go into the crash log (${s.crash_log_entries} entries) before the reset.</li><li>The board restarts from the bootloader and comes back killed.</li></ul>` },
-  };
-  const nodes = [
-    { id: 'power', x: 70, y: 55, label: 'Power on', sub: 'or reset' },
-    { id: 'delay', x: 235, y: 55, label: 'Boot delay', sub: `${bl.boot_delay_ms} ms, bootloader` },
-    { id: 'start', x: 445, y: 55, label: 'Start-up', sub: `watchdog ${s.watchdog_setup_ms / 1000} s` },
-    { id: 'wait', x: 655, y: 55, label: 'Waiting for agent', sub: 'ping every 1 s' },
-    { id: 'run', x: 845, y: 150, label: 'Connected', sub: `watchdog ${s.watchdog_active_ms} ms` },
-    { id: 'blmode', x: 235, y: 168, label: 'Bootloader mode', sub: 'taking an image' },
-    { id: 'crash', x: 445, y: 250, label: 'Crash', sub: 'logged, then reset' },
-    { id: 'lost', x: 655, y: 250, label: 'Lost agent', sub: 'killed, node torn down' },
+  const S = [
+    { id: 'power', led: [LED.OFF], t: 'Power on or reset', sub: 'LED off', exits: [{ to: 'delay' }],
+      body: ['The RP2040\'s boot ROM starts the titan bootloader in the first 16 kB of flash.', 'Every reset comes here: power-up, a crash, a reflash, or <code>reboot</code> from <code>canmore_cli</code>.'] },
+    { id: 'delay', led: [LED.WHT], t: 'Boot delay', sub: `${bl.boot_delay_ms} ms, in the bootloader`, exits: [{ to: 'start', when: 'if the CRC is ok' }, { to: 'blmode', when: 'on a request or a bad CRC' }],
+      body: ['Starts the CAN chip and sends a heartbeat saying "boot delay", so tools can see it.', `Listens ${bl.boot_delay_ms} ms for a bootloader request on channel 14. <code>upload_tool -w</code> sends one to rescue a board whose application crashes at once.`, 'Then checks the CRC-32 of the application\'s first flash page and jumps to it.'] },
+    { id: 'blmode', side: true, led: [LED.CYA], t: 'Bootloader mode', sub: 'taking a new image', exits: [{ to: 'power', when: `when done, or after ${bl.bootloader_timeout_sec} s idle`, reset: true }],
+      body: ['Takes a new image over CAN channel 14: write a buffer, write it to flash, verify.', 'The LED is cyan, blinking blue.', `Reboots when the upload finishes, or after ${bl.bootloader_timeout_sec} s with no traffic, so a board can't get stuck here.`] },
+    { id: 'start', led: [LED.RED], t: 'Start-up', sub: `watchdog ${s.watchdog_setup_ms / 1000} s`, exits: [{ to: 'wait' }],
+      body: ['<code>safety_setup()</code> first: the watchdog, the last reset cause, and <code>WATCHDOG_RESET</code> if that was a crash.', 'The POAC board sets its soft-kill pin to "kill" before anything else.', 'Drivers, then the CAN chip. If the CAN chip won\'t start, the board resets and tries again.'] },
+    { id: 'wait', led: [LED.YEL], t: 'Waiting for the agent', sub: 'ping every 1 s, killed', exits: [{ to: 'run', when: 'when the agent answers' }],
+      body: ['Pings the micro-ROS agent once a second.', 'Sends a CAN heartbeat every 500 ms.', 'Still killed. The LED is yellow once another node acknowledges its frames, red if none does.'] },
+    { id: 'run', led: [LED.GRN, LED.BLU], t: 'Connected', sub: `watchdog ${s.watchdog_active_ms} ms`, exits: [{ to: 'lost', when: 'if 8 heartbeats in a row fail (about 0.8 s)' }],
+      body: [`Creates its node, publishers and subscribers, then <code>safety_init()</code>: watchdog down to ${s.watchdog_active_ms} ms, kill switches live.`, 'Publishes a heartbeat topic every 100 ms and <code>state/firmware</code> every second.', 'LED green while killed, blue while enabled.'] },
+    { id: 'lost', side: true, led: [LED.YEL], t: 'Lost the agent', sub: 'killed, node torn down', exits: [{ to: 'wait', when: 'to ping again' }],
+      body: ['Eight heartbeat publishes in a row (one every 100 ms) failed: the agent is gone or the bus is broken.', `Tears down the node and kills the board; the watchdog relaxes to ${s.watchdog_setup_ms / 1000} s.`, 'Nothing needs a reboot.'] },
+    { id: 'crash', side: true, led: [LED.RED], ring: true, t: 'Crash', sub: 'from any state; logged, then reset', exits: [{ to: 'power', reset: true }],
+      body: [`A watchdog timeout (a loop pass over ${s.watchdog_active_ms} ms, or ${s.watchdog_setup_ms / 1000} s before connecting), a panic, a hard fault, a failed assert, or core 1 missing its ${s.core1_checkin_ms} ms check-in.`, `The reason, uptime and fault bits go into the crash log (${s.crash_log_entries} entries).`, 'The board restarts from the bootloader and comes back killed, its LED flashing red because <code>WATCHDOG_RESET</code> is raised.'] },
   ];
-  const edges = [
-    { from: 'power', to: 'delay' },
-    { from: 'delay', to: 'start', label: 'CRC ok', lx: 352, ly: 47 },
-    { from: 'delay', to: 'blmode', label: 'request or bad CRC', lx: 227, ly: 116, anchor: 'end' },
-    { from: 'blmode', to: 'power', label: 'done, or 30 s idle', bend: -30, lx: 122, ly: 152, anchor: 'end' },
-    { from: 'start', to: 'wait' },
-    { from: 'wait', to: 'run', label: 'agent answers', bend: -30, lx: 790, ly: 82, anchor: 'start' },
-    { from: 'run', to: 'lost', label: '7 heartbeats fail', bend: -30, lx: 790, ly: 238, anchor: 'start' },
-    { from: 'lost', to: 'wait', label: 'ping again', lx: 663, ly: 120, anchor: 'start' },
-    { from: 'run', to: 'crash', dash: true, bend: 30, label: 'hang or fault', lx: 742, ly: 152 },
-    { from: 'crash', to: 'delay', dash: true, via: [330, 165], label: 'reset', lx: 345, ly: 226 },
-  ];
-  const narrow = {
-    below: 560, width: 360, height: 470,
-    nodes: {
-      power: { x: 95, y: 35 }, delay: { x: 95, y: 120 }, blmode: { x: 265, y: 120 }, start: { x: 95, y: 210 },
-      wait: { x: 95, y: 300 }, lost: { x: 265, y: 300 }, run: { x: 95, y: 400 }, crash: { x: 265, y: 430 },
-    },
-    edges: {
-      'delay>start': { label: 'CRC ok', lx: 103, ly: 168, anchor: 'start' },
-      'delay>blmode': { label: '' },
-      'blmode>power': { label: '', bend: 30 },
-      'wait>run': { label: 'agent', bend: 0, lx: 103, ly: 352, anchor: 'start' },
-      'run>lost': { label: '', bend: 0 },
-      'lost>wait': { label: '' },
-      'run>crash': { label: '', bend: 0 },
-      'crash>delay': { label: '', opacity: 0, arrow: false },
-    },
+  const by = Object.fromEntries(S.map((x) => [x.id, x]));
+  const host = $('#life');
+  host.innerHTML = `<ol class="lc">${S.map((x) => `<li class="lc-row${x.side ? ' side' : ''}" data-id="${x.id}">
+      <button type="button" class="lc-head" aria-expanded="false"><span class="lc-led${x.ring ? ' ring' : ''}">${x.led.map((c) => dot(c)).join('')}</span><span class="lc-t">${esc(x.t)}</span>${x.sub ? `<span class="lc-sub">${esc(x.sub)}</span>` : ''}</button>
+      <div class="lc-exits">${x.exits.map((e) => `<span>${e.reset ? '<b class="lc-reset">reset ↺</b> ' : ''}→ <button type="button" class="lc-go" data-go="${e.to}">${esc(by[e.to].t)}</button>${e.when ? ` ${esc(e.when)}` : ''}</span>`).join('')}</div>
+      <ul class="lc-body" hidden>${x.body.map((b) => `<li>${b}</li>`).join('')}</ul></li>`).join('')}</ol>`;
+  const open = (id, scroll) => {
+    host.querySelectorAll('.lc-row').forEach((r) => {
+      const on = r.dataset.id === id;
+      r.classList.toggle('open', on);
+      r.querySelector('.lc-head').setAttribute('aria-expanded', String(on));
+      r.querySelector('.lc-body').hidden = !on;
+      if (on && scroll) reveal(r);
+    });
   };
-  const note = $('#life-note');
-  const g = new Graph($('#life-graph'), {
-    width: 920, height: 300, nodes, edges, narrow,
-    info: (n) => {
-      if (!n) { note.innerHTML = 'Tap or hover a state to see what the board does there.'; return; }
-      const i = INFO[n.id];
-      note.innerHTML = `<b>${sw(i.led)}${esc(i.t)}</b>${i.body}`;
-    },
+  host.addEventListener('click', (e) => {
+    const go = e.target.closest('.lc-go');
+    if (go) return open(go.dataset.go, true);
+    const h = e.target.closest('.lc-head');
+    if (h) {
+      const r = h.closest('.lc-row');
+      open(r.classList.contains('open') ? null : r.dataset.id, false);
+    }
   });
-  g.highlight(null);
+  open('run');
 }
 
 // ===================================================================== timers
@@ -209,7 +205,7 @@ function timerList(fw) {
     ACTUATOR_STATUS_TIME_MS: ['<code>state/actuator/status</code>', '', 'ros'],
     SERVO_TRANSMIT_PERIOD_MS: ['Servo bus scheduler', 'a timer interrupt, not the loop', 'bg'],
     SERVO_PING_PERIOD_MS: ['Ping the servo', '', 'bg'],
-    SERVO_UPDATE_CMD_STATUS_PERIOD_MS: ['Actuator command feedback', 'not critical: a miss is no fault', 'ros'],
+    SERVO_UPDATE_CMD_STATUS_PERIOD_MS: ['Actuator command feedback', '', 'ros'],
     TELEM_PUBLISH_RATE_MS: ['<code>state/thrusters/telemetry</code>', '', 'ros'],
     WATER_TEMP_PUBLISH_INTERVAL_MS: ['<code>state/depth/temp</code>', 'while depth readings are valid', 'ros'],
     LEAK_PUBLISH_INTERVAL_MS: ['<code>state/leak</code>', 'the publish is commented out', 'ros', true],
@@ -217,40 +213,47 @@ function timerList(fw) {
     PWRCYCL_CHECK_INTERVAL_MS: ['Power-cycle check', 'defined, not used', 'bg', true],
   };
   const EXTRA = {
-    all: [['CAN heartbeat frame', 'channel 15, from the CAN driver', 'bg', fw.canmore.heartbeat_interval_ms]],
-    esc: [['Thruster loop on core 1', 'never faster than this; 2376 Hz measured', 'bg', fw.esc.dshot_min_frame_time_us / 1000]],
-    ccbb: [['Depth sensor poll', '<code>state/depth/raw</code> on each new reading', 'bg', fw.depth.polling_ms]],
+    esc: [['Thruster loop on core 1', 'at most this often; 2376 Hz in the pool', 'bg', fw.esc.dshot_min_frame_time_us / 1000]],
+    ccbb: [['Depth reading', '<code>state/depth/raw</code>', 'ros', fw.depth.polling_ms]],
   };
   // What a board does with each subscription, where the name doesn't say (read from each board's ros.c on master).
   const SUBNOTE = {
     'state/kill': 'its kill slot: true, or 500 ms of silence, kills the board',
     'poac:command/software_kill': 'the three software kill slots',
-    'sbh:command/software_kill': 'only to notice whether a slot-1 sender (once RViz) is around',
     'sbh:state/leak': 'its leak shutdown is commented out',
-    'state/physkill_notify': 'flashes red when the hull switch comes out, blue when it goes in',
+    'state/physkill_notify': 'flashes when the kill switch moves',
     'command/thruster_rpm': 'eight RPMs, four per board; the MPC uses raw CAN instead',
     'poac:command/electrical': 'acts on ENABLE_FANS, DISABLE_FANS',
     'ccbb:command/electrical': 'acts on CYCLE_COMPUTER, fans, LEDs, CLEAR_DEPTH',
     'sbh:command/electrical': 'acts on CYCLE_ROBOT, KILL_ROBOT_POWER',
-    'led:state/depth/raw': 'from the camera cage board: full brightness only underwater',
+    'led:state/depth/raw': 'full brightness only underwater',
   };
+  const GROUPS = [
+    { t: 'Many times a second', max: 150 },
+    { t: 'A few times a second', max: 500 },
+    { t: 'Once a second', max: Infinity },
+  ];
   const host = $('#timer-list');
+  const fmt = (ms) => (ms < 1 ? (ms * 1000).toFixed(0) + ' µs' : ms >= 1000 ? ms / 1000 + ' s' : ms + ' ms');
+  // Tasks every board runs, said once above the board's own list.
+  const COMMON = ['UROS_CONNECT_PING_TIME_MS', 'HEARTBEAT_TIME_MS', 'FIRMWARE_STATUS_TIME_MS', 'LED_UPTIME_INTERVAL_MS'];
   const draw = (id) => {
     const p = fw.projects.find((q) => q.id === id);
-    const rows = p.timers.map((t) => {
+    const rows = p.timers.filter((t) => !COMMON.includes(t.name)).map((t) => {
       const [what, sub, kind, off] = NAME[t.name] || [t.name, '', 'ros'];
       return { what, sub, kind, ms: t.ms, off: off || !t.used };
-    });
-    for (const [what, sub, kind, ms] of [...EXTRA.all, ...(EXTRA[id] || [])]) rows.push({ what, sub, kind, ms });
+    }).filter((r) => !r.off); // dead code (defined but unused, or its publish commented out) stays out
+    for (const [what, sub, kind, ms] of EXTRA[id] || []) rows.push({ what, sub, kind, ms });
     rows.sort((a, b) => a.ms - b.ms);
-    const lg = (ms) => Math.max(0.04, Math.min(1, (Math.log10(1000 / ms) + 0.2) / 3.6)); // 0.6 Hz .. 2.5 kHz on a log scale
-    host.innerHTML = `<div class="tm">${rows.map((r) => `<div class="tm-row ${r.kind}${r.off ? ' unused' : ''}">
-      <span class="what">${r.what}${r.sub ? `<small>${r.sub}</small>` : ''}</span>
-      <span class="every">${r.ms < 1 ? (r.ms * 1000).toFixed(0) + ' µs' : r.ms >= 1000 ? r.ms / 1000 + ' s' : r.ms + ' ms'}</span>
-      <span class="bar"><i style="width:${(lg(r.ms) * 100).toFixed(1)}%"></i></span></div>`).join('')}</div>
-      <div class="tm-legend"><span><i style="background:var(--state)"></i>ROS task (only while connected)</span><span><i style="background:var(--muted)"></i>background, always</span><span>bar length: rate, log scale</span></div>
-      ${id === 'sbh' ? '<p class="tm-off">No agent on <code>can1</code> since 27 Oct 2026 (<a href="https://github.com/osu-uwrt/riptide_core/commit/720bdd9">720bdd9</a>): none of these arrive for now, and the housings\' ROS tasks don\'t run.</p>' : ''}
-      <div class="tm-subs"><span class="lbl">Listens to</span>${p.subscribes.map((t) => `<span class="tm-sub"><code>${esc(t.topic).replace(/\//g, '/<wbr>')}</code><small>${esc(t.type)}</small>${(SUBNOTE[id + ':' + t.topic] || SUBNOTE[t.topic]) ? `<em>${SUBNOTE[id + ':' + t.topic] || SUBNOTE[t.topic]}</em>` : ''}</span>`).join('')}</div>`;
+    let lo = 0;
+    const groups = GROUPS.map((g) => { const r = rows.filter((x) => x.ms > lo && x.ms <= g.max); lo = g.max; return { ...g, rows: r }; }).filter((g) => g.rows.length);
+    const note = (t) => SUBNOTE[id + ':' + t.topic] || SUBNOTE[t.topic];
+    host.innerHTML = `<p class="tm-key">Besides what every board does (the <a href="#loop">life cycle</a> above). <span class="tm-ros">ROS</span> runs only while the agent is connected; the rest always runs.</p>
+      ${id === 'sbh' ? '<p class="tm-off">No agent on <code>can1</code> since 27 Oct 2026 (<a href="https://github.com/osu-uwrt/riptide_core/commit/720bdd9">720bdd9</a>), so for now the housings\' ROS tasks don\'t run.</p>' : ''}
+      ${groups.length ? '' : '<p class="tm-none">Nothing else on a timer: this board acts on what it hears.</p>'}${groups.map((g) => `<div class="tm-g">${g.t}</div>${g.rows.map((r) => `<div class="tm-row${r.off ? ' unused' : ''}">
+        <span class="what">${r.kind === 'ros' ? '<span class="tm-ros">ROS</span>' : ''}${r.what}${r.sub ? `<small>${r.sub}</small>` : ''}</span>
+        <span class="every">${fmt(r.ms)}</span></div>`).join('')}`).join('')}
+      <details class="fw-more tm-subs"><summary>Listens to: ${p.subscribes.length} topics</summary><ul>${p.subscribes.map((t) => `<li><code>${brk(t.topic)}</code>${note(t) ? ` <span>${note(t)}</span>` : ''}</li>`).join('')}</ul></details>`;
   };
   seg($('#timer-pick'), fw.projects.map((p) => ({ id: p.id, label: SHORT[p.id] })), 'poac', draw);
   draw('poac');
@@ -304,7 +307,7 @@ function encodeMsg(client, dir, payload, subtype = 0) {
 function fieldsOf(id, ext) {
   const f = (key, name, hi, lo) => ({ key, name, hi, lo, value: Math.floor(id / 2 ** lo) % 2 ** (hi - lo + 1) });
   const top = ext ? 28 : 10;
-  const list = [f('client', 'Client ID', top, top - 4), f('type', 'Type', top - 5, top - 5), f('dir', 'Direction', top - 6, top - 6), f('noc', 'NOC', top - 7, top - 10)];
+  const list = [f('client', 'Client ID', top, top - 4), f('type', 'Type', top - 5, top - 5), f('dir', 'Direction', top - 6, top - 6), f('noc', 'NOC (number or channel)', top - 7, top - 10)];
   if (ext) {
     const t = list[1].value, noc = list[3].value;
     if (t === 0 && noc === 0) list.push(f('single', 'Single', 17, 17), f('subtype', 'Subtype', 16, 11), f('len', 'Length', 10, 0));
@@ -330,7 +333,7 @@ function fieldsOf(id, ext) {
 
 function canExplorer(fw, pool) {
   const host = $('#canx');
-  host.innerHTML = `<div class="seg" role="group" aria-label="Frame kind" id="cx-mode"></div>
+  host.innerHTML = `<div class="seg cx-mode" role="group" aria-label="Frame kind" id="cx-mode"></div>
     <div class="cx-controls" id="cx-controls"></div>
     <div class="cx-summary" id="cx-summary"></div>
     <div class="cx-frames" id="cx-list" hidden></div>
@@ -350,8 +353,8 @@ function canExplorer(fw, pool) {
   const ctl = $('#cx-controls'), sum = $('#cx-summary'), list = $('#cx-list'), frameHost = $('#cx-frame');
 
   const MODES_UI = [
-    { id: 'hb', label: 'Heartbeat' }, { id: 'thr', label: 'Thruster command' }, { id: 'msg', label: 'ROS message' },
-    { id: 'bl', label: 'Bootloader request' }, { id: 'raw', label: 'Decode a frame' },
+    { id: 'hb', label: 'Heartbeat' }, { id: 'thr', label: 'Thrusters' }, { id: 'msg', label: 'ROS message' },
+    { id: 'bl', label: 'Bootloader' }, { id: 'raw', label: 'Decode a frame' },
   ];
   seg($('#cx-mode'), MODES_UI, st.mode, (id) => { st.mode = id; st.sel = 0; controls(); render(); });
 
@@ -367,7 +370,7 @@ function canExplorer(fw, pool) {
       const b = st.tBoard;
       ctl.innerHTML = `<span class="seg" role="group" aria-label="ESC board" id="cx-tb"></span>
         <div class="full"><div class="rpm4">${[0, 1, 2, 3].map((i) => `<label>${THRUSTERS[b * 4 + i]} (thruster ${b * 4 + i})<input type="number" min="-32768" max="32767" step="1" data-i="${i}" value="${st.rpm[b * 4 + i]}"></label>`).join('')}</div></div>
-        <label><input type="checkbox" data-k="bug"${st.bug ? ' checked' : ''}> what firmware before 4 Oct 2026 heard</label>`;
+        <label><input type="checkbox" data-k="bug"${st.bug ? ' checked' : ''}> what firmware before the 10 Oct 2026 fix heard</label>`;
       seg($('#cx-tb', ctl), [{ id: '0', label: 'ESC board 0' }, { id: '1', label: 'ESC board 1' }], String(b), (id) => { st.tBoard = +id; controls(); render(); });
     } else if (m === 'msg') {
       ctl.innerHTML = `<label>Board <select data-k="mClient">${CLIENT_OPTS.map((c) => opt(c, st.mClient, `${c} · ${CLIENTS[c]}`)).join('')}</select></label>
@@ -426,7 +429,7 @@ function canExplorer(fw, pool) {
         const ov = old >= 0x8000 ? old - 0x10000 : old;
         return `<tr><td>${THRUSTERS[base + i]} (${base + i})</td><td><code>${hex(by[2 * i], 2)} ${hex(by[2 * i + 1], 2)}</code></td><td><b>${v}</b> RPM</td>${st.bug || st.mode === 'raw' ? `<td class="${ov !== v ? 'bug' : ''}">old firmware: ${ov}</td>` : ''}</tr>`;
       });
-      return { pairs: true, html: `${cl === 2 || cl === 3 ? '' : '<span class="cx-err">Only clients 2 and 3 (the ESC boards) take thruster frames.</span><br>'}Four big-endian <code>int16</code> RPM targets. The board stores them with a 500 ms expiry.<table>${rows.join('')}</table>` };
+      return { pairs: true, html: `${cl === 2 || cl === 3 ? '' : '<span class="cx-err">Only clients 2 and 3 (the ESC boards) take thruster frames.</span><br>'}Four RPM targets, two bytes each, high byte first (signed 16-bit). The board keeps them for 500 ms.<table>${rows.join('')}</table>` };
     }
     if (t === 1 && noc === 14) {
       const magic = by.length === 4 && by[0] === 0xb0 && by[1] === 0x07 && by[2] === 0x10 && by[3] === 0xad;
@@ -443,6 +446,7 @@ function canExplorer(fw, pool) {
   }
 
   function drawFrame(fr, caption) {
+    frameHost.hidden = false;
     const fl = fieldsOf(fr.id, fr.ext);
     const nbits = fr.ext ? 29 : 11;
     const bits = [];
@@ -454,18 +458,18 @@ function canExplorer(fw, pool) {
       return `<span class="b" data-f="${f.key}" style="--fc:color-mix(in srgb, var(${FCOL[f.key]}) 26%, var(--paper-2))">${v}</span>`;
     }).join('');
     const nums = bits.map((_, i) => { const b = nbits - 1 - i; return `<span class="n">${b % 4 === 0 || b === nbits - 1 ? b : ''}</span>`; }).join('');
-    const labs = fl.map((f) => `<span class="f" data-f="${f.key}" style="grid-column:${nbits - f.hi} / span ${f.hi - f.lo + 1};--fs:var(${FCOL[f.key]})">${f.hi - f.lo >= 2 ? esc(f.name) : f.hi === f.lo ? f.name[0] : esc(f.name)}</span>`).join('');
+    const labs = fl.map((f) => `<span class="f" data-f="${f.key}" style="grid-column:${nbits - f.hi} / span ${f.hi - f.lo + 1};--fs:var(${FCOL[f.key]})">${f.hi - f.lo >= 3 ? esc(f.key === 'noc' ? 'NOC' : f.name) : ''}</span>`).join('');
+    const bin = (f) => f.value.toString(2).padStart(f.hi - f.lo + 1, '0');
     const pm = payloadMeaning(fr);
     const bytes = fr.data.map((v, i) => `<span class="${pm.pairs ? 'pair' + (i >> 1) % 2 : ''}">${hex(v, 2)}</span>`).join('');
     const us = frameBits(fr.ext, fr.data.length);
-    frameHost.innerHTML = `<div class="cx-fhead"><b>${fr.ext ? hex(fr.id, 8) : hex(fr.id, 3)}</b><span>${fr.ext ? 'extended, 29-bit ID' : 'standard, 11-bit ID'}</span><span>${fr.data.length} data byte${fr.data.length === 1 ? '' : 's'}</span><span>≥ ${us} bits, ${us} µs at 1 Mbit/s</span>${caption ? `<span>${caption}</span>` : ''}</div>
-      <div class="cx-bits" style="${cols}">${cells}${nums}${labs}</div>
-      <table class="cx-fields">${fl.map((f) => `<tr data-f="${f.key}" style="--fs:var(${FCOL[f.key]})"><td><i></i>${esc(f.name)}</td><td class="v">${f.hi === f.lo ? 'bit ' + f.hi : `bits ${f.hi}–${f.lo}`}</td><td>${esc(f.meaning)}</td></tr>`).join('')}</table>
+    frameHost.innerHTML = `<div class="cx-fhead"><b>${fr.ext ? hex(fr.id, 8) : hex(fr.id, 3)}</b><span>${fr.ext ? 'extended, 29-bit ID' : 'standard, 11-bit ID'}</span><span>${fr.data.length} data byte${fr.data.length === 1 ? '' : 's'}</span><span>≥ ${us} µs of the bus</span>${caption ? `<span>${caption}</span>` : ''}</div>
+      <div class="cx-bits" style="${cols}" aria-hidden="true">${cells}${nums}${labs}</div>
+      <ul class="cx-fields">${fl.map((f) => `<li data-f="${f.key}" style="--fs:var(${FCOL[f.key]})"><span class="fn"><i></i>${esc(f.name)}</span><span class="fb">${f.hi === f.lo ? 'bit ' + f.hi : `bits ${f.hi}–${f.lo}`}</span><code class="fv">${bin(f)}</code><span class="fm">${esc(f.meaning)}</span></li>`).join('')}</ul>
       <div class="cx-data"><h4>Data</h4><div class="cx-bytes">${bytes || '<span>none</span>'}</div><div class="cx-meaning">${pm.html}</div></div>`;
     const hot = (k) => frameHost.querySelectorAll('[data-f]').forEach((x) => x.classList.toggle('hot', x.dataset.f === k));
     frameHost.querySelectorAll('[data-f]').forEach((x) => {
       x.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') hot(x.dataset.f); });
-      x.addEventListener('pointerdown', () => hot(x.dataset.f));
     });
   }
   frameHost.addEventListener('pointerleave', (e) => {
@@ -504,7 +508,7 @@ function canExplorer(fw, pool) {
       const cl = 2 + st.tBoard;
       const data = [];
       for (let i = 0; i < 4; i++) { const v = st.rpm[st.tBoard * 4 + i] & 0xffff; data.push(v >> 8, v & 0xff); }
-      sum.innerHTML = `What <code>send_thruster_cmd_canbus</code> writes for board ${st.tBoard} every 50 ms. Defaults: the MPC's command at t = ${st.tTime.toFixed(2)} s of the pool window below (2026-10-24). Change any value.`;
+      sum.innerHTML = `What <code>send_thruster_cmd_canbus</code> writes for board ${st.tBoard} every 50 ms. Defaults: the MPC's command at t = ${st.tTime.toFixed(2)} s of the pool window below (2026-10-24). Change any value. Firmware before 10 Oct 2026 (<a href="https://github.com/osu-uwrt/titan_firmware/commit/3135fe2">3135fe2</a>) read each value's high byte twice: tick the box to see what it heard.`;
       drawFrame({ id: stdId(cl, 1, 1, 0), ext: false, data });
     } else if (m === 'msg') {
       // a stand-in payload: deterministic bytes, not a real XRCE packet
@@ -512,7 +516,7 @@ function canExplorer(fw, pool) {
       const payload = Array.from({ length: st.mLen }, () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) & 0xff; });
       const frames = encodeMsg(st.mClient, st.mDir, payload);
       const bits = frames.reduce((s, f) => s + frameBits(f.ext, f.data.length), 0);
-      sum.innerHTML = `<b>${frames.length}</b> frame${frames.length > 1 ? 's' : ''} for <b>${st.mLen}</b> bytes (example bytes, standing in for an XRCE-DDS packet): at least <b>${bits}</b> bits, <b>${bits} µs</b> of the bus at 1 Mbit/s, of which ${(100 * st.mLen * 8 / bits).toFixed(0)} % is payload. CRC-18 of the message: <b>0x${hex(crc18(payload), 5)}</b>. Tap a frame.`;
+      sum.innerHTML = `<b>${frames.length}</b> frame${frames.length > 1 ? 's' : ''} for <b>${st.mLen}</b> bytes (example bytes standing in for a micro-ROS packet): <b>${bits} µs</b> of the bus at 1 Mbit/s, of which ${(100 * st.mLen * 8 / bits).toFixed(0)} % is payload. Tap a frame.`;
       if (st.sel >= frames.length) st.sel = 0;
       list.hidden = frames.length < 2;
       list.innerHTML = frames.map((f, i) => {
@@ -525,7 +529,7 @@ function canExplorer(fw, pool) {
       drawFrame({ id: stdId(st.blClient, 1, 1, 14), ext: false, data: [0xb0, 0x07, 0x10, 0xad] });
     } else {
       const r = parseRaw(st.raw);
-      if (r.err) { sum.innerHTML = `<span class="cx-err">${esc(r.err)}</span>`; frameHost.innerHTML = ''; return; }
+      if (r.err) { sum.innerHTML = `<span class="cx-err">${esc(r.err)}</span>`; frameHost.innerHTML = ''; frameHost.hidden = true; return; }
       sum.innerHTML = 'Formats: <code>candump</code>\'s default output, or <code>ID#DATA</code> as in <code>candump -l</code> and <code>cansend</code>. Client names assume the internal bus.';
       drawFrame(r);
     }
@@ -540,90 +544,87 @@ function canExplorer(fw, pool) {
   render();
 }
 
-// ===================================================================== kill fan-out
-function killGraph() {
+// ===================================================================== kill: inputs, decision, relay
+function killFlow() {
   const INFO = {
-    sw: '<b>Physical kill switch</b> on the hull. Its line goes to the POAC board twice: to GPIO 1 (slot 0, read on an interrupt and every tick), and through an analog switch to the power stage. Pull it and thruster power goes, whatever the software says.',
-    viewer: '<b>Slot 1, the Nereus viewer.</b> Reports on <code>command/software_kill</code> every 50 ms. Named <code>KILL_SWITCH_RQT_CONTROLLER</code> after the old RViz panel.',
-    top: '<b>Slot 2, a topside kill button</b> (<code>riptide_kill_switch</code>). Not in regular use.',
-    dbg: '<b>Slot 3, debug</b>: the command line and scripts, like the pre-test checks\' bench hold.',
-    poac: '<b>POAC board.</b> Four slots and the kill rule. Publishes the result on <code>state/kill</code> every 150 ms and at once on a change, and drives its soft-kill pin. Its fault and slot bits are in <code>state/firmware</code>.',
-    pwr: '<b>Thruster power</b> (<code>MOTOR_EN</code> → <code>MOTOR_PWR</code>). Three P-channel MOSFETs, on only while the switch is in <em>and</em> the soft-kill pin says run.',
-    escs: '<b>ESC boards.</b> Kill slot 0 is <code>state/kill</code>, needs update. Killed: throttle zero and <code>SAFETY_KILLED</code>. Power cut: <code>ESC_BOARD_OFF</code>, then <code>ESC_POWERON_DELAY</code> for 5 s once it returns.',
+    sw: '<b>Kill switch.</b> The magnetic handle on the port bow window. Its line goes to the POAC board twice: to GPIO 1 as slot 0 (read on an interrupt and every tick), and through an analog switch straight to the thruster power MOSFETs. Pull it and thruster power goes, whatever the software says (<a href="boards.html#kill">the circuit</a>).',
+    soft: '<b>Software kill, slots 1–3.</b> Reports on <code>command/software_kill</code>, carried over Zenoh to <code>copro_agent</code> on the Orin and from there over CAN to the POAC board. Slot 1 (<code>KILL_SWITCH_RQT_CONTROLLER</code>, a legacy name) is the Nereus viewer\'s Enable button: it sends every 50 ms and latches. Slot 2 is a topside kill box, not in regular use; slot 3 is the command line and scripts. Details: <a href="commanding.html#kill">Commanding Talos</a>.',
+    poac: '<b>POAC board: the only board that decides.</b> Killed if no slot has reported yet, if any slot asserts kill, or if a slot that must repeat has gone quiet for 500 ms. It drives the soft-kill pin, and publishes the result on <code>state/kill</code> every 150 ms and at once on a change.',
+    pwr: '<b>Thruster power</b> (<code>MOTOR_PWR</code>). Three P-channel MOSFETs, on only while the switch is in <em>and</em> the POAC board\'s soft-kill pin says run. Everything else (Orin, sensors, boards) stays on.',
+    agent: '<b><code>copro_agent</code> on the Orin.</b> Every micro-ROS topic on the internal bus goes through it, <code>state/kill</code> included. If it dies, the followers hear nothing and kill themselves 500 ms later; the POAC board loses its agent too and kills itself.',
+    esc: '<b>ESC boards.</b> One kill slot, fed by <code>state/kill</code>. Killed: zero throttle and <code>SAFETY_KILLED</code>. Their power is cut too, so they wait for the ESCs to restart before the first thrust (<a href="#poweron">the power-on delay</a>).',
     ccbb: '<b>Camera cage board.</b> One slot fed by <code>state/kill</code>. A kill only changes its status LED; depth keeps publishing.',
-    led: '<b>LED board.</b> One slot fed by <code>state/kill</code>. Also listens to <code>state/physkill_notify</code> and flashes the lights when the switch moves.',
+    led: '<b>LED board.</b> One slot fed by <code>state/kill</code>. It also flashes the lights when the kill switch moves (<code>state/physkill_notify</code>).',
     ivc: '<b>IVC board.</b> One slot fed by <code>state/kill</code>; a kill only changes its status LED.',
-    sbh: '<b>Battery housings</b>, on the external bus. Their firmware subscribes to <code>state/kill</code> too, but the external-bus agent is commented out in <code>copro_agent.launch.py</code>.',
+    sbh: '<b>Battery housings</b>, on the external bus. Their firmware listens to <code>state/kill</code>, but the <code>can1</code> agent has been commented out since 27 Oct 2026 (<a href="https://github.com/osu-uwrt/riptide_core/commit/720bdd9">720bdd9</a>), so nothing reaches them.',
   };
-  const nodes = [
-    { id: 'sw', x: 95, y: 45, label: 'Kill switch', sub: 'on the hull' },
-    { id: 'viewer', x: 95, y: 120, label: 'Slot 1: viewer' },
-    { id: 'top', x: 95, y: 185, label: 'Slot 2: topside' },
-    { id: 'dbg', x: 95, y: 250, label: 'Slot 3: debug' },
-    { id: 'poac', x: 345, y: 150, label: 'POAC board', sub: '4 slots, the rule', bold: true },
-    { id: 'pwr', x: 345, y: 45, label: 'Thruster power', sub: 'MOTOR_PWR' },
-    { id: 'escs', x: 630, y: 45, label: 'ESC boards ×2', sub: 'zero throttle' },
-    { id: 'ccbb', x: 630, y: 125, label: 'Camera cage' },
-    { id: 'led', x: 630, y: 185, label: 'LED board' },
-    { id: 'ivc', x: 630, y: 245, label: 'IVC board' },
-    { id: 'sbh', x: 490, y: 262, label: 'Battery housings', sub: 'external bus' },
-  ];
-  const edges = [
-    { from: 'sw', to: 'pwr', label: 'switch line' },
-    { from: 'sw', to: 'poac', label: 'slot 0', bend: 18 },
-    { from: 'viewer', to: 'poac', dash: true },
-    { from: 'top', to: 'poac', dash: true },
-    { from: 'dbg', to: 'poac', dash: true, label: 'command/software_kill', lx: 232, ly: 250, anchor: 'start' },
-    { from: 'poac', to: 'pwr', label: 'soft-kill pin' },
-    { from: 'pwr', to: 'escs', label: 'power' },
-    { from: 'poac', to: 'escs', dash: true, label: 'state/kill', lx: 470, ly: 92 },
-    { from: 'poac', to: 'ccbb', dash: true },
-    { from: 'poac', to: 'led', dash: true },
-    { from: 'poac', to: 'ivc', dash: true },
-    { from: 'poac', to: 'sbh', dash: true, opacity: 0.4 },
-  ];
-  // Phone layout: the POAC board in the middle, its inputs on the left, everything it feeds fanned out
-  // clockwise from thruster power, so no two lines cross.
-  const narrow = {
-    below: 560, width: 360, height: 365,
-    nodes: {
-      sw: { x: 70, y: 35 }, pwr: { x: 285, y: 35 }, viewer: { x: 58, y: 115 }, top: { x: 58, y: 165 }, dbg: { x: 58, y: 215 },
-      poac: { x: 178, y: 175 }, escs: { x: 298, y: 118 }, sbh: { x: 302, y: 228, label: 'Batteries' },
-      ivc: { x: 290, y: 325 }, led: { x: 180, y: 325 }, ccbb: { x: 68, y: 310 },
-    },
-    edges: {
-      'sw>pwr': { label: '' }, 'sw>poac': { label: '', bend: 0 }, 'dbg>poac': { label: '' }, 'poac>pwr': { label: '' },
-      'pwr>escs': { label: '' }, 'poac>escs': { label: '' },
-    },
-  };
+  const box = (k, t, sub, cls = '') => `<button type="button" class="kf-box ${cls}" data-k="${k}"><b>${t}</b>${sub ? `<small>${sub}</small>` : ''}</button>`;
+  const link = (area, kind, html) => `<div class="kf-l ${kind}" style="grid-area:${area}"><i aria-hidden="true"></i><span>${html}</span></div>`;
+  const head = (area, n, t, cls = '') => `<h4 class="${cls}" style="grid-area:${area}"><span>${n}</span>${t}</h4>`;
+  const host = $('#killflow');
+  // One grid, two templates (firmware.css): five columns on wide screens, a single column that splits in two
+  // for stage 3 on phones. Every arrow sits in the same grid row as the box it leaves and the box it reaches.
+  host.innerHTML = `<div class="kf">
+    ${head('h1', '1', 'Inputs')}${head('h2', '2', 'Decide')}
+    ${head('h3', '3', 'Cut power, relay', 'wide')}${head('h3a', '3a', 'Cut power', 'narrow')}${head('h3b', '3b', 'Relay', 'narrow')}
+    <div class="kf-hw" aria-hidden="true"><i class="a"></i><i class="b"><span>switch line, in hardware: no software in the way</span></i><i class="c"></i></div>
+    <div class="kf-hwn" aria-hidden="true"><span>switch line, in hardware</span></div>
+    <div style="grid-area:sw">${box('sw', 'Kill switch', 'handle on the port bow window')}</div>
+    <div style="grid-area:soft">${box('soft', '<code>command/<wbr>software_kill</code>', 'slot 1 Nereus viewer · slot 2 topside · slot 3 debug')}</div>
+    ${link('lsw', 'wire', 'switch line → slot 0')}
+    ${link('lsoft', 'topic', '<code>software_kill</code> via the Orin → slots 1–3')}
+    <div style="grid-area:poac" class="kf-poac">${box('poac', 'POAC board', '4 slots, one rule', 'main')}</div>
+    ${link('lpwr', 'wire', 'soft-kill pin')}
+    ${link('lkill', 'topic', '<code>state/kill</code> every 150 ms')}
+    <div style="grid-area:pwr">${box('pwr', 'Thruster power', '<code>MOTOR_PWR</code> to both ESC boards')}</div>
+    <div style="grid-area:agent">${box('agent', 'Orin: <code>copro_agent</code>', 'micro-ROS agent on <code>can0</code>')}</div>
+    ${link('lfol', 'topic', '<code>state/kill</code> to each follower')}
+    <div class="kf-follow" style="grid-area:fol">
+      ${box('esc', 'ESC boards ×2')}${box('ccbb', 'Camera cage')}${box('led', 'LED board')}${box('ivc', 'IVC board')}
+      ${box('sbh', 'Battery housings', 'no <code>can1</code> agent since 720bdd9', 'off')}
+    </div>
+  </div>
+  <div class="graph-note kf-note" id="kill-note" aria-live="polite"></div>`;
   const note = $('#kill-note');
-  const g = new Graph($('#kill-graph'), {
-    width: 920, height: 290, nodes, edges, narrow,
-    info: (n) => { note.innerHTML = n ? INFO[n.id] : 'Tap or hover a box. Dashed lines are ROS topics carried over CAN; solid lines are wires.'; },
-  });
-  g.highlight(null);
+  const pick = (k, scroll) => {
+    host.querySelectorAll('.kf-box').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === k)));
+    note.innerHTML = INFO[k];
+    if (scroll) reveal(note);
+  };
+  host.addEventListener('click', (e) => { const b = e.target.closest('.kf-box'); if (b) pick(b.dataset.k, true); });
+  pick('poac');
 }
 
 // ===================================================================== pool telemetry
 function poolChart(pool) {
   const INVERTED = [0, 3, 4, 7]; // core1_init: mask 0b1001 on both boards
   let th = 0, raw = false;
-  const rpm = new LineChart($('#pool-rpm'), { height: 230, xLabel: 'time (s)', yLabel: 'RPM', digits: 0, xDigits: 1 });
-  const cur = new LineChart($('#pool-cur'), { height: 120, xLabel: 'time (s)', yLabel: 'ESC current (A)', digits: 2, xDigits: 1, legend: false });
+  const read = $('#pool-read');
+  const idle = 'Tap the chart to read a moment.';
+  // The target is on CAN at 20 Hz, the ESC's reply only at 2 Hz: say when the ESC sample was taken.
+  const fmt = (x, picks) => {
+    const [tg, es] = picks;
+    const r = (v) => Math.round(v).toLocaleString('en-US').replace('-', '−');
+    return `<span class="rx">t = ${x.toFixed(1)} s</span>${tg ? `<span><i style="background:${tg.s.color}"></i>target <b>${r(tg.p.y)}</b></span>` : ''}${es ? `<span><i style="background:${es.s.color}"></i>ESC <b>${r(es.p.y)}</b> <span class="rx">(sample at ${es.p.x.toFixed(1)} s)</span></span>` : ''}`;
+  };
+  const rpm = new LineChart($('#pool-rpm'), { height: 230, xLabel: 'time (s)', yLabel: 'RPM', digits: 0, xDigits: 1, readout: read, readoutIdle: idle, readoutFormat: fmt, xStep: (W) => (W < 560 ? 20 : 10) });
+  read.textContent = idle;
   const draw = () => {
     const b = th >> 2, s = th & 3;
     const flip = !raw && INVERTED.includes(th) ? -1 : 1;
     const target = pool.req.map((r) => ({ x: r[0], y: r[1 + th] }));
     const tel = pool.tel.filter((x) => x.b === b);
-    const rep = tel.map((x) => ({ x: x.t, y: flip * x.esc[s][0] }));
     rpm.set([
-      { name: 'target sent on CAN', color: 'var(--reference)', values: target, width: 1.6 },
-      { name: `reported by the ESC${flip < 0 ? ' (sign flipped)' : ''}`, color: 'var(--state)', values: rep, points: true, r: 3, opacity: 0.9 },
+      // a thinner, lighter target line on a phone, where a noisy thruster's 20 Hz targets otherwise blur into a band
+      { name: 'target on CAN', color: 'var(--reference)', values: target, width: narrowScreen() ? 1 : 1.6, opacity: narrowScreen() ? 0.8 : 1 },
+      { name: `ESC reported${flip < 0 ? ' (sign flipped)' : ''}`, color: 'var(--state)', values: tel.map((x) => ({ x: x.t, y: flip * x.esc[s][0] })), points: true, r: 3, opacity: 0.9 },
     ], { yZero: true });
-    cur.set([{ name: 'current', color: 'var(--s7)', values: tel.map((x) => ({ x: x.t, y: x.esc[s][1] })), width: 1.6 }], { yDomain: [0, Math.max(1, ...tel.map((x) => x.esc[s][1])) * 1.15] });
+    read.textContent = idle;
     const temps = tel.map((x) => x.esc[s][2]);
-    $('#pool-stats').innerHTML = `<span>Thruster <b>${THRUSTERS[th]}</b>: ESC board ${b}, slot ${s}${INVERTED.includes(th) ? ', reversed' : ''}</span><span>ESC temperature <b>${Math.min(...temps)}–${Math.max(...temps)} °C</b></span>` +
-      `<span>Whole run: core 1 loop <b>${pool.stats.loop_hz_median} Hz</b>, telemetry every <b>${pool.stats.tel_period_s} s</b>, <code>state/kill</code> every <b>${pool.stats.kill_period_ms_median} ms</b>, ESC supply <b>${pool.stats.vcc_range[0]}–${pool.stats.vcc_range[1]} V</b>, <code>disabled_flags</code> <b>${pool.stats.flags_seen.join(', ')}</b> throughout</span>`;
+    const st = pool.stats;
+    $('#pool-stats').innerHTML = `<li><b>${THRUSTERS[th]}</b> is thruster ${th}: ESC board ${b}, slot ${s}${INVERTED.includes(th) ? ', a reversed motor' : ''}. ESC temperature ${Math.min(...temps)}–${Math.max(...temps)} °C.</li>
+      <li>The core 1 loop ran at <b>${st.loop_hz_median} Hz</b> all run.</li>
+      <li><code>disabled_flags</code> stayed <b>${st.flags_seen.join(', ')}</b>: nothing held the thrusters at zero.</li>`;
   };
   seg($('#pool-pick'), THRUSTERS.map((n, i) => ({ id: String(i), label: n })), '0', (id) => { th = +id; draw(); });
   $('#pool-raw').addEventListener('change', (e) => { raw = e.target.checked; draw(); });
@@ -633,47 +634,53 @@ function poolChart(pool) {
 // ===================================================================== status decoder
 function decoder(fw) {
   const host = $('#decoder');
-  host.innerHTML = `<div class="dec"><div class="row"><label>Board <select id="dec-board">${fw.projects.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label></div>
-    <div class="row"><span class="seg" role="group" aria-label="Field" id="dec-field"></span></div>
-    <div class="row"><label><span id="dec-label">faults</span> = <input id="dec-val" type="text" inputmode="text" value="0x14" spellcheck="false" autocomplete="off"></label></div>
+  const FIELDS = {
+    faults: { label: 'faults', what: 'One bit per fault raised since boot. Any set bit flashes the LED red.', ex: '0x1', exNote: 'the board came back from a crash' },
+    flags: { label: 'disabled_flags (telemetry)', what: 'Why core 1 is holding all four thrusters at zero. 0 means it is free to spin them.', ex: '0x3', exNote: 'a killed ESC board, its power cut' },
+    enabled: { label: 'kill_switches_enabled', what: 'Slots that have reported at least once since the board booted. Slot 0 always has.', ex: '0x3', exNote: 'the switch and the Nereus viewer have reported' },
+    asserting: { label: 'kill_switches_asserting_kill', what: 'Slots whose last report says kill. Any one kills the robot.', ex: '0x1', exNote: 'the kill switch is out' },
+    needs: { label: 'kill_switches_needs_update', what: 'Slots whose report must repeat within 500 ms. The switch refreshes its own every tick; the viewer\'s latches.', ex: '0x1', exNote: 'only the switch slot must repeat' },
+    timed: { label: 'kill_switches_timed_out', what: 'Needs-update slots that have gone quiet for over 500 ms. Any one kills the robot.', ex: '0x0', exNote: 'nothing has timed out' },
+  };
+  host.innerHTML = `<div class="dec"><div class="row"><label>Board <select id="dec-board">${fw.projects.map((p) => `<option value="${p.id}"${p.id === 'esc' ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
+    <label>Field <select id="dec-field"></select></label></div>
+    <p class="dec-what" id="dec-what"></p>
+    <div class="row"><label><span id="dec-label"></span> = <input id="dec-val" type="text" value="" spellcheck="false" autocomplete="off"></label></div>
     <div class="verdict" id="dec-verdict"></div>
-    <table id="dec-table"></table></div>`;
+    <ol class="dec-bits" id="dec-table"></ol></div>`;
   const SLOTS = [
-    { bit: 0, name: 'KILL_SWITCH_PHYSICAL', desc: 'The switch on the hull (set in asserting = switch out)' },
+    { bit: 0, name: 'KILL_SWITCH_PHYSICAL', desc: 'The kill switch: asserting kill while it is out' },
     { bit: 1, name: 'KILL_SWITCH_RQT_CONTROLLER', desc: 'Slot 1: the Nereus viewer' },
-    { bit: 2, name: 'KILL_SWITCH_TOPSIDE_BUTTON', desc: 'Slot 2: a topside kill button' },
-    { bit: 3, name: 'KILL_SWITCH_DEBUG', desc: 'Slot 3: command line and scripts' },
+    { bit: 2, name: 'KILL_SWITCH_TOPSIDE_BUTTON', desc: 'Slot 2: a topside kill box' },
+    { bit: 3, name: 'KILL_SWITCH_DEBUG', desc: 'Slot 3: the command line and scripts' },
   ];
   const FLAGDESC = {
-    SAFETY_KILLED: 'The board is killed', ESC_BOARD_OFF: 'ESC supply under 9 V', ESC_POWERON_DELAY: 'Under 5 s since ESC power returned',
+    SAFETY_KILLED: 'The board is killed', ESC_BOARD_OFF: 'ESC supply under 9 V: thruster power is cut', ESC_POWERON_DELAY: 'Under 5 s since ESC power returned',
     TGT_RPM_STALE: 'No RPM target for 500 ms', TGT_RPM_STALE_PENALTY: '1 s lockout after targets went stale mid-spin', CONTROLLER_UNCONFIGURED: 'A tuning value was never set',
   };
-  let board = 'poac', field = 'faults';
-  const fieldsFor = (id) => [
-    { id: 'faults', label: 'faults' },
-    ...(id === 'esc' ? [{ id: 'flags', label: 'disabled_flags' }] : []),
-    ...(id === 'poac' ? [{ id: 'kill', label: 'kill_switches_*' }] : []),
-  ];
-  // A sensible example per field: two faults, a killed ESC board with its power cut, the viewer slot asserting kill.
-  const EXAMPLE = { faults: '0x14', flags: '0x3', kill: '0x2' };
+  let board = 'esc', field = 'flags';
+  const fieldsFor = (id) => ['faults', ...(id === 'esc' ? ['flags'] : []), ...(id === 'poac' ? ['enabled', 'asserting', 'needs', 'timed'] : [])];
+  const sel = $('#dec-field'), val = $('#dec-val');
   const setField = () => {
     const fs = fieldsFor(board);
-    if (!fs.find((f) => f.id === field)) { field = 'faults'; $('#dec-val').value = EXAMPLE.faults; }
-    seg($('#dec-field'), fs, field, (id) => { field = id; $('#dec-val').value = EXAMPLE[id]; draw(); });
+    if (!fs.includes(field)) field = fs[0];
+    sel.innerHTML = fs.map((f) => `<option value="${f}"${f === field ? ' selected' : ''}>${esc(FIELDS[f].label)}</option>`).join('');
+    val.value = FIELDS[field].ex;
   };
   const draw = () => {
     const p = fw.projects.find((q) => q.id === board);
-    const txt = $('#dec-val').value.trim();
+    const txt = val.value.trim();
     const v = /^0x[0-9a-f]+$/i.test(txt) ? parseInt(txt, 16) : /^\d+$/.test(txt) ? parseInt(txt, 10) : NaN;
-    $('#dec-label').textContent = field === 'faults' ? 'faults' : field === 'flags' ? 'disabled_flags' : 'kill_switches_…';
+    $('#dec-label').textContent = FIELDS[field].label.split(' ')[0];
+    $('#dec-what').textContent = FIELDS[field].what;
     let rows;
     if (field === 'faults') rows = p.faults.map((f) => ({ bit: f.bit, name: f.name, desc: f.desc + (f.raised ? '' : ' Never raised in this board\'s code.'), quiet: !f.raised }));
     else if (field === 'flags') rows = fw.esc.disabled_flags.map((f) => ({ bit: f.bit, name: f.name, desc: FLAGDESC[f.name] || '' }));
-    else rows = SLOTS;
+    else rows = SLOTS.map((r) => ({ ...r }));
     const ver = $('#dec-verdict');
     if (Number.isNaN(v) || v < 0 || v > 0xffffffff) {
       ver.className = 'verdict bad';
-      ver.textContent = 'Type a whole number, like 20 or 0x14.';
+      ver.textContent = 'Type a whole number, like 3 or 0x3.';
       rows.forEach((r) => (r.on = false));
     } else {
       const set = rows.filter((r) => Math.floor(v / 2 ** r.bit) % 2 === 1);
@@ -682,14 +689,15 @@ function decoder(fw) {
       rows.forEach((r) => (r.on = set.includes(r)));
       ver.className = 'verdict' + (set.length ? ' bad' : '');
       const list = (a) => (a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : String(a[0]));
+      const ex = txt.toLowerCase() === FIELDS[field].ex ? ` <span class="unk">(The example: ${FIELDS[field].exNote}.)</span>` : '';
       ver.innerHTML = (set.length ? `Set: ${set.map((r) => `<code>${brk(r.name)}</code>`).join(', ')}.` : 'Nothing set.') +
-        (unknown.length ? ` <span class="unk">${unknown.length > 1 ? 'Bits' : 'Bit'} ${list(unknown)} ${unknown.length > 1 ? 'aren\'t' : 'isn\'t'} defined for this ${field === 'faults' ? 'board' : 'field'}.</span>` : '') +
-        (field === 'kill' && v ? ' <span class="unk">Read it against the field it came from: enabled, asserting kill, needs update or timed out.</span>' : '');
+        (unknown.length ? ` <span class="unk">${unknown.length > 1 ? 'Bits' : 'Bit'} ${list(unknown)} ${unknown.length > 1 ? 'aren\'t' : 'isn\'t'} defined here.</span>` : '') + ex;
     }
-    $('#dec-table').innerHTML = rows.map((r) => `<tr class="${r.on ? 'on' : ''}${r.quiet ? ' quiet' : ''}"><td class="bit">${r.bit}</td><td class="nm">${brk(r.name)}</td><td>${esc(r.desc)}</td></tr>`).join('');
+    $('#dec-table').innerHTML = rows.map((r) => `<li class="${r.on ? 'on' : ''}${r.quiet ? ' quiet' : ''}"><span class="bit">${r.bit}</span><span class="nm">${brk(r.name)}</span><span class="ds">${esc(r.desc)}</span></li>`).join('');
   };
   $('#dec-board').addEventListener('change', (e) => { board = e.target.value; setField(); draw(); });
-  $('#dec-val').addEventListener('input', draw);
+  sel.addEventListener('change', () => { field = sel.value; val.value = FIELDS[field].ex; draw(); });
+  val.addEventListener('input', draw);
   setField();
   draw();
 }

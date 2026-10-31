@@ -68,8 +68,8 @@ repos:
           acoustics; navigation.launch.py the robot_localization EKF (cfg/talos_ekf.yaml) and robot_state_publisher;
           zed.launch.py both ZED X Minis. Plus small Python nodes (actuator interface, depth converter, monitors).
         note: >-
-          The monitor nodes in diagnostics.launch.py are out of date and not used, though talos_launch_mpc.yaml still
-          starts them.
+          The monitor nodes in diagnostics.launch.py are out of date. The diagnostics entry is still in
+          talos_launch_mpc.yaml, but nobody starts it.
       riptide_msgs:
         layer: shared
         status: talos
@@ -82,10 +82,9 @@ repos:
         status: talos
         chapters: [mechanical.html, control/model.html, perception/frames.html]
         desc: >-
-          The vehicle description: config/talos.yaml (mass, COM, inertia, thruster poses, sensor and camera frames)
-          and the xacro that turns it into the URDF and TF tree. riptide_mpc reads it too. Nereus defines its own Talos
-          (content/packs/robots/talos) and, for sim runs, writes a copy of this file with its plant's mass, COM and
-          thruster poses (integrations/uwrt/launch/mpc_sim_model.py), so editing it doesn't change the simulated vehicle.
+          The vehicle description: talos.yaml (mass, COM, thruster and sensor poses) and the xacro that builds the TF
+          tree. riptide_mpc reads it too. Nereus has its own model of Talos and in sim hands the MPC a copy with the
+          sim's numbers, so editing this file doesn't change the simulated vehicle.
       riptide_imu:
         layer: drivers
         status: talos
@@ -126,8 +125,8 @@ repos:
         status: talos
         chapters: [control/index.html, control/mpc.html, control/solver.html, control/identify.html]
         desc: >-
-          The controller Talos flies with: a model predictive controller on a Fossen model of Talos, with motion
-          profiles, path following, a state estimator and pool system identification (pool_identify, identify_fit).
+          The controller Talos flies with: it plans thrust a few seconds ahead from a physics model of Talos. Also
+          holds the tools that fit that model from pool runs (pool_identify, identify_fit).
       riptide_controllers:
         layer: control
         status: talos
@@ -744,7 +743,8 @@ repos:
     layers: [sim]
     chapters: [nereus.html]
     desc: >-
-      The previous simulator, replaced by Nereus. Still a submodule of the release repo.
+      The previous simulator, replaced by Nereus. Still a submodule of the release repo and still got commits
+      through September 2026, when Nereus was started; don't start new work here.
     packages:
       c_simulator:
         layer: sim
@@ -758,27 +758,29 @@ repos:
         desc: OpenGL pool viewer and simulated ZED cameras (DEPLOY_IGNORE, never sent to the robot).
 
   - id: riptide_gui
-    group: legacy
+    # In the release group: the Nereus viewer draws the mapped props with riptide_meshes (markers.yaml in riptide_rviz).
+    group: release
     source: { kind: release, path: src/riptide_gui }
     github: osu-uwrt/riptide_gui
     branch: newsim
-    status: legacy
+    status: tool
     layers: [sim]
     chapters: [viewer.html]
     desc: >-
-      The RViz-based operator GUI. The team no longer uses RViz; the Nereus viewer replaced it, for the sim and the
-      robot. Still a submodule of the release repo.
+      Prop and vehicle meshes, and the old RViz GUI. The Nereus viewer draws the mapped props with riptide_meshes, placed by the marker list in riptide_rviz/config/markers.yaml, so prop mesh fixes go here (its September and October 2026 commits are those). The RViz panels are retired (last used at RoboSub 2026); don't start new work on them.
     packages:
       riptide_rviz:
         layer: sim
         status: legacy
         chapters: [viewer.html]
-        desc: RViz plugins for the old operator interface (control panel, mission panel). DEPLOY_IGNORE.
+        desc: >-
+          RViz plugins for the old operator GUI (control panel, mission panel), retired. One file is still live: config/markers.yaml, the course marker list the Nereus viewer reads. DEPLOY_IGNORE.
       riptide_meshes:
         layer: sim
-        status: legacy
+        status: tool
         chapters: [viewer.html]
-        desc: Meshes of the props and vehicles for RViz. DEPLOY_IGNORE.
+        desc: >-
+          Meshes of the course props and the vehicles. The Nereus viewer draws one at each mapped prop's TF frame, so this is where a prop's model is fixed. DEPLOY_IGNORE: never sent to the robot.
 
   - id: riptide_kill_switch
     group: legacy

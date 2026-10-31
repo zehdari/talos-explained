@@ -1,8 +1,8 @@
 import { setup } from '../layout.js';
 import '../css/chapter.css';
 import '../css/nereus.css';
-import { Graph } from '../viz/graph.js';
-import { LineChart, barChart, el, niceTicks } from '../viz/chart.js';
+import { archFigure } from '../viz/nereus-arch.js';
+import { LineChart, el, niceTicks } from '../viz/chart.js';
 
 setup();
 
@@ -55,137 +55,98 @@ function chapters(videoId, boxId, marks) {
   v.addEventListener('seeked', mark);
 }
 
-// Read off the labels burned into the videos (video seconds).
-chapters('run-video', 'run-chapters', [[0, 'Kill switch'], [0.7, 'Gate'], [4.8, 'Slalom'], [10.9, 'Pinger'], [16.9, 'Torpedo'], [21.9, 'Hit'], [23.0, 'Table']]);
-chapters('cam-video', 'cam-chapters', [[0, 'Gate'], [2.5, 'Slalom'], [5.0, 'Pinger'], [8.8, 'Torpedo'], [12.9, 'Table'], [37.3, 'Bins'], [47.5, 'Home']]);
+// The step titles burned into tree-run.mp4 (video seconds; made by tools/nereus/cut_run_video.sh).
+chapters('run-video', 'run-chapters', [[0, 'Kill switch'], [1.35, 'Gate'], [5.5, 'Slalom'], [11.52, 'Pinger'], [17.55, 'Torpedo'], [22.52, 'Torpedo hit'], [23.82, 'Table'], [45.61, 'Bins'], [54.33, 'Home'], [59.24, 'Done']]);
 
 // ------------------------------------------------------------------ architecture
-const ARCH = {
-  packs: `<b>Packs.</b> YAML in <a href="https://github.com/osu-uwrt/nereus/tree/main/content/packs"><code>content/packs</code></a>: the robot, the pool, the course, the ROS wiring, and a scenario that picks one of each and places everything. No number about Talos is in the C++.`,
-  resolve: `<b>Resolve.</b> <code>python -m nereus.packs resolve</code> checks every pack against its JSON schema, checks them against each other, and writes one <code>resolved.json</code>. <code>sim.launch.py</code> runs it first, so every process reads the same file.`,
-  sim: `<b>nereus-sim.</b> Steps the world in 2 ms ticks: thrusters, the 6-DOF body, contacts, sensors, mechanisms, payloads, Bullet props, tasks. Renders both cameras on the GPU. Runs under <code>sim_supervisor.py</code>, which can restart it in another pool.`,
-  bridge: `<b>ROS bridge.</b> The ROS side of the same program, node <code>/talos/physics_simulator</code>. <code>bridge.yaml</code> maps 39 topic streams and 10 services, and it publishes <code>/clock</code> and the truth TF. Everything right of it sees ROS topics only.`,
-  viewer: `<b>nereus-viewer.</b> The 3D pool, camera cards and operator panels. Its Enable / KILL is software kill slot 1; it starts trees and the scored run. The same program drives the real robot (<a href="viewer.html">The Nereus viewer</a>).`,
-  detector: `<b>YOLO detector</b> (<code>yolo_orientation</code>, riptide_perception). Runs on the active camera's images and uses its depth for 3D poses. Publishes <code>detected_objects</code> (<a href="perception/detector.html">The detector</a>).`,
-  ekf: `<b>EKF</b> (robot_localization). Fuses IMU, FOG, DVL and depth into <code>odometry/filtered</code> and <code>odom → talos/base_link</code>, exactly as on the robot (<a href="localization.html">State estimation</a>).`,
-  mapping: `<b>Mapping</b> (riptide_mapping2). Fuses detections into one pose per prop and publishes them as TF frames for the tree to aim at (<a href="perception/map.html">The course map</a>).`,
-  autonomy: `<b>Behaviour tree</b> (<code>doTask</code>). Runs a tree such as RepairCompMpcTree: waits for the kill switch on <code>state/kill</code>, sends targets and paths to the MPC, fires actuators (<a href="mission-tree.html">The competition mission</a>).`,
-  mpc: `<b>MPC</b> (riptide_mpc). Reads the sensors itself, takes x, y and heading from the EKF, solves every 50 ms and publishes eight thruster forces. In sim it logs "Hardware output disabled": there are no ESCs, so it publishes <code>thruster_forces</code> only.`,
-};
-
-function architecture() {
-  const node = (id, label, sub) => ({ id, label, sub, bold: true });
-  const nodes = [
-    { ...node('packs', 'Packs', 'YAML in content/packs'), x: 120, y: 78 },
-    { ...node('resolve', 'Resolve', 'one resolved.json'), x: 120, y: 182 },
-    { ...node('sim', 'nereus-sim', 'world in 2 ms ticks'), x: 120, y: 292 },
-    { ...node('bridge', 'ROS bridge', 'physics_simulator'), x: 320, y: 292 },
-    { ...node('viewer', 'nereus-viewer', 'operator UI'), x: 320, y: 398 },
-    { ...node('detector', 'YOLO detector', 'yolo_orientation'), x: 545, y: 78 },
-    { ...node('mapping', 'Mapping', 'riptide_mapping2'), x: 800, y: 78 },
-    { ...node('ekf', 'EKF', 'robot_localization'), x: 545, y: 192 },
-    { ...node('autonomy', 'Behaviour tree', 'doTask'), x: 800, y: 192 },
-    { ...node('mpc', 'MPC', 'riptide_mpc'), x: 672, y: 318 },
-  ];
-  const edges = [
-    { from: 'packs', to: 'resolve', label: 'YAML' },
-    { from: 'resolve', to: 'sim', label: 'resolved.json' },
-    { from: 'sim', to: 'bridge', arrow: false },
-    { from: 'bridge', to: 'detector', label: 'images, depth' },
-    { from: 'bridge', to: 'ekf', label: 'IMU, FOG, DVL, depth', lx: 420, ly: 222 },
-    { from: 'bridge', to: 'mpc', label: 'sensors', lx: 500, ly: 300 },
-    { from: 'detector', to: 'mapping', label: 'detections' },
-    { from: 'ekf', to: 'mapping', label: 'odometry', lx: 690, ly: 132 },
-    { from: 'mapping', to: 'autonomy', label: 'prop frames', lx: 808, ly: 140, anchor: 'start' },
-    { from: 'ekf', to: 'mpc', label: 'x, y, heading', lx: 588, ly: 262, anchor: 'end' },
-    { from: 'autonomy', to: 'mpc', label: 'targets, paths', lx: 752, ly: 262, anchor: 'start' },
-    { from: 'mpc', to: 'bridge', label: 'thruster_forces', via: [480, 348], lx: 560, ly: 354 },
-    { from: 'viewer', to: 'bridge', label: 'kill, start run', bend: 22, lx: 302, ly: 352, anchor: 'end' },
-    { from: 'bridge', to: 'viewer', label: 'truth, score, scene', bend: 22, lx: 338, ly: 364, anchor: 'start' },
-    { from: 'viewer', to: 'autonomy', label: 'run tree', via: [820, 450], dash: true, lx: 760, ly: 395 },
-  ];
-  const narrow = {
-    below: 600, width: 400, height: 760,
-    bands: [
-      { label: 'NEREUS', points: [[12, 14], [388, 14], [388, 330], [12, 330]] },
-      { label: "TALOS'S OWN SOFTWARE, UNCHANGED", points: [[12, 372], [388, 372], [388, 748], [12, 748]] },
-    ],
-    nodes: {
-      packs: { x: 105, y: 62 }, resolve: { x: 105, y: 165 }, sim: { x: 105, y: 280 }, bridge: { x: 290, y: 280 }, viewer: { x: 290, y: 130 },
-      ekf: { x: 105, y: 420 }, detector: { x: 290, y: 420 }, mapping: { x: 290, y: 560 }, autonomy: { x: 290, y: 700 }, mpc: { x: 105, y: 700 },
-    },
-    edges: {
-      'packs>resolve': { label: '' },
-      'resolve>sim': { label: 'resolved.json', lx: 112, ly: 226, anchor: 'start' },
-      'bridge>detector': { label: 'images', lx: 298, ly: 356, anchor: 'start' },
-      'bridge>ekf': { label: 'sensors', lx: 170, ly: 350, anchor: 'end' },
-      'bridge>mpc': { label: '', bend: -18 },
-      'detector>mapping': { label: 'detections', lx: 298, ly: 494, anchor: 'start' },
-      'ekf>mapping': { label: 'odometry', lx: 160, ly: 492, anchor: 'start' },
-      'mapping>autonomy': { label: 'prop frames', lx: 298, ly: 634, anchor: 'start' },
-      'ekf>mpc': { label: 'x, y, heading', lx: 98, ly: 560, anchor: 'end' },
-      'autonomy>mpc': { label: 'targets', lx: 198, ly: 718 },
-      'mpc>bridge': { label: 'thrust', via: null, bend: -18, lx: 150, ly: 600, anchor: 'start' },
-      'viewer>bridge': { label: 'kill', bend: 18, lx: 270, ly: 205, anchor: 'end' },
-      'bridge>viewer': { label: 'truth', bend: 18, lx: 310, ly: 205, anchor: 'start' },
-      'viewer>autonomy': { label: '', via: [470, 420] },
-    },
-  };
-  const note = $('arch-note');
-  new Graph($('arch-graph'), {
-    width: 920, height: 450, nodes, edges, narrow,
-    bands: [
-      { label: 'NEREUS', points: [[22, 22], [412, 22], [412, 436], [22, 436]] },
-      { label: "TALOS'S OWN SOFTWARE, UNCHANGED", points: [[448, 22], [906, 22], [906, 436], [448, 436]] },
-    ],
-    // Keep the last note when nothing is selected, so its links stay clickable.
-    info: (n) => { if (n) note.innerHTML = ARCH[n.id]; },
-  });
-}
-architecture();
+archFigure($('arch-graph'));
 
 // ------------------------------------------------------------------ pack explorer
+// Break a path or name only after "/" (and "_" for long identifiers), never mid-word.
+const brk = (t, re = /\//g) => esc(t).replace(re, '$&<wbr>');
 function packExplorer(P) {
   const kinds = $('pack-kinds'), files = $('pack-files'), body = $('pack-body');
+  const MAIN = ['Scenario', 'Robot', 'Course', 'Bridge'];
   const groups = [...new Set(P.map((p) => p.group))];
-  let group = groups[0], list = [], cur = 0;
-  kinds.innerHTML = groups.map((g, i) => `<button type="button" data-g="${g}" aria-pressed="${i === 0}">${g}</button>`).join('');
+  const more = groups.filter((g) => !MAIN.includes(g));
+  let group = MAIN[0], list = [], cur = 0, all = false;
+  kinds.innerHTML = MAIN.map((g, i) => `<button type="button" class="btn" data-g="${g}" aria-pressed="${i === 0}">${g}</button>`).join('')
+    + `<button type="button" class="btn nx-more" data-more aria-expanded="false">More…</button>`
+    + `<span class="nx-more-list" hidden>${more.map((g) => `<button type="button" class="btn" data-g="${g}" aria-pressed="false">${g}</button>`).join('')}</span>`;
+  const moreBtn = kinds.querySelector('[data-more]'), moreList = kinds.querySelector('.nx-more-list');
   const fileLabel = (p) => p.label.replace(/ \(.*\)$/, '').replace(/\.yaml$/, '');
   function showFiles() {
     list = P.filter((p) => p.group === group);
     cur = 0;
+    all = false;
     files.hidden = list.length < 2;
-    files.innerHTML = list.map((p, i) => `<button type="button" class="btn" data-i="${i}" aria-pressed="${i === 0}">${esc(fileLabel(p))}</button>`).join('');
+    // More than four files (the course): one drop-down instead of rows of chips.
+    files.innerHTML = list.length > 4
+      ? `<label class="nx-file-pick">File <select>${list.map((p, i) => `<option value="${i}">${esc(fileLabel(p))}</option>`).join('')}</select></label>`
+      : list.map((p, i) => `<button type="button" class="btn" data-i="${i}" aria-pressed="${i === 0}">${esc(fileLabel(p))}</button>`).join('');
     showBody();
   }
-  // The key worth seeing first in each kind of pack.
-  const FIRST = { scenario: 'task_placements', robot: 'body', pool: 'parameters', tasks: 'requires', task: 'regions', parts: 'textures', bridge: 'kill', equipment: 'items', labels: 'models', dataset: 'tasks' };
+  // The keys a new member edits or needs first, per kind of pack (the first one opens).
+  const KEY = {
+    scenario: ['task_placements', 'initial', 'seed', 'pool', 'robot'],
+    robot: ['sensors', 'body', 'thrusters', 'mechanisms'],
+    pool: ['parameters', 'water_optics', 'lighting'],
+    tasks: ['tasks', 'scoring_rules'],
+    task: ['props', 'regions', 'events', 'scoring'],
+    bridge: ['streams', 'kill', 'clock', 'services'],
+    equipment: ['items'],
+    labels: ['models', 'tasks'],
+    dataset: ['tasks', 'image', 'split', 'randomize'],
+  };
   const yamlish = (v) => String(v).replace(/\bTrue\b/g, 'true').replace(/\bFalse\b/g, 'false').replace(/\bNone\b/g, 'null');
+  // Long float literals (the body's matrices) shown to 4 significant figures; the GitHub link has the exact file.
+  const tidy = (y) => y.replace(/-?\d+\.\d{7,}(?:e-?\d+)?/g, (n) => String(+(+n).toPrecision(4)));
   function showBody() {
     const p = list[cur];
-    const first = p.keys.some((k) => k.key === FIRST[p.kind]) ? FIRST[p.kind] : p.keys[0]?.key;
+    const want = KEY[p.kind] || [];
+    const keys = all || !want.length ? p.keys : want.map((k) => p.keys.find((x) => x.key === k)).filter(Boolean);
+    const first = keys.some((k) => k.key === want[0]) ? want[0] : keys[0]?.key;
+    const hidden = p.keys.length - keys.length;
     body.innerHTML = `
-      <div class="nx-pack-meta"><a href="${p.url}"><code>${esc(p.path)}</code></a><span>${p.lines} lines · kind <code>${p.kind}</code></span></div>
-      ${p.description ? `<p class="nx-pack-desc">${esc(p.description)}</p>` : ''}
-      <div class="nx-keys">${p.keys.map((k) => `
+      <div class="nx-pack-meta"><a href="${p.url}"><code>${brk(p.path)}</code></a><span>${p.lines} lines</span></div>
+      ${p.description ? `<p class="nx-pack-desc">${esc(p.description)}${p.kind === 'bridge' ? ' <span class="nx-dim">(No acoustics topics are wired yet: the simulator has no pinger.)</span>' : ''}</p>` : ''}
+      <div class="nx-keys">${keys.map((k) => `
         <details class="nx-key"${k.key === first ? ' open' : ''}>
-          <summary><code class="nx-k">${esc(k.key)}</code><span class="nx-what">${esc(k.what)}</span><span class="nx-sum">${esc(yamlish(k.summary))}</span></summary>
-          <pre><code>${esc(k.yaml)}</code></pre>
-          <div class="nx-key-foot">${k.more ? `${k.more} more lines not shown · ` : ''}<a href="${p.url}#L${k.line}${k.end > k.line ? '-L' + k.end : ''}">line${k.end > k.line ? 's ' + k.line + '–' + k.end : ' ' + k.line} on GitHub</a></div>
-        </details>`).join('')}</div>`;
+          <summary><code class="nx-k">${brk(k.key, /_/g)}</code><span class="nx-what">${esc(k.what)}</span></summary>
+          <pre><code>${esc(tidy(k.yaml))}</code></pre>
+          <div class="nx-key-foot">${tidy(k.yaml) !== k.yaml ? 'Long numbers rounded here · ' : ''}${k.more ? `${k.more} more lines not shown · ` : ''}<a href="${p.url}#L${k.line}${k.end > k.line ? '-L' + k.end : ''}">line${k.end > k.line ? 's ' + k.line + '–' + k.end : ' ' + k.line} on GitHub</a></div>
+        </details>`).join('')}</div>
+      ${hidden > 0 ? `<button type="button" class="btn nx-allkeys" data-all>Show all ${p.keys.length} keys</button>` : all && want.length ? `<button type="button" class="btn nx-allkeys" data-all>Show the main ${Math.min(want.length, p.keys.length)} only</button>` : ''}`;
   }
   kinds.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
-    press(kinds, b);
+    if (b === moreBtn) {
+      const open = moreList.hidden;
+      moreList.hidden = !open;
+      moreBtn.setAttribute('aria-expanded', String(open));
+      return;
+    }
+    kinds.querySelectorAll('[data-g]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     group = b.dataset.g;
     showFiles();
+  });
+  files.addEventListener('change', (e) => {
+    cur = +e.target.value;
+    all = false;
+    showBody();
   });
   files.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
     press(files, b);
     cur = +b.dataset.i;
+    all = false;
+    showBody();
+  });
+  body.addEventListener('click', (e) => {
+    if (!e.target.closest('[data-all]')) return;
+    all = !all;
     showBody();
   });
   showFiles();
@@ -209,7 +170,8 @@ function courseMap(C) {
   const deg = (d) => `${d > 0 ? '' : '−'}${Math.abs(d).toFixed(1)}°`;
   const m = (v) => (v < 0 ? '−' : '') + Math.abs(v).toFixed(2);
   function poolNote() {
-    note.innerHTML = `<b>${esc(sc.label)}</b>: ${sc.length.toFixed(2)} × ${sc.width.toFixed(2)} m, ${sc.depth.toFixed(2)} m deep${sc.sloped ? ' at the deep end, with a sloped floor' : ''}. ${sc.world_placement ? 'The world is placed from the AprilTag board on the deep-end wall. ' : ''}Tap a prop.`;
+    const off = sc.length > Y1 - Y0 ? ` Only the first ${Math.round(Y1 - Y0)} m are drawn: it carries on below the map.` : '';
+    note.innerHTML = `<b>${esc(sc.label)}</b>: ${sc.length.toFixed(2)} × ${sc.width.toFixed(2)} m, ${sc.depth.toFixed(2)} m deep${sc.sloped ? ' at the deep end, with a sloped floor' : ''}.${off} ${sc.world_placement ? 'The world is placed from the AprilTag board on the deep-end wall. ' : ''}Thin lines are the floor markings.`;
   }
   function info(item) {
     if (!item) return poolNote();
@@ -218,7 +180,7 @@ function courseMap(C) {
     const t = item.t;
     const out = !inside(sc.outline, t.xy) ? ' <b>Outside this pool.</b>' : '';
     const fr = t.frames.length ? ` Frames: ${t.frames.map((f) => `<code>${esc(f.id)}</code>`).join(', ')}.` : '';
-    note.innerHTML = `<b>${esc(t.task)}</b>: x ${m(t.xy[0])}, y ${m(t.xy[1])} m, ${Math.abs(t.z).toFixed(2)} m deep, yaw ${deg(t.yaw)}.${out}${fr}`;
+    note.innerHTML = `<b>${t.task === 'surface' ? 'surface (the octagon)' : esc(t.task)}</b>: x ${m(t.xy[0])}, y ${m(t.xy[1])} m, ${Math.abs(t.z).toFixed(2)} m deep, yaw ${deg(t.yaw)}.${out}${fr}`;
   }
   function draw(W) {
     box.innerHTML = '';
@@ -247,38 +209,67 @@ function courseMap(C) {
       items.push([gEl, item]);
     };
     const r = Math.max(4, Math.min(7, k * 0.3));
-    for (const t of sc.tasks) {
+    const label = (g, x, y, text, anchor = 'start', lead = null) => {
+      if (lead) el('line', { class: 'nx-lead', x1: lead[0], y1: lead[1], x2: x + (anchor === 'end' ? 2 : anchor === 'start' ? -2 : 0), y2: anchor === 'middle' ? y - 12 : y - 4 }, g);
+      el('text', { class: 'nx-label', x, y, 'text-anchor': anchor }, g).textContent = text;
+    };
+    // The octagon sits 0.18 m from the table: draw it last, so its wide touch target is on top, and give the
+    // table its touch target on its offset label instead.
+    const order = [...sc.tasks].sort((p, q) => (p.task === 'surface') - (q.task === 'surface'));
+    for (const t of order) {
       const tg = el('g', {}, svg);
       const cx = sx(t.xy[0]), cy = sy(t.xy[1]);
-      if (t.task === 'gate' && t.frames.length === 2) {
-        const [a, b] = t.frames;
-        el('line', { class: 'nx-gate', x1: sx(a.xy[0]), y1: sy(a.xy[1]), x2: sx(b.xy[0]), y2: sy(b.xy[1]) }, tg);
-      }
-      if (t.task === 'surface') el('circle', { class: 'nx-octagon', cx, cy, r: Math.max(6, 1.1 * k) }, tg);
-      for (const f of t.frames) el('circle', { class: 'nx-frame', cx: sx(f.xy[0]), cy: sy(f.xy[1]), r: 2.2 }, tg);
+      // the prop's own frames (bins, magnet lights, baskets, signs): only drawn while the prop is selected
+      const fr = el('g', { class: 'nx-frames' }, tg);
+      for (const f of t.frames) el('circle', { class: 'nx-frame', cx: sx(f.xy[0]), cy: sy(f.xy[1]), r: 2.6 }, fr);
       const a = (t.yaw * Math.PI) / 180;
-      el('line', { class: 'nx-yaw', x1: cx, y1: cy, x2: cx + Math.cos(a) * r * 2.6, y2: cy - Math.sin(a) * r * 2.6 }, tg);
-      if (t.task !== 'surface') el('circle', { class: 'nx-task', cx, cy, r }, tg);
-      el('circle', { class: 'nx-target', cx, cy, r: Math.max(14, r * 2.2) }, tg); // big, invisible touch target
-      const lbl = el('text', { class: 'nx-label', x: cx + (t.task === 'surface' ? 0 : r + 4), y: t.task === 'surface' ? cy - Math.max(6, 1.1 * k) - 5 : cy + 4 + (t.task === 'table' ? 12 : 0), 'text-anchor': t.task === 'surface' ? 'middle' : 'start' }, tg);
-      lbl.textContent = t.task === 'surface' ? 'octagon' : t.task;
+      if (t.task === 'gate' && t.frames.length === 2) {
+        const [p, q] = t.frames;
+        el('line', { class: 'nx-gate', x1: sx(p.xy[0]), y1: sy(p.xy[1]), x2: sx(q.xy[0]), y2: sy(q.xy[1]) }, tg);
+        label(tg, cx + 9, cy + 5, 'gate');
+      } else if (t.task === 'slalom' && t.frames.length === 3) {
+        // three rows joined by the path through them, each row a short bar across it
+        const P = t.frames.map((f) => [sx(f.xy[0]), sy(f.xy[1])]);
+        el('polyline', { class: 'nx-slalom-path', points: P.map((p) => p.join(',')).join(' ') }, tg);
+        el('polyline', { class: 'nx-target-line', points: P.map((p) => p.join(',')).join(' ') }, tg); // fat invisible touch target
+        P.forEach((p, i) => {
+          const q = P[Math.min(i + 1, 2)], o = P[Math.max(i - 1, 0)];
+          const dx = q[0] - o[0], dy = q[1] - o[1], n = Math.hypot(dx, dy) || 1, half = 0.75 * k;
+          el('line', { class: 'nx-gate', x1: p[0] - (dy / n) * half, y1: p[1] + (dx / n) * half, x2: p[0] + (dy / n) * half, y2: p[1] - (dx / n) * half }, tg);
+        });
+        label(tg, P[1][0], P[1][1] + 0.75 * k + 13, 'slalom', 'middle');
+      } else if (t.task === 'surface') {
+        const R = Math.max(7, 1.1 * k);
+        el('circle', { class: 'nx-octagon', cx, cy, r: R }, tg);
+        label(tg, cx, cy - R - 5, 'octagon', 'middle');
+        el('circle', { class: 'nx-target', cx, cy, r: R + 10 }, tg);
+        el('rect', { class: 'nx-target', x: cx - 30, y: cy - R - 22, width: 60, height: 22 }, tg);
+      } else {
+        el('line', { class: 'nx-yaw', x1: cx, y1: cy, x2: cx + Math.cos(a) * r * 2.6, y2: cy - Math.sin(a) * r * 2.6 }, tg);
+        el('circle', { class: 'nx-task', cx, cy, r }, tg);
+        if (t.task === 'table') label(tg, cx + 22, cy + 24, 'table', 'start', [cx + 3, cy + 4]);
+        else label(tg, cx + r + 4, cy + 4, t.task);
+      }
+      if (t.task === 'table') el('rect', { class: 'nx-target', x: cx + 12, y: cy + 8, width: 52, height: 26 }, tg); // on the label
+      else if (t.task !== 'surface') el('circle', { class: 'nx-target', cx, cy, r: Math.max(14, r * 2.2) }, tg); // big, invisible touch target
       hit(tg, { id: t.task, kind: 'task', t });
     }
     for (const e of sc.equipment) {
       const bg = el('g', {}, svg);
-      // The board hangs on the wall at the map origin (Talos starts in front of it): a bar along the wall.
-      el('rect', { class: 'nx-board', x: sx(e.xy[0]) - 3.5, y: sy(e.xy[1]) - 13, width: 7, height: 26, rx: 1.5 }, bg);
-      el('circle', { class: 'nx-target', cx: sx(e.xy[0]), cy: sy(e.xy[1]), r: 12 }, bg);
+      // The board hangs on the wall at the map origin: a bar along the wall.
+      const bx = sx(e.xy[0]), by = sy(e.xy[1]);
+      el('rect', { class: 'nx-board', x: bx - 3.5, y: by - 13, width: 7, height: 26, rx: 1.5 }, bg);
+      label(bg, bx + 7, by - 17, 'tag board');
+      el('circle', { class: 'nx-target', cx: bx, cy: by, r: 12 }, bg);
       hit(bg, { id: 'board', kind: 'board' });
     }
     const st = el('g', {}, svg);
-    el('circle', { class: 'nx-start', cx: sx(sc.start[0]), cy: sy(sc.start[1]), r: 4.5 }, st);
-    el('circle', { class: 'nx-target', cx: sx(sc.start[0]), cy: sy(sc.start[1]), r: 12 }, st);
+    const stx = sx(sc.start[0]), sty = sy(sc.start[1]);
+    // Talos's start: a ring that stays visible even on top of the board, labelled below it
+    el('circle', { class: 'nx-start', cx: stx, cy: sty, r: 5.5 }, st);
+    label(st, stx, sty + 27, 'start', 'middle', [stx, sty + 6]);
+    el('circle', { class: 'nx-target', cx: stx, cy: sty + 10, r: 14 }, st);
     hit(st, { id: 'start', kind: 'start' });
-    if (sc.length > Y1 - Y0) {
-      const t = el('text', { class: 'nx-axis-note', x: w / 2, y: h - 18, 'text-anchor': 'middle' }, svg);
-      t.textContent = `pool continues off the map (${sc.length} m long)`;
-    }
     function mark() { items.forEach(([gEl, it]) => gEl.classList.toggle('on', it.id === sel)); }
     mark();
     svg.addEventListener('pointerdown', (e) => { if (!e.target.closest('.nx-hit')) { sel = null; mark(); info(null); } });
@@ -297,52 +288,81 @@ function courseMap(C) {
 }
 
 // ------------------------------------------------------------------ depth noise (Talos's robot.yaml numbers)
+// The shared chart's readout shows the x value without a unit; add metres.
+class RangeChart extends LineChart {
+  hover(e) {
+    super.hover(e);
+    const d = this.tip.firstElementChild;
+    if (d && !this.tip.hidden && !d.textContent.endsWith(' m')) d.textContent += ' m';
+  }
+}
 function depthNoise() {
   const D = { base: 0.002, coef: 0.0015, exp: 2, dropout: 0.005, range: 0.1, edge: 0.2, min: 0.15, max: 4 };
   const rs = [];
   for (let r = D.min; r <= D.max + 1e-9; r += 0.05) rs.push(+r.toFixed(2));
-  const s = new LineChart($('depth-sigma'), { height: 230, xLabel: 'range (m)', yLabel: 'depth error, 1σ (cm)', digits: 2, xDigits: 2, unit: 'cm', forceLegend: true });
-  s.set([{ name: 'error, 1σ', color: css('--state'), values: rs.map((r) => ({ x: r, y: 100 * (D.base + D.coef * r ** D.exp) })) }], { yDomain: [0, 3] });
-  const d = new LineChart($('depth-drop'), { height: 230, xLabel: 'range (m)', yLabel: 'pixels with no depth (%)', digits: 1, xDigits: 2, unit: '%' });
+  // Below 0.15 m there is no depth at all: a grey strip from 0, so the axis starts at 0 m.
+  const bands = [{ x0: 0, x1: D.min, color: 'rgba(15,38,51,0.08)' }];
+  const markers = [{ x: D.min, label: 'no depth below 0.15 m' }];
+  const s = new RangeChart($('depth-sigma'), { height: 230, title: 'Depth error', xLabel: 'range (m)', yLabel: '1σ (cm)', digits: 2, xDigits: 2, unit: 'cm', xDomain: [0, D.max], bands, markers });
+  s.set([{ name: 'depth error, 1σ', color: css('--state'), values: rs.map((r) => ({ x: r, y: 100 * (D.base + D.coef * r ** D.exp) })) }], { yDomain: [0, 3] });
+  const d = new RangeChart($('depth-drop'), { height: 230, title: 'Missing depth', xLabel: 'range (m)', yLabel: 'pixels (%)', digits: 1, xDigits: 2, unit: '%', xDomain: [0, D.max], bands, markers });
   const p = (r, edge) => 100 * Math.min(1, D.dropout + D.range * (r / D.max) ** 2 + (edge ? D.edge : 0));
   d.set([
     { name: 'flat surface', color: css('--state'), values: rs.map((r) => ({ x: r, y: p(r, false) })) },
-    { name: 'edge pixel', color: css('--reference'), values: rs.map((r) => ({ x: r, y: p(r, true) })) },
+    { name: 'edge pixels', color: css('--reference'), values: rs.map((r) => ({ x: r, y: p(r, true) })) },
   ], { yDomain: [0, 35] });
 }
 depthNoise();
 
 // ------------------------------------------------------------------ task events
+// The tree's seven steps, always shown; a step with task events opens to list them (one row per object or shot,
+// so a grasp, release and landing are one line). The torpedo/table step starts open.
 function events(R) {
   const v = $('cam-video'), list = $('events');
   const STEPS = [[3.0, 'Gate'], [26.3, 'Slalom'], [60.8, 'Random pinger (not simulated)'], [94.3, 'Torpedo, then the table'], [373.9, 'Bins'], [476.1, 'Home through the gate'], [533.8, 'KillController: done']];
-  const what = (e) => {
-    const id = String(e.id).replace(/_/g, ' ');
-    switch (`${e.kind}:${e.result}`) {
-      case 'torpedo:released': return `fired from slot ${e.slot}`;
-      case 'torpedo:success': return `hit <code>${e.target}</code>`;
-      case 'tasks:reset': return 'props reset (Start run)';
-      case 'claw:grasped': return `grasped the ${id}`;
-      case 'claw:released': return `let go of the ${id}`;
-      case 'claw:success': return `${id} landed in the ${e.target} basket`;
-      case 'dropper:released': return `marker dropped from slot ${e.slot}`;
-      case 'dropper:success': return `marker landed in <code>${e.target}</code>`;
-      case 'magnet:activated': return `lit <code>${e.target}</code>`;
-      default: return `${e.result} ${e.target || ''}`;
-    }
-  };
+  const OPEN = 94.3;
   const tag = { torpedo: 'reference', claw: 'prediction', dropper: 's4', magnet: 's7', tasks: 'muted' };
-  const rows = [
-    ...STEPS.map(([t, label]) => ({ t, html: `<span class="nx-ev-t">${t.toFixed(1)}</span><span class="nx-ev-step">${label}</span>`, step: true })),
-    ...R.events.map(([t, e]) => ({ t, html: `<span class="nx-ev-t">${t.toFixed(1)}</span><span class="nx-ev-kind" style="--c:var(--${tag[e.kind] || 'muted'})">${e.kind}</span><span class="nx-ev-what">${what(e)}</span>` })),
-  ].sort((a, b) => a.t - b.t || (b.step ? 1 : -1));
-  list.innerHTML = rows.map((r) => `<li${r.step ? ' class="nx-ev-head"' : ''}><button type="button" data-t="${r.t}">${r.html}</button></li>`).join('');
+  const s1 = (t) => t.toFixed(1);
+  // Group the raw events: a shot with its hit, a marker with its landing, an object from grasp to basket.
+  const rows = [];
+  const E = R.events;
+  for (let i = 0; i < E.length; i++) {
+    const [t, e] = E[i];
+    const next = E.slice(i + 1).find(([, f]) => f.kind === e.kind && f.id === e.id);
+    if (e.kind === 'torpedo' && e.result === 'released') {
+      const hit = next && next[1].result === 'success' ? next : null;
+      rows.push({ t, kind: e.kind, what: `slot ${e.slot}${hit ? `, hit <code>${hit[1].target}</code>` : ', missed'}` });
+    } else if (e.kind === 'dropper' && e.result === 'released') {
+      const hit = next && next[1].result === 'success' ? next : null;
+      rows.push({ t, kind: e.kind, what: `marker ${e.slot + 1}${hit ? ` → <code>${hit[1].target}</code>` : ', missed'}` });
+    } else if (e.kind === 'claw' && e.result === 'grasped') {
+      const done = E.slice(i + 1).find(([, f]) => f.kind === 'claw' && f.id === e.id && f.result === 'success');
+      rows.push({ t, kind: e.kind, what: `${String(e.id).replace(/_/g, ' ')} → ${done ? `${done[1].target} basket` : 'dropped'}` });
+    } else if (e.kind === 'magnet') {
+      rows.push({ t, kind: e.kind, what: `lit <code>${e.target}</code>` });
+    } else if (e.kind === 'tasks' && e.result === 'reset') {
+      rows.push({ t, kind: 'reset', tag: 'tasks', what: 'Start run: score and props reset, so the hit above never scored' });
+    }
+  }
+  const step = STEPS.map(([t, label], i) => ({ t, label, ev: rows.filter((r) => r.t >= t && r.t < (STEPS[i + 1]?.[0] ?? Infinity)) }));
+  const evRow = (r) => `<li><button type="button" data-t="${r.t}" aria-label="Play from ${s1(r.t)} s"><i class="nx-play" aria-hidden="true"></i><span class="nx-ev-t">${s1(r.t)}</span><span class="nx-ev-kind" style="--c:var(--${tag[r.tag || r.kind] || 'muted'})">${r.kind}</span><span class="nx-ev-what">${r.what}</span></button></li>`;
+  list.innerHTML = step.map((st, i) => `<li class="nx-ev-head${st.ev.length ? ' has' : ''}">
+      <button type="button" data-t="${st.t}"${st.ev.length ? ` aria-expanded="${st.t === OPEN}" aria-controls="nx-ev-${i}"` : ''}><i class="nx-play" aria-hidden="true"></i><span class="nx-ev-t">${s1(st.t)}</span><span class="nx-ev-step">${st.label}</span>${st.ev.length ? `<span class="nx-ev-n">${st.ev.length} events</span>` : ''}</button>
+      ${st.ev.length ? `<ol class="nx-ev-sub" id="nx-ev-${i}"${st.t === OPEN ? '' : ' hidden'}>${st.ev.map(evRow).join('')}</ol>` : ''}
+    </li>`).join('');
   list.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
     list.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
-    // The camera video shows the whole run at exactly 10x simulated time; start a little before the event.
-    v.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    if (b.hasAttribute('aria-expanded')) {
+      const open = b.getAttribute('aria-expanded') !== 'true';
+      b.setAttribute('aria-expanded', String(open));
+      $(b.getAttribute('aria-controls')).hidden = !open;
+    }
+    // The video sits right above the list; only scroll if it is off screen.
+    const r = v.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > innerHeight) v.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
+    // The video shows the whole run at exactly 10x simulated time; start a little before the event.
     seek(v, Math.max(0, +b.dataset.t / 10 - 1));
   });
 }
@@ -367,10 +387,13 @@ const WHY = {
   reset_tasks: () => 'Resets the tasks, the props and the score, reloads the torpedoes and droppers and disarms them. Talos doesn\'t move, so the EKF is left alone.',
 };
 
+const ESC_RANGE = { thruster_telemetry_0_3: '0–3', thruster_telemetry_4_7: '4–7' };
 function bridgeList(B) {
-  const filter = $('bridge-filter'), list = $('bridge-list');
-  const CATS = [['sensor', 'Sensors'], ['camera', 'Cameras'], ['command', 'Into the sim'], ['state', 'Sim state'], ['services', 'Services'], ['all', 'All']];
-  filter.innerHTML = CATS.map(([k, n], i) => `<button type="button" data-k="${k}" aria-pressed="${i === 0}">${n}</button>`).join('');
+  const filter = $('bridge-filter'), list = $('bridge-list'), keyLine = $('bridge-key');
+  const KEY_TOPIC = keyLine.innerHTML;
+  const KEY_SRV = '<span class="nx-dir srv">srv</span><span class="nx-key-txt">a ROS service the simulator answers: call it and it acts once</span>';
+  const CATS = [['sensor', 'Sensors'], ['camera', 'Cameras'], ['command', 'Into the sim'], ['state', 'Sim state'], ['services', 'Services']];
+  filter.innerHTML = CATS.map(([k, n], i) => `<button type="button" class="btn" data-k="${k}" aria-pressed="${i === 0}">${n}</button>`).join('');
   const count = document.createElement('span');
   count.className = 'nx-count';
   filter.after(count);
@@ -391,7 +414,7 @@ function bridgeList(B) {
     return `<details class="nx-stream" data-cat="${s.cat}">
       <summary>
         <span class="nx-dir ${into ? 'in' : 'out'}" title="${into ? 'ROS → simulator' : 'simulator → ROS'}">${into ? 'in' : 'out'}</span>
-        <code class="nx-topic">${esc(short(s.topic))}</code>
+        <code class="nx-topic">${brk(short(s.topic), /[/_]/g)}${ESC_RANGE[s.id] ? ` <span class="nx-dim nx-nowrap">(ESC ${ESC_RANGE[s.id]})</span>` : ''}</code>
         <span class="nx-rate">${rate(s.rate)}</span>
       </summary>
       <dl class="nx-dl">
@@ -401,15 +424,15 @@ function bridgeList(B) {
         ${opts.length ? `<dt>Options</dt><dd>${esc(opts.join('; '))}</dd>` : ''}
         ${fields.length ? `<dt>Fields</dt><dd><ul class="nx-fields">${fields.map(([f, src]) => `<li><code>${esc(f)}</code> ← ${esc(String(src).replace(/^from /, ''))}</li>`).join('')}</ul></dd>` : ''}
         ${WHY[s.id] ? `<dt>Good to know</dt><dd>${WHY[s.id](B)}</dd>` : ''}
-        ${s.note ? `<dt>Note</dt><dd>${esc(s.note)}</dd>` : ''}
+        ${s.note && !WHY[s.id] ? `<dt>Note</dt><dd>${esc(s.note)}</dd>` : ''}
         <dt>${into ? 'Sent by' : 'Listened to by'}</dt><dd>${who.length ? who.map((n) => `<code>${esc(n)}</code>`).join(' ') : '<span class="nx-dim">nobody in that run</span>'}</dd>
-        <dt>Measured</dt><dd>${meas(s.measured)}${s.measured1 != null && s.measured1 !== s.measured ? ` (first pass ${meas(s.measured1)})` : ''}${s.bytes ? `, ${size(s.bytes)} a message` : ''}${shared[s.topic] > 1 ? `; ${shared[s.topic]} streams share this topic, so this is their total` : ''}</dd>
+        <dt>Measured</dt><dd>${meas(s.measured)}${s.bytes ? `, ${size(s.bytes)} a message` : ''}${shared[s.topic] > 1 ? `; ${shared[s.topic]} streams share this topic, so this is their total` : ''}</dd>
       </dl>
       <a class="nx-line" href="${B.url}#L${s.line}">bridge.yaml line ${s.line}</a>
     </details>`;
   };
   const srow = (s) => `<details class="nx-stream" data-cat="services">
-      <summary><span class="nx-dir srv" title="ROS service">srv</span><code class="nx-topic">${esc(short(s.service))}</code><span class="nx-rate">service</span></summary>
+      <summary><span class="nx-dir srv" title="ROS service">srv</span><code class="nx-topic">${brk(short(s.service), /[/_]/g)}</code><span class="nx-rate"></span></summary>
       <dl class="nx-dl"><dt>Type</dt><dd><code>${esc(s.type)}</code></dd><dt>Does</dt><dd><code>${esc(s.action)}</code>${s.note ? ` (${esc(s.note)})` : ''}</dd>${WHY[s.id] ? `<dt>Good to know</dt><dd>${WHY[s.id](B)}</dd>` : ''}</dl>
       <a class="nx-line" href="${B.url}#L${s.line}">bridge.yaml line ${s.line}</a>
     </details>`;
@@ -421,7 +444,8 @@ function bridgeList(B) {
       d.hidden = !ok;
       if (ok) n++;
     });
-    count.textContent = `${n} ${k === 'services' ? 'services' : k === 'all' ? 'streams and services' : 'streams'}`;
+    count.textContent = `${n} ${k === 'services' ? 'services' : 'streams'}`;
+    keyLine.innerHTML = k === 'services' ? KEY_SRV : KEY_TOPIC;
   }
   filter.addEventListener('click', (e) => {
     const b = e.target.closest('button');
@@ -439,15 +463,15 @@ function schedule() {
   const at = (due) => Math.ceil(due / TICK - 1e-9) * TICK; // first tick at or after the due time
   // first: when the first sample is due. Sensors and timed bridge streams: one period after start; cameras: the first tick.
   const ROWS = [
-    { id: 'tick', name: 'Physics tick, /clock', short: 'Tick, /clock', rate: 500, first: 'tick', what: 'Every 2 ms tick advances the plant and publishes <code>/clock</code>.' },
+    { id: 'tick', name: 'Tick, /clock', short: 'Tick, /clock', rate: 500, first: 'tick', what: 'Every 2 ms tick advances the plant and publishes <code>/clock</code>.' },
     { id: 'fog', name: 'FOG', rate: 500, what: 'Yaw rate on <code>gyro/twist</code>: a sample on every tick.' },
     { id: 'imu', name: 'IMU', rate: 400, what: 'Due every 2.5 ms, which is not a whole number of ticks, so the gaps run 2, 2, 2, 4 ms (400 a second on average).' },
     { id: 'truth', name: 'Truth TF', rate: 100, what: '<code>world → simulator/talos/base_link</code> and <code>simulator/ground_truth</code>, every 5th tick.' },
     { id: 'mpc', name: 'MPC (stack)', rate: 20, stack: true, what: 'Not the simulator: riptide_mpc solves every 50 ms of sim time. Its phase depends on when it started; drawn here at multiples of 50 ms.' },
     { id: 'depth', name: 'Depth', rate: 20, what: '<code>depth/pose</code> every 50 ms, exactly on a tick.' },
-    { id: 'cam', name: 'Cameras', rate: 15, first: 'tick', what: 'Each camera is due every 66.7 ms from the first tick: 2, 68, 134, 200, 268 ms… Rendering happens in the background, so images are published a little later.' },
-    { id: 'cloud', name: 'Point clouds', rate: 5, from: 'cam', every: 3, what: 'Every 3rd camera capture (5 Hz), built from the noisy depth and the colour image.' },
-    { id: 'dvl', name: 'DVL', rate: 8, what: 'Due every 125 ms, which falls between ticks every other time: 126, 250, 376, 500 ms.' },
+    { id: 'cam', name: 'Cameras', rate: 15, first: 'tick', what: 'First capture on the first tick (2 ms), then one per 66.7 ms slot counted from t = 0: 68, 134, 200, 268 ms. Rendering runs in the background, so images are published a little later.', listed: true },
+    { id: 'cloud', name: 'Point clouds', short: 'Clouds', rate: 5, from: 'cam', every: 3, what: 'Every 3rd camera capture, built from the noisy depth and the colour image.' },
+    { id: 'dvl', name: 'DVL', rate: 8, what: 'Due every 125 ms, which falls between ticks every other time, so samples come at 126, 250, 376, 500 ms.', listed: true },
   ];
   function times(row, T) {
     const out = [];
@@ -473,37 +497,42 @@ function schedule() {
     }
     return out;
   }
-  const ZOOMS = [[20, '20 ms'], [200, '200 ms'], [1000, '1 s']];
-  let T = 200, sel = null;
-  zoom.innerHTML = ZOOMS.map(([t, n]) => `<button type="button" data-t="${t}" aria-pressed="${t === T}">${n}</button>`).join('');
+  // Two windows, each with only the rows that read well in it: the fast sensors over 40 ms, the slow ones over 500 ms.
+  const ZOOMS = [
+    { T: 40, label: 'Fast: 40 ms', rows: ['tick', 'fog', 'imu', 'truth', 'cam'], sel: 'imu' },
+    { T: 500, label: 'Slow: 500 ms', rows: ['depth', 'mpc', 'cam', 'cloud', 'dvl'], sel: 'dvl' },
+  ];
+  let Z = ZOOMS[0], sel = Z.sel;
+  zoom.innerHTML = ZOOMS.map((z, i) => `<button type="button" data-z="${i}" aria-pressed="${z === Z}">${z.label}</button>`).join('');
   function show(row) {
-    if (!row) { note.innerHTML = 'Tap or hover a row.'; return; }
     const ts = times(row, 1000);
-    note.innerHTML = `<b>${row.name}</b>, ${row.rate} Hz. ${row.what}${row.stack ? '' : ` First samples at ${ts.slice(0, 5).map((t) => +t.toFixed(1)).join(', ')} ms; ${ts.length} in the first second.`}`;
+    note.innerHTML = `<b>${row.name}</b>, ${row.rate} Hz. ${row.what}${row.stack || row.listed ? '' : ` First samples at ${ts.slice(0, 5).map((t) => +t.toFixed(1)).join(', ')} ms.`}`;
   }
   function draw(W) {
     box.innerHTML = '';
+    const T = Z.T, rows = Z.rows.map((id) => ROWS.find((r) => r.id === id));
     const narrow = W < 520;
-    const L = narrow ? 96 : 132, rowH = 26, top = 6, H = top + ROWS.length * rowH + 26;
-    const svg = el('svg', { class: 'chart nx-sched', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'When each simulated sensor takes a sample' }, box);
-    const x = (t) => L + (t / T) * (W - L - 10);
+    const L = narrow ? 92 : 132, R = 14, rowH = 30, top = 4, H = top + rows.length * rowH + 26;
+    const svg = el('svg', { class: 'chart nx-sched', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': `When each simulated sensor takes a sample, first ${T} ms` }, box);
+    const x = (t) => L + (t / T) * (W - L - R);
     const grid = el('g', { class: 'grid' }, svg), ax = el('g', { class: 'axis' }, svg);
-    for (const t of niceTicks(0, T, narrow ? 2 : 8)) {
+    if (T <= 40) for (let t = TICK; t <= T; t += TICK) el('line', { x1: x(t), x2: x(t), y1: top, y2: H - 22, stroke: css('--rule'), 'stroke-dasharray': '2 3' }, grid);
+    for (const t of niceTicks(0, T, narrow ? 5 : 8)) {
       el('line', { x1: x(t), x2: x(t), y1: top, y2: H - 22 }, grid);
+      // the end label ("500 ms") is wider and right-aligned: skip a tick label that would run into it
+      if (t !== T && x(T) - x(t) < (String(T).length + 3) * 7 + String(t).length * 3.6 + 6) continue;
       el('text', { x: x(t), y: H - 6, 'text-anchor': t === T ? 'end' : 'middle' }, ax).textContent = t + (t === T ? ' ms' : '');
     }
     const rowsG = [];
-    ROWS.forEach((row, i) => {
+    rows.forEach((row, i) => {
       const y = top + i * rowH;
       const g = el('g', { class: 'nx-srow', tabindex: 0 }, svg);
       el('rect', { class: 'nx-srow-bg', x: 0, y, width: W, height: rowH }, g);
       el('text', { class: 'label', x: L - 10, y: y + rowH / 2 + 4, 'text-anchor': 'end' }, g).textContent = narrow && row.short ? row.short : row.name;
-      const ts = times(row, T);
       const color = row.stack ? css('--reference') : css('--state');
-      const dense = (W - L) / ts.length < 2.5;
-      for (const t of ts) {
-        if (T <= 20) el('circle', { cx: x(t), cy: y + rowH / 2, r: 3.6, fill: color }, g);
-        else el('line', { x1: x(t), x2: x(t), y1: y + 6, y2: y + rowH - 6, stroke: color, 'stroke-width': dense ? 1 : 1.6, opacity: dense ? 0.55 : 1 }, g);
+      for (const t of times(row, T)) {
+        if (T <= 40) el('circle', { cx: x(t), cy: y + rowH / 2, r: 3.8, fill: color }, g);
+        else el('line', { x1: x(t), x2: x(t), y1: y + 7, y2: y + rowH - 7, stroke: color, 'stroke-width': 2 }, g);
       }
       const on = () => { sel = row.id; rowsG.forEach(([gg, r]) => gg.classList.toggle('on', r.id === sel)); show(row); };
       g.addEventListener('pointerdown', on);
@@ -511,14 +540,16 @@ function schedule() {
       g.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') on(); });
       rowsG.push([g, row]);
     });
-    if (T <= 20) for (let t = TICK; t <= T; t += TICK) el('line', { x1: x(t), x2: x(t), y1: top, y2: H - 22, stroke: css('--rule'), 'stroke-dasharray': '2 3' }, grid);
     rowsG.forEach(([gg, r]) => gg.classList.toggle('on', r.id === sel));
+    const cur = rows.find((r) => r.id === sel);
+    if (cur) show(cur);
   }
   zoom.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
     press(zoom, b);
-    T = +b.dataset.t;
+    Z = ZOOMS[+b.dataset.z];
+    sel = Z.sel;
     draw(box.clientWidth);
   });
   onWidth(box, draw);
@@ -526,37 +557,65 @@ function schedule() {
 schedule();
 
 // ------------------------------------------------------------------ dataset samples
-// One colour per class, distinct within each model's classes (fire orange, blood red).
+// One colour per class, distinct within each sample (fire orange against blood pink, not two reds).
 const CLASS_COLOR = {
-  fire: '--reference', blood: '--s8', circle: '--s7', ambulance: '--prediction', fire_engine: '--s4', compass: '--state',
+  fire: '--reference', blood: '--s5', circle: '--s7', ambulance: '--prediction', fire_engine: '--s4', compass: '--state',
   hammer_and_wrench: '--s5', buoy: '--s6', sos: '--s4', slalom: '--s8', magnet: '--s8',
-  bandage: '--s5', helmet: '--state', nut_and_bolt: '--s4', pill: '--s7', plug: '--prediction', warning: '--s6',
+  bandage: '--s5', helmet: '--state', nut_and_bolt: '--s4', pill: '--s7', plug: '--reference', warning: '--s6',
 };
 function samples(D) {
-  const pick = $('sample-pick'), stage = $('sample-stage'), meta = $('sample-meta'), toggle = $('sample-labels');
-  const name = (s) => `${s.task ? s.task[0].toUpperCase() + s.task.slice(1) : 'Background'} · ${s.cam}`;
-  const look = { talos_uwrt_repair_2026: 'RoboSub pool', talos_uwrt_rpac_look_2026: 'RPAC look' };
-  pick.innerHTML = D.samples.map((s, i) => `<button type="button" class="btn" data-i="${i}" aria-pressed="${i === 0}">${name(s)}</button>`).join('');
+  const camSeg = $('sample-cam'), pick = $('sample-pick'), stage = $('sample-stage'), meta = $('sample-meta'), toggle = $('sample-labels');
+  const task = (s) => (s.task ? s.task[0].toUpperCase() + s.task.slice(1) : 'Background');
+  const pool = { talos_uwrt_repair_2026: 'RoboSub', talos_uwrt_rpac_look_2026: 'RPAC look' };
+  const CAMS = [['ffc', 'Forward'], ['dfc', 'Down']];
+  let cam = 'ffc';
+  camSeg.innerHTML = CAMS.map(([c, n]) => `<button type="button" data-c="${c}" aria-pressed="${c === cam}">${n}</button>`).join('');
+  function chips() {
+    const idx = D.samples.map((s, i) => [s, i]).filter(([s]) => s.cam === cam);
+    pick.innerHTML = idx.map(([s, i], k) => `<button type="button" class="btn" data-i="${i}" aria-pressed="${k === 0}">${task(s)}</button>`).join('');
+    show(idx[0][1]);
+  }
   function show(i) {
     const s = D.samples[i];
     const classes = [...new Set(s.polys.map((p) => p.cls))];
     const col = Object.fromEntries(classes.map((c, k) => [c, css(CLASS_COLOR[c] || PALETTE[k % PALETTE.length])]));
-    stage.innerHTML = `<img src="${BASE}${s.img}" width="${s.w}" height="${s.h}" alt="Synthetic ${s.cam} training image: ${s.task || 'background'}, ${s.environment} water">`;
-    const svg = el('svg', { viewBox: `0 0 ${s.w} ${s.h}`, preserveAspectRatio: 'none', 'aria-hidden': 'true' }, stage);
+    // Zoom in on the labelled objects (at most 1.45x, same aspect) so small props stay readable on a phone.
+    // The masks are normalised, so cropping is only a viewBox and an image offset.
+    let x0 = 0, y0 = 0, cw = 1;
+    if (s.polys.length) {
+      const xs = s.polys.flatMap((p) => p.pts.filter((_, k) => k % 2 === 0)), ys = s.polys.flatMap((p) => p.pts.filter((_, k) => k % 2 === 1));
+      const pad = 0.04, bx0 = Math.min(...xs) - pad, bx1 = Math.max(...xs) + pad, by0 = Math.min(...ys) - pad, by1 = Math.max(...ys) + pad;
+      cw = Math.min(1, Math.max(0.69, bx1 - bx0, by1 - by0));
+      if (cw < 0.97) {
+        x0 = Math.min(1 - cw, Math.max(0, (bx0 + bx1) / 2 - cw / 2));
+        y0 = Math.min(1 - cw, Math.max(0, (by0 + by1) / 2 - cw / 2));
+      } else cw = 1;
+    }
+    const zoomed = cw < 1;
+    stage.innerHTML = `<img src="${BASE}${s.img}" width="${s.w}" height="${s.h}" alt="Synthetic ${s.cam === 'ffc' ? 'forward' : 'down'}-camera training image: ${s.task || 'background'}, ${s.environment} look" style="width:${100 / cw}%;left:${(-x0 / cw) * 100}%;top:${(-y0 / cw) * 100}%">`;
+    const svg = el('svg', { viewBox: `${x0 * s.w} ${y0 * s.h} ${cw * s.w} ${cw * s.h}`, preserveAspectRatio: 'none', 'aria-hidden': 'true' }, stage);
     for (const p of s.polys) {
       const pts = [];
       for (let k = 0; k < p.pts.length; k += 2) pts.push(`${(p.pts[k] * s.w).toFixed(1)},${(p.pts[k + 1] * s.h).toFixed(1)}`);
-      el('polygon', { points: pts.join(' '), fill: col[p.cls], 'fill-opacity': 0.38, stroke: col[p.cls], 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke' }, svg);
+      el('polygon', { points: pts.join(' '), fill: col[p.cls], 'fill-opacity': 0.42, stroke: col[p.cls], 'stroke-width': 2.2, 'vector-effect': 'non-scaling-stroke' }, svg);
     }
     svg.style.display = toggle.checked ? '' : 'none';
     const counts = {};
     s.polys.forEach((p) => (counts[p.cls] = (counts[p.cls] || 0) + 1));
+    const n = s.polys.length;
     const C = D.counts[s.cam];
     meta.innerHTML = `
       <div class="nx-chips">${classes.length ? classes.map((c) => `<span><i style="background:${col[c]}"></i>${c}${counts[c] > 1 ? ` ×${counts[c]}` : ''}</span>`).join('') : '<span class="nx-dim">Nothing labelled: a background image, so the model also learns what is not a prop.</span>'}</div>
-      <div class="nx-sample-facts">${s.cam === 'ffc' ? 'Forward' : 'Down'} camera · look <b>${s.environment}</b> · ${look[s.scenario] || esc(s.scenario)} · ${s.split} split · ${s.instances} labelled ${s.instances === 1 ? 'object' : 'objects'}</div>
-      <div class="nx-sample-facts">The ${s.cam} set: ${(C.train + C.val).toLocaleString('en-US')} images (${C.train.toLocaleString('en-US')} train, ${C.val.toLocaleString('en-US')} val), ${C.classes.length} classes: ${C.classes.join(', ')}.</div>`;
+      <div class="nx-sample-facts">${n} labelled ${n === 1 ? 'object' : 'objects'} · look: <b>${s.environment}</b> · pool: ${pool[s.scenario] || esc(s.scenario)} · ${s.split} split${zoomed ? ` · shown ${(1 / cw).toFixed(1)}× zoomed in` : ''}</div>
+      <div class="nx-sample-facts">The ${s.cam === 'ffc' ? 'forward-camera (<code>ffc</code>)' : 'down-camera (<code>dfc</code>)'} set: ${(C.train + C.val).toLocaleString('en-US')} images, ${C.classes.length} classes.</div>`;
   }
+  camSeg.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    press(camSeg, b);
+    cam = b.dataset.c;
+    chips();
+  });
   pick.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
@@ -564,39 +623,7 @@ function samples(D) {
     show(+b.dataset.i);
   });
   toggle.addEventListener('change', () => { const svg = stage.querySelector('svg'); if (svg) svg.style.display = toggle.checked ? '' : 'none'; });
-  show(0);
-}
-
-// ------------------------------------------------------------------ tests per part
-function tests(T) {
-  const box = $('tests-chart');
-  const note = document.createElement('div');
-  note.className = 'graph-note';
-  note.textContent = 'Tap or hover a bar.';
-  box.after(note);
-  const rows = T.rows.slice().sort((a, b) => b.tests - a.tests);
-  const total = (lang) => rows.filter((r) => r.lang.startsWith(lang)).reduce((s, r) => s + r.tests, 0);
-  const legend = document.createElement('div');
-  legend.className = 'legend';
-  legend.innerHTML = `<span><i style="background:${css('--state')};height:8px"></i>C++, GoogleTest (${total('C++')})</span><span><i style="background:${css('--prediction')};height:8px"></i>Python, pytest (${total('Python')})</span>`;
-  box.before(legend);
-  onWidth(box, (W) => {
-    const narrow = W < 520;
-    const svg = barChart(box, rows.map((r) => ({ label: r.name.replace(' (Python)', ''), segments: [{ value: r.tests, color: css(r.lang.startsWith('C++') ? '--state' : '--prediction'), name: r.name }] })), {
-      width: W, rowH: 24, digits: 0, labelW: narrow ? 118 : 170, valueW: 40,
-    });
-    // A full-width hit row per bar (label included): small bars are only a few pixels wide on a phone.
-    const labels = svg.querySelectorAll('text.label');
-    rows.forEach((r, i) => {
-      const hit = el('rect', { class: 'nx-hit', x: 0, y: 3 + i * 24, width: W, height: 24 }, svg);
-      const on = () => {
-        labels.forEach((t, k) => t.classList.toggle('on', k === i));
-        note.innerHTML = `<b>${esc(r.name)}</b>, ${r.tests} tests in <a href="${r.url}"><code>${esc(r.dir)}</code></a>. ${esc(r.what)}`;
-      };
-      hit.addEventListener('pointerdown', on);
-      hit.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') on(); });
-    });
-  });
+  chips();
 }
 
 // ------------------------------------------------------------------ load data
@@ -605,4 +632,3 @@ load('nereus/course.json').then(courseMap);
 load('rosgraph/tree_run.json').then(events);
 load('nereus/bridge.json').then(bridgeList);
 load('nereus/samples.json').then(samples);
-load('nereus/tests.json').then(tests);

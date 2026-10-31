@@ -138,13 +138,29 @@ for key, name in [('vectornav_imu', 'IMU'), ('gyro_twist', 'FOG'), ('depth_pose'
 save('timeline.json', tl)
 
 # ---------- catalog: poses and parameters straight from the configs ----------
+
+
+def hydrophone_cad():
+    """Centre of the H1C hydrophone in talos.yaml's `origin` frame, from the CAD component box.
+    CAD axes (+X port, +Y up, +Z bow, mm) to origin: x = Z - 0.14 m, y = X + 0.035 m, z = Y. This offset puts the
+    CAD's VN-100, Bar30 and DVL within 1.5 cm of their talos.yaml poses."""
+    tree = os.path.join(os.path.dirname(__file__), '../cad/tree_Talos.jsonl')
+    for line in open(tree):
+        row = json.loads(line)
+        if row['name'] == 'Acoustics Pods-2/H1C Hydrophone-2':
+            b = row['box']
+            X, Y, Z = [(b[i] + b[i + 3]) / 2000 for i in range(3)]
+            return r([Z - 0.14, X + 0.035, Y], 3) + [0.0, 0.0, 0.0]
+    raise SystemExit('H1C hydrophone not found in the CAD tree')
+
 talos = yaml.safe_load(open(CORE + '/riptide_descriptions/config/talos.yaml'))
 gyro = yaml.safe_load(open(CORE + '/riptide_gyro/config/gyro_config.yaml'))['/**/riptide_gyro']['ros__parameters']
 imucfg = yaml.safe_load(open(CORE + '/riptide_imu/config/vectornav.yaml'))['/**/riptide_imu']['ros__parameters']
 cat = {
     'base_link': talos['base_link'], 'com': talos['com'],
     'poses': {k: talos[k]['pose'] for k in ['imu', 'fog', 'dvl', 'depth']},
-    'hydrophones': {k: talos['acoustics'][k]['pose'] for k in ['port', 'starboard']},
+    'hydrophones': {k: talos['acoustics'][k]['pose'] for k in ['port', 'starboard']},  # out of date; not drawn
+    'hydrophone_cad': hydrophone_cad(),
     'gyro': {k: gyro[k] for k in ['a', 'b', 'c', 'd', 'f', 'g', 'rate_norm_mean', 'rate_norm_std', 'temp_norm_mean', 'temp_norm_std', 'cal_temp_limits', 'variance', 'max_publish_rate']},
     'imu_cov': {k: imucfg[k] for k in ['orientation_covariance', 'angular_velocity_covariance', 'linear_acceleration_covariance']},
 }

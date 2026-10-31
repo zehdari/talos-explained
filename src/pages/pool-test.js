@@ -13,99 +13,77 @@ const REL = 'https://github.com/osu-uwrt/riptide_release';
 const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.json());
 
 // ---------------------------------------------------------------- the release diary
+// A year x month grid of release commits that say they were made before a test. Tap a month for its commits.
 {
-  const LANES = [
-    { k: 'pre', label: 'Before a test', color: css('--accent') },
-    { k: 'post', label: 'After a test', color: css('--state') },
-    { k: 'lake', label: 'Lake test', color: css('--prediction') },
-    { k: 'comp', label: 'RoboSub', color: css('--s7') },
-    { k: 'other', label: 'Other commits', color: css('--muted') },
-    { k: 'tag', label: 'Tags', color: css('--ink') },
-  ];
-  const KIND = Object.fromEntries(LANES.map((l) => [l.k, l]));
+  const KINDS = { pre: 'before a test', post: 'after a test', lake: 'lake test', comp: 'RoboSub', tag: 'tag' };
+  const isPre = (c) => c.k === 'pre' || (c.k === 'lake' && /^pre/i.test(c.s));
   const ev = [
-    ...data.release.commits.map((c) => ({ ...c, t: Date.parse(c.d) })),
-    ...data.release.tags.map((g) => ({ k: 'tag', d: g.d, h: g.h, s: g.name, t: Date.parse(g.d) })),
-  ].sort((a, b) => a.t - b.t);
-  const tests = ev.filter((e) => e.k !== 'other');
-  const host = document.getElementById('rel-timeline');
-  const note = document.getElementById('rel-note');
-  const n = (k) => ev.filter((e) => e.k === k).length;
-  document.getElementById('rel-counts').innerHTML = LANES.filter((l) => l.k !== 'other')
-    .map((l) => `<span><i style="background:${l.color}"></i>${l.label.toLowerCase()} <b>${n(l.k)}</b></span>`).join('');
-  const t0 = Date.parse('2022-12-01'), t1 = Date.parse('2026-12-01');
-  let sel = tests.length - 1, svg, pts = [];
-
-  function describe(e) {
-    const what = e.k === 'tag' ? `Tag <code>${esc(e.s)}</code>` : `“${esc(e.s)}”`;
-    const link = e.k === 'tag' ? `${REL}/releases/tag/${encodeURIComponent(e.s)}` : `${REL}/commit/${e.h}`;
-    return `<b>${e.d}</b> · ${KIND[e.k].label} · ${what} · <a href="${link}"><code>${e.h}</code></a>`;
+    ...data.release.commits.filter((c) => c.k !== 'other'),
+    ...data.release.tags.map((g) => ({ k: 'tag', d: g.d, h: g.h, s: g.name })),
+  ].sort((x, y) => (x.d < y.d ? -1 : x.d > y.d ? 1 : 0));
+  const Y0 = 2023, Y1 = 2026;
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = new Map(); // 'YYYY-MM' -> events
+  for (const e of ev) {
+    const k = e.d.slice(0, 7);
+    if (+k.slice(0, 4) < Y0) continue;
+    if (!months.has(k)) months.set(k, []);
+    months.get(k).push(e);
   }
-  function mark(i) {
-    pts.forEach((p) => p.node.classList.toggle('on', p.i === i));
-    const e = ev[i];
-    note.innerHTML = describe(e);
-  }
-  function draw() {
-    const W = host.clientWidth || 600;
-    const narrow = W < 520;
-    const left = narrow ? 8 : 112, right = 10, top = narrow ? 10 : 6, laneH = narrow ? 30 : 24;
-    const H = top + LANES.length * laneH + 22;
-    host.innerHTML = '';
-    svg = el('svg', { class: 'chart rel-svg', viewBox: `0 0 ${W} ${H}`, width: W, height: H }, host);
-    const sx = (t) => left + ((t - t0) / (t1 - t0)) * (W - left - right);
-    // years
-    for (let y = 2023; y <= 2026; y++) {
-      const x = sx(Date.parse(`${y}-01-01`));
-      el('line', { x1: x, x2: x, y1: top - 2, y2: H - 18, stroke: css('--grid') }, svg);
-      el('text', { class: 'label', x: x + 3, y: H - 5, 'font-size': 11 }, svg).textContent = y;
+  const active = [...months.keys()].sort();
+  const grid = document.getElementById('rel-grid');
+  const out = document.getElementById('rel-month');
+  const shade = (n) => (n === 0 ? 'var(--paper)' : `color-mix(in srgb, var(--accent) ${[0, 28, 52, 76, 100][Math.min(n, 4)]}%, var(--paper))`);
+  const cells = new Map();
+  grid.appendChild(h('span', 'rel-corner'));
+  MON.forEach((m) => grid.appendChild(h('span', 'rel-mh', m[0])));
+  for (let y = Y1; y >= Y0; y--) {
+    grid.appendChild(h('span', 'rel-yr', String(y)));
+    for (let m = 1; m <= 12; m++) {
+      const k = `${y}-${String(m).padStart(2, '0')}`;
+      const es = months.get(k) || [];
+      const n = es.filter(isPre).length;
+      const tag = es.some((e) => e.k === 'tag'), comp = es.some((e) => e.k === 'comp');
+      const c = h('button', `rel-cell${comp ? ' comp' : ''}${n >= 3 ? ' dark' : ''}`, `${n || ''}${tag ? '<i class="rel-tag" aria-hidden="true"></i>' : ''}`);
+      c.type = 'button';
+      c.style.background = shade(n);
+      c.disabled = !es.length;
+      c.setAttribute('aria-label', `${MON[m - 1]} ${y}: ${n} before a test${tag ? ', tagged' : ''}${comp ? ', RoboSub' : ''}`);
+      c.onclick = () => show(k);
+      grid.appendChild(c);
+      cells.set(k, c);
     }
-    LANES.forEach((l, j) => {
-      const y = top + j * laneH + laneH / 2;
-      el('line', { x1: left, x2: W - right, y1: y, y2: y, stroke: css('--rule'), 'stroke-dasharray': '2 3' }, svg);
-      if (!narrow) el('text', { class: 'label', x: left - 8, y: y + 4, 'text-anchor': 'end', 'font-size': 11.5 }, svg).textContent = l.label;
-      else el('text', { class: 'label rel-lane', x: left + 2, y: y - 7, 'font-size': 10 }, svg).textContent = l.label;
-    });
-    pts = ev.map((e, i) => {
-      const j = LANES.findIndex((l) => l.k === e.k);
-      const x = sx(e.t), y = top + j * laneH + laneH / 2;
-      const r = e.k === 'other' ? (narrow ? 2.8 : 2.4) : narrow ? 3.2 : 4;
-      const node = e.k === 'tag'
-        ? el('rect', { x: x - r, y: y - r, width: 2 * r, height: 2 * r, transform: `rotate(45 ${x} ${y})`, fill: KIND[e.k].color, class: 'rel-pt' }, svg)
-        : el('circle', { cx: x, cy: y, r, fill: KIND[e.k].color, 'fill-opacity': e.k === 'other' ? 0.45 : 0.9, class: 'rel-pt' }, svg);
-      return { i, x, y, node };
-    });
-    const pick = (ev2) => {
-      const b = svg.getBoundingClientRect();
-      const px = ev2.clientX - b.left, py = ev2.clientY - b.top;
-      let best = null, bd = Infinity;
-      for (const p of pts) {
-        const d = (p.x - px) ** 2 + 4 * (p.y - py) ** 2;
-        if (d < bd) { bd = d; best = p; }
-      }
-      return bd < 900 ? best : null;
-    };
-    svg.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') { const p = pick(e); if (p) mark(p.i); } });
-    svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') mark(ev.indexOf(tests[sel])); });
-    svg.addEventListener('pointerdown', (e) => {
-      const p = pick(e);
-      if (!p) return;
-      const k = tests.indexOf(ev[p.i]);
-      if (k >= 0) sel = k;
-      mark(p.i);
-    });
-    mark(ev.indexOf(tests[sel]));
   }
-  const step = (d) => { sel = Math.min(Math.max(sel + d, 0), tests.length - 1); mark(ev.indexOf(tests[sel])); };
+  let cur = active[active.length - 1];
+  function show(k) {
+    cur = k;
+    cells.forEach((c, key) => c.classList.toggle('on', key === k));
+    const es = months.get(k) || [];
+    const [y, m] = k.split('-');
+    const n = es.filter(isPre).length;
+    out.innerHTML = `<b class="rel-mt">${MON[+m - 1]} ${y}</b> <span class="rel-mn">${n} before a test</span><ul>${es.map((e) => {
+      const link = e.k === 'tag' ? `${REL}/releases/tag/${encodeURIComponent(e.s)}` : `${REL}/commit/${e.h}`;
+      const what = e.k === 'tag' ? `tag <code>${esc(e.s)}</code>` : esc(e.s);
+      return `<li class="k-${e.k}"><span class="rel-d">${+e.d.slice(8)} ${MON[+m - 1]}</span><span class="rel-s">${what}</span><span class="rel-k">${KINDS[e.k]} · <a href="${link}"><code>${e.h}</code></a></span></li>`;
+    }).join('')}</ul>`;
+    document.getElementById('rel-prev').disabled = active.indexOf(k) <= 0;
+    document.getElementById('rel-next').disabled = active.indexOf(k) >= active.length - 1;
+  }
+  const step = (d) => show(active[Math.min(Math.max(active.indexOf(cur) + d, 0), active.length - 1)]);
   document.getElementById('rel-prev').onclick = () => step(-1);
   document.getElementById('rel-next').onclick = () => step(1);
-  new ResizeObserver(() => draw()).observe(host);
+  const nPre = ev.filter(isPre).length, nTag = ev.filter((e) => e.k === 'tag').length;
+  document.getElementById('rel-key').innerHTML =
+    `<span class="rel-ramp"><i style="background:${shade(1)}"></i><i style="background:${shade(2)}"></i><i style="background:${shade(3)}"></i><i style="background:${shade(4)}"></i> 1, 2, 3, 4+ commits before a test (${nPre} in all)</span>`
+    + `<span><i class="rel-tag"></i> a tag (${nTag})</span><span><i class="rel-comp"></i> RoboSub</span><span><i class="rel-none"></i> nothing to open</span>`;
+  show(cur);
 }
 
 // ---------------------------------------------------------------- the pretest checks
 {
   const P = data.pretest;
-  const rates = Object.entries(P.rates).map(([t, hz]) => `<code>${t.replace('/zed_node/rgb/image_rect_color/compressed', ' … compressed')}</code> ${hz}`).join(', ');
+  const short = (t) => t.replace('/zed_node/rgb/image_rect_color/compressed', ' camera').replace('yolo_orientation/annotated/compressed', 'yolo_orientation/annotated');
+  const rates = Object.entries(P.rates).map(([t, hz]) => `<code>${short(t)}</code> ${hz}`).join(', ');
   const D = {
     R1: 'No submodule checked out away from its pin, nothing uncommitted, in release or any submodule.',
     R2: 'The release commit and every commit it pins are on the GitHub remote.',
@@ -116,24 +94,24 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
     B0: 'A person confirms the O-ring sealing surfaces inside both lids are clean.',
     B1: 'SSH works, the launcher answers, the ROS graph is visible. WARN if op-top and Orin clocks differ by more than 50 ms.',
     B2: '<code>talos_launch_bench_mpc.yaml</code> is loaded; any stopped bench launch is started (sensors and perception only). WARN if <code>control_system</code> is running.',
-    B3: 'Every board reports on <code>state/firmware</code> with no faults: POAC, both ESC boards, camera cage, LED, IVC, and both battery housings with <code>--power battery</code> (they report over <code>can1</code>, whose agent is off for now, so expect them missing). Debug firmware warns; versions are only shown.',
+    B3: 'Every board reports on <code>state/firmware</code> with no faults: POAC, both ESC boards, camera cage, LED, IVC, and with <code>--power battery</code> both battery housings (missing for now: <a href="#can1">can1</a>). Debug firmware warns; versions are only shown.',
     B4: `Rails in range: 15 V rail 14.7–16.0 V, 5 V 4.7–5.7 V, 3.3 V 3.2–3.4 V. On batteries, the bus at least ${P.battery_min_v} V.`,
     B5: `Minimum rates in Hz, one topic at a time for 5 s: ${rates}.`,
-    B6: 'Information only: <code>state/kill</code>, the physical switch, and who is asserting a software kill.',
-    B7: 'All 8 ESCs online. <code>disabled_flags</code> may only hold the bits expected while disabled: <code>SAFETY_KILLED</code> and the stale-RPM bits.',
+    B6: 'Information only: <code>state/kill</code>, the kill switch, and who is asserting a software kill.',
+    B7: 'All 8 ESCs online. Their <code>disabled_flags</code> (why a thruster won\'t turn) may only hold the bits expected while killed: <code>SAFETY_KILLED</code> and the stale-RPM bits.',
     B8: 'The deployed <code>mpc.yaml</code> has <code>table_mode</code> off and hardware output on, and <code>can0</code> is up. Then it starts the MPC under a held kill on slot 3, only after both ESC boards report <code>SAFETY_KILLED</code>, checks its params and log, and stops it.',
     B9: `Hands off for ${P.drift.window_s} s: odometry drifts less than ${P.drift.max_linear_m_per_hr} m/h and ${P.drift.max_yaw_deg_per_min}°/min in yaw.`,
     B10: `Mean gyro rate over the same window. WARN above ${P.gyro_warn_deg_s}°/s, with the tare command for a person. Never tares.`,
     B11: 'Every frame resolves from <code>talos/base_link</code>: world, odom, IMU, DVL, pressure sensor, both cameras, all 8 thrusters.',
     B12: `Reads the DVL's settings page (a read-only GET) and compares 15 fields with the recorded ones, e.g. sound speed ${P.dvl.dvlCalculateSoundSpeed} at ${P.dvl.dvlSpeedOfSound} m/s, salinity ${P.dvl.dvlSalinity}.`,
-    B13: 'Saves one frame from each camera into the report.',
+    B13: 'Saves one frame from each camera into the report, so a person can spot a fogged, covered or swapped camera.',
     G0: 'Bench launches running; a person confirms Talos is on its stand, thrusters clear, someone at the kill switch. Fingerprints the code for G7.',
     G1: 'Tilt about 10° starboard, 10° nose down, turn about 20° left: the right axis moves at least 6° with the right sign. A finger on the depth sensor reads at least 1 cm deeper.',
-    G2: 'A torpedo prop held 1–2 m in front of the front camera is detected and <code>mapping/torpedo</code> updates. The mapping target is set and restored.',
+    G2: 'A torpedo prop held 1–2 m in front of the front camera is detected and <code>mapping/torpedo</code> updates. The <a href="glossary.html#term-mapping-target">mapping target</a> is set and restored.',
     G3: 'With <code>--apriltag</code>: the tag frame appears in TF, then the Mapping panel\'s calibration action succeeds.',
-    G4: 'Enable, Enter, one cycle 0–7: in each 3 s window only that thruster\'s ESC turns. Then the physical kill stops everything within 1 s. Always ended with SIGINT.',
+    G4: 'Enable, Enter, one cycle 0–7: in each 3 s window only that thruster\'s ESC turns. Then pulling the kill switch stops everything within 1 s. Always ended with SIGINT.',
     G5: 'Arms the actuators (they only arm while enabled; the controller stays off), fires the torpedo and dropper after asking, then disarms.',
-    G6: 'Sign-offs: procedures dry-run, PVT passed, green subconn cover on, team told hands off.',
+    G6: 'Sign-offs: procedures dry-run, PVT passed, green SubConn cover on, team told hands off.',
     G7: 'The release checkout and the deployed code haven\'t changed since G0.',
     S0: 'Planned: its own ROS domain, localhost only, so the sim can\'t reach the robot.',
     S1: 'Planned: start Nereus with the stack, viewer and cameras.',
@@ -145,15 +123,24 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
     D2: 'Planned: the same boards and sensors are present.',
     D3: 'Planned: controller basics, table mode off.',
   };
-  const STAGES = [['all', 'All'], ['repo', 'repo'], ['bench', 'bench'], ['guided', 'guided'], ['planned', 'planned']];
+  const STAGES = [
+    ['repo', 'repo', '<b>op-top, once the code is final.</b> Pins, pushed, the Orin runs this code, recent updates, trees parse.'],
+    ['bench', 'bench', '<b>Talos on the bench, on a power supply.</b> Read-only: nothing moves. About five minutes.'],
+    ['guided', 'guided', '<b>A person at the robot, the viewer open.</b> The tool says what to do, the person does it, the tool checks the data.'],
+    ['planned', 'planned', '<b>Not built yet.</b> <code>sim</code>: the chosen trees in Nereus with the real detector, on op-top. <code>dayof</code>: at the pool, nothing changed since the last pass.'],
+    ['all', 'All', '<b>Every check,</b> in the order <code>./pretest</code> runs them.'],
+  ];
   const pickEl = document.getElementById('chk-pick');
+  const stageEl = document.getElementById('chk-stage');
   const list = document.getElementById('chk-list');
   let cur = 'bench';
   const render = () => {
     const ORDER = ['repo', 'bench', 'guided', 'sim', 'dayof'];
     const rows = P.checks.filter((c) => cur === 'all' || (cur === 'planned' ? !c.built : c.built && c.stage === cur))
       .sort((x, y) => ORDER.indexOf(x.stage) - ORDER.indexOf(y.stage));
-    list.innerHTML = rows.map((c) => `<div class="chk${c.built ? '' : ' planned'}"><span class="id">${c.id}</span><div><b>${esc(c.title)}</b> <span class="st">${c.stage}</span><p>${D[c.id] || ''}</p></div></div>`).join('');
+    const stageTag = cur === 'all' || cur === 'planned';
+    stageEl.innerHTML = STAGES.find((s) => s[0] === cur)[2];
+    list.innerHTML = rows.map((c) => `<details class="chk${c.built ? '' : ' planned'}"><summary><span class="id">${c.id}</span><span class="t">${esc(c.title)}</span>${stageTag ? `<span class="st">${c.stage}</span>` : ''}</summary><p>${D[c.id] || ''}</p></details>`).join('');
   };
   for (const [k, label] of STAGES) {
     const b = h('button', null, label);
@@ -192,9 +179,9 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
   const [hx0, hy0] = P(-0.24, -0.16), [hx1, hy1] = P(0.3, 0.16);
   el('rect', { x: hx0, y: hy0, width: hx1 - hx0, height: hy1 - hy0, rx: 26, fill: css('--paper-3'), stroke: css('--rule') }, svg);
   const midY = (hy0 + hy1) / 2;
-  el('text', { x: 4, y: midY + 4, 'font-size': 12, fill: css('--muted'), class: 'label' }, svg).textContent = 'port';
-  el('text', { x: VW - 4, y: midY + 4, 'font-size': 12, fill: css('--muted'), 'text-anchor': 'end', class: 'label' }, svg).textContent = 'starboard';
-  el('text', { x: VW / 2, y: VH - 6, 'font-size': 11.5, fill: css('--muted'), 'text-anchor': 'middle', class: 'label' }, svg).textContent = 'seen from behind';
+  el('text', { x: 2, y: midY + 5, class: 'tt-side-label' }, svg).textContent = 'port';
+  el('text', { x: VW - 2, y: midY + 5, 'text-anchor': 'end', class: 'tt-side-label' }, svg).textContent = 'starboard';
+  el('text', { x: VW / 2, y: VH - 4, 'text-anchor': 'middle', class: 'tt-side-label' }, svg).textContent = 'seen from behind';
   const nodes = TH.map((t, i) => {
     const [cx, cy] = P(ys[i], zs[i]);
     const g = el('g', { class: 'tt-th', tabindex: 0, role: 'button', 'aria-label': `${t.name}, thruster ${t.i}` }, svg);
@@ -223,7 +210,7 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
   note.innerHTML = 'Tap a thruster for its name. Names, from the naming comment in <code>talos.yaml</code>: H (heave, angled 45°) or V (vector, pointing forward), then Upper/Lower, then Port/Starboard.';
 
   // state machine
-  const st = { running: false, start: 0, sw: true, viewer: false, power: 0, done: false, lastIdx: -1, pulledAfterCycle: false, cycles: 0 };
+  const st = { running: false, start: 0, sw: true, viewer: false, power: 0, done: false, lastIdx: -1, spun: new Set() };
   const lines = [];
   const say = (s, cls = '') => { lines.push(`<span class="${cls}">${esc(s)}</span>`); while (lines.length > 9) lines.shift(); term.innerHTML = lines.join('\n'); };
   const killed = () => !st.sw || !st.viewer;
@@ -235,10 +222,11 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
     say('ros@orin2:~$ ros2 run riptide_controllers2 thruster_test_canbus', 'cmd');
     tick();
   }, true);
-  mk('enable', '2 · Enable in the viewer', () => { st.viewer = true; if (st.sw) st.power = performance.now(); tick(); });
-  mk('pull', '3 · Pull the kill switch', () => { st.sw = false; st.power = 0; tick(); });
+  mk('enable', '2 · Enable in the viewer', () => { st.viewer = true; if (st.sw) st.power = performance.now(); say('# watch each thruster spin in its place; pull the handle after a full cycle, 0 to 7', 'dim'); tick(); });
+  mk('pull', '3 · Pull the kill switch', () => { st.sw = false; st.power = 0; say('# handle out: ESC power cut, the program still sending', 'dim'); tick(); });
   mk('stop', '4 · Ctrl-C', () => { st.running = false; st.done = true; say('^C ' + TT.lines.stop, 'stop'); tick(); });
-  mk('reset', 'Reset', () => { Object.assign(st, { running: false, start: 0, sw: true, viewer: false, power: 0, done: false, lastIdx: -1, cycles: 0 }); lines.length = 0; term.innerHTML = '<span class="dim">Controller stopped in the launcher. Viewer: killed. Switch: in.</span>'; tick(); });
+  mk('safe', '5 · KILL in the viewer, then handle in', () => { st.viewer = false; st.sw = true; st.power = 0; say('# viewer on KILL first, then the handle back in: safe to touch', 'dim'); tick(); });
+  mk('reset', 'Reset', () => { Object.assign(st, { running: false, start: 0, sw: true, viewer: false, power: 0, done: false, lastIdx: -1, spun: new Set() }); lines.length = 0; say('# controller stopped in the launcher; viewer on KILL; handle in', 'dim'); tick(); });
   B.reset.classList.add('ghost');
 
   function tick() {
@@ -254,17 +242,21 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
       }
     }
     const spinning = st.running && escReady(now) ? idx : -1;
+    if (spinning >= 0) st.spun.add(spinning);
+    const cycled = st.spun.size === N;
     nodes.forEach((n, i) => { n.g.classList.toggle('spin', i === spinning); n.g.classList.toggle('cur', st.running && i === idx); });
     const delayLeft = st.power && !killed() ? Math.max(0, ESC_DELAY - (now - st.power)) : 0;
     const escTxt = killed() ? 'no power (killed)' : delayLeft > 0 ? `power-on delay ${(delayLeft / 1000).toFixed(1)} s` : 'ready';
-    stateEl.innerHTML = `<span class="${st.sw ? 'ok' : 'bad'}">switch <b>${st.sw ? 'in' : 'out'}</b></span>`
+    stateEl.innerHTML = `<span class="${st.sw ? 'ok' : 'bad'}">kill switch <b>${st.sw ? 'in' : 'out'}</b></span>`
       + `<span class="${st.viewer ? 'ok' : 'bad'}">viewer <b>${st.viewer ? 'enabled' : 'KILL'}</b></span>`
       + `<span class="${escReady(now) ? 'ok' : killed() ? 'bad' : 'wait'}">ESCs <b>${escTxt}</b></span>`
-      + `<span>${spinning >= 0 ? `spinning <b>${TH[spinning].name}</b> at ${TT.rpm} rpm` : st.running ? '<b>nothing spinning</b>' : st.done ? 'test stopped' : 'test not running'}</span>`;
+      + `<span>${spinning >= 0 ? `spinning <b>${TH[spinning].name}</b> at ${TT.rpm} rpm` : st.running ? '<b>nothing spinning</b>' : st.done ? (!st.viewer && st.sw ? 'test over: <b>safe</b>' : 'test stopped') : 'test not running'}</span>`;
     B.run.disabled = st.running || st.done;
     B.enable.disabled = st.viewer || !st.running;
-    B.pull.disabled = !st.sw || !st.viewer;
+    B.pull.disabled = !st.sw || !st.viewer || !cycled;
+    B.pull.textContent = !st.sw || cycled || !st.viewer ? '3 · Pull the kill switch' : `3 · Pull the kill switch (after the cycle: ${st.spun.size}/${N})`;
     B.stop.disabled = !st.running;
+    B.safe.disabled = !st.done || (!st.viewer && st.sw);
     if (st.running || delayLeft > 0) requestAnimationFrame(tick);
   }
   B.reset.onclick();
@@ -272,103 +264,99 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
 }
 
 // ---------------------------------------------------------------- the operator's screen
+// One part of the viewer at a time: where it is on the whole screen (outlined), a 1:1 crop of it, what it's for.
 {
-  // Positions in the 1480 x 940 screenshot. What each control does: nereus docs/viewer.md.
-  const SPOTS = [
-    [176, 62, 'KILL / Enable', 'One button, also at the top of the Motion panel. The viewer starts on KILL; Enable clears slot 1 and latches, so Talos keeps running if the tether comes off.'],
-    [856, 62, 'Health chips', '<code>FOG</code> temperature (amber at 55 °C), <code>DVL</code> bottom lock, <code>CPU</code> temperature (only with the diagnostics launch, no longer started), <code>PORT</code> and <code>STBD</code> battery charge (amber below 50 %, red below 20 %; gray for now, as the <code>can1</code> agent that carries <code>state/battery</code> is off). A red <code>BAG</code> chip appears while a bag records.'],
-    [1279, 62, 'Edit map', 'Ctrl+M. Moves the props in riptide_mapping\'s prior map to where they are in this pool.'],
-    [516, 18, 'Search, Ctrl+P', 'Typed moves (<code>forward 0.5</code>, <code>turn 30</code>) and plots (<code>plot disturbance</code>).'],
-    [370, 207, 'Motion', 'Actual, commanded and error per axis. Watch the error column on the first small moves.'],
-    [391, 512, 'Dive in place', 'Holds the current x, y and heading, level, at the configured depth. The first thing to send after Enable.'],
-    [97, 664, 'Mapping', '<strong>Calibrate</strong> on the AprilTag sets <code>world → map</code>; Lock map picks the mapping target.'],
-    [282, 664, 'Autonomy', 'Pick a tree, Start, Stop. Manual commands are blocked while a tree runs.'],
-    [990, 300, 'Pool view', 'Talos drawn from its own localization estimate, here in front of the AprilTag board.'],
-    [1330, 102, 'Cameras', 'Forward and downward ZED streams. Check for fog or bubbles on the lens.'],
-    [1242, 684, 'Recording, Bagging', 'SVO video on the robot; <code>ros2 bag record</code> on the robot or on op-top.'],
-    [1398, 684, 'Electrical, Actuators', 'Power commands, mag cal, gyro tare; arm, fire torpedoes, drop markers.'],
+  // [chip label, title, crop file, outlined boxes [x0, y0, x1, y1] in the 1480 x 940 screenshot, text]
+  const PARTS = [
+    ['Enable', 'Enable / KILL', 'kill', [[182, 42, 420, 82], [10, 124, 388, 162]],
+      'One button, in the command bar and at the top of the Motion panel. The viewer opens killed (top): it holds a kill on <a href="glossary.html#term-kill-slot">slot 1</a> and the button offers <b>Enable</b>. Press it and the button becomes a red <b>KILL</b> (bottom). Enable latches, so a run survives the tether coming off; KILL only reaches Talos through the tether.'],
+    ['Chips', 'Health chips', 'chips', [[866, 48, 1234, 76]],
+      '<code>FOG</code> temperature (amber at 55 °C), <code>DVL</code> bottom lock, <code>CPU</code> temperature, <code>PORT</code> and <code>STBD</code> battery charge. Gray means no data: CPU needs <code>diagnostics.launch.py</code>, which isn\'t started any more, and the battery chips wait for <a href="#can1">can1</a>. A red <code>BAG</code> chip appears while a bag records.'],
+    ['Motion', 'Motion', 'motion', [[0, 118, 392, 540]],
+      'Actual, commanded and error per axis, in the map frame: metres, and degrees for roll, pitch and yaw. Here Talos holds 0.85 m deep, a few centimetres and about 1.4° off: a good hold. On a move the error starts large and should shrink to this. <b>Dive in place</b> is the first move after Enable (<a href="#sensors">the first dive</a>).'],
+    ['Search', 'Ctrl+P and Edit map', 'search', [[528, 4, 952, 32], [1242, 45, 1318, 79]],
+      'The search box takes typed moves (<code>forward 0.5</code>, <code>turn 30</code>) and plots (<code>plot disturbance</code>). <b>Edit map</b> (Ctrl+M) moves the props in the <a href="glossary.html#term-prior-map">prior map</a> to where they are in this pool.'],
+    ['Map', 'Mapping', 'mapping', [[8, 652, 96, 680]],
+      'The Mapping tab, under Motion (crop from the simulator). <b>Calibrate</b>, with the AprilTag in view, sets <code>world → map</code>. <b>Lock map</b> fixes the <a href="glossary.html#term-mapping-target">mapping target</a>.'],
+    ['Trees', 'Autonomy', 'autonomy', [[0, 648, 290, 780]],
+      'Pick a tree, <b>Start</b>, <b>Stop</b>. Start only works while the viewer holds the enable, and manual commands are blocked while a tree runs.'],
+    ['Bags', 'Bagging', 'bagging', [[1166, 686, 1318, 714]],
+      'Two tabs at the bottom right (crop from the simulator, so Record is grayed: no robot to reach). <b>Bagging</b> records <code>ros2 bag</code> on the robot, so the bag survives the tether; <i>Leave out</i> skips topics by pattern. <b>Recording</b> starts the cameras\' own <a href="glossary.html#term-svo2">SVO</a> video, also on the robot.'],
   ];
-  const wrap = document.getElementById('vw');
-  const key = document.getElementById('vw-key');
-  const img = wrap.querySelector('img');
-  const IW = 1480, IH = 940, CROP = 520; // source px shown across the loupe
-  // On a phone the full screenshot is ~350 px wide and unreadable: a tapped spot is shown enlarged below it.
-  const loupe = h('div', 'vw-loupe', '<div class="vw-crop"><span class="vw-ring"></span></div><p></p>');
-  loupe.setAttribute('aria-live', 'polite');
-  wrap.after(loupe);
-  const crop = loupe.querySelector('.vw-crop'), ring = loupe.querySelector('.vw-ring'), cap = loupe.querySelector('p');
-  const showLoupe = (k) => {
-    const [x, y, title, text] = SPOTS[k];
-    loupe.classList.add('on');
-    const lw = crop.clientWidth, lh = crop.clientHeight;
-    if (!lw) return;
-    const sc = lw / CROP, ch = lh / sc;
-    const left = Math.min(Math.max(x - CROP / 2, 0), IW - CROP), top = Math.min(Math.max(y - ch / 2, 0), IH - ch);
-    crop.style.backgroundImage = `url("${img.currentSrc || img.src}")`;
-    crop.style.backgroundSize = `${IW * sc}px ${IH * sc}px`;
-    crop.style.backgroundPosition = `${-left * sc}px ${-top * sc}px`;
-    ring.style.left = `${(x - left) * sc}px`;
-    ring.style.top = `${(y - top) * sc}px`;
-    cap.innerHTML = `<b>${k + 1} · ${title}.</b> ${text}`;
+  const IW = 1480, IH = 940;
+  const pick = document.getElementById('vw-pick');
+  const mask = document.getElementById('vw-mask');
+  const cropImg = document.querySelector('#vw-crop img');
+  const text = document.getElementById('vw-text');
+  const sizes = {};
+  const show = (k) => {
+    const [, label, file, boxes, body] = PARTS[k];
+    pick.querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-pressed', String(j === k)));
+    const holes = boxes.map(([x0, y0, x1, y1]) => `M${x0 - 6} ${y0 - 6}H${x1 + 6}V${y1 + 6}H${x0 - 6}Z`).join('');
+    mask.innerHTML = `<path d="M0 0H${IW}V${IH}H0Z${holes}" fill-rule="evenodd" class="vw-dim"/>`
+      + boxes.map(([x0, y0, x1, y1]) => `<rect x="${x0 - 6}" y="${y0 - 6}" width="${x1 - x0 + 12}" height="${y1 - y0 + 12}" rx="8" class="vw-box"/>`).join('');
+    cropImg.src = `${BASE}img/pool-test/vw-${file}.webp`;
+    cropImg.alt = `The viewer's ${label}, at full size`;
+    if (sizes[file]) { cropImg.width = sizes[file][0]; cropImg.height = sizes[file][1]; }
+    text.innerHTML = `<b>${label}.</b> ${body}`;
   };
-  const narrow = () => matchMedia('(max-width: 560px)').matches;
-  const items = [];
-  const pick = (k) => {
-    items.forEach(([b, li], j) => { b.classList.toggle('on', j === k); li.classList.toggle('on', j === k); });
-    if (narrow()) showLoupe(k);
-  };
-  SPOTS.forEach(([x, y, title, text], k) => {
-    const b = h('button', 'vw-spot', String(k + 1));
+  // natural sizes of the crops (tools/pool-test/viewer_crops.py), so each is shown 1:1 or smaller
+  Object.assign(sizes, { kill: [254, 106], chips: [232, 82], search: [248, 88], motion: [384, 422], autonomy: [290, 132], mapping: [392, 236], bagging: [410, 254] });
+  PARTS.forEach(([label, title], k) => {
+    const b = h('button', null, label);
+    b.setAttribute('aria-label', title);
     b.type = 'button';
-    b.style.left = `${(100 * x) / 1480}%`;
-    b.style.top = `${(100 * y) / 940}%`;
-    b.setAttribute('aria-label', `${k + 1}: ${title}`);
-    const li = h('li', null, `<b>${title}.</b> ${text}`);
-    li.value = k + 1;
-    b.addEventListener('click', () => { pick(k); if (!narrow()) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
-    b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') pick(k); });
-    li.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') pick(k); });
-    li.addEventListener('click', () => { pick(k); if (narrow()) wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
-    wrap.appendChild(b);
-    key.appendChild(li);
-    items.push([b, li]);
+    b.onclick = () => show(k);
+    pick.appendChild(b);
   });
+  show(0);
 }
 
-// ---------------------------------------------------------------- the first eight seconds after the switch goes in
+// ---------------------------------------------------------------- the first seconds after the handle goes in
 {
   const host = document.getElementById('start-strip');
   const rows = [
     { label: 'state/kill', segs: [[-1, 0, 'killed', 'bad'], [0, 8, 'false', 'ok']] },
-    { label: 'ESCs', segs: [[-1, 0, 'no power', 'bad'], [0, 5, 'power-on delay', 'wait'], [5, 8, 'ready', 'ok']] },
-    { label: 'Tree', segs: [[-1, 0, 'polling', 'wait'], [0, 1, 'wait 1 s', 'wait'], [1, 6, 'starting in 5 s', 'wait'], [6, 8, 'moving', 'go']] },
+    { label: 'ESCs', segs: [[-1, 0, 'no power', 'bad'], [0, 5, 'power-on delay, 5 s', 'wait'], [5, 8, 'ready', 'ok']] },
+    { label: 'Tree', segs: [[-1, 0, 'polling', 'wait'], [0, 1, 'wait 1 s', 'wait'], [1, 6, '"starting in 5 seconds"', 'wait'], [6, 8, 'moves', 'go']] },
   ];
-  const fill = { bad: '#f3d6ca', wait: css('--paper-3'), ok: '#d3ebe1', go: css('--accent') };
+  const STEPS = [
+    ['before', 'Handle out. <code>state/kill</code> is true, the ESCs have no power, and the tree polls <code>state/kill</code>.'],
+    ['0 s', '<b>Handle in.</b> <code>state/kill</code> goes false; ESC power returns and the ESCs start their power-on delay.'],
+    ['1 s', 'The tree has waited 1 s and logs "KILL SWITCH INSERTED, TREE STARTING IN 5 SECONDS".'],
+    ['5 s', 'The ESCs are ready.'],
+    ['6 s', '<b>The tree moves</b>, a second after the thrusters can turn.'],
+  ];
+  const mix = (v, p) => `color-mix(in srgb, var(${v}) ${p}%, var(--paper))`;
+  const fill = { bad: mix('--accent', 22), wait: 'var(--paper-3)', ok: mix('--prediction', 24), go: 'var(--accent)' };
   const draw = () => {
-    const W = Math.max(280, host.clientWidth || 600);
-    const narrow = W < 480, fs = narrow ? 10.5 : 11.5;
-    const left = narrow ? 62 : 92, right = 10, rowH = 34, top = 6;
-    const H = top + rows.length * rowH + 32;
+    const W = host.clientWidth || 600;
     host.innerHTML = '';
-    const svg = el('svg', { class: 'chart strip-svg', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'Timeline of the eight seconds after the kill switch is inserted' }, host);
+    if (W < 520) { // phone: the same story as a list
+      const ol = h('ol', 'strip-steps');
+      ol.innerHTML = STEPS.map(([t, s]) => `<li><span class="t">${t}</span><span>${s}</span></li>`).join('');
+      host.appendChild(ol);
+      return;
+    }
+    const fs = 12.5, left = 86, right = 8, rowH = 38, top = 4;
+    const H = top + rows.length * rowH + 40;
+    const svg = el('svg', { class: 'chart strip-svg', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'Timeline of the eight seconds after the kill switch handle goes in' }, host);
     const sx = (t) => left + ((t + 1) / 9) * (W - left - right);
     rows.forEach((r, j) => {
       const y = top + j * rowH;
-      el('text', { class: 'label', x: left - 8, y: y + rowH / 2 + 1, 'text-anchor': 'end', 'dominant-baseline': 'middle', 'font-size': fs }, svg).textContent = r.label;
-      for (const [a, b, text, k] of r.segs) {
-        const w = sx(b) - sx(a) - 2;
-        el('rect', { x: sx(a) + 1, y: y + 5, width: w, height: rowH - 10, rx: 4, fill: fill[k] }, svg);
-        if (text.length * fs * 0.56 > w - 4) continue; // no room on a narrow screen
-        el('text', { class: 'label', x: (sx(a) + sx(b)) / 2, y: y + rowH / 2 + 1, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': fs, style: `fill:${k === 'go' ? '#fff' : css('--ink')}` }, svg).textContent = text;
+      el('text', { class: 'strip-t', x: left - 10, y: y + rowH / 2 + 1, 'text-anchor': 'end', 'dominant-baseline': 'middle', 'font-size': fs }, svg).textContent = r.label;
+      for (const [a, b, label, k] of r.segs) {
+        el('rect', { x: sx(a) + 1, y: y + 5, width: sx(b) - sx(a) - 2, height: rowH - 10, rx: 4, style: `fill:${fill[k]}` }, svg);
+        el('text', { class: 'strip-t', x: (sx(a) + sx(b)) / 2, y: y + rowH / 2 + 1, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': fs, style: k === 'go' ? 'fill:var(--paper);font-weight:650' : '' }, svg).textContent = label;
       }
     });
     const yb = top + rows.length * rowH;
-    for (let t = 0; t <= 8; t += narrow ? 2 : 1) {
+    for (let t = 0; t <= 8; t++) {
       el('line', { x1: sx(t), x2: sx(t), y1: yb, y2: yb + 4, stroke: css('--muted') }, svg);
-      el('text', { class: 'label', x: sx(t), y: yb + 16, 'text-anchor': 'middle', 'font-size': fs }, svg).textContent = `${t} s`;
+      el('text', { class: 'strip-t muted', x: sx(t), y: yb + 17, 'text-anchor': 'middle', 'font-size': fs }, svg).textContent = `${t} s`;
     }
     el('line', { x1: sx(0), x2: sx(0), y1: top, y2: yb, stroke: css('--ink'), 'stroke-width': 1.5 }, svg);
-    el('text', { class: 'label', x: sx(0) - 4, y: yb + 29, 'text-anchor': 'end', 'font-size': fs, style: `fill:${css('--accent')}` }, svg).textContent = 'switch in';
+    el('text', { class: 'strip-t accent', x: sx(0) - 6, y: yb + 33, 'text-anchor': 'end', 'font-size': fs }, svg).textContent = 'handle in';
   };
   new ResizeObserver(draw).observe(host);
 }
@@ -390,15 +378,17 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
     box.appendChild(c);
     host.appendChild(box);
     barChart(c, [
-      { label: 'tethered', unit: ' ' + unit, segments: [{ value: T.tethered[key], color: css('--s8'), name: 'tethered' }] },
+      { label: 'tethered', unit: ' ' + unit, segments: [{ value: T.tethered[key], color: css('--muted'), name: 'tethered' }] },
       { label: 'untethered', unit: ' ' + unit, segments: [{ value: T.untethered[key], color: css('--state'), name: 'untethered' }] },
     ], { width: 320, rowH: 26, digits, labelW: 84, valueW: 78 });
   }
 }
 
 // ---------------------------------------------------------------- the checklist
+// One phase at a time: the phase chips switch between them, each shows its progress; ticks persist.
 {
   const KEY = 'talos-explained:pool-test-checklist';
+  const PKEY = KEY + ':phase';
   const G = data.checklist;
   const host = document.getElementById('pool-checklist');
   let done = {};
@@ -413,12 +403,21 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
   tools.append(openAll, clear);
   head.append(bar, tools);
   host.appendChild(head);
-  const nav = h('nav', 'pc-phases');
-  nav.setAttribute('aria-label', 'Checklist phases');
+  const nav = h('div', 'pc-phases');
+  nav.setAttribute('role', 'group');
+  nav.setAttribute('aria-label', 'Checklist phase');
   host.appendChild(nav);
 
   const link = (href, label) => `<a href="${href}">${esc(label)}</a>`;
   const phaseEls = [];
+  let curPhase = 0;
+  const showPhase = (i, scroll) => {
+    curPhase = i;
+    try { localStorage.setItem(PKEY, G[i].id); } catch { /* private mode */ }
+    phaseEls.forEach((e, j) => { e.sec.hidden = j !== i; e.a.setAttribute('aria-pressed', String(j === i)); });
+    openAll.textContent = phaseEls[i].sec.querySelectorAll('details').length && [...phaseEls[i].sec.querySelectorAll('details')].every((d) => d.open) ? 'Close all' : 'Open all';
+    if (scroll) nav.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
   G.forEach((p, pi) => {
     const sec = h('section', 'pc-phase');
     sec.id = `pc-${p.id}`;
@@ -435,7 +434,7 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
       if (s.id === 'packlist') body.push(document.getElementById('pack-list').outerHTML.replace('id="pack-list"', ''));
       if (s.cmd) body.push(`<pre class="cmd"${s.where ? ` data-where="${esc(s.where)}"` : ''}><code>${esc(s.cmd)}</code></pre>`);
       if (s.refs) body.push(`<p class="pc-refs">${s.refs.map(([href, label]) => link(href, label)).join(' · ')}</p>`);
-      li.innerHTML = `<input type="checkbox" id="pc-${s.id}" aria-label="Done: ${esc(s.t)}"><details><summary><span class="t">${esc(s.t)}</span>${tags}</summary><div class="pc-body">${body.join('')}</div></details>`;
+      li.innerHTML = `<label class="pc-hit"><input type="checkbox" id="pc-${s.id}" aria-label="Done: ${esc(s.t)}"></label><details><summary><span class="t">${esc(s.t)}</span>${tags}</summary><div class="pc-body">${body.join('')}</div></details>`;
       const box = li.querySelector('input');
       box.checked = !!done[s.id];
       li.classList.toggle('done', box.checked);
@@ -443,9 +442,16 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
       ol.appendChild(li);
     }
     sec.appendChild(ol);
+    if (pi < G.length - 1) {
+      const next = h('button', 'btn pc-next', `Next: ${esc(G[pi + 1].title)} ›`);
+      next.type = 'button';
+      next.onclick = () => showPhase(pi + 1, true);
+      sec.appendChild(next);
+    }
     host.appendChild(sec);
-    const a = h('a', null, `<span class="pc-dot"></span>${esc(p.title)}`);
-    a.href = `#pc-${p.id}`;
+    const a = h('button', null, `<span class="pc-dot"></span>${esc(p.short || p.title)}`);
+    a.type = 'button';
+    a.onclick = () => showPhase(pi);
     nav.appendChild(a);
     phaseEls.push({ p, sec, a, title });
   });
@@ -459,10 +465,11 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
       title.querySelector('.pc-pcount').textContent = `${k}/${p.steps.length}`;
       a.classList.toggle('full', k === p.steps.length);
       a.classList.toggle('part', k > 0 && k < p.steps.length);
+      a.setAttribute('aria-label', `${p.title}: ${k} of ${p.steps.length} done`);
     }
   }
   openAll.onclick = () => {
-    const ds = [...host.querySelectorAll('details')];
+    const ds = [...phaseEls[curPhase].sec.querySelectorAll('details')];
     const open = !ds.every((d) => d.open);
     ds.forEach((d) => (d.open = open));
     openAll.textContent = open ? 'Close all' : 'Open all';
@@ -476,7 +483,16 @@ const data = await fetch(BASE + 'data/pool-test/pool-test.json').then((r) => r.j
     host.querySelectorAll('ol.pc input').forEach((b) => { b.checked = false; b.closest('li').classList.remove('done'); });
     clear.textContent = 'New test';
     count();
+    showPhase(0);
   };
   count();
+  // start on the saved phase, else the first one that isn't finished
+  let saved = -1;
+  try { saved = G.findIndex((p) => p.id === localStorage.getItem(PKEY)); } catch { /* private mode */ }
+  const firstOpen = G.findIndex((p) => p.steps.some((s) => !done[s.id]));
+  showPhase(saved >= 0 ? saved : Math.max(firstOpen, 0));
+  // a link to #pc-<phase> (or a step) opens that phase
+  const follow = () => { const m = location.hash.match(/^#pc-(.+)$/); if (!m) return; const i = G.findIndex((p) => p.id === m[1] || p.steps.some((s) => s.id === m[1])); if (i >= 0) showPhase(i); };
+  addEventListener('hashchange', follow);
+  follow();
 }
-

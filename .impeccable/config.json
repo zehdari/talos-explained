@@ -128,6 +128,24 @@
         ],
         "createdAt": "2026-10-31T14:01:55.044Z",
         "reason": "agent: an orchestration script whose prompt text mentions <img>; not a page"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/css/computers.css"
+        ],
+        "createdAt": "2026-10-31T20:50:38.249Z",
+        "reason": "agent: 2px rule-coloured left rule on a readout, same as the house .words style of the approved sister sites"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/css/code-map.css"
+        ],
+        "createdAt": "2026-10-31T20:50:38.255Z",
+        "reason": "agent: thin accent marker on rows that belong to one category, matching the house aside.short accent rule from the approved sister sites"
       }
     ]
   }

@@ -1,5 +1,7 @@
 // Talos in the pool with sensor markers, for the Navigation sensors chapter. A trimmed copy of viz/scene.js:
-// the model, floor and lights, plus markers and frame axes drawn through the hull, and tap-to-pick.
+// the CAD model (models/talos-cad.glb), floor and lights, plus markers and frame axes drawn through the hull, and
+// tap-to-pick. Picking a sensor tints its CAD part (where the CAD has one) and turns the camera to a view that
+// shows it: from below for the DVL and the hydrophone pod, from starboard and behind for the IMU and depth sensor.
 // Everything inside `root` is in ROS coordinates (x forward, y left, z up); root turns them into three's y-up.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -62,11 +64,17 @@ export function createSensorScene(canvas, { sensors, baseLink, onPick, labelHost
   controls.minDistance = 0.6;
   controls.maxDistance = 5;
   controls.update();
+  // OrbitControls claims every touch (touch-action: none); give vertical swipes back to the page so it still scrolls.
+  canvas.style.touchAction = 'pan-y';
 
   scene.add(new THREE.HemisphereLight(0xf2fbff, 0x7aa9b3, 2.1));
   const sun = new THREE.DirectionalLight(0xffffff, 1.6);
   sun.position.set(3, 8, 4);
   scene.add(sun);
+  // A softer light from below, for the views from under Talos (DVL, hydrophone).
+  const under = new THREE.DirectionalLight(0xffffff, 0.9);
+  under.position.set(-2, -6, 1);
+  scene.add(under);
   const tex = tileTexture();
   tex.repeat.set(16, 16);
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(32, 32), new THREE.MeshLambertMaterial({ map: tex }));
@@ -76,22 +84,45 @@ export function createSensorScene(canvas, { sensors, baseLink, onPick, labelHost
   const body = new THREE.Group();
   body.position.copy(v3(at([0, 0, 0])));
   root.add(body);
-  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(`${BASE}models/talos.glb`, (g) => {
+  // The CAD model is in the assembly frame (+X port, +Y up, +Z bow, metres). Into talos.yaml's `origin` frame:
+  // x = Z + CAD_OFF[0], y = X + CAD_OFF[1], z = Y + CAD_OFF[2]; the offset puts the CAD's DVL on talos.yaml's DVL pose.
+  const CAD_OFF = [-0.121, 0.034, 0];
+  const cad = new THREE.Group();
+  cad.matrixAutoUpdate = false;
+  cad.matrix.set(0, 0, 1, CAD_OFF[0], 1, 0, 0, CAD_OFF[1], 0, 1, 0, CAD_OFF[2], 0, 0, 0, 1);
+  body.add(cad);
+  // Sensor id -> the CAD node that is that sensor (the IMU and depth sensor are inside bigger nodes: dots only).
+  const PART = { dvl: 'dvl', hydro: 'acoustics' };
+  const GREY = 0xc9d0d4, TINT = 0xe0703f;
+  const parts = new Map();
+  let picked = null;
+  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(`${BASE}models/talos-cad.glb`, (g) => {
     g.scene.traverse((o) => {
       if (!o.isMesh) return;
-      const m = o.material;
       o.geometry = toCreasedNormals(o.geometry, (35 * Math.PI) / 180);
-      o.material = new THREE.MeshStandardMaterial({ color: m.color, metalness: 0.3, roughness: 0.5, envMap, envMapIntensity: 0.45, side: m.side });
+      // One light grey for the whole robot, so only the chosen sensor and the markers carry colour.
+      o.material = new THREE.MeshStandardMaterial({ color: GREY, metalness: 0.15, roughness: 0.6, envMap, envMapIntensity: 0.4, side: THREE.DoubleSide, transparent: true, opacity: 0.92 });
+      parts.set(o.name || o.parent?.name, o);
     });
-    body.add(g.scene);
+    cad.add(g.scene);
+    tint();
   });
+  function tint() {
+    for (const [name, o] of parts) {
+      const on = PART[picked] === name;
+      o.material.color.set(on ? TINT : GREY);
+      o.material.opacity = on ? 1 : 0.92;
+    }
+  }
 
   // Markers and frame axes, drawn over the hull (no depth test).
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const overlay = (mat) => { mat.depthTest = false; mat.transparent = true; return mat; };
-  const dotGeo = new THREE.SphereGeometry(0.022, 20, 14);
-  const shaftGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.18, 10);
-  const headGeo = new THREE.ConeGeometry(0.018, 0.045, 14);
+  const dotGeo = new THREE.SphereGeometry(0.016, 20, 14);
+  const AX = 0.22; // axis arrow length: long enough to read past the hull, short enough not to cross the picture
+  const shaftGeo = new THREE.CylinderGeometry(0.007, 0.007, AX, 10);
+  const headGeo = new THREE.ConeGeometry(0.02, 0.05, 14);
+  const ACCENT = 0xd9480f, MUTED = 0x546d79;
   const items = [];
   const axisColors = [css('--s8') || '#e34948', css('--s6') || '#008300', css('--state') || '#2a78d6'];
   for (const s of sensors) {
@@ -116,23 +147,28 @@ export function createSensorScene(canvas, { sensors, baseLink, onPick, labelHost
         items.push({ id: s.id, muted: true, mesh: null, axes: null, label, pos, anchor: 'tip', from: at(baseLink) });
         return;
       }
-      const mesh = new THREE.Mesh(dotGeo, overlay(new THREE.MeshBasicMaterial({ color: s.muted ? 0x546d79 : 0x0f2633 })));
+      const mesh = new THREE.Mesh(dotGeo, overlay(new THREE.MeshBasicMaterial({ color: s.muted ? MUTED : ACCENT })));
       mesh.position.copy(v3(pos));
       mesh.renderOrder = 10;
+      mesh.visible = !s.axisOnly; // the FOG has no position on record: only its axis is drawn
       root.add(mesh);
       const axes = new THREE.Group();
       axes.position.copy(v3(pos));
       const R = rpyMatrix(pose[3] || 0, pose[4] || 0, pose[5] || 0);
-      [[1, 0, 0], [0, 1, 0], [0, 0, 1]].forEach((a, i) => {
+      const mats = [];
+      (s.axisOnly ? [[0, 0, 1]] : [[1, 0, 0], [0, 1, 0], [0, 0, 1]]).forEach((a, j) => {
+        const i = s.axisOnly ? 2 : j;
         // A thick arrow (WebGL lines are always 1 px): a cylinder shaft and a cone head along +Y, turned onto the axis.
-        const mat = overlay(new THREE.MeshBasicMaterial({ color: axisColors[i] }));
+        const mat = overlay(new THREE.MeshBasicMaterial({ color: s.axisOnly ? MUTED : axisColors[i] }));
+        mats.push(mat);
         const arrow = new THREE.Group();
         const shaft = new THREE.Mesh(shaftGeo, mat);
-        shaft.position.y = 0.09;
+        shaft.position.y = AX / 2;
         const head = new THREE.Mesh(headGeo, mat);
-        head.position.y = 0.2;
+        head.position.y = AX + 0.022;
         shaft.renderOrder = head.renderOrder = 11;
         arrow.add(shaft, head);
+        if (s.axisOnly) arrow.scale.set(1, 0.6, 1); // the FOG's axis at base_link: short, so it doesn't cross the picture
         arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v3(a).applyMatrix4(R).normalize());
         axes.add(arrow);
       });
@@ -150,7 +186,7 @@ export function createSensorScene(canvas, { sensors, baseLink, onPick, labelHost
         else label.tabIndex = -1;
         labelHost.appendChild(label);
       }
-      items.push({ id: s.id, muted: s.muted, mesh, axes, label, pos, anchor: s.anchor });
+      items.push({ id: s.id, muted: s.muted, axisOnly: s.axisOnly, noAxes: s.noAxes, mats, mesh, axes, label, pos, anchor: s.anchor });
     });
   }
 
@@ -158,11 +194,51 @@ export function createSensorScene(canvas, { sensors, baseLink, onPick, labelHost
     for (const it of items) {
       if (!it.mesh) continue;
       const on = it.id === id;
-      it.axes.visible = on && !it.muted;
-      it.mesh.material.color.set(on ? 0xd9480f : it.muted ? 0x546d79 : 0x0f2633);
-      it.mesh.scale.setScalar(on ? 1.35 : it.muted ? 0.7 : 1);
+      it.axes.visible = on && !it.muted && !it.noAxes;
+      it.mesh.material.color.set(it.muted ? MUTED : ACCENT);
+      it.mesh.scale.setScalar(on ? 1.3 : it.muted ? 0.7 : 1);
+      // the FOG's axis: grey until the FOG is picked, then blue like every z axis
+      if (it.axisOnly) it.mats.forEach((m) => m.color.set(on ? axisColors[2] : MUTED));
       if (it.label) it.label.classList.toggle('on', on);
+      // the FOG's label only while the FOG is picked: otherwise it floats over the middle of the hull
+      if (it.label && it.axisOnly) it.label.hidden = !on;
     }
+    picked = id;
+    tint();
+    const v = viewFor(id);
+    if (v) flyTo(v.target, v.offset);
+  }
+
+  // Per-sensor camera: [target in `origin`, camera offset from it in ROS axes (x forward, y left, z up)].
+  const posOf = (id) => items.find((it) => it.id === id)?.pos;
+  function viewFor(id) {
+    const p = posOf(id);
+    if (!p) return null;
+    if (id === 'dvl') return { target: p, offset: [0.5, 0.36, -1.2] };       // from below, a little forward and to port
+    if (id === 'hydro') {                                                    // from below: the pod beside the DVL
+      const d = posOf('dvl');
+      return { target: [(p[0] + d[0]) / 2, (p[1] + d[1]) / 2, (p[2] + d[2]) / 2], offset: [0.55, 0.5, -1.4] };
+    }
+    if (id === 'imu') return { target: p, offset: [-0.85, -0.75, 0.55] };      // from starboard, behind and above
+    if (id === 'depth') return { target: p, offset: [-1.0, -0.6, 0.3] };       // from behind, starboard
+    return { target, offset: [0.95, 0.9, 0.5] };                             // the FOG: the default view
+  }
+  let tween = null;
+  function flyTo(t, off) {
+    const toT = toThree(t), toO = toThree(off);
+    tween = { t0: performance.now(), ms: 700, fromT: controls.target.clone(), toT, fromO: camera.position.clone().sub(controls.target), toO };
+  }
+  controls.addEventListener('start', () => (tween = null));
+  function step(now) {
+    if (!tween) return;
+    const k = Math.min(1, (now - tween.t0) / tween.ms);
+    const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+    const len = THREE.MathUtils.lerp(tween.fromO.length(), tween.toO.length(), e);
+    const dir = tween.fromO.clone().normalize().lerp(tween.toO.clone().normalize(), e);
+    if (dir.lengthSq() < 1e-6) dir.copy(tween.toO).normalize();
+    controls.target.lerpVectors(tween.fromT, tween.toT, e);
+    camera.position.copy(controls.target).addScaledVector(dir.normalize(), len);
+    if (k >= 1) tween = null;
   }
 
   // Taps: the nearest marker within 30 px of the finger, so small dots are easy to hit on a phone.
@@ -232,11 +308,21 @@ export function createSensorScene(canvas, { sensors, baseLink, onPick, labelHost
       const x = Math.min(Math.max((p.x + 1) / 2 * w, lo), Math.max(lo, hi)), y = Math.min(Math.max((1 - p.y) / 2 * h, top), h - 10);
       it.label.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) ${OFFSET[it.anchor] || OFFSET.above}`;
     }
+    // Labels that would overlap: the picked one wins, then the order of the list; the losers fade out.
+    const shown = [];
+    const order = items.filter((it) => it.label && !it.label.hidden).sort((a, b) => (b.label.classList.contains('on') - a.label.classList.contains('on')));
+    for (const it of order) {
+      const r = it.label.getBoundingClientRect();
+      const hit = shown.some((q) => r.left < q.right + 2 && r.right > q.left - 2 && r.top < q.bottom + 2 && r.bottom > q.top - 2);
+      it.label.style.visibility = hit ? 'hidden' : '';
+      if (!hit) shown.push(r);
+    }
   }
   let visible = true;
   new IntersectionObserver(([en]) => (visible = en.isIntersecting)).observe(canvas);
-  renderer.setAnimationLoop(() => {
+  renderer.setAnimationLoop((now) => {
     if (!visible) return;
+    step(now);
     controls.update();
     renderer.render(scene, camera);
     placeLabels();

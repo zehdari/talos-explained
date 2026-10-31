@@ -152,7 +152,7 @@ for n in rg['nodes']:
     meta = CUR['node_meta'].get(k, {})
     node = {
         'id': k, 'fq': n['node'], 'package': meta.get('package', n['package']), 'sub': None,
-        'side': side_of_group.get(n['group'], 'stack'), 'group': n['group'], 'role': n['role'],
+        'side': side_of_group.get(n['group'], 'stack'), 'group': n['group'], 'role': meta.get('role', n['role']),
         'launch': n['launch'], 'chapter': meta.get('chapter'), 'repo': meta.get('repo'), 'files': meta.get('files', []),
         'config': [], 'dump': meta.get('dump'), 'status': meta.get('status'),
     }
@@ -195,20 +195,29 @@ def item(kind, name, typ=None):
     return it
 
 
-def add_end(it, role, node_id, count=1, link=None, side=None):
+def add_end(it, role, node_id, count=1, link=None, side=None, q=None):
     lst = it[role]
     for e in lst:
         if e['n'] == node_id:
             e['c'] = max(e['c'], count)
             if link and not e.get('code'):
                 e['code'] = link
+            if q and not e.get('q'):
+                e['q'] = q
             return
     e = {'n': node_id, 'c': count}
     if link:
         e['code'] = link
     if side:
         e['side'] = side
+    if q:
+        e['q'] = q
     lst.append(e)
+
+
+# Publishers whose QoS differs on one topic in the capture (the capture lists the QoS set, not per publisher):
+# read from the code (bridge.yaml depth: reliable; depth_converter.cpp: SensorDataQoS).
+CAPTURE_QOS = {('depth/pose', 'physics_simulator'): 'reliable/volatile', ('depth/pose', 'depth_converter'): 'best_effort/volatile'}
 
 
 def node_code(node_id, name):
@@ -223,12 +232,14 @@ for t in tp['topics']:
     name = rel(t['topic'])
     it = item('topic', name, t['type'])
     from collections import Counter
+    pq = sorted(set(t['publisher_qos'] or []))
     for role, key in (('pubs', 'publishers'), ('subs', 'subscribers')):
         for nfq, c in Counter(t[key]).items():
             k = node_key(nfq)
             if SKIP_NODE.search(k) or k not in nodes:
                 continue
-            add_end(it, role, k, c, node_code(k, name if name != HOST_TRIGGER else 'autonomy/bag_trigger'))
+            q = (pq[0] if len(pq) == 1 else CAPTURE_QOS.get((name, k))) if role == 'pubs' else None
+            add_end(it, role, k, c, node_code(k, name if name != HOST_TRIGGER else 'autonomy/bag_trigger'), q=q)
     for q in t['publisher_qos'] or []:
         if q not in it['qos']:
             it['qos'].append(q)
@@ -263,7 +274,7 @@ for rn in CUR['robot_nodes']:
     k = rn['id']
     for name, typ, *q in rn.get('pubs', []):
         it = item('topic', name, typ)
-        add_end(it, 'pubs', k, 1, node_code(k, name))
+        add_end(it, 'pubs', k, 1, node_code(k, name), q=q[0] if q and q[0] else None)
         if q and q[0] and q[0] not in it['qos']:
             it['qos'].append(q[0])
     for name, typ in rn.get('subs', []):
@@ -274,6 +285,15 @@ for rn in CUR['robot_nodes']:
         add_end(item('service', name, typ), 'subs', k, 1, node_code(k, name))
     for name, typ in rn.get('actions', []):
         add_end(item('action', name, typ), 'pubs', k, 1, node_code(k, name))
+
+# Calls and publications in the tree files that the capture's run never reached (it stopped before those tasks).
+for kind, name, role, node_id, path, pat in CUR.get('tree_ends', []):
+    ln = find_line('riptide_autonomy', path, pat)
+    it = item(kind, name)
+    if any(e['n'] == node_id for e in it[role]):
+        continue   # the capture saw it
+    add_end(it, role, node_id, 1, gh('riptide_autonomy', path, ln))
+    it[role][-1]['tree'] = True
 
 # ---------------------------------------------------------------- firmware (micro-ROS)
 INIT = re.compile(r'rclc_(publisher|subscription)_init(?:_(default|best_effort))?\s*\(\s*&?\s*[\w.\[\]>-]+\s*,\s*&?\s*\w+\s*,'
@@ -311,17 +331,19 @@ for b in CUR['boards']:
     k = b['id']
     p = fw_projects[b['firmware_id']]
     nodes[k] = {
-        'id': k, 'fq': b['node'], 'package': f"titan_firmware: talos/{b['dir']}", 'sub': 'power', 'side': 'board',
+        'id': k, 'fq': b['node'], 'package': f"titan_firmware: talos/{b['dir']}", 'sub': 'power', 'side': b.get('side', 'board'),
         'role': f"{b['label']} firmware (RP2040, micro-ROS over CAN through copro_agent).",
         'chapter': b['chapter'], 'status': b.get('status'),
         'source': gh('titan_firmware', f"talos/{b['dir']}/src/ros.c"), 'launch': None, 'config': [], 'repo': 'titan_firmware',
     }
     if b['id'] == 'smart_battery':
         nodes[k]['role'] = ('Smart battery housing firmware, on the external CAN bus (can1). Its micro-ROS agent is '
-                            'commented out in copro_agent.launch.py, so these topics don\'t reach ROS right now.')
+                            'commented out in copro_agent.launch.py, so nothing it publishes reaches ROS and nothing sent '
+                            'to it (kill, software kill, electrical commands) arrives.')
     for e in parse_board(f"talos/{b['dir']}"):
         it = item('topic', e['name'], e['type'].replace('/msg/', '/msg/'))
-        add_end(it, 'pubs' if e['kind'] == 'publisher' else 'subs', k, 1, gh('titan_firmware', e['file'], e['line']))
+        add_end(it, 'pubs' if e['kind'] == 'publisher' else 'subs', k, 1, gh('titan_firmware', e['file'], e['line']),
+                q=e['qos'] if e['kind'] == 'publisher' else None)
         if e['kind'] == 'publisher' and e['qos'] not in it['qos']:
             it['qos'].append(e['qos'])
     # cross-check with firmware.json (built from the same sources by the Firmware chapter)
@@ -345,7 +367,7 @@ for role, lst in (('pubs', iv['pubs']), ('subs', iv['subs'])):
         add_end(item('topic', name, typ), role, 'ivc_board2', 1, gh('titan_firmware', iv['path'], ln, branch=iv['branch']))
 
 # ---------------------------------------------------------------- sides, rates, chapters
-SIDE_ROBOT = {'stack', 'laptop', 'robot', 'board', 'tool'}
+SIDE_ROBOT = {'stack', 'laptop', 'robot', 'board', 'tool', 'off'}
 SIDE_SIM = {'stack', 'laptop', 'sim'}
 
 
@@ -360,16 +382,22 @@ def avail(it):
         it['nopub'] = True
     if not it['subs'] and it['kind'] == 'topic':
         it['nosub'] = True
+    if it['name'].startswith('simulator/'):
+        return 'sim'   # the viewer's scorecard and reset buttons talk only to the simulator
     return 'both' if r and s else 'robot' if r else 'sim'
 
 
 robot_rates = {r[0]: r for r in CUR['robot_rates']}
+LISTEN_ROBOT = {'stack', 'laptop', 'robot', 'board', 'tool'}
 for it in items.values():
     it['avail'] = avail(it)
     it['sub'] = subsystem_of(it['name'])
     if it['name'] == HOST_TRIGGER:
         it['sub'] = 'autonomy'
     it['note'] = CUR['notes'].get(it['name'], '')
+    if it['kind'] == 'topic' and it['avail'] == 'both' and it['subs'] and not it['name'].startswith('/') \
+            and not any(nodes[e['n']]['side'] in LISTEN_ROBOT for e in it['subs']):
+        it['nolisten'] = True   # sent on Talos too, but only Nereus receives it
     full = it['name'] if it['name'].startswith('/') else NS + it['name']
     if it['kind'] == 'topic' and full in pool:
         it['robot_hz'] = {'hz': pool[full]['hz'], 'how': 'pool bag'}
@@ -378,7 +406,7 @@ for it in items.values():
         ln = find_line(repo, path, re.escape(pat))
         it['robot_hz'] = {'hz': hz, 'how': why, 'url': gh(repo, path, ln)}
     # the one source link for the row: a robot-stack publisher/server first, then anything
-    order = sorted(it['pubs'], key=lambda e: {'stack': 0, 'robot': 1, 'board': 2, 'laptop': 3, 'tool': 4, 'sim': 5}[nodes[e['n']]['side']])
+    order = sorted(it['pubs'], key=lambda e: {'stack': 0, 'robot': 1, 'board': 2, 'laptop': 3, 'tool': 4, 'sim': 5, 'off': 6}[nodes[e['n']]['side']])
     src = next((e['code'] for e in order if e.get('code')), None)
     if not src:
         src = next((e['code'] for e in it['subs'] if e.get('code')), None)
@@ -387,8 +415,9 @@ for it in items.values():
 # special notes on duplicated names
 for nm in ('command/actuator/arm', 'command/actuator/torpedo', 'command/actuator/dropper', 'command/actuator/notify_reload'):
     if ('service', nm) in items:
-        items[('service', nm)]['note'] = ('Served by actuator_service_translator, which publishes the topic of the same name '
-                                          'and waits for state/actuator/cmd_status. In Nereus the simulator serves it too.')
+        items[('service', nm)]['note'] = ('Served by ActuatorTranslator (actuator_service_translator.py), which publishes the topic '
+                                          'of the same name and waits for state/actuator/cmd_status. In Nereus the simulator serves '
+                                          'the same name too: see "Two servers in Nereus".')
 if ('service', 'command/actuator/claw') in items:
     items[('service', 'command/actuator/claw')]['note'] = 'Nereus only: open (true) or close (false) the claw as a service.'
 
@@ -447,6 +476,11 @@ for e in tfj['edges']:
         continue
     frames.append(row)
 
+ZED_NOTE = {
+    'camera_center': 'The middle of the camera, from the ZED description. Talos only: Nereus has no lens frames.',
+    'left_camera_frame': 'The left lens, from the ZED description (Talos only). Its optical frame hangs below it.',
+    'right_camera_frame': 'The right lens, from the ZED description (Talos only).',
+}
 # robot-only: the ZED description's frames (zed_macro.urdf.xacro, model zedxm) under each camera link
 for cam in ('ffc', 'dfc'):
     b = f'talos/{cam}'
@@ -455,7 +489,7 @@ for cam in ('ffc', 'dfc'):
                  (f'{b}_right_camera_frame', f'{b}_right_camera_optical_frame')):
         frames.append({'kind': 'frame', 'name': c, 'parent': p, 'static': True, 'pubs': [{'n': 'zed_state_publisher', 'c': 1}],
                        'subs': [], 'avail': 'robot', 'types': [], 'qos': [],
-                       'note': 'On the robot the ZED description adds the lens frames; in Nereus the bridge publishes the optical frames straight under the camera link.'})
+                       'note': ZED_NOTE.get(c.split('_', 1)[1], '')})
 frames.append({'kind': 'frame', 'name': 'tag36h11:0', 'parent': 'talos/ffc_left_camera_optical_frame', 'static': False,
                'pubs': [{'n': 'apriltag_36h11', 'c': 1}], 'subs': [], 'avail': 'both', 'types': [], 'qos': [],
                'note': 'The AprilTag board as the forward camera sees it; published only while the tag is in view (not in the capture).'})
@@ -501,24 +535,76 @@ FRAME_NOTES = {
     'talos/dvl_link': 'The DVL, turned −45° and below base_link. On /tf rather than /tf_static (a zero-range revolute joint), so a tool that reads only /tf_static won\'t find it.',
     'talos/fog_link': 'The fibre-optic gyro. Its pose is all zeros: only the axis matters for a rate.',
     'talos/pressure_link': 'The depth sensor. depth_converter uses this offset to report base_link\'s depth.',
-    'talos/ffc_camera_link': 'Forward camera mount, from talos.yaml. On Talos the ZED description continues below it; in Nereus the bridge adds the optical frame.',
-    'talos/dfc_camera_link': 'Down camera mount, from talos.yaml. On Talos the ZED description continues below it; in Nereus the bridge adds the optical frame.',
+    'talos/ffc_camera_link': 'Forward camera, from talos.yaml. On Talos the ZED description hangs the lens frames below it; in Nereus the bridge hangs the left optical frame straight below it.',
+    'talos/dfc_camera_link': 'Down camera, from talos.yaml. On Talos the ZED description hangs the lens frames below it; in Nereus the bridge hangs the left optical frame straight below it.',
     'talos/ffc_left_camera_optical_frame': 'Forward images are stamped in this frame (z out of the lens, x right, y down).',
     'talos/dfc_left_camera_optical_frame': 'Down images are stamped in this frame (z out of the lens, x right, y down).',
     'world': 'The fixed root: the pool in Nereus.',
+    'talos/acoustics_port_link': ('Stale: where the old two-hydrophone design had its port hydrophone (talos.yaml acoustics, '
+                                  'L320-325). Talos now has one hydrophone, in a pod under the frame and not at this pose, '
+                                  'and nothing reads this frame.'),
+    'talos/acoustics_starboard_link': ('Stale: where the old two-hydrophone design had its starboard hydrophone (talos.yaml '
+                                       'acoustics, L320-325). Talos now has one hydrophone, in a pod under the frame and not '
+                                       'at this pose, and nothing reads this frame.'),
+    'talos/base_inertia': 'The centre of mass (talos.yaml com), where the URDF puts the mass and inertia.',
+    'talos/ffc_base_link': 'The forward camera mount point from talos.yaml (cameras: pose). ffc_camera_link sits on it.',
+    'talos/dfc_base_link': 'The down camera mount point from talos.yaml (cameras: pose). dfc_camera_link sits on it.',
+    'talos/imu_revolute_link': 'A copy of imu_link on a zero-range revolute joint, left over from the URDF macro. Nothing reads it.',
+    'talos/pose_sensor_link': 'A zero-range "pose sensor" link on base_link, which the URDF describes as ground truth for an older simulator. Nothing reads it.',
 }
+for c in ('ffc', 'dfc'):
+    FRAME_NOTES[f'simulator/talos/{c}_camera_link'] = f'Nereus truth copy of talos/{c}_camera_link, so the true camera can be drawn beside the estimate.'
+    FRAME_NOTES[f'simulator/talos/{c}_left_camera_optical_frame'] = f'Nereus truth copy of talos/{c}_left_camera_optical_frame.'
+FRAME_NOTES['simulator/talos/origin'] = 'Nereus truth copy of talos/origin.'
+WORD = {'V': 'vector', 'H': 'heave', 'U': 'upper', 'L': 'lower', 'S': 'starboard', 'P': 'port'}
 for i, nm in enumerate(['VUS', 'VUP', 'HUS', 'HUP', 'HLS', 'HLP', 'VLS', 'VLP']):
-    FRAME_NOTES[f'talos/thruster_{i}'] = (f'Thruster {i}, {nm} (the order of talos.yaml\'s thruster list, which the MPC also uses). '
-                                          'A continuous joint, so it is sent on /tf.')
-for t in ('torpedo_link', 'torpedo_0_link', 'torpedo_1_link', 'droppers_link', 'claw_link', 'magnet_link', 'poker_link', 'hitch_link'):
-    FRAME_NOTES[f'talos/{t}'] = 'A tool frame from talos.yaml (where a torpedo, marker, the claw or a magnet leaves the robot or grips).'
+    FRAME_NOTES[f'talos/thruster_{i}'] = (f'Thruster {i}, {nm}: {", ".join(WORD[c] for c in nm)}. Numbered in the order of '
+                                          'talos.yaml\'s thruster list, which the MPC also uses. A continuous joint, so it is sent on /tf.')
+FRAME_NOTES.update({
+    'talos/torpedo_link': 'The torpedo launcher (talos.yaml torpedoes:). The two tube frames hang from it, 35 mm apart.',
+    'talos/torpedo_0_link': 'Torpedo tube 0, 17.5 mm to starboard of torpedo_link. The tree lines it up on the first hole.',
+    'talos/torpedo_1_link': 'Torpedo tube 1, 17.5 mm to port of torpedo_link. The tree lines it up on the second hole.',
+    'talos/droppers_link': 'The marker droppers (talos.yaml droppers:). The tree holds it 1 m above a bin and drops.',
+    'talos/claw_link': 'The claw (talos.yaml claw:), the lowest point under the bow. The tree puts it on each table object.',
+    'talos/magnet_link': ('Where the trees think the magnet is (talos.yaml magnet:); they fly it onto the magnet targets. '
+                          'The source files disagree about where the magnet really is.'),
+    'talos/poker_link': 'The magnet poker\'s mount (talos.yaml poker:). No tree uses it; the trees fly magnet_link.',
+    'talos/hitch_link': ('The frame the table task lines up over the table (RepairCompMpcTree). Its talos.yaml pose is all '
+                         'zeros, so it sits exactly on origin.'),
+})
+FRAME_MORE = {f'talos/thruster_{i}': ['Thruster names', 'glossary.html#term-thruster-names'] for i in range(8)}
+FRAME_MORE['talos/magnet_link'] = FRAME_MORE['talos/poker_link'] = ['Actuators: where is the magnet?', 'actuators.html#details']
+def frame_sub(nm):
+    b = nm.replace('talos/', '', 1)
+    if nm.startswith('simulator/'):
+        return 'simulator'
+    if nm in ('map', '<object>_frame', 'tag36h11:0', 'estimated_origin_frame'):
+        return 'mapping'
+    if nm == 'ghost/base_link':
+        return 'operator'
+    if b.startswith('thruster_'):
+        return 'thrusters'
+    if b.startswith(('ffc_', 'dfc_')):
+        return 'cameras'
+    if b.startswith('acoustics_'):
+        return 'acoustics'
+    if b in ('torpedo_link', 'torpedo_0_link', 'torpedo_1_link', 'droppers_link', 'claw_link', 'magnet_link', 'poker_link', 'hitch_link'):
+        return 'actuators'
+    if b in ('imu_link', 'imu_revolute_link', 'fog_link', 'dvl_link', 'pressure_link', 'pose_sensor_link'):
+        return 'sensors'
+    return 'estimation'
+
+
 for f in frames:
-    f.setdefault('note', FRAME_NOTES.get(f['name'], ''))
+    if not f.get('note'):
+        f['note'] = FRAME_NOTES.get(f['name'], '')
+    if f['name'] in FRAME_MORE:
+        f['more'] = FRAME_MORE[f['name']]
     if f.get('alt'):
         t, n = f['alt'][0]['parent'], f['alt'][1]['parent']
         f['note'] = (FRAME_NOTES.get(f['name'], '') + f' On Talos its parent is {t} (the ZED description); '
                      f'in Nereus it is {n} (the bridge).').strip()
-    f['sub'] = 'simulator' if f['name'].startswith('simulator/') else 'mapping' if f['name'] in ('map', '<object>_frame', 'tag36h11:0', 'estimated_origin_frame') else 'estimation'
+    f['sub'] = frame_sub(f['name'])
     pn = f['pubs'][0]['n']
     nd = nodes.get(pn, {})
     f['src'] = nd.get('source')
@@ -578,6 +664,8 @@ def chapters_for(it):
             prim = nodes[pn]['chapter']
     if it['kind'] == 'frame':
         prim = 'perception/frames.html#tree' if it['sub'] == 'mapping' else 'nereus.html#bridge' if it['sub'] == 'simulator' else 'localization.html#frames'
+        if it['sub'] == 'acoustics':
+            prim = 'sensors.html#acoustics'
     if not prim:
         prim = SUBS[it['sub']]['chapter']
     # the primary first, then the most specific other mentions (deduped by page), at most 5 more
@@ -656,6 +744,33 @@ for nd in nodes.values():
         walk('', d['parameters'])
         nd['params'] = flat
 
+# ---------------------------------------------------------------- key and minor rows
+def row_id(kind, name):
+    n = 'autonomy/bag_trigger' if name == HOST_TRIGGER else name
+    return f"{kind}-{n.lstrip('/')}"
+
+
+KEY = {rid: i for lst in CUR['key'].values() for i, rid in enumerate(lst)}
+MINOR = set(CUR['minor'])
+seen_ids = set()
+for it in all_items:
+    rid = row_id(it['kind'], it['name'])
+    seen_ids.add(rid)
+    if rid in KEY:
+        it['key'] = KEY[rid] + 1
+    if rid in MINOR or (it['kind'] == 'topic' and it.get('nopub')):
+        it['minor'] = True
+for nd in nodes.values():
+    rid = 'node-' + nd['id']
+    seen_ids.add(rid)
+    if rid in KEY:
+        nd['key'] = KEY[rid] + 1
+    if rid in MINOR:
+        nd['minor'] = True
+for rid in list(KEY) + list(MINOR):
+    if rid not in seen_ids:
+        print(f'  warning: curated id {rid} matches no row', file=sys.stderr)
+
 # ---------------------------------------------------------------- write
 def clean(it):
     out = {k: v for k, v in it.items() if v not in (None, [], '', False) or k in ('pubs', 'subs')}
@@ -676,7 +791,7 @@ out = {
     'generated': 'tools/interfaces/build.py',
     'capture': rg['captured'],
     'pool_bag': {'name': 'talos_20261026_204748', 'duration_s': bags['pool']['duration_s']},
-    'subsystems': [{'id': s['id'], 'label': s['label']} for s in CUR['subsystems']],
+    'subsystems': [{'id': s['id'], 'label': s['label'], 'blurb': s.get('blurb', '')} for s in CUR['subsystems']],
     'items': [clean(r) for r in rows],
     'nodes': [clean(n) for n in node_rows],
 }

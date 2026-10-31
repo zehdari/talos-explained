@@ -104,7 +104,6 @@ Depth from two lenses: a near point shifts more between the left and right image
 > perception/noise.html#stereo
 
 ## Baseline
-part: perception
 The distance between a stereo camera's two lenses: about 50 mm on the ZED X Mini.
 > cameras.html#two-cameras
 
@@ -116,7 +115,6 @@ An image whose pixels are distances in metres instead of colours, aligned with t
 > perception/pose.html#backproject
 
 ## Point cloud
-part: perception
 A set of 3D points, here from a depth image. The viewer can show the cameras' clouds; they are heavy over the tether.
 > nereus.html#cameras
 > viewer.html#seeing
@@ -225,7 +223,6 @@ A prop made of several detected pieces, such as the torpedo board and its holes 
 > perception/composites.html#torpedo
 
 ## camera_faker
-part: perception
 The simulated ZED cameras of the previous simulator, riptide_simulator, which Nereus replaced. Kept off the robot with [[DEPLOY_IGNORE]].
 > code-map.html#explorer
 
@@ -496,7 +493,7 @@ The launch argument that picks the controller: `mpc` starts riptide_mpc. In Nere
 > nereus.html#mpc-model
 
 ## Behaviour tree
-aka: BT, behavior tree, mission tree
+aka: BT, tree, behavior tree, mission tree
 part: autonomy
 The way Talos decides what to do: a tree of nodes in an XML file, ticked from the root. Control nodes pick which children run; leaves act or check.
 > bt.html#ticks
@@ -541,7 +538,7 @@ The tree nodes a search is built from. `SetMappingTarget` tells mapping which pr
 
 ## IfThenElse
 part: autonomy
-A control node ("if, then, else"): it ticks the first child; if that succeeds, the second, otherwise the third. Talos uses it 55 times, mostly to pick numbers, such as the sweep size in a search. Not the same as a [[Fallback]].
+A control node ("if, then, else"): it ticks the first child; if that succeeds, the second, otherwise the third. The competition tree ([[RepairCompMpcTree]]) uses it 55 times, mostly to pick numbers, such as the sweep size in a search. Not the same as a [[Fallback]].
 > bt.html#control
 
 ## Decorator
@@ -573,7 +570,7 @@ The key-value store that the nodes of one tree share. Nodes read and write it th
 
 ## Port
 part: autonomy
-A named input or output of a node type. `seconds="5"` is a value; `seconds="{hold_secs}"` reads a blackboard key. Every port is a string, converted when read.
+A named input or output of a node type. `seconds="5"` is a value; `seconds="{hold_secs}"` reads a blackboard key. Every port is a string, converted when read. For the robot's left side, see [[port-starboard|Port, starboard, bow, stern]].
 > bt.html#blackboard
 > bt-workflow.html#ports
 
@@ -820,7 +817,7 @@ The viewer's live plots of any topic field, from its Windows menu.
 > viewer.html#layouts
 
 ## Bench
-aka: bench test, pretest bench, fake_dvl
+aka: bench test, pretest bench
 part: ops
 Talos out of the water, on a table and a power supply: where new code is tried on the real Orin and the pre-test bench checks run. Never start the controller as a plain launch there.
 > pool-test.html#pretest

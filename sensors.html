@@ -19,53 +19,31 @@
       <li>Four navigation sensors: a <span class="term">VectorNav VN-100</span> IMU (tilt, turn rates, acceleration), a <span class="term">fibre-optic gyro</span> (yaw rate), a <span class="term">Nortek DVL1000</span> (velocity over the pool floor) and a <span class="term">Bar02</span> pressure sensor (depth).</li>
       <li>No sensor measures x, y or compass heading. Talos gets them by adding up velocity and yaw rate, so they drift, and the camera map re-anchors them.</li>
       <li>Rates: IMU 400 Hz, gyro about 475 Hz, depth 20 Hz, DVL 8 Hz. Each DVL reading is about 125 ms old when it arrives.</li>
-      <li>The EKF and the MPC's estimator fuse them (<a href="localization.html">Chapter 9</a>). Nereus simulates all four with measured noise, but not their failures.</li>
+      <li>The EKF and the MPC's estimator fuse them (<a href="localization.html">Where am I? State estimation</a>). Nereus simulates all four with measured noise, but not their failures.</li>
       <li>Most sensor trouble is mundane: a wrong covariance, depth zeroed underwater, a DVL too close to the floor, a stale config file.</li>
     </ul></aside>
 
     <div class="prose">
-      <p>Cameras have their own chapter (<a href="cameras.html">Chapter 8</a>). The plots here use real data: two bench recordings of Talos sitting still (2026-10-27) and an untethered pool run (2026-10-26).</p>
+      <p>Cameras have their own chapter (<a href="cameras.html">The cameras</a>). The plots here use real data: two bench recordings of Talos sitting still (2026-10-27) and an untethered pool run (2026-10-26).</p>
 
       <h2 id="glance">The sensors at a glance</h2>
-      <p>Pick a sensor to see where it sits, which way its axes point, and its main facts. Positions come from <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L320-L348"><code>talos.yaml</code></a>, the same file the URDF and the MPC read. Nereus keeps its own copy (<a href="#adding">Adding or moving a sensor</a>).</p>
+      <p>Pick a sensor to see where it sits on Talos and what it reports.</p>
     </div>
     <figure class="fig">
       <div class="panel flush sx-explorer">
         <div class="sx-chips seg" role="group" aria-label="Sensor" id="sx-chips"></div>
         <div class="sx-body">
-          <div class="sx-view"><canvas id="sx-canvas" aria-label="3D model of Talos with sensor positions"></canvas><div class="sx-labels" id="sx-labels"></div><div class="sx-hint">Drag to turn</div></div>
+          <div class="sx-view"><canvas id="sx-canvas" aria-label="3D model of Talos with sensor positions"></canvas><div class="sx-labels" id="sx-labels"></div><div class="sx-hint">Drag sideways to turn</div></div>
           <div class="sx-card" id="sx-card" aria-live="polite"></div>
         </div>
       </div>
-      <figcaption><b>Where the sensors are.</b> Dots are sensor frames, drawn through the hull. The arrows are each frame's x (red), y (green) and z (blue) axes. Tap a dot or a name.</figcaption>
-    </figure>
-    <figure class="fig narrow">
-      <div class="media-grid sx-cad">
-        <figure><img class="media" src="/media/cad/sub-dvl-below.webp" width="1600" height="1652" loading="lazy" alt="The DVL from below: a grey cylinder with its transducer faces on the rounded bottom end, a red bracket and a grey bracket at the top, and a black cable leaving the side."><figcaption>DVL1000 on its two brackets, with its cable.</figcaption></figure>
-        <figure><img class="media" src="/media/cad/sub-acoustics-below.webp" width="1559" height="2181" loading="lazy" alt="The hydrophone pod from below: a pale grey box held in a slotted bracket, with a brass threaded fitting on top and a black cylinder underneath."><figcaption>Hydrophone pod on its mount.</figcaption></figure>
-      </div>
-      <figcaption><b>Two of the sensors outside the hull</b>, from the team's "Talos 7-11-26" SolidWorks CAD. It is a design model from July 2026; later changes to the robot are not in it. Where they sit: the 3D figure above and <a href="mechanical.html#outside">Hull, frame and layout</a>.</figcaption>
+      <figcaption><b>Where the sensors are.</b> Pictures from the team's July 2026 CAD with the sensor in orange; the small map shows the spot from above, bow up.<span class="wide-only"> The 3D model shows them all at once, at their positions in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L320-L348"><code>talos.yaml</code></a> (the hydrophone pod's from the CAD; the FOG has none, so only its axis is drawn), with the chosen sensor's axes x (red), y (green), z (blue).</span></figcaption>
     </figure>
     <div class="prose">
-      <table class="params">
-        <thead><tr><th>Sensor</th><th>Measures</th><th>Rate</th><th>Main topic</th></tr></thead>
-        <tbody>
-          <tr><td>VN-100-T IMU</td><td>Tilt, turn rates, acceleration</td><td>400 Hz</td><td><code>vectornav/imu</code></td></tr>
-          <tr><td>Fibre-optic gyro</td><td>Yaw rate only</td><td>≈475 Hz</td><td><code>gyro/twist</code></td></tr>
-          <tr><td>DVL1000</td><td>Velocity over the floor</td><td>8 Hz</td><td><code>dvl_twist</code></td></tr>
-          <tr><td>Bar02 pressure</td><td>Depth</td><td>20 Hz</td><td><code>depth/pose</code></td></tr>
-          <tr><td>H1C hydrophone</td><td>Pinger loudness</td><td>on request</td><td><code>acoustics/buffer_0_closer</code></td></tr>
-        </tbody>
-      </table>
-      <p>Topics are relative to the robot namespace (<code>/talos/vectornav/imu</code>). Rates are measured in the bags; <code>talos.yaml</code> still says 100 Hz for the IMU.</p>
+      <p>Topics are relative to the robot namespace (<code>vectornav/imu</code> is <code>/talos/vectornav/imu</code>). Rates are measured in the bags; <code>talos.yaml</code> still says 100 Hz for the IMU.</p>
 
       <h3 id="frames">Frames</h3>
-      <ul>
-        <li><strong>Poses.</strong> <code>talos.yaml</code> gives each sensor a pose in the <code>origin</code> frame (the front port screw of the camera cage); the xacro turns them into <code>talos/imu_link</code>, <code>fog_link</code>, <code>dvl_link</code> and <code>pressure_link</code> (<a href="perception/frames.html">how TF works</a>).</li>
-        <li><strong>Most are on <code>/tf</code>, not <code>/tf_static</code>.</strong> The DVL, pressure, FOG and hydrophone joints are <code>revolute</code> in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/urdf/snippets.xacro#L84-L170"><code>snippets.xacro</code></a>, so they're on <code>/tf</code>; <code>imu_link</code> is <code>fixed</code>, on <code>/tf_static</code>. A tool that only reads <code>/tf_static</code> won't find <code>dvl_link</code>.</li>
-        <li><strong>Two sensors are mounted turned:</strong> the IMU upside down and turned 90°, the DVL turned 45°. TF rotates their data into <code>base_link</code>. One exception: the IMU driver already re-expresses the VN-100's orientation (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_imu/src/main.cpp#L217-L220"><code>main.cpp</code> L219</a>); its rates and accelerations stay in <code>imu_link</code> axes.</li>
-        <li><strong>Moving a sensor?</strong> Change <code>talos.yaml</code> (and Nereus's copy, <a href="#adding">below</a>) and restart. The MPC reads the IMU and DVL mounts from that file itself and, once TF is up, checks them against TF once (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L620-L652"><code>checkMountsAgainstTf</code></a>, retried every 2 s until TF answers): its log says "mount matches TF" or warns "mount in the vehicle YAML differs from TF by … deg / … cm".</li>
-      </ul>
+      <p><code>talos.yaml</code> gives each sensor a pose, and the URDF turns those poses into TF frames (<code>talos/imu_link</code>, <code>dvl_link</code>, <code>pressure_link</code>, ...; <a href="perception/frames.html">how TF works</a>). Two sensors are mounted turned: the IMU upside down and turned 90°, the DVL turned 45°. TF rotates their readings into <code>base_link</code>, the robot's own axes. Moving a sensor means changing <code>talos.yaml</code> and Nereus's copy (<a href="#adding">Adding or moving a sensor</a>).</p>
 
       <h2 id="timing">Rates and timestamps</h2>
       <p>The sensors run at very different rates and stamp their messages differently. One real second from the pool run, as messages reached the Orin:</p>
@@ -76,7 +54,7 @@
         <div id="tl-chart"></div>
         <div class="graph-note" id="tl-note"></div>
       </div>
-      <figcaption><b>One second of sensor messages</b> (pool run, 470 s in). Each tick is a message arriving. On the DVL row, the hollow dots on the lower line mark when each velocity was measured (the echo), and the arrow joins each echo to its own arrival about 125 ms later. With 8 pings a second, each echo happens just as the previous reading arrives. Tap or hover a row.</figcaption>
+      <figcaption><b>One second of sensor messages</b> (pool run, 470 s in). Each tick is a message reaching the Orin; on the right, messages per second. On the DVL row the hollow dots mark when each velocity was measured, and the orange bracket how old it is when it arrives. Tap a row to read about it.</figcaption>
     </figure>
     <div class="prose">
       <ul>
@@ -88,19 +66,26 @@
 
       <h2 id="imu" data-short="IMU: VN-100">The IMU: VectorNav VN-100-T</h2>
       <p>An <span class="term">IMU</span> measures how Talos turns and accelerates. The VN-100 has MEMS gyros, accelerometers, magnetometers and a barometer; its own Kalman filter blends the drifting gyros with gravity into roll and pitch.</p>
-      <dl class="spec">
-        <dt>Model</dt><dd>VectorNav VN-100-T (T: temperature calibrated), sponsored, 2022 (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">2026 design report</a>)</dd>
-        <dt>Datasheet</dt><dd>Gyro noise 0.0035 °/s/√Hz, in-run bias &lt;10 °/h; pitch/roll 0.5° RMS (<a href="https://www.vectornav.com/products/detail/vn-100">VectorNav</a>)</dd>
-        <dt>Measured</dt><dd>Rate noise 0.00066 to 0.0011 rad/s per sample at 400 Hz, as the datasheet predicts (0.00086 rad/s over a 200 Hz band)</dd>
-        <dt>Link</dt><dd>Serial (RS-232 through the Orin HAT, <a href="boards.html">Chapter 3</a>), 460,800 baud, <code>/dev/ttyTHS1</code></dd>
-        <dt>Driver</dt><dd><code>riptide_imu</code> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_imu/src/main.cpp"><code>main.cpp</code></a>), config <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_imu/config/vectornav.yaml"><code>riptide_imu/config/vectornav.yaml</code></a></dd>
-        <dt>Publishes</dt><dd><code>vectornav/imu</code> (<code>sensor_msgs/Imu</code>), <code>vectornav/pressure_bar</code> (hull air pressure)</dd>
-        <dt>Also</dt><dd><code>vectornav/mag_cal</code> (action) and <code>vectornav/config</code> (service, raw register commands); both are buttons in the viewer's electrical panel</dd>
+      <dl class="spec key">
+        <dt>Model</dt><dd>VectorNav VN-100-T (T: temperature calibrated)</dd>
+        <dt>Rate</dt><dd>400 Hz</dd>
+        <dt>Topic</dt><dd><code>vectornav/imu</code> (<code>sensor_msgs/Imu</code>)</dd>
+        <dt>Where</dt><dd>In the starboard (camera) cage, upside down and turned 90°</dd>
       </dl>
-      <ul>
-        <li><strong>The driver doesn't configure the output.</strong> Rate and content are saved on the VN-100 itself; change them through the register service and save. (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/vectornav_imu_config.yaml"><code>vectornav_imu_config.yaml</code></a> is for a third-party driver Talos doesn't launch.)</li>
-        <li><strong>It reboots the sensor on every connect</strong> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_imu/src/main.cpp#L166"><code>vs-&gt;reset()</code></a>), so a serial hiccup leaves a gap in the data while the VN-100 restarts.</li>
-      </ul>
+      <details class="sx-fold"><summary>Full spec and driver</summary>
+        <dl class="spec">
+          <dt>Datasheet</dt><dd>Gyro noise 0.0035 °/s/√Hz, in-run bias &lt;10 °/h; pitch/roll 0.5° RMS (<a href="https://www.vectornav.com/products/detail/vn-100">VectorNav</a>)</dd>
+          <dt>Measured</dt><dd>Rate noise 0.00066 to 0.0011 rad/s per sample at 400 Hz, as the datasheet predicts (0.00086 rad/s over a 200 Hz band)</dd>
+          <dt>Link</dt><dd>Serial (RS-232 through the Orin HAT, <a href="boards.html">The circuit boards</a>), 460,800 baud, <code>/dev/ttyTHS1</code></dd>
+          <dt>Driver</dt><dd><code>riptide_imu</code> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_imu/src/main.cpp"><code>main.cpp</code></a>), config <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_imu/config/vectornav.yaml"><code>vectornav.yaml</code></a></dd>
+          <dt>Also</dt><dd><code>vectornav/pressure_bar</code> (hull air pressure); <code>vectornav/mag_cal</code> (action) and <code>vectornav/config</code> (service, raw register commands), both buttons in the viewer's electrical panel</dd>
+          <dt>History</dt><dd>Sponsored, 2022 (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">2026 design report</a>)</dd>
+        </dl>
+        <ul>
+          <li><strong>The driver doesn't configure the output.</strong> Rate and content are saved on the VN-100 itself; change them through the register service and save. (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/vectornav_imu_config.yaml"><code>vectornav_imu_config.yaml</code></a> is for a third-party driver Talos doesn't launch.)</li>
+          <li><strong>It reboots the sensor on every connect</strong> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_imu/src/main.cpp#L166"><code>vs-&gt;reset()</code></a>), so a serial hiccup leaves a gap in the data while the VN-100 restarts.</li>
+        </ul>
+      </details>
 
       <h3 id="imu-axes">Axes and what gets used</h3>
       <p>The IMU's pose is roll 180°, yaw −90°, so body roll rate = −y, pitch rate = −x, yaw rate = −z (on the bench, the IMU's z rate and the FOG's correlate at −0.999).</p>
@@ -115,15 +100,22 @@
 
       <h2 id="fog" data-short="Fibre-optic gyro">The fibre-optic gyro</h2>
       <p>A MEMS gyro's bias wanders by degrees per hour, and gravity can't correct yaw. So Talos has a better gyro for yaw alone. A <span class="term">fibre-optic gyro</span> (FOG) sends light both ways around a fibre coil; turning shifts the phase between the beams (the <span class="term">Sagnac effect</span>). No moving parts, so its bias stays put.</p>
-      <dl class="spec">
-        <dt>Model</dt><dd>Fizoptika VG103S-2LND, bought 2024 (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">design report</a>), ±200 °/s (<a href="https://mostatech.mt/fiber-optic-gyro-series-vg103s/">distributor</a>)</dd>
-        <dt>Axis</dt><dd>Body z. Its pose is all zeros: every point of a rigid body turns at the same rate, so only the axis matters.</dd>
-        <dt>Link</dt><dd>RS-422, 921,600 baud, <code>/dev/ttyTHS2</code>. 8-byte frames: sync <code>0xDD</code>, 3 bytes of rate, frame id, a status byte (temperature, supply, light source or diagnostics, by turns), checksum.</dd>
-        <dt>Driver</dt><dd><code>riptide_gyro</code> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_gyro/src/riptide_gyro/driver.cpp"><code>driver.cpp</code></a>), config <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_gyro/config/gyro_config.yaml"><code>gyro_config.yaml</code></a></dd>
-        <dt>Publishes</dt><dd><code>gyro/twist</code> (<code>angular.z</code> only, variance 1e-4), throttled to ≤500 Hz; <code>gyro/raw</code> (counts, same rate); <code>gyro/status</code> (50 Hz)</dd>
-        <dt>Measured</dt><dd>0.0012 rad/s per sample; bias after tare −0.3 and −0.7 °/h (two bench runs)</dd>
+      <dl class="spec key">
+        <dt>Model</dt><dd>Fizoptika VG103S-2LND, ±200 °/s</dd>
+        <dt>Rate</dt><dd>About 475 Hz (the driver passes at most 500 a second)</dd>
+        <dt>Topic</dt><dd><code>gyro/twist</code> (yaw rate, <code>angular.z</code>, only)</dd>
+        <dt>Where</dt><dd>Anywhere: every point of a rigid robot turns at the same rate, so only its axis matters (body z). <code>talos.yaml</code> gives it a pose of all zeros.</dd>
       </dl>
-      <p>Per sample the FOG is noisier than the VN-100, but fast noise averages out when you integrate, and bias doesn't. Integrate both over 90 s of sitting still:</p>
+      <details class="sx-fold"><summary>Full spec and driver</summary>
+        <dl class="spec">
+          <dt>Measured</dt><dd>0.0012 rad/s per sample; bias after tare −0.3 and −0.7 °/h (two bench runs)</dd>
+          <dt>Link</dt><dd>RS-422 to the Orin, 921,600 baud, <code>/dev/ttyTHS2</code></dd>
+          <dt>Driver</dt><dd><code>riptide_gyro</code> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_gyro/src/riptide_gyro/driver.cpp"><code>driver.cpp</code></a>), config <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_gyro/config/gyro_config.yaml"><code>gyro_config.yaml</code></a></dd>
+          <dt>Also</dt><dd><code>gyro/twist</code> reports variance 1e-4; <code>gyro/raw</code> (counts, same rate); <code>gyro/status</code> (50 Hz)</dd>
+          <dt>History</dt><dd>Bought 2024 (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">design report</a>); range from the <a href="https://mostatech.mt/fiber-optic-gyro-series-vg103s/">distributor</a></dd>
+        </dl>
+      </details>
+      <p>Per sample the FOG is noisier than the VN-100, but fast noise averages out when you add it up over time, and a bias doesn't. Here is each gyro's yaw rate added up while Talos sat still for about a minute and a half:</p>
     </div>
     <figure class="fig">
       <div class="panel">
@@ -131,39 +123,32 @@
         <div id="still-chart"></div>
         <div class="graph-note" id="still-note"></div>
       </div>
-      <figcaption><b>Yaw from the two gyros.</b> Heading drift: each yaw rate integrated while Talos sat still, two bench runs (solid, dashed). Noise: two seconds of raw rate. In the pool: both during spins. Tap or hover to read values.</figcaption>
+      <figcaption><b>Yaw from the two gyros.</b> Heading drift: each yaw rate added up while Talos sat still, two bench runs (solid, dashed; 93 and 107 s). Noise: two seconds of raw rate from each gyro, on the same scale. In the pool: both during spins.<span class="wide-only"> Hover to read values.</span></figcaption>
     </figure>
     <div class="prose">
       <ul>
-        <li><strong>Run 1</strong> started right after tilting Talos by hand. For about 50 s the VN-100's yaw rate was off and built up 0.57° of heading error, then it levelled off.</li>
+        <li><strong>Run 1</strong> started right after tilting Talos by hand. For about 50 s the VN-100's yaw rate was off and built up 0.59° of heading error, then it levelled off.</li>
         <li><strong>Run 2</strong>: the VN-100 wandered by at most 0.06° (1.2 °/h on average).</li>
         <li><strong>The FOG</strong> stayed within 0.02° in both runs.</li>
         <li><strong>So a MEMS yaw error changes with motion and from run to run.</strong> Even the datasheet's in-run bias (up to 10 °/h) adds up to 3° over a 20-minute mission, enough to miss a gate. That is why yaw comes from the FOG.</li>
       </ul>
 
       <h3 id="fog-cal" data-short="Calibration">Calibration: from counts to rad/s</h3>
-      <p>The FOG sends a signed 24-bit number. The driver turns it into rad/s with a surface fitted on the team's <a href="https://github.com/osu-uwrt/gyro_cal_rig">calibration rig</a>, with <span class="m">x</span> the raw reading and <span class="m">T</span> the FOG's temperature, both normalized by a mean and standard deviation from the config:</p>
+      <p>The FOG sends a signed 24-bit number. The driver turns it into rad/s with a curve fitted on the team's <a href="https://github.com/osu-uwrt/gyro_cal_rig">calibration rig</a>, from the raw reading <span class="m">x</span> and the FOG's temperature <span class="m">T</span> (both scaled by a mean and spread from <code>gyro_config.yaml</code>):</p>
       <div class="M">\omega_z = a + b\,x^3 + c\,x\,T + d\cos(f x + g) \;-\; \omega_{\text{tare}}</div>
+      <p>The curve is nearly a straight line: a plain straight line would be off by about 0.4 °/s at 50 °/s and 3 °/s at 100 °/s. Across the calibrated temperatures (37.6 to 51.3 °C) the temperature term moves a 50 °/s reading by about 0.35 °/s. Outside that range the fit was never tested, and the driver reports <code>temp_within_cal</code> false.</p>
     </div>
-    <figure class="fig">
-      <div class="panel">
-        <div class="controls" id="cal-controls"></div>
-        <div id="cal-chart"></div>
-        <div class="graph-note" id="cal-note"></div>
-      </div>
-      <figcaption><b>How far the calibration bends</b>, computed in your browser from the numbers in <code>gyro_config.yaml</code>. Bend: the calibrated rate minus a straight line with the same slope at zero (taken at 45 °C), at the slider's temperature and at 45 °C. With <span class="m">g \approx -\pi/2</span> the cosine term is really a sine: it gives the slope near zero, and its curvature plus the cubic bend the line at high rates. Full curve: the whole mapping. Drag the temperature.</figcaption>
-    </figure>
     <figure class="fig narrow">
       <div class="sx-rig">
-        <img class="media" data-src="img/sensors/fog_cal_rig.webp" width="370" height="410" alt="The FOG calibration rig: a clear enclosure on a belt-driven turntable under a heat lamp, with a stepper driver and microcontroller beside it">
-        <dl class="spec">
-          <dt>Turntable</dt><dd>Stepper (TMC2209 driver) and belt, calibrated over 100 turns</dd>
-          <dt>Heat</dt><dd>A lamp, bang-bang control, thermal cut-off</dd>
-          <dt>Calibration</dt><dd>Rates in both directions at 4 or 5 temperatures, 16 s each; MATLAB fits <span class="m">a</span> to <span class="m">g</span>. The README's fit is the one in <code>gyro_config.yaml</code>.</dd>
-          <dt>Validation</dt><dd>3.3 h of turning and pausing: 2.1 °/h drift, scale about 0.998 (0.2 to 0.3 % low)</dd>
-        </dl>
+        <img class="media" data-src="img/sensors/fog_cal_rig.webp" width="348" height="345" alt="The FOG calibration rig: a clear box on a belt-driven turntable under a heat lamp, with the stepper driver and microcontroller wired up beside it">
+        <ul class="sx-rig-facts">
+          <li><b>Turntable:</b> a stepper and belt, so the rig knows the true rate.</li>
+          <li><b>Heat:</b> the lamp holds the gyro at each test temperature.</li>
+          <li><b>Calibration:</b> both directions at 4 or 5 temperatures, 16 s per rate; MATLAB fits <span class="m">a</span> to <span class="m">g</span>.</li>
+          <li><b>Check:</b> 3.3 h of turning and pausing drifted 2.1 °/h, scale 0.2 to 0.3 % low.</li>
+        </ul>
       </div>
-      <figcaption><b>The FOG calibration rig.</b> The gyro rides in the clear box on the turntable; the rig knows the true rate from the stepper. Photo and numbers from the <a href="https://github.com/osu-uwrt/gyro_cal_rig">gyro_cal_rig</a> README (Brach Knutson).</figcaption>
+      <figcaption><b>The FOG calibration rig.</b> The gyro rides in the clear box on the turntable. Photo and numbers from the <a href="https://github.com/osu-uwrt/gyro_cal_rig">gyro_cal_rig</a> README (Brach Knutson); its fit is the one in <code>gyro_config.yaml</code>.</figcaption>
     </figure>
     <div class="prose">
       <h3 id="fog-tare">Tare</h3>
@@ -181,42 +166,50 @@
         <div class="controls" id="dvl-controls"></div>
         <div class="dvl-wrap"><div id="dvl-svg"></div><div id="dvl-out" class="dvl-out"></div></div>
       </div>
-      <figcaption><b>Four beams, one velocity.</b> Set Talos's velocity and read what each beam measures: the closing speed along it, <span class="m">b_i \cdot v</span>. Tap a beam's footprint to lose it (a beam that hits a wall edge, or bubbles). Three unknowns need three beams; the fourth is a spare that lets the DVL check itself. Schematic: the beams are drawn on the DVL's x and y axes for simplicity, not at the real head's beam positions.</figcaption>
+      <figcaption><b>Four beams, one velocity.</b> Set a velocity in the DVL's own axes and read what each beam measures: the speed along it, towards the floor. Three unknowns need three beams; the fourth is a spare that lets the DVL check itself. Lose a beam (a wall edge, bubbles) or make one read wrong, and watch the answer. Schematic: the beams are drawn along the DVL's x and y axes for simplicity.</figcaption>
     </figure>
     <div class="prose">
-      <dl class="spec">
-        <dt>Model</dt><dd>Nortek DVL1000 (300 m rating), on the team since 2018 (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">design report</a>)</dd>
-        <dt>Datasheet</dt><dd>1 MHz, four beams 25° from vertical, 0.8 cm/s single-ping noise, 8 Hz max, bottom track from 0.1 m to 75 m above the floor (<a href="https://www.nortekgroup.com/products/dvl-1000-300m">Nortek</a>)</dd>
-        <dt>Link</dt><dd>Ethernet, 192.168.1.212, data on TCP 9004</dd>
-        <dt>Driver</dt><dd><code>nortek_dvl</code>, branch <code>DvlWaterTrackFallback</code> (<a href="https://github.com/osu-uwrt/nortek_dvl/blob/DvlWaterTrackFallback/nortek_dvl/src/dvl_driver.cpp"><code>dvl_driver.cpp</code></a>)</dd>
-        <dt>Publishes</dt><dd><code>dvl_twist</code> (bottom track, when valid), <code>dvl/bottom_lock</code>, <code>dvl/water_twist</code>, <code>dvl_sonar0</code>–<code>3</code> (beam ranges), <code>dvl</code> and <code>dvl/status</code>. All but <code>dvl/bottom_lock</code> and the sonar topics are only published while something subscribes.</dd>
-        <dt>Covariance</dt><dd>The DVL's figure of merit squared, per ping: median 1.7×10<sup>−6</sup> (m/s)² in the pool</dd>
-        <dt>Measured</dt><dd>8.0 Hz; about 3.5 mm/s scatter in x and y and 2 mm/s in z while holding station (median of 5 s windows, real motion included); one 1.4 s gap in 20 minutes</dd>
+      <dl class="spec key">
+        <dt>Model</dt><dd>Nortek DVL1000, four beams 25° from vertical</dd>
+        <dt>Rate</dt><dd>8 Hz; each reading is about 125 ms old when it arrives</dd>
+        <dt>Topic</dt><dd><code>dvl_twist</code> (only while it sees the floor) and <code>dvl/bottom_lock</code></dd>
+        <dt>Where</dt><dd>Under the hull near the middle, looking down, turned 45°</dd>
       </dl>
-
-      <h3 id="dvl-settings" data-short="Settings">Settings live on the DVL</h3>
-      <p>The reference is the DVL's own web page (Measurement Configuration, <code>http://192.168.1.212/cgi-bin/cgi_dvlGetConfig</code>), not the out-of-date <a href="https://github.com/osu-uwrt/nortek_dvl/blob/DvlWaterTrackFallback/nortek_dvl/DVLConfig.txt"><code>DVLConfig.txt</code></a>. Where they differ:</p>
-      <table class="params">
-        <thead><tr><th>Setting</th><th>On the DVL (2026-10-20)</th><th><code>DVLConfig.txt</code></th></tr></thead>
-        <tbody>
-          <tr><td>Ping rate</td><td>8 Hz, internal trigger</td><td>5 Hz</td></tr>
-          <tr><td>Speed of sound</td><td>1480 m/s fixed, salinity 0</td><td>1500 m/s</td></tr>
-          <tr><td>Bottom-track range</td><td>60 m</td><td>50 m</td></tr>
-          <tr><td>Water track</td><td>On (format 409)</td><td>Off</td></tr>
-          <tr><td>Bottom-track power</td><td>User, −2 dB</td><td>Max</td></tr>
-        </tbody>
-      </table>
-      <ul>
-        <li><strong>Read the page with a plain HTTP GET.</strong> Entering command mode (ports 9000, 9001) stops the measurement.</li>
-        <li><strong>Speed of sound sets the scale.</strong> Velocity is proportional to it, and in fresh water it depends on temperature: about 1482 m/s at 20 °C, 1500 m/s at 27 °C. The DVL is set to 1480 fixed, so in a warm pool it may read about 1 % low. Compare with the pool temperature (<code>state/depth/temp</code>).</li>
-      </ul>
-
-      <h3 id="dvl-driver" data-short="Driver">What the driver does with a ping</h3>
-      <ul>
-        <li><strong>Sorts the sentences:</strong> bottom track (<code>$PNORBT9</code>) to <code>dvl_twist</code>, water track (<code>$PNORWT9</code>, velocity relative to the water) to <code>dvl/water_twist</code>, a fallback nothing uses yet.</li>
-        <li><strong>Stamps the past:</strong> arrival time minus the echo's age (<code>dt2</code>, which the DVL reports as a negative number) (<a href="https://github.com/osu-uwrt/nortek_dvl/blob/DvlWaterTrackFallback/nortek_dvl/src/dvl_driver.cpp#L150-L159">L150</a>), median 125 ms in the pool (123 to 175 ms, 5th to 95th percentile).</li>
-        <li><strong>Flips to ROS axes</strong> (y and z negated) and <strong>decides lock</strong>: true when x, y and one of the two z velocities are valid.</li>
-      </ul>
+      <details class="sx-fold"><summary>Full spec and driver</summary>
+        <dl class="spec">
+          <dt>Datasheet</dt><dd>1 MHz, 0.8 cm/s single-ping noise, 8 Hz max, bottom track from 0.1 m to 75 m above the floor (<a href="https://www.nortekgroup.com/products/dvl-1000-300m">Nortek</a>)</dd>
+          <dt>Measured</dt><dd>8.0 Hz; about 3.5 mm/s scatter in x and y and 2 mm/s in z while holding station (median of 5 s windows, real motion included); one 1.4 s gap in 20 minutes</dd>
+          <dt>Link</dt><dd>Ethernet, 192.168.1.212, data on TCP 9004</dd>
+          <dt>Driver</dt><dd><code>nortek_dvl</code>, branch <code>DvlWaterTrackFallback</code> (<a href="https://github.com/osu-uwrt/nortek_dvl/blob/DvlWaterTrackFallback/nortek_dvl/src/dvl_driver.cpp"><code>dvl_driver.cpp</code></a>)</dd>
+          <dt>Also</dt><dd><code>dvl/water_twist</code>, <code>dvl</code>, <code>dvl/status</code>, and <code>dvl_sonar0</code> to <code>dvl_sonar3</code> (beam ranges). Only <code>dvl/bottom_lock</code> and the sonar topics are published when nothing subscribes.</dd>
+          <dt>Covariance</dt><dd>From the DVL's own error estimate for each ping (its <i>figure of merit</i>, squared): a median of 0.0000017 (m/s)² in the pool, so the EKF trusts it a lot</dd>
+          <dt>History</dt><dd>300 m rating; on the team since 2018 (<a href="https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf">design report</a>)</dd>
+        </dl>
+      </details>
+      <details class="sx-fold" id="dvl-settings"><summary>Its settings live on the DVL, not in the repository</summary>
+        <p>The reference is the DVL's own web page (Measurement Configuration, <code>http://192.168.1.212/cgi-bin/cgi_dvlGetConfig</code>), not the out-of-date <a href="https://github.com/osu-uwrt/nortek_dvl/blob/DvlWaterTrackFallback/nortek_dvl/DVLConfig.txt"><code>DVLConfig.txt</code></a>. Where they differ:</p>
+        <table class="params hk dvlset">
+          <thead><tr><th>Setting</th><th>On the DVL (2026-10-20)</th><th><code>DVLConfig.txt</code></th></tr></thead>
+          <tbody>
+            <tr><td data-l="Setting">Ping rate</td><td data-l="On the DVL">8 Hz, internal trigger</td><td data-l="DVLConfig.txt">5 Hz</td></tr>
+            <tr><td data-l="Setting">Speed of sound</td><td data-l="On the DVL">1480 m/s fixed, salinity 0</td><td data-l="DVLConfig.txt">1500 m/s</td></tr>
+            <tr><td data-l="Setting">Bottom-track range</td><td data-l="On the DVL">60 m</td><td data-l="DVLConfig.txt">50 m</td></tr>
+            <tr><td data-l="Setting">Water track</td><td data-l="On the DVL">On (format 409)</td><td data-l="DVLConfig.txt">Off</td></tr>
+            <tr><td data-l="Setting">Bottom-track power</td><td data-l="On the DVL">User, −2 dB</td><td data-l="DVLConfig.txt">Max</td></tr>
+          </tbody>
+        </table>
+        <ul>
+          <li><strong>Read the page with a plain HTTP GET.</strong> Entering command mode (ports 9000, 9001) stops the measurement.</li>
+          <li><strong>Speed of sound sets the scale.</strong> Velocity is proportional to it, and in fresh water it depends on temperature: about 1482 m/s at 20 °C, 1500 m/s at 27 °C. The DVL is set to 1480 fixed, so in a warm pool it may read about 1 % low. Compare with the pool temperature (<code>state/depth/temp</code>).</li>
+        </ul>
+      </details>
+      <details class="sx-fold" id="dvl-driver"><summary>What the driver does with a ping</summary>
+        <ul>
+          <li><strong>Sorts the sentences:</strong> bottom track (<code>$PNORBT9</code>) to <code>dvl_twist</code>, water track (<code>$PNORWT9</code>, velocity relative to the water) to <code>dvl/water_twist</code>, a fallback nothing uses yet.</li>
+          <li><strong>Stamps the past:</strong> each message gets the time of its echo, the arrival time minus the age the DVL reports (<a href="https://github.com/osu-uwrt/nortek_dvl/blob/DvlWaterTrackFallback/nortek_dvl/src/dvl_driver.cpp#L150-L159"><code>dvl_driver.cpp</code></a>). In the pool that age was 125 ms (median; 123 to 175 ms for 90 % of pings).</li>
+          <li><strong>Flips to ROS axes</strong> (y and z negated) and <strong>decides lock</strong>: true when x, y and one of the two z velocities are valid.</li>
+        </ul>
+      </details>
 
       <h3 id="dvl-frame" data-short="Mounting">A DVL turned 45°</h3>
       <p><code>dvl_link</code> has yaw −45°, so driving forward shows up as equal x and y in the DVL's axes. The DVL is also 24 cm below the centre of mass: pitching at 0.5 rad/s alone makes it read 12 cm/s of surge. The MPC estimator removes that lever arm (<span class="m">v_\text{DVL} = v + \omega \times r</span>, <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/state_estimator.cpp#L223-L238"><code>state_estimator.cpp</code></a>).</p>
@@ -225,8 +218,9 @@
       <div class="panel">
         <div class="controls"><span class="seg" role="group" aria-label="Axes" id="dvlp-pick"><button type="button" aria-pressed="true" data-k="raw">DVL axes</button><button type="button" aria-pressed="false" data-k="body">Body axes</button></span></div>
         <div id="dvlp-chart"></div>
+        <div class="graph-note" id="dvlp-note"></div>
       </div>
-      <figcaption><b>Surge steps in the pool</b>, as the DVL reports them and turned into body axes by the mount's −45°. Tap or hover to read values.</figcaption>
+      <figcaption><b>Surge steps in the pool</b>, as the DVL reports them and turned into body axes by the mount's −45°.<span class="wide-only"> Hover to read values.</span></figcaption>
     </figure>
     <div class="prose">
       <p>DVL failures (lost lock, no data, missing topics): see <a href="#trouble">Troubleshooting</a>.</p>
@@ -234,72 +228,88 @@
       <h2 id="depth" data-short="Depth">Depth: a pressure sensor in the starboard lid</h2>
       <p>Water pressure grows by <span class="m">\rho g</span>, about 9.8 kPa per metre, so:</p>
       <div class="M">h = \frac{p - p_\text{surface}}{\rho\, g}, \qquad \rho = 997\ \text{kg/m}^3,\; g = 9.80665\ \text{m/s}^2</div>
-      <dl class="spec">
-        <dt>Sensor</dt><dd>Blue Robotics Bar02 (TE MS5837-02BA, 2 bar range) on I²C; the firmware starts it as an <a href="https://github.com/osu-uwrt/titan_firmware/blob/fix/depth-timestamps/talos/CameraCageBB/src/main.c#L170"><code>MS5837_02BA</code></a>. The CAD shows a Bar30 in that spot; the firmware drives it as a Bar02.</dd>
-        <dt>Where</dt><dd>In the starboard lid at the stern of the main hull (<a href="mechanical.html#hull">Hull, frame and layout</a>)</dd>
-        <dt>Board</dt><dd>Read by the camera cage board (<a href="https://github.com/osu-uwrt/titan_firmware/tree/fix/depth-timestamps/talos/CameraCageBB"><code>CameraCageBB</code></a>, <a href="boards.html">Chapter 3</a>) on a short I²C cable (J15); its RP2040 publishes over CAN through micro-ROS (<a href="firmware.html">Chapter 4</a>)</dd>
-        <dt>Rate</dt><dd>20 Hz; oversampling 8192, about 16 ms per conversion</dd>
-        <dt>Publishes</dt><dd><code>state/depth/raw</code> (variance 0.003, σ ≈ 5.5 cm: very cautious, the real noise is under a millimetre) and <code>state/depth/temp</code> (water, 1 Hz)</dd>
-        <dt>Then</dt><dd><a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/depth_converter.py"><code>depth_converter.py</code></a> publishes <code>depth/pose</code>: <code>base_link</code>'s z, negative below the surface</dd>
+      <dl class="spec key">
+        <dt>Model</dt><dd>Blue Robotics Bar02 (2 bar range)</dd>
+        <dt>Rate</dt><dd>20 Hz</dd>
+        <dt>Topic</dt><dd><code>depth/pose</code>: <code>base_link</code>'s z, negative below the surface</dd>
+        <dt>Where</dt><dd>In the starboard lid at the stern of the hull, open to the water</dd>
       </dl>
       <ul>
-        <li><strong>Zeroed at power-up.</strong> The firmware discards 20 readings, then filters the next 20 (an exponential average) into the surface pressure (<a href="https://github.com/osu-uwrt/titan_firmware/blob/fix/depth-timestamps/lib/driver_depth/src/depth.c#L80-L105"><code>depth.c</code></a>), and keeps it across a watchdog reset. Powered up underwater, every depth is off by the starting depth. <code>CLEAR_DEPTH</code> (a viewer button) re-zeroes it at the surface.</li>
+        <li><strong>Zeroed at power-up.</strong> The firmware takes the surface pressure from its first readings (it discards 20, then smooths the next 20 with an exponential average, <a href="https://github.com/osu-uwrt/titan_firmware/blob/fix/depth-timestamps/lib/driver_depth/src/depth.c#L80-L105"><code>depth.c</code></a>) and keeps it across a watchdog reset. Powered up underwater, every depth is off by the starting depth. <code>CLEAR_DEPTH</code> (a viewer button) re-zeroes it at the surface.</li>
         <li><strong>Fresh-water density is built in.</strong> In salt water (1025 kg/m³) the same pressure means 2.7 % less depth.</li>
-        <li><strong>Lever arm.</strong> The sensor is 13.5 cm above, 16.5 cm behind and 15.5 cm to starboard of <code>base_link</code>; at 10° pitch that changes its height by about 3 cm, so <code>depth_converter.py</code> rotates the offset with the attitude.</li>
-        <li><strong>Timestamps.</strong> On <code>master</code>, the board syncs its clock with ROS once at start-up and stamps each reading when it publishes, 35 to 45 ms after sampling; its clock then drifts about 150 ms per hour on Talos. The <a href="https://github.com/osu-uwrt/titan_firmware/tree/fix/depth-timestamps"><code>fix/depth-timestamps</code></a> branch (not merged yet) re-syncs every 5 s and stamps the middle of the pressure conversion.</li>
       </ul>
+      <details class="sx-fold"><summary>Full spec, lever arm and timestamps</summary>
+        <dl class="spec">
+          <dt>Chip</dt><dd>TE MS5837-02BA on I²C; the firmware starts it as an <a href="https://github.com/osu-uwrt/titan_firmware/blob/fix/depth-timestamps/talos/CameraCageBB/src/main.c#L170"><code>MS5837_02BA</code></a>. The CAD shows a Bar30 in that spot; the firmware drives it as a Bar02.</dd>
+          <dt>Board</dt><dd>Read by the camera cage board (<a href="https://github.com/osu-uwrt/titan_firmware/tree/fix/depth-timestamps/talos/CameraCageBB"><code>CameraCageBB</code></a>, <a href="boards.html">The circuit boards</a>) on a short I²C cable (J15); its RP2040 publishes over CAN through micro-ROS (<a href="firmware.html">Firmware on the boards</a>)</dd>
+          <dt>Sampling</dt><dd>Oversampling 8192, about 16 ms per conversion</dd>
+          <dt>Raw topics</dt><dd><code>state/depth/raw</code> (variance 0.003, σ ≈ 5.5 cm: very cautious, the real noise is under a millimetre) and <code>state/depth/temp</code> (water, 1 Hz)</dd>
+          <dt>Then</dt><dd><a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/riptide_hardware2/depth_converter.py"><code>depth_converter.py</code></a> turns the raw reading into <code>depth/pose</code></dd>
+        </dl>
+        <ul>
+          <li><strong>Lever arm.</strong> The sensor is 13.5 cm above, 16.5 cm behind and 15.5 cm to starboard of <code>base_link</code>; at 10° pitch that changes its height by about 3 cm, so <code>depth_converter.py</code> rotates the offset with the attitude.</li>
+          <li><strong>Timestamps.</strong> On <code>master</code>, the board syncs its clock with ROS once at start-up and stamps each reading when it publishes, 35 to 45 ms after sampling; its clock then drifts about 150 ms per hour on Talos. The <a href="https://github.com/osu-uwrt/titan_firmware/tree/fix/depth-timestamps"><code>fix/depth-timestamps</code></a> branch (not merged yet) re-syncs every 5 s and stamps the middle of the pressure conversion.</li>
+        </ul>
+      </details>
     </div>
     <figure class="fig">
       <div class="panel"><div id="depth-chart"></div></div>
-      <figcaption><b>Two independent depths.</b> The pressure sensor, and the DVL's vertical velocity added up from the same start, during dives to 3.4 m. They stay within 5 cm over four minutes. Tap or hover to read values.</figcaption>
+      <figcaption><b>Two independent depths.</b> The pressure sensor, and the DVL's vertical velocity added up from the same start, during dives to 3.4 m. They stay within 5 cm over four minutes.<span class="wide-only"> Hover to read values.</span></figcaption>
     </figure>
     <div class="prose">
       <h2 id="acoustics" data-short="Acoustics">Acoustics: which side is the pinger on</h2>
-      <p>At RoboSub a pinger marks either the torpedo or the table task. Talos doesn't find its direction. It compares how loud it sounds at two places:</p>
-      <ol>
-        <li>An <strong>Aquarian Audio H1C hydrophone</strong>, the same one the inter-vehicle link (IVC) listens with, goes through a preamplifier and analog band-pass filters to the IVC board's RP2040 ADC (<a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2025/07/Robosub_2025.pdf">2025 design report</a>).</li>
-        <li>Firmware filters the samples at the selected pinger frequency (20, 25, 30, 35, 37 or 40 kHz) and streams the amplitude on <code>ivc/pinger/selected_freq_amp_stream</code> (<code>IVCBoard2</code> on the <a href="https://github.com/osu-uwrt/titan_firmware/blob/blake/ivc/talos/IVCBoard2/src/ros.c"><code>blake/ivc</code></a> branch; master has no pinger topics).</li>
-        <li><strong>Only in pinger mode.</strong> The board boots with pinger mode off and streams nothing until a <code>true</code> arrives on <code>ivc/pinger/enable</code> (<a href="https://github.com/osu-uwrt/titan_firmware/blob/blake/ivc/talos/IVCBoard2/src/ivc.c#L95-L97"><code>ivc.c</code></a>). Nothing in the robot software sends it: the Nereus viewer's electrical panel does (Pinger, on by default) and re-sends it every second, so a rebooted board recovers (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/viewer/talos_uwrt_panels.yaml#L107-L114"><code>talos_uwrt_panels.yaml</code></a>). The same panel shows the amplitude stream. <strong>No viewer, no amplitudes</strong>, and the mission's pinger step fails.</li>
-        <li><a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/src/pinger_broker.cpp"><code>pinger_broker</code></a> re-sends the frequency to the board (<code>ivc/pinger/set_freq_khz</code>) every second, in case it reboots. It starts at 30 kHz; the viewer's frequency choice (25, 30, 35, 37 or 40 kHz) reaches it on <code>ivc/pinger/set_freq_broker_khz</code>.</li>
-        <li><a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_acoustics/src/Acoustics.cpp#L120-L193"><code>riptide_acoustics</code></a> fills buffer 0 between <code>acoustics/start_sample</code> and <code>stop_sample</code>, then buffer 1, then publishes <code>acoustics/buffer_0_closer</code> (true: buffer 0 louder) every second. In <code>max</code> mode (the launch default) it compares averages if the peaks are within 1000; otherwise the old answer stays.</li>
-        <li>The competition mission's <code>RandomPingerTree</code> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L1874-L1908"><code>RepairCompMpcTree.xml</code></a>) listens 10 s at <code>pre_torpedo_pose</code> (buffer 0), then at <code>pre_table_pose</code>, and reads the Bool into <code>is_table</code>. If nothing arrives in 3 s, <code>GetBoolTopic</code> writes false (torpedo first) and fails (<a href="mission-tree.html#pinger">more</a>).</li>
-      </ol>
+      <p>At RoboSub a pinger marks either the torpedo or the table task. Talos doesn't find the pinger's direction: it listens at two stops and compares how loud it sounds.</p>
+      <p>The listening is done by a <a href="glossary.html#term-hydrophone">hydrophone</a> (an underwater microphone) in a small pod under the frame. It hears both the pinger and the other robot's inter-vehicle messages (<a href="glossary.html#term-ivc-board">IVC</a>). A separate <span class="term">transducer</span>, to port, sends Talos's own IVC messages; it plays no part in the pinger task.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel">
+        <ol class="ac-flow" id="ac-flow"></ol>
+      </div>
+      <figcaption><b>From a ping to a decision.</b> Four steps, and one switch outside the robot software that the chain needs. Tap a step for its topic and source.</figcaption>
+    </figure>
+    <figure class="fig narrow">
+      <div class="ac-pod" id="ac-pod"></div>
+      <figcaption><b>The hydrophone pod and the transducer</b>, two separate parts, from the team's July 2026 CAD. The pod listens; the transducer only sends. The preamplifier sits inside the pod, and a SubConn connector on top carries its cable.</figcaption>
+    </figure>
+    <div class="prose">
       <div class="callout"><span class="label">Known gaps</span><ul>
         <li><strong>The order looks inverted.</strong> <code>buffer_0_closer</code> true means the torpedo stop was louder, but the tree stores it as <code>is_table</code>, so a louder torpedo pinger sends Talos to the table first (<a href="robosub.html#tree">RoboSub</a>).</li>
-        <li><strong>A stale answer in <code>max</code> mode.</strong> If the peaks differ by 1000 or more, <code>compare_max_buffers</code> sets nothing, and the node keeps publishing the previous result (false after start-up).</li>
+        <li><strong>A stale answer.</strong> In <code>max</code> mode, if the peaks differ by 1000 or more, nothing is compared and the node keeps publishing the previous result (false after start-up).</li>
         <li><strong>Nereus has no pinger.</strong> In sim the comparison fails ("Cannot compare") and the run goes torpedo first.</li>
-        <li><code>talos.yaml</code> lists two hydrophone poses, port and starboard. They fit the two-hydrophone direction-finding design in the <a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2024/06/TDR_THEOhioStateUniversity_RS2024.pdf">2024 design report</a>; nothing in the current code uses them.</li>
+        <li><strong>Stale poses.</strong> <code>talos.yaml</code> lists two hydrophones, out on the port and starboard frame modules, from the old two-hydrophone direction-finding design (<a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2024/06/TDR_THEOhioStateUniversity_RS2024.pdf">2024 design report</a>). The pod is not there, and no current code uses them.</li>
       </ul></div>
 
       <h2 id="housekeeping" data-short="Housekeeping">Temperature, humidity and voltage</h2>
       <p>Several boards also report on the robot's own health (besides <code>gyro/status</code>, <code>dvl</code> and <code>vectornav/pressure_bar</code> above). None of these feed the estimators.</p>
-      <table class="params">
-        <thead><tr><th>What</th><th>Source</th><th>Topic</th></tr></thead>
+      <table class="params hk">
+        <thead><tr><th>What</th><th>From</th><th>Topic</th></tr></thead>
         <tbody>
-          <tr><td>Air temperature and humidity, camera cage</td><td>SHT41 on the camera cage board, 2 Hz</td><td><code>state/temp/cameracage</code>, <code>state/humidity/cameracage</code></td></tr>
-          <tr><td>Air temperature and humidity, POAC</td><td>SHT41 on the <a href="boards.html">POAC</a>, 2 Hz</td><td><code>state/temp/poacboard</code>, <code>state/humidity/poacboard</code></td></tr>
-          <tr><td>Rail voltages</td><td>POAC ADC (MCP3428): balanced V+ (Vreg, after the Schottky), the <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_msgs/msg/ElectricalReadings.msg">"12 V" rail (really 15 V)</a>, 5 V, 3.3 V, and which pack is supplying (<code>port_powering</code>, <code>stbd_powering</code>). <code>port_voltage</code> and <code>stbd_voltage</code> are always 0 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L146-L159"><code>ros.c</code></a>, <a href="electrical.html#measured">more</a>). 1 Hz</td><td><code>state/electrical</code></td></tr>
-          <tr><td>Battery charge, voltage, current</td><td>Smart battery board in each battery housing, 1 Hz. <em>Not reaching ROS at the moment:</em> the external-bus (<code>can1</code>) agent is commented out in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/copro_agent.launch.py#L32-L42"><code>copro_agent.launch.py</code></a> (<a href="https://github.com/osu-uwrt/riptide_core/commit/720bdd9">720bdd9</a>, 2026-10-27; <a href="firmware.html#microros">why</a>). The viewer's PORT/STBD readouts stay empty; the battery reading that does arrive is <code>state/electrical</code>'s balanced V+.</td><td><code>state/battery</code> (viewer PORT/STBD)</td></tr>
-          <tr><td>Air temperature and humidity, battery housings</td><td>SHT41 on each smart battery board, 2 Hz. Not on ROS at the moment either: same <code>can1</code> agent.</td><td><code>status/temp/smartbattery</code>, <code>status/humidity/smartbattery</code> (note <code>status</code>, not <code>state</code>)</td></tr>
-          <tr><td>Water temperature</td><td>Bar02, 1 Hz</td><td><code>state/depth/temp</code></td></tr>
-          <tr><td>ESC temperature, voltage, current, RPM</td><td>Each ESC board, 2 Hz (<a href="thrusters-hw.html">Thrusters and ESCs</a>)</td><td><code>state/thrusters/telemetry</code></td></tr>
+          <tr><td data-l="What">Air temperature and humidity, camera cage</td><td data-l="From">SHT41 on the camera cage board, 2 Hz</td><td data-l="Topic"><code>state/temp/cameracage</code><br><code>state/humidity/cameracage</code></td></tr>
+          <tr><td data-l="What">Air temperature and humidity, POAC</td><td data-l="From">SHT41 on the <a href="boards.html">POAC</a>, 2 Hz</td><td data-l="Topic"><code>state/temp/poacboard</code><br><code>state/humidity/poacboard</code></td></tr>
+          <tr><td data-l="What">Rail voltages, which pack is supplying</td><td data-l="From">POAC ADC (MCP3428), 1 Hz</td><td data-l="Topic"><code>state/electrical</code></td></tr>
+          <tr><td data-l="What">Battery charge, voltage, current</td><td data-l="From">Smart battery board in each battery housing, 1 Hz. <em>Not reaching ROS now</em></td><td data-l="Topic"><code>state/battery</code></td></tr>
+          <tr><td data-l="What">Air temperature and humidity, battery housings</td><td data-l="From">SHT41 on each smart battery board, 2 Hz. <em>Not reaching ROS now</em></td><td data-l="Topic"><code>status/temp/smartbattery</code><br><code>status/humidity/smartbattery</code></td></tr>
+          <tr><td data-l="What">Water temperature</td><td data-l="From">Bar02, 1 Hz</td><td data-l="Topic"><code>state/depth/temp</code></td></tr>
+          <tr><td data-l="What">ESC temperature, voltage, current, RPM</td><td data-l="From">Each ESC board, 2 Hz (<a href="thrusters-hw.html">Thrusters and ESCs</a>)</td><td data-l="Topic"><code>state/thrusters/telemetry</code></td></tr>
         </tbody>
       </table>
       <ul>
+        <li><strong><code>state/electrical</code></strong> carries the battery bus voltage after the Schottky diode (Vreg), the <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_msgs/msg/ElectricalReadings.msg">"12 V" rail (really 15 V)</a>, 5 V and 3.3 V, and which pack is supplying (<code>port_powering</code>, <code>stbd_powering</code>). Its <code>port_voltage</code> and <code>stbd_voltage</code> are always 0 (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c#L146-L159"><code>ros.c</code></a>, <a href="electrical.html#measured">more</a>).</li>
+        <li><strong>The battery boards don't reach ROS at the moment:</strong> the external-bus (<code>can1</code>) micro-ROS agent is commented out in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/copro_agent.launch.py#L32-L42"><code>copro_agent.launch.py</code></a> (<a href="https://github.com/osu-uwrt/riptide_core/commit/720bdd9">720bdd9</a>, 2026-10-27; <a href="firmware.html#microros">why</a>). The viewer's PORT/STBD battery readouts stay empty; the only battery reading is <code>state/electrical</code>'s Vreg. (Their temperature topics start with <code>status</code>, not <code>state</code>.)</li>
         <li><strong>Humidity</strong> rising inside a housing is the early sign of a leak. Today only the POAC and camera-cage SHT41s report, so a leak in a battery housing raises no humidity warning. (The leak sensor is no longer used; its publisher is commented out.)</li>
-        <li><strong>The diagnostics nodes</strong> are out of date; the team watches the viewer's header readouts (FOG, DVL, batteries). Power: <a href="electrical.html">Chapter 2</a>.</li>
+        <li><strong>The diagnostics nodes</strong> are out of date; the team watches the viewer's header readouts (FOG, DVL, batteries). Power: <a href="electrical.html">Power and wiring</a>.</li>
       </ul>
 
       <h2 id="nereus" data-short="In Nereus">The sensors in Nereus</h2>
       <p>Each sensor is a model in the Talos robot pack (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L158-L203"><code>robot.yaml</code></a>), with noise measured in 2026-10-03 pool bags. The bridge (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/bridges/uwrt_talos/bridge.yaml#L185-L241"><code>bridge.yaml</code></a>) publishes only the four main topics.</p>
-      <table class="params">
+      <table class="params hk nereus">
         <thead><tr><th>Sensor</th><th>In Nereus</th><th>Not simulated</th></tr></thead>
         <tbody>
-          <tr><td>IMU</td><td>400 Hz; rate noise 0.0009 rad/s, accel 0.035 m/s²; attitude nearly noise-free. Same covariances as the real driver.</td><td>Magnetometer, barometer, bias drift, reconnects</td></tr>
-          <tr><td>FOG</td><td>500 Hz; 0.0011 rad/s noise; reported variance 3×10<sup>−8</sup> (real driver: 10<sup>−4</sup>)</td><td>Tare, temperature, <code>gyro/status</code></td></tr>
-          <tr><td>DVL</td><td>8 Hz; 6, 6, 3 mm/s noise; variance 10<sup>−6</sup></td><td>Lost lock, the 125 ms age, <code>dvl/bottom_lock</code>, ranges</td></tr>
-          <tr><td>Depth</td><td>20 Hz <code>depth/pose</code> from the simulated <code>base_link</code> height; 0.7 mm noise</td><td>Firmware, zeroing, <code>state/depth/raw</code></td></tr>
-          <tr><td>Hydrophone</td><td>None</td><td>The pinger</td></tr>
+          <tr><td data-l="Sensor">IMU</td><td data-l="In Nereus">400 Hz; rate noise 0.0009 rad/s, accel 0.035 m/s²; attitude nearly noise-free. Same covariances as the real driver.</td><td data-l="Not simulated">Magnetometer, barometer, bias drift, reconnects</td></tr>
+          <tr><td data-l="Sensor">FOG</td><td data-l="In Nereus">500 Hz; 0.0011 rad/s noise; reported variance 3 × 10⁻⁸ (real driver: 10⁻⁴)</td><td data-l="Not simulated">Tare, temperature, <code>gyro/status</code></td></tr>
+          <tr><td data-l="Sensor">DVL</td><td data-l="In Nereus">8 Hz; 6, 6, 3 mm/s noise; variance 10⁻⁶</td><td data-l="Not simulated">Lost lock, the 125 ms age, <code>dvl/bottom_lock</code>, ranges</td></tr>
+          <tr><td data-l="Sensor">Depth</td><td data-l="In Nereus">20 Hz <code>depth/pose</code> from the simulated <code>base_link</code> height; 0.7 mm noise</td><td data-l="Not simulated">Firmware, zeroing, <code>state/depth/raw</code></td></tr>
+          <tr><td data-l="Sensor">Hydrophone</td><td data-l="In Nereus">None</td><td data-l="Not simulated">The pinger</td></tr>
         </tbody>
       </table>
       <p>A mission that works in Nereus has never met a lost DVL lock, a late DVL reading, a bad tare or depth zeroed underwater. Those show up only in the pool.</p>
@@ -308,7 +318,7 @@
       <p>The pieces sit in two repositories and several chapters. In order:</p>
       <ol>
         <li><strong>A driver.</strong> A node that reads the device and publishes stamped messages in the sensor's own frame, with an honest covariance (<a href="#imu-cov">what a wrong one costs</a>). Start it from a launch file included in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/hardware.launch.py"><code>riptide_hardware/launch/hardware.launch.py</code></a>, as the DVL, IMU and gyro are; everything there runs under the <code>/talos</code> namespace. A sensor wired to a board publishes from firmware instead (<a href="firmware.html#microros">micro-ROS</a>).</li>
-        <li><strong>Its mount pose.</strong> Under the sensor's key in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L320-L348"><code>riptide_descriptions/config/talos.yaml</code></a>: <code>pose: [x, y, z, roll, pitch, yaw]</code> in the <code>origin</code> frame, metres and radians. <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/urdf/robot_sensors.xacro"><code>urdf/robot_sensors.xacro</code></a> turns the <code>dvl</code>, <code>depth</code>, <code>imu</code>, <code>fog</code> and <code>acoustics</code> keys into TF frames; a new kind of sensor needs its own block there and a macro in <code>snippets.xacro</code> (<a href="localization.html#urdf">the URDF</a>). The MPC reads the IMU and DVL mounts from the same file (<a href="#frames">Frames</a>).</li>
+        <li><strong>Its mount pose.</strong> Under the sensor's key in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L320-L348"><code>riptide_descriptions/config/talos.yaml</code></a>: <code>pose: [x, y, z, roll, pitch, yaw]</code> in the <code>origin</code> frame, metres and radians. <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/urdf/robot_sensors.xacro"><code>urdf/robot_sensors.xacro</code></a> turns the <code>dvl</code>, <code>depth</code>, <code>imu</code>, <code>fog</code> and <code>acoustics</code> keys into TF frames; a new kind of sensor needs its own block there and a macro in <code>snippets.xacro</code> (<a href="localization.html#urdf">the URDF</a>). The MPC reads the IMU and DVL mounts from the same file, and its log warns if they differ from TF (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L620-L652"><code>checkMountsAgainstTf</code></a>).</li>
         <li><strong>Fusing it</strong>, if the estimate should use it: one more input next to <code>imu0</code>, <code>twist0</code>, <code>twist1</code> and <code>pose0</code> in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L33-L78"><code>riptide_hardware/cfg/talos_ekf.yaml</code></a>, saying which states it measures (<a href="localization.html#fused">What Talos fuses</a>). The MPC's estimator is separate code (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/state_estimator.cpp"><code>state_estimator.cpp</code></a>).</li>
         <li><strong>The launcher.</strong> Add its topic to the hardware entry's <code>topics</code> in <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml#L11-L17"><code>talos_launch_mpc.yaml</code></a>, so the entry shows it <i>Not Present</i> when the sensor is missing (<a href="launch.html#stuck">Launching the stack</a>).</li>
         <li><strong>Its simulated twin.</strong> Nereus doesn't read <code>talos.yaml</code>. In <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L158-L203"><code>content/packs/robots/talos/robot.yaml</code></a> add a mount under <code>frames</code> and an entry under <code>sensors</code> (guide: <a href="https://github.com/osu-uwrt/nereus/blob/main/docs/guides/robot.md#sensors"><code>docs/guides/robot.md</code></a>); in <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/bridges/uwrt_talos/bridge.yaml#L185-L241"><code>content/packs/bridges/uwrt_talos/bridge.yaml</code></a> map the mount to its ROS frame under <code>frame_names</code> and add a stream that publishes it on the real topic (guide: <a href="https://github.com/osu-uwrt/nereus/blob/main/docs/guides/bridge.md"><code>docs/guides/bridge.md</code></a>). A moved sensor has to move in both places (<a href="nereus.html#sensors">Nereus</a>).</li>
@@ -316,17 +326,17 @@
       </ol>
 
       <h2 id="trouble" data-short="Troubleshooting">When a sensor misbehaves</h2>
-      <p>The common failures for every sensor in this chapter. Filter by sensor.</p>
+      <p>The common failures for every sensor in this chapter, one line each. Tap a symptom for its likely cause and what to check.</p>
     </div>
     <figure class="fig narrow">
       <div class="panel">
         <div class="controls"><span class="seg" role="group" aria-label="Sensor" id="tr-pick"></span></div>
         <div id="tr-list" class="tr-list"></div>
       </div>
-      <figcaption><b>Symptom, likely cause, what to check.</b> Commands run on the Orin or on a laptop connected to it (<a href="computers.html">Chapter 10</a>). Tap a sensor to filter.</figcaption>
+      <figcaption><b>Symptom, likely cause, what to check.</b> Commands run on the Orin or on a laptop connected to it (<a href="computers.html">Computers and networks</a>). Pick a sensor to see only its problems.</figcaption>
     </figure>
     <div class="prose">
-      <p>Next, <a href="cameras.html">the cameras</a>. After that, <a href="localization.html">Chapter 9</a> puts all of these sensors together into one estimate of where Talos is.</p>
+      <p>Next, <a href="cameras.html">the cameras</a>. After that, <a href="localization.html">Where am I?</a> puts all of these sensors together into one estimate of where Talos is.</p>
       <p class="src">Data: bench bags <code>imu_ekf_bench</code> and <code>imu_ekf_bench2</code> (2026-10-27) and the pool identification run <code>talos_20261026_204748</code>. Extracted by <code>tools/sensors/extract.py</code> and <code>tools/sensors/build_data.py</code> in this site's repository.</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>

@@ -22,7 +22,10 @@ for name, frame in [('ffc', sys.argv[1] if len(sys.argv) > 1 else 'f0005_ffc'), 
     lo, hi = 0.0, (4.0 if name == 'ffc' else 2.0)  # colour scale, metres (legend in cameras.js)
     t = np.clip((d - lo) / (hi - lo), 0, 1)
     col = cv2.applyColorMap((255 * (1 - t)).astype(np.uint8), cv2.COLORMAP_VIRIDIS)  # near = bright
-    col[~np.isfinite(d)] = (40, 34, 30)  # no depth: dark
+    none = ~np.isfinite(d)  # no depth: light grey hatch (BGR), clearly off the colour ramp
+    yy, xx = np.mgrid[0:d.shape[0], 0:d.shape[1]]
+    col[none] = (221, 219, 214)
+    col[none & (((xx + yy) % 14) < 3)] = (197, 193, 184)
     save(rgb, f'nereus_{name}_rgb', 960)
     save(col, f'nereus_{name}_depth', 960)
     print(name, frame, 'depth range', np.nanmin(d), np.nanmax(d), 'nan frac', float(np.mean(~np.isfinite(d))))

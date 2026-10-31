@@ -16,6 +16,10 @@
     "what": "One of two identical sealed housings, each with its own BMS board and microcontroller board. Plugs into the hull with a power SubConn and a telemetry SubConn.",
     "rows": [
      [
+      "Sits",
+      "Outside the hull, port side"
+     ],
+     [
       "Cells",
       "MaxAmps LiPo, 8000 mAh, 5S2P (5 in series, 2 in parallel)"
      ],
@@ -37,12 +41,12 @@
      ],
      [
       "Data",
-      "external CAN bus, 250 kbit/s, to the Orin HAT"
+      "external CAN bus (can1), 250 kbit/s, client 1"
      ]
     ],
     "link": {
-     "href": "#batteries",
-     "text": "Batteries, below"
+     "href": "batteries.html",
+     "text": "Batteries and charging"
     },
     "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L4",
     "inferred": false
@@ -55,8 +59,12 @@
    "group": "battery",
    "card": {
     "title": "Starboard smart battery housing",
-    "what": "Same design as the port housing. The housing reports which side it is on from a side-detect pin, not from its CAN ID.",
+    "what": "Same design as the port housing. A side-detect pin, read through the BMS at boot, makes it client 2 (port is 1); the firmware has a TODO to confirm the pin matches the side on the vehicle.",
     "rows": [
+     [
+      "Sits",
+      "Outside the hull, starboard side"
+     ],
      [
       "Cells",
       "MaxAmps LiPo, 8000 mAh, 5S2P (5 in series, 2 in parallel)"
@@ -79,26 +87,30 @@
      ],
      [
       "Data",
-      "external CAN bus, 250 kbit/s, to the Orin HAT"
+      "external CAN bus (can1), 250 kbit/s, client 2"
      ]
     ],
     "link": {
-     "href": "#batteries",
-     "text": "Batteries, below"
+     "href": "batteries.html",
+     "text": "Batteries and charging"
     },
-    "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/SmartBattery/bq40z80_files/BQ40Z80%20Configuration.txt#L4",
+    "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/lib/titan_bootloader/src/can_bl_custom_id/sbh_mcu_i2c.h#L226-L262",
     "inferred": false
    }
   },
   {
    "id": "ksw",
    "label": "Kill switch",
-   "sub": "Hall-effect sensor",
+   "sub": "handle, port bow",
    "group": "out",
    "card": {
     "title": "Physical kill switch",
-    "what": "A Hall-effect sensor (2024 design report) wired to the POAC. With the switch out, thruster power is cut in hardware, whatever the software does.",
+    "what": "The handle on the port tube's bow window (CAD \"Kill Switch Knuckles\"). A Hall-effect sensor on the board stack's fan block senses the magnet in the handle through the window (2024 design report). Handle off: thruster power is cut in hardware, whatever the software does.",
     "rows": [
+     [
+      "Sits",
+      "Handle outside the port bow window; sensor inside, on the fan block"
+     ],
      [
       "Into the POAC",
       "J1 KILL / AUX (Molex Mini-Fit Jr 4-pin): GND, GND, KILL_SWITCH, AUX_SWITCH"
@@ -130,6 +142,10 @@
     "what": "2 x LTC4412 + 4 x SiR167DP. Whichever battery is higher supplies V+; STAT pins report which are supplying. Reverse current from one pack into the other is blocked.",
     "rows": [
      [
+      "Sits",
+      "Port tube, on the POAC (the bottom board of the stack)"
+     ],
+     [
       "Parts",
       "2 x LTC4412 controllers, 4 x SiR167DP P-channel MOSFETs"
      ],
@@ -160,6 +176,10 @@
     "what": "The thruster power switch. Three P-channel MOSFETs in parallel connect V+ to MOTOR_PWR, the ESC supply. They conduct only while MOTOR_EN is on: the physical switch is in AND the microcontroller holds SOFTWARE_KILL at \"run\".",
     "rows": [
      [
+      "Sits",
+      "Port tube, on the POAC (the bottom board of the stack)"
+     ],
+     [
       "Parts",
       "3 x SiR167DP (30 V, 60 A each), 3 x TC4432 gate drivers, DG448 analog switch"
      ],
@@ -173,7 +193,7 @@
      ]
     ],
     "link": {
-     "href": "commanding.html",
+     "href": "commanding.html#kill",
      "text": "Kill slots and software kill"
     },
     "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator",
@@ -190,12 +210,20 @@
     "what": "Runs the kill-switch logic (the software kill slots), measures the rails with a 16-bit ADC and drives the actuator servo. It reports as the \"power board\" on CAN, client 1.",
     "rows": [
      [
+      "Sits",
+      "Port tube, on the POAC (the bottom board of the stack)"
+     ],
+     [
       "Publishes",
       "state/kill, state/electrical (1 s), state/aux, state/batteries_balanced"
      ],
      [
       "Listens",
       "command/software_kill, command/electrical (fans), command/actuator/*"
+     ],
+     [
+      "CAN",
+      "on the internal bus (can0, classic CAN, 1 Mbit/s), client 1"
      ]
     ],
     "link": {
@@ -203,6 +231,40 @@
      "text": "The POAC board"
     },
     "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/ros.c",
+    "inferred": false
+   }
+  },
+  {
+   "id": "schottky",
+   "label": "Schottky diode",
+   "sub": "MBRB2545CT",
+   "group": "poac",
+   "card": {
+    "title": "Schottky diode (MBRB2545CT)",
+    "what": "Sits between V+ and both regulator modules. Its output is Vreg, which feeds the 15 V and 5 V modules. The 2024 report says it is there \"to prevent back-flow current\".",
+    "rows": [
+     [
+      "Sits",
+      "Port tube, on the POAC (the bottom board of the stack)"
+     ],
+     [
+      "In",
+      "V+, the battery bus"
+     ],
+     [
+      "Out",
+      "Vreg, into PS1 (15 V) and PS2 (5 V)"
+     ],
+     [
+      "Measured",
+      "state/electrical balanced_voltage reads Vreg, after the diode"
+     ]
+    ],
+    "link": {
+     "href": "#rails",
+     "text": "Regulators and rails"
+    },
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20One/PoActuator/Combined_Power_Actuator",
     "inferred": false
    }
   },
@@ -215,6 +277,10 @@
     "title": "15 V regulator",
     "what": "TDK-Lambda i6A4W020A033V non-isolated DC-DC module (9-53 V in, 20 A), trimmed to 15 V. Fed from Vreg, which is V+ through a Schottky diode.",
     "rows": [
+     [
+      "Sits",
+      "Port tube, on the POAC (the bottom board of the stack)"
+     ],
      [
       "Feeds",
       "camera cage board (Orin, DVL, Peltier output if fitted), stack link, 12 V LDO"
@@ -242,6 +308,10 @@
     "what": "The same TDK-Lambda module, trimmed to 5 V. Each board in the stack and the camera cage makes its own 3.3 V from this with an LM1117 LDO.",
     "rows": [
      [
+      "Sits",
+      "Port tube, on the POAC (the bottom board of the stack)"
+     ],
+     [
       "Feeds",
       "board logic (POAC microcontroller, stack link, camera cage), network switch, fans, depth sensor, LED strip"
      ],
@@ -261,12 +331,16 @@
   {
    "id": "reg12",
    "label": "12 V LDO",
-   "sub": "servo only",
+   "sub": "servos",
    "group": "poac",
    "card": {
     "title": "12 V regulator",
-    "what": "MIC29300-12, a 3 A linear regulator from the 15 V rail. Its only load is the actuator servo on the lid connector. Not measured by the ADC.",
+    "what": "MIC29300-12, a 3 A linear regulator from the 15 V rail. It feeds the servo connector on the lid: the launcher servo, and the claw servo if it shares that bus (unconfirmed). Not measured by the ADC.",
     "rows": [
+     [
+      "Sits",
+      "Port tube, on the POAC (the bottom board of the stack)"
+     ],
      [
       "Out",
       "LID_CONN1 LID_CONN (Molex Mini-Fit Jr 4-pin): GND, 12V, ACT_PWM_5V (servo data), ACT_CHECK_5V"
@@ -290,6 +364,10 @@
     "what": "Carrier for four ESCs. Solder jumper SB1 left open makes it board 0, CAN client 2.",
     "rows": [
      [
+      "Sits",
+      "Port tube, in the board stack"
+     ],
+     [
       "In",
       "MOTOR_PWR on Redcube terminals \"ESC V+\" / \"ESC GND\""
      ],
@@ -308,6 +386,10 @@
      [
       "Out",
       "J5 Thruster SubConn (Molex Mini-Fit Jr 12-pin): 3 motor phases x 4 ESCs"
+     ],
+     [
+      "CAN",
+      "on the internal bus (can0, classic CAN, 1 Mbit/s), client 2"
      ]
     ],
     "link": {
@@ -328,6 +410,10 @@
     "what": "The same board with SB1 bridged, so it reads as board 1, CAN client 3.",
     "rows": [
      [
+      "Sits",
+      "Port tube, in the board stack"
+     ],
+     [
       "In",
       "MOTOR_PWR on Redcube terminals \"ESC V+\" / \"ESC GND\""
      ],
@@ -346,6 +432,10 @@
      [
       "Out",
       "J5 Thruster SubConn (Molex Mini-Fit Jr 12-pin): 3 motor phases x 4 ESCs"
+     ],
+     [
+      "CAN",
+      "on the internal bus (can0, classic CAN, 1 Mbit/s), client 3"
      ]
     ],
     "link": {
@@ -418,12 +508,20 @@
     "what": "Two ST L99LD20 buck LED drivers run straight from V+ and feed an aluminium RGBW LED module. Logic runs from 5 V.",
     "rows": [
      [
+      "Sits",
+      "Port tube, in the board stack"
+     ],
+     [
       "In",
       "J2 stack link (Mini-Fit Jr 6-pin): CANL, GND, V+, CANH, 5V"
      ],
      [
       "Out",
       "J1 LED module (Samtec LS2 10-pin): R/G/B/W anodes, GND, Temp_Sense (NTC), Conn CHK"
+     ],
+     [
+      "CAN",
+      "on the internal bus (can0, classic CAN, 1 Mbit/s), client 6"
      ]
     ],
     "link": {
@@ -441,20 +539,110 @@
    "group": "stack",
    "card": {
     "title": "IVC board (acoustic modem)",
-    "what": "Sends and hears 17/19 kHz tones. The transmit power amplifier runs on an isolated +/-24 V converter from V+ (1.5 A fuse); the receive chain on an isolated +/-5 V converter from 5 V.",
+    "what": "Talks to Triton (the team's second vehicle) with 17/19 kHz tones: it sends through the transducer and listens with the hydrophone, which also hears the competition pinger. The transmit amplifier runs on an isolated +/-24 V converter from V+ (1.5 A fuse); the receive chain on an isolated +/-5 V converter from 5 V.",
     "rows": [
+     [
+      "Sits",
+      "Port tube, in the board stack"
+     ],
      [
       "In",
       "J2 STACK LINK (Mini-Fit Jr 6-pin): CAN, GND, V+, 5V"
      ],
      [
-      "Out",
+      "Acoustics",
       "J1 ACOUSTICS INTERCONNECT (Mini-Fit Jr 4-pin): TransducerOut, HydrophoneIn, GND"
+     ],
+     [
+      "CAN",
+      "on the internal bus (can0, classic CAN, 1 Mbit/s), client 8"
      ]
     ],
     "link": {
-     "href": "boards.html",
-     "text": "The circuit boards"
+     "href": "boards.html#led-ivc",
+     "text": "The LED and IVC boards"
+    },
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20Two/IVC",
+    "inferred": false
+   }
+  },
+  {
+   "id": "ivc_rx",
+   "label": "IVC receiver",
+   "sub": "+/-5 V, isolated",
+   "group": "stack",
+   "card": {
+    "title": "IVC receive chain",
+    "what": "The listening half of the IVC board: the hydrophone's signal is amplified and filtered on an isolated +/-5 V supply, made from the 5 V rail, so the small analog signal stays off the ground the motors share.",
+    "rows": [
+     [
+      "Sits",
+      "Port tube, in the board stack"
+     ],
+     [
+      "Power",
+      "isolated +/-5 V converter from 5 V"
+     ],
+     [
+      "Input",
+      "J1 ACOUSTICS INTERCONNECT: HydrophoneIn (J5 is a backup input)"
+     ]
+    ],
+    "link": {
+     "href": "boards.html#led-ivc",
+     "text": "The LED and IVC boards"
+    },
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20Two/IVC",
+    "inferred": false
+   }
+  },
+  {
+   "id": "hyd",
+   "label": "Hydrophone",
+   "sub": "pinger + IVC in",
+   "group": "out",
+   "card": {
+    "title": "Hydrophone (Aquarian H1C)",
+    "what": "An underwater microphone. It hears the competition pinger and the IVC tones from Triton, and feeds the IVC board's receive chain. It sits in a pod low at the stern, starboard side (CAD).",
+    "rows": [
+     [
+      "Sits",
+      "Outside the hull, low at the stern (starboard)"
+     ],
+     [
+      "Into the IVC",
+      "J1 ACOUSTICS INTERCONNECT: HydrophoneIn, GND (J5 is a backup hydrophone input with +/-5 V)"
+     ]
+    ],
+    "link": {
+     "href": "sensors.html#acoustics",
+     "text": "Navigation sensors, Acoustics"
+    },
+    "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20Two/IVC",
+    "inferred": false
+   }
+  },
+  {
+   "id": "xdcr",
+   "label": "Transducer",
+   "sub": "IVC out",
+   "group": "out",
+   "card": {
+    "title": "IVC transducer",
+    "what": "The underwater speaker the IVC board transmits through, driven by its OPA548 amplifier on +/-24 V. A separate part low at the stern, port side (CAD); boards.html: a transducer the team built.",
+    "rows": [
+     [
+      "Sits",
+      "Outside the hull, low at the stern (port)"
+     ],
+     [
+      "From the IVC",
+      "J1 ACOUSTICS INTERCONNECT: TransducerOut, GND"
+     ]
+    ],
+    "link": {
+     "href": "boards.html#led-ivc",
+     "text": "The LED and IVC boards"
     },
     "source": "https://github.com/osu-uwrt/electric_boogaloo/tree/master/TalosBoards/Year%20Two/IVC",
     "inferred": false
@@ -462,13 +650,17 @@
   },
   {
    "id": "servo",
-   "label": "Actuator servo",
-   "sub": "12 V",
+   "label": "Launcher servo",
+   "sub": "12 V, serial",
    "group": "out",
    "card": {
-    "title": "Torpedo and marker servo",
-    "what": "A Hiwonder bus servo in an underwater housing. 12 V power plus a half-duplex serial data line at 115200 baud, level-shifted to 5 V.",
+    "title": "Torpedo and marker launcher servo",
+    "what": "One servo in an aluminium housing releases both torpedoes and both markers. The firmware drives a Hiwonder-protocol bus servo: 12 V plus a half-duplex serial line at 115200 baud, level-shifted to 5 V. The CAD shows an SER-20XX; which servo is fitted today is unconfirmed.",
     "rows": [
+     [
+      "Sits",
+      "Outside the hull, under the vehicle"
+     ],
      [
       "From",
       "LID_CONN1 LID_CONN (Molex Mini-Fit Jr 4-pin): GND, 12V, ACT_PWM_5V (servo data), ACT_CHECK_5V"
@@ -479,7 +671,33 @@
      "text": "Torpedoes, dropper and claw"
     },
     "source": "https://github.com/osu-uwrt/titan_firmware/blob/master/talos/PoacBoard/src/actuators/ros_torp.c",
-    "inferred": false
+    "inferred": true
+   }
+  },
+  {
+   "id": "claw",
+   "label": "Claw servo",
+   "sub": "unconfirmed",
+   "group": "out",
+   "card": {
+    "title": "Claw servo",
+    "what": "The claw under the bow has its own servo. The unmerged poac-multiple-servos firmware drives it as bus servo ID 3 on the launcher's serial line, so it would share LID_CONN1 and its 12 V. Which firmware and wiring are on Talos today is unconfirmed.",
+    "rows": [
+     [
+      "Sits",
+      "Outside the hull, under the bow"
+     ],
+     [
+      "Firmware",
+      "branch poac-multiple-servos, ros_claw.c (\"Claw is ID 3\")"
+     ]
+    ],
+    "link": {
+     "href": "actuators.html",
+     "text": "Torpedoes, dropper and claw"
+    },
+    "source": "https://github.com/osu-uwrt/titan_firmware/tree/poac-multiple-servos",
+    "inferred": true
    }
   },
   {
@@ -491,6 +709,10 @@
     "title": "Camera cage breakout board",
     "what": "Takes 15 V, 5 V and the internal CAN bus from the POAC and hands them out inside the camera cage. Switches the Orin and a Peltier output (15 V, if one is fitted) and four fans (5 V); reads the depth sensor.",
     "rows": [
+     [
+      "Sits",
+      "Starboard tube, in the camera cage"
+     ],
      [
       "In",
       "J6 CAM CAGE (from POAC) (Mini-Fit Jr 8-pin): internal CAN, 5V, 15V"
@@ -506,6 +728,10 @@
      [
       "Also",
       "RGB status strip (J9), external CAN + 15 V (J1/J5), extra power (J11)"
+     ],
+     [
+      "CAN",
+      "on the internal bus (can0, classic CAN, 1 Mbit/s), client 4"
      ]
     ],
     "link": {
@@ -525,6 +751,10 @@
     "title": "NVIDIA Jetson AGX Orin",
     "what": "The main computer. Its 15 V comes through an FDD4141 switch on the camera cage board, on at boot. command/electrical CYCLE_COMPUTER turns it off for 5 s and back on.",
     "rows": [
+     [
+      "Sits",
+      "Starboard tube, in the camera cage"
+     ],
      [
       "Power",
       "J17 ORIN (Mini-Fit Jr 4-pin): switched 15 V Orin power"
@@ -551,6 +781,10 @@
     "title": "Jetson AGX breakout (\"Orin HAT\")",
     "what": "Plugs onto the Orin's 40-pin header: two CAN transceivers (can0 internal, can1 external) and an RS-232 transceiver for the IMU, which it also powers (5 V).",
     "rows": [
+     [
+      "Sits",
+      "Starboard tube, in the camera cage"
+     ],
      [
       "CAN",
       "J1 CAN (JST XH 5-pin): can1 H/L, GND, can0 H/L"
@@ -582,6 +816,10 @@
     "what": "Serial over RS-232 through the HAT, /dev/ttyTHS0 on the Orin. Powered with 5 V from the HAT.",
     "rows": [
      [
+      "Sits",
+      "Starboard tube, in the camera cage"
+     ],
+     [
       "Port",
       "/dev/ttyTHS0 (riptide_hardware imu.launch.py)"
      ]
@@ -603,6 +841,10 @@
     "title": "Jetson M.2 RS-422 card (\"FOG board\")",
     "what": "An M.2 card in the Orin. It makes the gyro's supply (boost to 8 V, then a 5 V LDO) and converts RS-422.",
     "rows": [
+     [
+      "Sits",
+      "Starboard tube: an M.2 card in the Orin"
+     ],
      [
       "Gyro",
       "J1 gyro (Molex 505567 7-pin): 5V, GND, TX+/-, RX+/-"
@@ -647,24 +889,62 @@
    }
   },
   {
-   "id": "zed",
-   "label": "ZED X cameras",
-   "sub": "GMSL2, x2",
+   "id": "ffc",
+   "label": "ffc camera",
+   "sub": "ZED X Mini, forward",
    "group": "cage",
    "card": {
-    "title": "Stereolabs ZED X cameras",
-    "what": "Front (ZED X) and downward (ZED X Mini) stereo cameras, on the Orin's GMSL2 capture card.",
+    "title": "Forward camera (ffc)",
+    "what": "A Stereolabs ZED X Mini (camera_model zedxm) looking out of the starboard bow window, on the Orin's GMSL2 capture card.",
     "rows": [
      [
+      "Sits",
+      "Starboard tube, in the camera cage"
+     ],
+     [
       "Link",
-      "GMSL2 capture card on the Orin (team website)"
+      "GMSL2 capture card on the Orin"
+     ],
+     [
+      "Config",
+      "riptide_hardware/cfg/ffc_config.yaml"
      ]
     ],
     "link": {
      "href": "cameras.html",
      "text": "The cameras"
     },
-    "source": "https://robonation.org/app/uploads/sites/4/2026/07/RS26_TDR_TheOhioState_UWRT.pdf",
+    "source": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/ffc_config.yaml",
+    "inferred": false
+   }
+  },
+  {
+   "id": "dfc",
+   "label": "dfc camera",
+   "sub": "ZED X Mini, down",
+   "group": "out",
+   "card": {
+    "title": "Downward camera (dfc)",
+    "what": "A second ZED X Mini, under the starboard tube looking down (CAD \"DFC Mount\"). It connects to the camera cage through a quick-connect slide-in adapter (2025 design report) and on to the GMSL2 card.",
+    "rows": [
+     [
+      "Sits",
+      "Under the starboard tube, outside the cage"
+     ],
+     [
+      "Link",
+      "GMSL2 capture card on the Orin"
+     ],
+     [
+      "Config",
+      "riptide_hardware/cfg/dfc_config.yaml"
+     ]
+    ],
+    "link": {
+     "href": "cameras.html",
+     "text": "The cameras"
+    },
+    "source": "https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/dfc_config.yaml",
     "inferred": false
    }
   },
@@ -704,6 +984,10 @@
     "what": "One cable carries both: the camera cage board injects 15 V and ground on two spare pins of the DVL's Ethernet cable, and passes the data pairs on to the switch.",
     "rows": [
      [
+      "Sits",
+      "Outside the hull, under the middle of the vehicle"
+     ],
+     [
       "Cable",
       "J14 DVL SUBCONN (RJ45 (Wurth WR-MJ)): DVL Ethernet pairs + 15V/GND on pins 7-8 (\"Ethernet Power Injection\")"
      ]
@@ -723,8 +1007,12 @@
    "group": "out",
    "card": {
     "title": "Blue Robotics Bar02 depth sensor",
-    "what": "MS5837-02BA pressure sensor read over I2C by the camera cage board, which publishes state/depth/raw. The short I2C run is deliberate: see \"Why CAN\".",
+    "what": "MS5837-02BA pressure sensor read over I2C by the camera cage board, which publishes state/depth/raw.",
     "rows": [
+     [
+      "Sits",
+      "In the starboard lid (CAD)"
+     ],
      [
       "Cable",
       "J15 depth sensor (JST GH 4-pin): 5V, SCL, SDA, GND"
@@ -854,6 +1142,15 @@
   },
   {
    "from": "or",
+   "to": "schottky",
+   "layer": "power",
+   "kind": "battery",
+   "desc": "V+, the battery bus",
+   "label": null,
+   "inferred": false
+  },
+  {
+   "from": "schottky",
    "to": "reg15",
    "layer": "power",
    "kind": "rail",
@@ -862,7 +1159,7 @@
    "inferred": false
   },
   {
-   "from": "or",
+   "from": "schottky",
    "to": "reg5",
    "layer": "power",
    "kind": "rail",
@@ -887,6 +1184,15 @@
    "desc": "12 V on LID_CONN1",
    "label": "12 V",
    "inferred": false
+  },
+  {
+   "from": "reg12",
+   "to": "claw",
+   "layer": "power",
+   "kind": "rail",
+   "desc": "12 V, if it shares LID_CONN1 with the launcher",
+   "label": null,
+   "inferred": true
   },
   {
    "from": "or",
@@ -1015,11 +1321,20 @@
    "inferred": false
   },
   {
+   "from": "reg5",
+   "to": "ivc_rx",
+   "layer": "power",
+   "kind": "rail",
+   "desc": "5 V on the stack link, into the isolated +/-5 V converter",
+   "label": null,
+   "inferred": false
+  },
+  {
    "from": "ksw",
    "to": "kill",
    "layer": "data",
    "kind": "signal",
-   "desc": "KILL_SWITCH on POAC J1: drives MOTOR_EN directly, and is read by the RP2040 (PHYS_KILLSWITCH)",
+   "desc": "KILL_SWITCH on POAC J1: in series with the DG448 into MOTOR_EN; also read by the RP2040 (PHYS_KILLSWITCH)",
    "label": null,
    "inferred": false
   },
@@ -1042,56 +1357,29 @@
    "inferred": false
   },
   {
-   "from": "hat",
-   "to": "ccbb",
-   "layer": "data",
-   "kind": "can",
-   "desc": "internal CAN FD bus (can0), 1 Mbit/s, 5 Mbit/s data phase",
-   "label": "CAN FD",
-   "inferred": false
-  },
-  {
-   "from": "ccbb",
-   "to": "mcu",
-   "layer": "data",
-   "kind": "can",
-   "desc": "internal CAN FD bus (can0), 1 Mbit/s, 5 Mbit/s data phase",
-   "label": null,
-   "inferred": false
-  },
-  {
    "from": "mcu",
-   "to": "esc0",
+   "to": "claw",
    "layer": "data",
-   "kind": "can",
-   "desc": "internal CAN FD bus (can0), 1 Mbit/s, 5 Mbit/s data phase",
+   "kind": "serial",
+   "desc": "the same serial bus, servo ID 3 (poac-multiple-servos branch)",
    "label": null,
-   "inferred": false
-  },
-  {
-   "from": "esc0",
-   "to": "esc1",
-   "layer": "data",
-   "kind": "can",
-   "desc": "internal CAN FD bus (can0), 1 Mbit/s, 5 Mbit/s data phase",
-   "label": null,
-   "inferred": false
-  },
-  {
-   "from": "esc1",
-   "to": "ivc",
-   "layer": "data",
-   "kind": "can",
-   "desc": "internal CAN FD bus (can0), 1 Mbit/s, 5 Mbit/s data phase",
-   "label": null,
-   "inferred": false
+   "inferred": true
   },
   {
    "from": "ivc",
-   "to": "led",
+   "to": "xdcr",
    "layer": "data",
-   "kind": "can",
-   "desc": "internal CAN FD bus (can0), 1 Mbit/s, 5 Mbit/s data phase",
+   "kind": "signal",
+   "desc": "TransducerOut on J1, from the +/-24 V amplifier",
+   "label": null,
+   "inferred": false
+  },
+  {
+   "from": "hyd",
+   "to": "ivc_rx",
+   "layer": "data",
+   "kind": "signal",
+   "desc": "HydrophoneIn on J1, into the +/-5 V receive chain",
    "label": null,
    "inferred": false
   },
@@ -1177,12 +1465,21 @@
    "inferred": false
   },
   {
-   "from": "orin",
-   "to": "zed",
+   "from": "ffc",
+   "to": "orin",
    "layer": "data",
    "kind": "gmsl",
-   "desc": "GMSL2",
+   "desc": "GMSL2 capture card",
    "label": "GMSL2",
+   "inferred": false
+  },
+  {
+   "from": "dfc",
+   "to": "orin",
+   "layer": "data",
+   "kind": "gmsl",
+   "desc": "GMSL2 capture card, through the slide-in adapter",
+   "label": null,
    "inferred": false
   },
   {

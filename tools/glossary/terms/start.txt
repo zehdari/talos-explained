@@ -3,7 +3,7 @@
 #   ## Term
 #   exp: expansion of an acronym (optional)
 #   aka: other names, comma separated, searched but not shown as the heading (optional)
-#   part: start | vehicle | perception | control | autonomy | ops
+#   part: a part id from src/site.js: start | mechanical | electrical | sensing | perception | control | autonomy | ops
 #   slug: id after "term-" (optional; default from the term)
 #   Definition: one or two sentences. `code`, [[Other term]], [[slug|text]], [text](https://...)
 #   > page.html#section-id   (one line per link; checked by build.py)
@@ -60,7 +60,7 @@ The separate ROS 2 stack for [[Triton]] (`mercury_release`, `mercury_dev`, …).
 ## SS Flip Barker
 aka: liltank, Lil Boat
 part: start
-The 2025 second vehicle: tracks to drive and an active ballast tank for depth. Its code name is almost certainly `liltank` (`liltank.yaml`, `LiltankCompTree.xml`).
+The 2025 second vehicle: tracks to drive and an active ballast tank for depth. In the code it is `liltank`: its boards' firmware (`lilboat` in titan_firmware: H-bridges for two motors and two thrusters, a ballast pump) runs under the ROS namespace `liltank`. `liltank.yaml` describes the vehicle (22.7 kg, two thrusters, a ballast tank) and `LiltankCompTree.xml` is its run.
 > robosub.html#history
 
 ## RoboSub
@@ -110,6 +110,7 @@ part: start
 Three rows of poles after the gate that the vehicle weaves through on one side. Talos maps the row once, locks the map and flies all three sets as one path.
 > mission-tree.html#slalom
 > perception/composites.html#slalom
+> robosub.html#course
 
 ## Torpedo board
 aka: torpedo task, fire_hole_large, fire_hole_small
@@ -118,18 +119,21 @@ A board with holes to shoot torpedoes through; the large hole first earns a sequ
 > mission-tree.html#torpedo
 > perception/composites.html#torpedo
 > actuators.html#shot
+> robosub.html#course
 
 ## Bins
 part: start
 A bin with two printed symbols (vinyls) to drop markers onto. The [[binary classifier]] tells the two identical symbols apart so Talos drops one marker on each.
 > mission-tree.html#bins
 > perception/frames.html#binfit
+> robosub.html#course
 
 ## Magnets
 aka: magnet lights
 part: start
 Lights next to the bins that turn on when a magnet is held close. Talos touches them with its passive [[magnet poker]], placed from the bin's CAD fit.
 > mission-tree.html#magnets
+> robosub.html#course
 
 ## Octagon
 part: start
@@ -149,6 +153,14 @@ part: start
 An acoustic beacon at the torpedo board and the octagon. Talos listens once, at two spots, to choose whether to do the torpedo or the table first.
 > mission-tree.html#pinger
 > sensors.html#acoustics
+> robosub.html#course
+
+## Home
+aka: return home, Home task, pre_return_home
+part: start
+The last task: Talos swims back through the gate and stops. In the competition tree it is one [[FollowPath]] to `pre_return_home_frame`, then through the gate.
+> mission-tree.html#home
+> robosub.html#course
 
 ## Coin flip
 part: start
@@ -157,7 +169,6 @@ An optional start for extra points: a flip decides which way the vehicle faces, 
 > robosub.html#scoring
 
 ## RPAC
-part: start
 Ohio State's recreation centre, whose dive well is where the team pool-tests. Nereus has an RPAC scenario (`pool:=rpac`).
 > pool-test.html#shape
 > nereus.html#course
@@ -238,6 +249,7 @@ ROS's tree of coordinate frames: every position is a transform between two named
 aka: coordinate frame
 part: start
 A named coordinate system in [[TF]], like [[base_link]], `odom` or `torpedo_frame`. Every Talos frame has x forward, y to port, z up.
+> ros2.html#tf
 > localization.html#frames
 > perception/frames.html#tree
 
@@ -256,13 +268,11 @@ The standard ROS node that turns the [[URDF]] into [[TF]]: fixed joints once on 
 
 ## URDF
 exp: Unified Robot Description Format
-part: start
 The XML description of the robot's links and joints. Talos's is built by [[xacro]] from `talos.yaml`, and it gives every sensor and tool its TF frame.
 > localization.html#urdf
 > mechanical.html#software
 
 ## Xacro
-part: start
 A macro language that generates URDF. `robot_base.xacro` and friends in riptide_descriptions read `talos.yaml` and write out Talos's frames.
 > localization.html#urdf
 > actuators.html#mechanisms
@@ -279,6 +289,7 @@ Running nodes on the time published on `/clock` instead of the wall clock. Nereu
 aka: timestamp, stamp
 part: start
 The time a message's data was measured, on the clock of the machine that stamped it. Compare stamps only from the same clock.
+> ros2.html#time
 > debugging.html#time
 > sensors.html#timing
 
@@ -327,6 +338,7 @@ The `ros2` command line: list and echo topics, measure rates, call services, sen
 aka: --no-daemon, ros2 daemon
 part: start
 A background process that caches the ROS graph for the `ros2` command. It can keep stale answers after you switch middleware, so with Zenoh add `--no-daemon` or run `ros2 daemon stop`.
+> ros2.html#cli
 > computers.html#zenoh
 > debugging.html#cli
 
@@ -357,6 +369,7 @@ The middleware Talos's ROS 2 runs on. A router on the Orin listens on TCP port 7
 aka: rmw_zenohd
 part: start
 The process (`rmw_zenohd`) that connects Zenoh clients. On the robot the launcher starts it; in sim you run `ros2 run rmw_zenoh_cpp rmw_zenohd` yourself.
+> ros2.html#zenoh
 > computers.html#zenoh
 > computers.html#join
 
@@ -369,7 +382,6 @@ A number that separates ROS networks sharing the same wires. With Zenoh it is a 
 
 ## Bag
 aka: rosbag, ros2 bag, .db3
-part: start
 A recording of topics: every message with the time it was received. Talos's are folders with a `metadata.yaml` and one SQLite `.db3` file.
 > debugging.html#bags
 > debugging.html#python
@@ -476,7 +488,6 @@ How the stack starts: the [[remote launcher]] and the launch lists it loads, plu
 > launch.html#explorer
 
 ## titan_firmware
-part: start
 The C firmware for every board's RP2040, on the Pico SDK: one CMake project per board, shared libraries, one main loop.
 > firmware.html#repo
 
@@ -517,7 +528,6 @@ After a pool test the release repo is tagged with the date, so a known-good stat
 ## SSH
 exp: Secure Shell
 aka: ssh ros@orin2
-part: ops
 Logging in to another machine's terminal. On Talos it is for looking (logs, CAN, disk), not for running the stack; use key login.
 > computers.html#ssh
 

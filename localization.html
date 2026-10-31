@@ -10,7 +10,7 @@
 <body>
 <main>
   <header class="page-head">
-    <div class="kicker">The vehicle · Chapter 9</div>
+    <div class="kicker">Sensors and computing · Chapter 3</div>
     <h1>Where am I? State estimation</h1>
     <p class="lede">Every move Talos makes starts from an estimate of where it is, which way it points and how fast it is going. No sensor measures all of that. A Kalman filter blends four of them, and two more layers tie the result to the course.</p>
   </header>
@@ -27,38 +27,42 @@
       <h2 id="frames" data-short="Frames">What "where" means: frames</h2>
       <p>ROS keeps every position as a transform between named <span class="term">frames</span> in one tree, TF (<a href="ros2.html#tf">how TF works</a>). Talos's pose is the transform from a fixed frame to <code>talos/base_link</code>, the body.</p>
       <ul>
-        <li><b>Axes.</b> Every Talos frame is x forward, y to port (left), z up (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/urdf/robot_base.xacro#L2">robot_base.xacro</a>). Roll, pitch, yaw turn about x, y, z.</li>
+        <li><b>Axes.</b> <code>talos/base_link</code>, the body, is x forward, y to port (left), z up: the ROS convention (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/urdf/robot_base.xacro#L2">robot_base.xacro</a>). Roll, pitch, yaw turn about x, y, z. Sensor frames are turned by their mounts (<a href="#urdf">below</a>), and camera optical frames are z out of the lens.</li>
         <li><b>Velocity is in the body.</b> <code>odometry/filtered</code> gives the pose in <code>odom</code> but surge, sway and heave in <code>talos/base_link</code>.</li>
       </ul>
     </div>
     <figure class="fig" id="tf-fig">
       <div class="panel flush tfx" id="tfx">
-        <div class="tfx-views" id="tfx-views"></div>
+        <div class="tfx-main">
+          <div class="controls tfx-bar"><span class="seg" role="group" aria-label="Which frames to show" id="tfx-groups"></span></div>
+          <div class="tfx-views" id="tfx-views"><div class="tfx-chain" id="tfx-chain" aria-label="The frames in the pool"></div></div>
+        </div>
         <div class="tfx-side">
-          <div class="tfx-tree" id="tfx-tree" role="tree" aria-label="TF tree"></div>
           <div class="tfx-card" id="tfx-card" aria-live="polite"></div>
+          <details class="tfx-all" id="tfx-all"><summary>The whole tree: 91 frames</summary><div class="tfx-tree" id="tfx-tree" role="tree" aria-label="TF tree"></div></details>
         </div>
       </div>
-      <figcaption><b>Talos's TF tree, as captured in Nereus.</b> All 89 transforms and their offsets (metres; roll, pitch, yaw in degrees), over the CAD model seen from above and behind. Tap a frame in the tree or a dot on the drawing.</figcaption>
+      <figcaption><b>Talos's frames, as captured in Nereus.</b> One group at a time over the CAD model, seen from above and from behind; tap a frame's name or a group. The whole tree, 89 transforms between 91 frames, is below the card (offsets in metres; roll, pitch, yaw in degrees).</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="urdf" data-short="The URDF">Where the sensors sit: the URDF</h2>
-      <p>Every sensor pose comes from <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml"><code>talos.yaml</code></a>; <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/robots/talos.xacro"><code>talos.xacro</code></a> turns it into a URDF, which <code>robot_state_publisher</code> publishes (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py#L60-L81">navigation.launch.py</a>).</p>
+      <p>Every sensor pose comes from <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml"><code>talos.yaml</code></a>; <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/robots/talos.xacro"><code>talos.xacro</code></a> turns it into a <a href="glossary.html#term-urdf">URDF</a> (the robot description ROS reads: links and the joints between them), which <code>robot_state_publisher</code> publishes (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py#L60-L81">navigation.launch.py</a>).</p>
       <ul>
         <li><b>The datum and the body.</b> Poses are measured from <code>talos/origin</code>, a CAD datum (a screw at the front of the camera cage). <code>talos/base_link</code> sits at <code>[-0.14, 0.03, -0.09]</code> m from it (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L5">L5</a>).</li>
         <li><b>Two sensors are mounted turned.</b> The IMU is upside down and turned −90°; the DVL is turned −45°. The EKF rotates each message into <code>base_link</code> with TF.</li>
-        <li><b>The DVL measures its own point,</b> 16 cm below <code>base_link</code>, so pitching reads as surge. robot_localization removes that lever arm, <span class="m">v = R\,v_\text{DVL} + r \times \omega</span> (<a href="https://github.com/cra-ros-pkg/robot_localization/blob/humble-devel/src/ros_filter.cpp#L3226-L3230">ros_filter.cpp</a>).</li>
-        <li><b>Most sensor frames are on <code>/tf</code>, not <code>/tf_static</code>:</b> zero-range revolute joints (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/urdf/snippets.xacro#L84-L97">snippets.xacro</a>). A bag tool that reads only <code>/tf_static</code> won't find <code>dvl_link</code>.</li>
+        <li><b>The DVL measures its own point,</b> 16 cm below <code>base_link</code>, so pitching reads as surge. robot_localization removes that lever arm (the DVL's offset from <code>base_link</code>), <span class="m">v = R\,v_\text{DVL} + r \times \omega</span> (<a href="https://github.com/cra-ros-pkg/robot_localization/blob/humble-devel/src/ros_filter.cpp#L3226-L3230">ros_filter.cpp</a>).</li>
+        <li><b>Most sensor frames are on <code>/tf</code>, not <code>/tf_static</code>.</b> Their joints are zero-range revolute joints, hinges that can't turn, so <code>robot_state_publisher</code> re-sends them with the joint states (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/urdf/snippets.xacro#L84-L97">snippets.xacro</a>). A bag tool that reads only <code>/tf_static</code> won't find <code>dvl_link</code>.</li>
       </ul>
 
       <h2 id="ekf" data-short="Predict, correct">The EKF: predict, then correct</h2>
-      <p>A Kalman filter keeps its best guess of the state, <span class="m">x</span>, and how unsure it is, the covariance <span class="m">P</span>. Every message runs one loop:</p>
+      <p>A Kalman filter keeps its best guess of the state, <span class="m">x</span>, and how unsure it is, the <a class="gl" href="glossary.html#term-covariance">covariance</a> <span class="m">P</span>. Every message runs one loop:</p>
       <ol>
-        <li><b>Predict</b> to the message's time: position moves by velocity, velocity by acceleration, and uncertainty grows by the <span class="term">process noise</span> <span class="m">Q</span> times the time step (<a href="https://github.com/cra-ros-pkg/robot_localization/blob/humble-devel/src/ekf.cpp#L426-L431">ekf.cpp</a>).</li>
+        <li><b>Predict</b> to the message's time: position moves by velocity, velocity by acceleration, and uncertainty grows by the <a class="gl" href="glossary.html#term-process-noise">process noise</a> <span class="m">Q</span> times the time step (<a href="https://github.com/cra-ros-pkg/robot_localization/blob/humble-devel/src/ekf.cpp#L426-L431">ekf.cpp</a>).</li>
         <li><b>Correct</b> with the measurement <span class="m">z</span> and its covariance <span class="m">R</span>. The gain <span class="m">K</span> decides how far to move.</li>
       </ol>
-      <div class="M" data-narrow="\begin{aligned} P &amp;\leftarrow F P F^\top + Q\,\Delta t \\ K &amp;= P H^\top (H P H^\top + R)^{-1} \\ x &amp;\leftarrow x + K\,(z - Hx) \end{aligned}">P \leftarrow F P F^\top + Q\,\Delta t, \qquad K = P H^\top (H P H^\top + R)^{-1}, \qquad x \leftarrow x + K\,(z - Hx)</div>
+      <div class="M" data-narrow="\begin{aligned} x &amp;\leftarrow F x \\ P &amp;\leftarrow F P F^\top + Q\,\Delta t \\ K &amp;= P H^\top (H P H^\top + R)^{-1} \\ x &amp;\leftarrow x + K\,(z - Hx) \end{aligned}">x \leftarrow F x, \quad P \leftarrow F P F^\top + Q\,\Delta t \qquad\quad K = P H^\top (H P H^\top + R)^{-1}, \quad x \leftarrow x + K\,(z - Hx)</div>
+      <p class="src"><span class="m">F</span> is the motion model over the time step (position += velocity × Δt, and so on); <span class="m">H</span> picks out the states a message measures.</p>
       <p>For one number, <span class="m">K = P / (P + R)</span>: if the filter is much surer of itself than of the sensor, a measurement barely moves it. <b>So <span class="m">R</span> and <span class="m">Q</span> are the tuning, and their ratio is what counts.</b> The model is pure kinematics (velocity and acceleration carry on); it knows nothing of Talos's thrust, mass or drag.</p>
 
       <h2 id="fused">What Talos fuses</h2>
@@ -69,7 +73,7 @@
         <div class="fuse" id="fuse"></div>
         <div class="graph-note" id="fuse-note"></div>
       </div>
-      <figcaption><b>Who feeds which state.</b> A filled square: that sensor's message updates that number. Bottom row: process noise <span class="m">Q</span> per second, darker is larger. Tap a column or a sensor.</figcaption>
+      <figcaption><b>Who feeds which state.</b> Only depth (z), roll and pitch are measured outright. Nothing measures x, y or yaw: the EKF adds them up from velocity and yaw rate, so they drift. Tap a state or a sensor.</figcaption>
     </figure>
     <div class="prose">
       <ul>
@@ -78,19 +82,19 @@
         <li><b>Left out:</b> the ZED IMUs; the DVL's water-track velocity (relative to the water, not the floor) on <code>dvl/water_twist</code> (<a href="https://github.com/osu-uwrt/nortek_dvl/blob/DvlWaterTrackFallback/nortek_dvl/src/dvl_driver.cpp#L179-L186">dvl_driver.cpp</a>); and AprilTag odometry: <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf_tag_odom.yaml"><code>talos_ekf_tag_odom.yaml</code></a> fuses <code>tag_odom/pose</code> in place of the DVL and FOG, only with <code>tag_odom_enabled:=True</code>.</li>
       </ul>
       <p>The filter trusts each message by the covariance <em>in the message</em>, copied by the drivers from config. Most are far off:</p>
-      <div class="table-scroll"><table class="params loc-wrap">
-        <thead><tr><th>Message field</th><th>Reports (σ²)</th><th>Real noise (σ²)</th></tr></thead>
+      <div class="table-scroll"><table class="params loc-cov">
+        <thead><tr><th>Reading</th><th>Reports (σ²)</th><th>Really (σ²)</th><th>Trusted</th></tr></thead>
         <tbody id="cov-table"></tbody>
       </table></div>
-      <p class="src">Real noise: Nereus's <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L159-L202"><code>robot.yaml</code></a>, from the 2026-10-03 pool bags. DVL report: median fom² in the 2026-10-26 pool run.</p>
+      <p class="src">Real noise: Nereus's <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/robots/talos/robot.yaml#L159-L202"><code>robot.yaml</code></a>, from the 2026-10-03 pool bags. DVL report: the median of its figure of merit squared in the 2026-10-26 pool run.</p>
       <ul>
-        <li><b>Under-trusted:</b> the gyro by about 10,000×, depth by thousands, the FOG by 80×. The filter leans on its own model instead, and lags.</li>
-        <li><b>Over-trusted:</b> the DVL. Its figure of merit is its own per-ping precision estimate, about 50× below its real scatter. That makes the estimate noisier, not later.</li>
-        <li><b>Leave the attitude alone.</b> The IMU's roll and pitch come out of its own filter, so their scatter understates their error, and the EKF's angles were on time (<a href="#lag">below</a>).</li>
+        <li><b>Under-trusted:</b> the gyro and depth by thousands of times, the FOG by 80×. The filter leans on its own model instead, and lags.</li>
+        <li><b>Over-trusted:</b> the DVL. It reports its figure of merit, its own per-ping precision estimate, as the covariance: about 50× below the real variance (σ about 7× too small). That makes the estimate noisier, not later.</li>
+        <li><b>Don't change the attitude covariance.</b> The IMU's roll and pitch come out of its own filter, so their scatter understates their error, and the EKF's angles were on time (<a href="#lag">below</a>).</li>
       </ul>
 
       <h2 id="drift" data-short="odom, world, map">odom drifts; map holds the course</h2>
-      <p><code>odom</code>'s origin is wherever <code>base_link</code> was when the EKF started, facing that way. From then on, every error in velocity and yaw rate adds up.</p>
+      <p><code>odom</code>'s x, y and heading start at zero wherever <code>base_link</code> was when the EKF came up; its z is the depth sensor's, 0 at the surface. From then on, every error in velocity and yaw rate adds up.</p>
       <ul>
         <li><b><code>world → odom</code></b> is a static identity, published by <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py#L196-L203">navigation.launch.py</a> <em>"until we get SLAM"</em>.</li>
         <li><b><code>world → map</code></b> is where the course is, from a <a href="https://github.com/coalman321/chameleon_tf">chameleon_tf</a> node, <code>world_to_map</code> (<a href="https://github.com/osu-uwrt/riptide_perception/blob/mapping-estimator/riptide_mapping/launch/mapping.launch.py#L73-L101">mapping.launch.py</a>); identity until calibrated.</li>
@@ -103,19 +107,19 @@
         <li>apriltag_ros sees tag 36h11 id 0 (0.508 m) in the forward camera and publishes <code>tag36h11:0</code> (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/apriltag.launch.py">apriltag.launch.py</a>).</li>
         <li>A static transform puts <code>estimated_origin_frame</code>, the course map's origin, 0.4572 m (18 in) from the tag.</li>
         <li>chameleon_tf's <code>map/model_tf</code> action takes 10 samples of <code>world → estimated_origin_frame</code>, through the EKF's pose.</li>
-        <li>It averages them, rejects a position spread over 0.5 m, and adopts x, y and yaw as <code>world → map</code>; z, roll and pitch are locked (<a href="https://github.com/coalman321/chameleon_tf/blob/master/chameleon_tf/src/mobile_tf.cpp#L261-L330">mobile_tf.cpp</a>).</li>
+        <li>It averages them, rejects the set if the positions' standard deviation is over 0.5 m, and adopts x, y and yaw as <code>world → map</code>; z, roll and pitch are locked (<a href="https://github.com/coalman321/chameleon_tf/blob/master/chameleon_tf/src/mobile_tf.cpp#L261-L330">mobile_tf.cpp</a>).</li>
       </ol>
       <div class="callout"><span class="label">Order matters</span>
         <ul>
           <li>The calibration captures where <code>odom</code> is <em>now</em>. If the EKF restarts, <code>odom</code> starts over and the old <code>world → map</code> is wrong: calibrate again.</li>
-          <li>In Nereus it isn't needed: the scenario's world is <code>map</code> and Talos starts at (0, 0, −1) facing +x (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/scenarios/talos_uwrt/scenario.yaml#L17-L58">scenario.yaml</a>), so <code>odom</code> and <code>map</code> already agree.</li>
+          <li>In Nereus it isn't needed: the scenario's world is <code>map</code>, and Talos's centre of mass starts at (0, 0, −1) facing +x (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/scenarios/talos_uwrt/scenario.yaml#L17-L58">scenario.yaml</a>), so <code>odom</code> and <code>map</code> already agree.</li>
         </ul>
       </div>
     </div>
     <figure class="fig" id="shots-fig">
       <div class="media-grid loc-shots">
-        <figure><img class="media" src="/media/nereus/panel-mapping.webp" alt="The viewer's Mapping panel: Tag calibration with parent frame world, tag frame estimated_origin_frame, 10 samples and a Calibrate button, the status line Waiting for calibration server, and below it the mapping target controls" width="400" height="580" loading="lazy"><figcaption><b>Mapping panel.</b> "Waiting for calibration server" is the status before Calibrate is pressed; then "Collecting tag samples" and "Tag calibration complete" (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/uwrt_mapping.cpp#L74-L111">uwrt_mapping.cpp</a>).</figcaption></figure>
-        <figure><img class="media" src="/img/localization/viewer-tf-window.webp" alt="The viewer's TF frames window listing tag36h11:0 (unavailable), world, map, odom, talos/base_link and simulator/talos/base_link; above it, enlarged, the viewer's overlay: ROS vs sim 5.6 cm / 0.2 deg" width="469" height="609" loading="lazy"><figcaption><b>TF frames window.</b> Top, enlarged: the overlay comparing the EKF with Nereus's truth, 5.6 cm and 0.2° apart.</figcaption></figure>
+        <figure><img class="media" src="/img/localization/viewer-tag-calibration.webp" alt="The viewer's Tag calibration block: parent frame world, tag frame estimated_origin_frame, 10 samples, a Calibrate button and the status line Waiting for calibration server" width="390" height="276" loading="lazy"><figcaption><b>Tag calibration, in the Mapping panel.</b> "Waiting for calibration server" before Calibrate is pressed; then "Collecting tag samples" and "Tag calibration complete" (<a href="https://github.com/osu-uwrt/nereus/blob/main/integrations/ros2/viewer/panels/uwrt_mapping.cpp#L74-L111">uwrt_mapping.cpp</a>).</figcaption></figure>
+        <figure><img class="media" src="/img/localization/viewer-tf-tree.webp" alt="The viewer's TF frames window: tag36h11:0 (unavailable), world, and under it map, odom with talos/base_link, and simulator/talos/base_link, each with an Only this checkbox" width="292" height="234" loading="lazy"><figcaption><b>The TF frames window.</b> The "Only this" box shows or hides that one frame's axes in the 3D view (all are on here). <code>tag36h11:0</code> is unavailable until a camera sees the tag.</figcaption></figure>
       </div>
       <figcaption><b>Frames in the Nereus viewer,</b> the team's GUI for sim and robot (RViz is no longer used).</figcaption>
     </figure>
@@ -124,7 +128,7 @@
     </div>
     <figure class="fig" id="flow-fig">
       <div class="panel"><div id="flow"></div><div class="graph-note" id="flow-note"></div></div>
-      <figcaption><b>From sensors to users.</b> The same four sensors feed two estimators; only the controller uses the MPC's. Subscribers from the Nereus capture's ROS graph. Tap or hover a node.</figcaption>
+      <figcaption><b>From sensors to users.</b> The same four sensors feed two estimators. The MPC plans from its own; mapping, autonomy and the viewer use the EKF. Tap a box.</figcaption>
     </figure>
     <div class="prose">
       <ul>
@@ -132,21 +136,22 @@
         <li><b>Autonomy</b> nodes such as <code>GetOdometry</code> read <code>odometry/filtered</code> and look up targets through TF.</li>
         <li><b>The viewer</b> draws Talos at the EKF's estimate on the robot; in sim, truth and estimate side by side.</li>
         <li><b>The MPC</b> takes its state from its own estimator (<code>state_source: sensors</code>, <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/mpc.yaml#L3-L7">mpc.yaml</a>). The EKF only anchors x, y and heading (2 s time constants), stands in for a stale sensor, and re-seeds it past 1 m or 0.5 rad of disagreement (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/state_estimator.cpp#L250-L285">state_estimator.cpp</a>). Why its own? A late state is a wrong state for a controller planning 1.5 s ahead every 50 ms (<a href="control/estimation.html">Feedback and model error</a>).</li>
+        <li><b>Also subscribed, with no effect under the MPC.</b> The controller overseer would re-weight any thruster more than 1 m above the surface (<code>thruster_kill_plane</code>, <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/src/riptide_controllers/controller_overseer.py#L679-L699">controller_overseer.py</a>), but nothing reads its weights. <code>calibrate_drag</code> is a tuning tool.</li>
       </ul>
 
       <h3 id="check">Checking it</h3>
       <ul>
-        <li><b>Running?</b> <code>ros2 topic hz /talos/odometry/filtered</code>: about 30 Hz. On the robot it comes from the <code>navigation</code> entry of <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml"><code>talos_launch_mpc.yaml</code></a>, which waits for it (<a href="launch.html#launcher">the launcher</a>).</li>
-        <li><b>Where?</b> <code>ros2 run tf2_ros tf2_echo world talos/base_link</code>. In sim, the viewer's overlay gives the gap to truth.</li>
-        <li><b>Restart</b> the <code>navigation</code> entry in the launcher, then calibrate again. With the controller running, stopping it stops the thrusters (<a href="launch.html#order">why the order matters</a>).</li>
+        <li><b>Running?</b> <code>ros2 topic hz /talos/odometry/filtered</code>: about 30 Hz. On the robot it comes from <code>riptide_hardware2</code>'s navigation entry in <a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml#L30-L42"><code>talos_launch_mpc.yaml</code></a>, which waits for it. Not <code>riptide_navigation</code>'s, the Simulink alternative that publishes the same topic: start only one (<a href="launch.html#entries">the entries</a>).</li>
+        <li><b>Where?</b> <code>ros2 run tf2_ros tf2_echo world talos/base_link</code>. In sim, the pool view's overlay gives the gap to Nereus's truth (for example "ROS vs sim: 5.6 cm / 0.2 deg").</li>
+        <li><b>Restart</b> <code>riptide_hardware2</code>'s navigation entry in the launcher (<a href="launch.html#entries">not <code>riptide_navigation</code>'s</a>), then calibrate again. With the controller running, stopping it stops the thrusters (<a href="launch.html#order">why the order matters</a>).</li>
       </ul>
 
       <h2 id="lag">The EKF is late</h2>
       <p>The team measured the EKF against its own inputs on the bench, tilting Talos by hand (2026-10-27), and in the untethered pool identification run (2026-10-26).</p>
       <ul>
-        <li><b>Roll and pitch rates</b> trailed the IMU by 455 ms at 12–15 % of the size on the bench; 335–340 ms at 19–23 % in the pool.</li>
+        <li><b>Roll and pitch rates</b> trailed the IMU by 455 ms on the bench, and swung only 12–15 % as far as the IMU's rates did (100 % would be full size). In the pool: 335–340 ms, at 19–23 %.</li>
         <li><b>Velocity</b> trailed the DVL by about 0.35 s (351 ms median over 16 surge and sway starts).</li>
-        <li><b>Fine:</b> roll and pitch angles (0–55 ms) and yaw rate from the FOG (85–90 ms).</li>
+        <li><b>Fine:</b> roll and pitch angles (25–55 ms on the bench, 0–55 ms in the pool) and yaw rate from the FOG (85–90 ms).</li>
       </ul>
       <p>Three causes:</p>
       <ol>
@@ -154,23 +159,25 @@
         <li><b>Tiny velocity process noise</b>, 2.5×10⁻⁵ (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml#L81-L91">L81–91</a>; the file says <em>"This covariance was not calculated"</em>): the filter trusts "velocity carries on" over each new DVL reading.</li>
         <li><b>Late DVL readings,</b> about 125 ms old on arrival. With <code>smooth_lagged_data</code> off, each corrects the <em>current</em> state as if just measured (<a href="https://github.com/cra-ros-pkg/robot_localization/blob/humble-devel/src/filter_base.cpp#L215-L225">filter_base.cpp</a>).</li>
       </ol>
-      <p>Try the first and third below. The second needs all 15 states, so this two-state toy can't show it.</p>
+      <p>Try the first two below. The third needs the IMU's acceleration in the filter, which the toy leaves out; the replays after it show that fix.</p>
     </div>
     <figure class="fig" id="kf-fig">
       <div class="panel">
-        <div class="controls"><span class="seg" role="group" aria-label="Which axis" id="kf-mode"><button type="button" data-k="rate" aria-pressed="true">Pitch rate</button><button type="button" data-k="velocity" aria-pressed="false">Surge velocity</button></span></div>
-        <div class="controls" id="kf-controls"></div>
-        <div class="controls kf-presets" id="kf-presets"></div>
+        <div class="controls kf-top"><span class="seg" role="group" aria-label="Which axis" id="kf-mode"><button type="button" data-k="rate" aria-pressed="true">Pitch rate</button><button type="button" data-k="velocity" aria-pressed="false">Surge velocity</button></span></div>
+        <div class="controls kf-top"><span class="kf-plabel">Try</span><span class="seg" role="group" aria-label="Settings to try" id="kf-presets"></span></div>
         <div id="kf-chart"></div>
-        <div class="controls kf-zoom"><span class="seg" role="group" aria-label="Zoom" id="kf-zoom"><button type="button" data-k="all" aria-pressed="true">Whole move</button><button type="button" data-k="hold" aria-pressed="false">Zoom on a hold (noise)</button></span></div>
+        <div class="kf-tap" id="kf-tap" aria-live="polite"></div>
+        <div class="controls kf-zoom"><span class="seg" role="group" aria-label="Time window" id="kf-zoom"><button type="button" data-k="first" aria-pressed="true">First move</button><button type="button" data-k="all" aria-pressed="false">Whole run</button><button type="button" data-k="hold" aria-pressed="false">A hold (noise)</button></span></div>
         <div class="kf-readout" id="kf-readout"></div>
+        <details class="kf-fine" id="kf-fine"><summary>Fine-tune the covariances</summary><div class="controls" id="kf-controls"></div></details>
       </div>
-      <figcaption><b>One axis of the EKF, in your browser.</b> The same predict and correct with two states (a value and its rate), Talos's covariances and process noise, and measured sensor noise. Dashed: the true motion. Drag the covariance the sensor reports.</figcaption>
+      <figcaption><b>One axis of the EKF, in your browser.</b> The same predict and correct, with Talos's covariances and process noise and the sensors' measured noise: for pitch, two states (the angle and its rate); for surge, one (the velocity). Pick a setting and watch the orange bracket: how late the estimate is.</figcaption>
     </figure>
     <div class="prose">
       <ul>
-        <li><b>Pitch rate.</b> At 0.01 the toy is 0.55 s late at half size (the real filter: 0.34–0.46 s, ×0.12–0.23). At 10⁻⁵, 45 ms, as in the real replay. At 10⁻⁸ the lag vanishes but the gyro's noise passes straight through.</li>
-        <li><b>Surge.</b> Without smoothing, even a fully trusted DVL stays over 125 ms behind: the readings' age. Smoothing rewinds to each reading's stamp, so the floor drops. <b>Real DVL noise</b> shows the trade: smoother, but later.</li>
+        <li><b>Pitch rate.</b> With the gyro covariance at 0.01, the toy's estimate peaks 395 ms after the gyro, at only 44 % of its height. The real filter was 335–455 ms late at 12–23 % of the size, measured differently (a best-fit delay and scale over the whole run, not the first peak), but the same story. At 10⁻⁵ the toy is 50 ms late at full height, as in the real replay. At 10⁻⁸ the lag is gone, but the gyro's noise passes straight through.</li>
+        <li><b>Surge.</b> Even a fully trusted DVL leaves the estimate about 190 ms behind: each reading is 125 ms old and they come 8 times a second. With the DVL's <b>real noise</b> and Talos's tiny process noise the filter believes "velocity carries on" over each reading: smoother, but 510 ms late. <b>Q ×100</b> brings it back to 200 ms. What counts is the ratio of <span class="m">R</span> to <span class="m">Q</span>.</li>
+        <li><b>The toy is simpler than the EKF.</b> It has no acceleration state, so it can't show smoothing; and the real filter's surge lag (351 ms) comes from all 15 states together. The replay below shows the real one.</li>
       </ul>
 
       <h3 id="replay">Finding the fix: replays</h3>
@@ -178,34 +185,32 @@
     </div>
     <figure class="fig" id="replay-fig">
       <div class="panel">
-        <div class="controls"><span class="seg" role="group" aria-label="Signal" id="rp-sig"><button type="button" data-k="surge" aria-pressed="true">Surge velocity</button><button type="button" data-k="pitch" aria-pressed="false">Pitch rate</button></span>
-          <span class="seg" role="group" aria-label="Zoom" id="rp-zoom"><button type="button" data-k="one" aria-pressed="true">Close up</button><button type="button" data-k="all" aria-pressed="false">All 32 s</button></span></div>
-        <div class="controls"><span class="seg" role="group" aria-label="EKF variant" id="rp-var"></span></div>
+        <div class="controls kf-top"><span class="seg" role="group" aria-label="Signal" id="rp-sig"><button type="button" data-k="surge" aria-pressed="true">Surge</button><button type="button" data-k="pitch" aria-pressed="false">Pitch rate</button></span>
+          <span class="seg" role="group" aria-label="Time window" id="rp-zoom"><button type="button" data-k="one" aria-pressed="true">Close up</button><button type="button" data-k="all" aria-pressed="false">All 32 s</button></span></div>
+        <div class="rp-var" role="group" aria-label="The change to compare (green), with its lag" id="rp-var"></div>
         <div id="rp-chart"></div>
+        <div class="kf-tap" id="rp-tap" aria-live="polite"></div>
         <div class="graph-note" id="rp-note"></div>
       </div>
-      <figcaption><b>The real EKF, replayed.</b> 32 s of the 2026-10-26 pool run (a surge out at 0.5 m/s and back) against the sensor it should follow: the DVL in body axes, or the IMU's pitch rate. Orange: as configured; blue: the change picked. Tap or hover to read values.</figcaption>
+      <figcaption><b>The real EKF, replayed.</b> 32 s of the 2026-10-26 pool run (a surge out at 0.5 m/s and back) against the sensor it should follow (black): the DVL in body axes, or the IMU's pitch rate. Blue: the EKF as configured; green: the change you pick, with its median lag beside it.</figcaption>
     </figure>
     <div class="prose">
-      <div class="table-scroll"><table class="params">
-        <thead><tr><th>EKF change</th><th>Roll / pitch rate</th><th>Velocity</th></tr></thead>
-        <tbody>
-          <tr><td>As configured</td><td>335 / 340 ms, ×0.23 / ×0.19</td><td>351 ms</td></tr>
-          <tr><td>Gyro covariance 10⁻⁵, <code>smooth_lagged_data</code> on, <code>history_length</code> 1.0 s</td><td>45 / 50 ms, ×0.96 / ×0.97</td><td>292 ms</td></tr>
-          <tr><td>…and velocity process noise ×100</td><td>45 / 50 ms</td><td><b>96 ms</b></td></tr>
-          <tr><td>…without IMU acceleration (instead of ×100)</td><td>45 / 50 ms</td><td>394 ms (worse)</td></tr>
-        </tbody>
-      </table></div>
-      <p class="src">Replays of talos_20261026_204748. Rates: best-fit shift and scale against the IMU. Velocity: median half-way-crossing delay over 16 starts. The bench bag agreed: 455 ms as configured, 45 ms with the gyro fix.</p>
-      <p>Smoothing took 59 ms off the velocity lag; the process noise took another 196 ms, at no cost in noise: the EKF's surge scatters 6.9 mm/s during the holds either way (the DVL, 8.1 mm/s). The change, if the team adopts it:</p>
-<pre><code><span class="c"># riptide_imu/config/vectornav.yaml: the gyro's real noise is ~1e-6</span>
-angular_velocity_covariance: [1.0e-5, 0.0, 0.0,  0.0, 1.0e-5, 0.0,  0.0, 0.0, 1.0e-5]
+      <p class="src">Replays of talos_20261026_204748. Rates: the best-fit delay and size against the IMU. Velocity: median half-way-crossing delay over 16 starts. The bench bag agreed: 455 ms as configured, 45 ms with the gyro fix.</p>
+      <p>The gyro fix alone puts the rates on time. For velocity, smoothing took 59 ms off the lag; the process noise took another 196 ms, at no cost in noise: the EKF's surge scatters 6.9 mm/s during the holds either way. (The DVL's readings scatter 8.1 mm/s there, which includes a little real motion; its noise alone is about 6 mm/s.) The change, if the team adopts it:</p>
+<pre><code><span class="c"># riptide_imu/config/vectornav.yaml</span>
+<span class="c"># the gyro's real noise is about 1e-6</span>
+angular_velocity_covariance: [
+  1.0e-5, 0.0, 0.0,
+  0.0, 1.0e-5, 0.0,
+  0.0, 0.0, 1.0e-5]
 
 <span class="c"># riptide_hardware/cfg/talos_ekf.yaml</span>
 smooth_lagged_data: true
 history_length: 1.0
-<span class="c"># process_noise_covariance diagonal entries 6-8 (vx, vy, vz) x100:</span>
-<span class="c">#   0.0025, 0.0025, 0.004  (were 0.000025, 0.000025, 0.00004)</span></code></pre>
+<span class="c"># process_noise_covariance, diagonal</span>
+<span class="c"># entries 6-8 (vx, vy, vz), x100:</span>
+<span class="c">#   0.0025, 0.0025, 0.004</span>
+<span class="c">#   (were 0.000025, 0.000025, 0.00004)</span></code></pre>
       <div class="callout"><span class="label">Status</span>
         <ul>
           <li>Neither file has the change on <code>followpath-speed</code> yet: <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_imu/config/vectornav.yaml#L27">vectornav.yaml</a> still says 0.01, and <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/cfg/talos_ekf.yaml">talos_ekf.yaml</a> leaves smoothing off.</li>

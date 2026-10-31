@@ -70,7 +70,6 @@ export class KillSim {
     };
     this.overseer = { stops: 0, lastTelem: 0, motionEnabled: false, nextTimeout: K.overseerTimeout };
     this.mpc = { killed: false, motionEnabled: true, mode: 'DISABLED', nextTick: 0, commanding: false };
-    this.script = [];
   }
 
   note(msg, kind = '') {
@@ -243,8 +242,6 @@ export class KillSim {
     const K = this.K, t = (this.t += DT);
     const p = this.poac, e = this.esc, o = this.overseer, m = this.mpc, v = this.viewer, l = this.laptop;
 
-    while (this.script.length && this.script[0].at <= t + 1e-9) this.script.shift().run();
-
     // publishers
     if (v.open && t >= v.nextBeat) { v.nextBeat = t + K.viewerBeat; this.viewerReport(); }
     if (l.repeat && t >= l.nextSend) { l.nextSend = t + 0.05; this.publishKill(l.slot, l.sender, l.repeat.asserting, l.needsUpdate); }
@@ -379,19 +376,9 @@ export class KillSim {
     if (!this.inputs.control) return { ok: false, text: 'Stopped: control_system is not running, no RPM targets' };
     if (e.flags & ((1 << 3) | (1 << 4))) return { ok: false, text: 'Stopped: RPM targets stale' };
     if (!o.motionEnabled) return { ok: false, text: 'Stopped: overseer has motion_enabled false' };
-    if (m.mode !== 'POSITION') return { ok: false, idle: true, text: 'Enabled, but the MPC has no reference (DISABLED): send a command' };
+    if (m.mode !== 'POSITION') return { ok: false, idle: true, text: `Enabled, but the MPC has no reference (DISABLED): ${this.viewer.open ? 'send a command' : 'nothing has sent a command'}` };
     if (m.killed) return { ok: false, text: 'Stopped: the MPC still reads state/kill true' };
     return { ok: false, text: 'Waiting for the next tick' };
-  }
-
-  // Schedules scripted actions relative to now.
-  play(steps) {
-    let at = this.t;
-    this.script = [];
-    for (const s of steps) {
-      at += s.after || 0;
-      this.script.push({ at, run: s.run });
-    }
   }
 }
 

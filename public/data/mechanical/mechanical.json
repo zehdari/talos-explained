@@ -1197,9 +1197,14 @@
     "kg": 0.38
    },
    {
-    "id": "kill_switch_covers",
-    "label": "Kill switch and SubConn cover",
-    "kg": 0.464
+    "id": "kill_switch",
+    "label": "Kill switch handle (Kill Switch-1)",
+    "kg": 0.094
+   },
+   {
+    "id": "subconn_cover",
+    "label": "SubConn cover (Subconn Cover-1)",
+    "kg": 0.37
    },
    {
     "id": "cables",

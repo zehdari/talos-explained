@@ -26,7 +26,7 @@
 .cm-branch { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-2); background: var(--paper-2); border-radius: 4px; padding: 0.05rem 0.35rem; overflow-wrap: anywhere; }
 .cm-branch::before { content: '⎇ '; color: var(--muted); }
 .cm-size { margin-left: auto; font-size: 0.76rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.cm-tag { display: inline-block; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 0.06rem 0.35rem; vertical-align: 0.08em; }
+.cm-tag { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 0.06rem 0.35rem; vertical-align: 0.08em; }
 .cm-tool { background: var(--paper-3); color: var(--ink-2); }
 .cm-legacy { background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1px var(--rule); }
 .cm-new { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
@@ -40,7 +40,7 @@
 .cm-pkg.old { color: var(--muted); background: transparent; border: 1px dashed var(--rule); }
 .cm-pkg.hit { border-color: var(--accent); }
 .cm-pkg.new { background: transparent; border: 1px dashed var(--accent); }
-.cm-pkg small { font-family: var(--sans); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-left: 0.35rem; }
+.cm-pkg small { font-family: var(--sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-left: 0.35rem; }
 .cm-pkg.on small, .cm-pkg[aria-pressed='true'] small { color: inherit; }
 .cm-up code { color: var(--ink-2); }
 .cm-pkg.on, .cm-pkg[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
@@ -69,23 +69,31 @@
 .cm-langlist i, .cm-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 0.3rem; vertical-align: -0.02em; }
 .cm-small { font-size: 0.8rem; color: var(--ink-2); }
 .cm-links { font-size: 0.84rem; margin-top: 0.7rem !important; padding-top: 0.6rem; border-top: 1px solid var(--rule); }
-.cm-hint { font-weight: 600; }
-.cm-stats { display: grid; gap: 0.5rem; margin: 0.4rem 0 0.8rem; }
-.cm-stats div { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--grid); padding-bottom: 0.3rem; }
-.cm-stats dt { color: var(--ink-2); }
-.cm-stats dd { margin: 0; font-weight: 650; font-variant-numeric: tabular-nums; }
-.cm-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.78rem; color: var(--ink-2); margin-top: 0.8rem; }
+.cm-hint { font-weight: 600; margin-bottom: 0.3rem !important; }
+.cm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 0 0 0.7rem; }
+.cm-stats div { background: var(--paper-2); border-radius: 6px; padding: 0.45rem 0.6rem 0.5rem; }
+.cm-stats dd { margin: 0; font-size: 1.25rem; font-weight: 650; line-height: 1.2; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cm-stats dt { font-size: 0.78rem; line-height: 1.35; color: var(--ink-2); }
+.cm-stats dt code { font-size: 0.74rem; }
+.cm-legend { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; font-size: 0.78rem; color: var(--ink-2); margin: -0.3rem 0 0.9rem; }
+.cm-legend-t { color: var(--muted); }
+.cm-npk { color: var(--muted); }
+.cm-gl { display: flex; flex-direction: column; gap: 0.1rem; }
+.cm-gl-sub { font-size: 0.78rem; font-weight: 450; letter-spacing: 0; text-transform: none; color: var(--ink-2); }
+.cm-group-label small { white-space: nowrap; margin-left: auto; }
+#explorer-fig, #cm-detail, .cm-repo, #stack-graph { scroll-margin-top: 3.5rem; }
+@media (max-width: 820px) {
+  .cm-detail.ov { position: static; max-height: none; margin-bottom: 0.9rem; padding: 0.75rem 0.8rem 0.4rem; }
+}
 
 @media (max-width: 820px) {
   .cm-body { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* "Show in explorer" in the layer diagram's note */
-.graph-note .cm-jump { margin-left: 0.3rem; font-family: var(--sans); font-size: 0.78rem; }
-.graph-note code { font-size: 0.8rem; }
+
 
 /* ---------- pins table ---------- */
-.cm-pins td small { color: var(--muted); }
+.cm-pins td small { color: var(--muted); font-size: 0.75rem; }
 .cm-pins tr.cm-oldrow td { color: var(--ink-2); }
 .cm-pins td:last-child, .cm-pins th:last-child { text-align: right; }
 .cm-start td:first-child { white-space: normal; }
@@ -101,7 +109,7 @@ svg.cm-hist { display: block; width: 100%; height: auto; font-family: var(--sans
 .cm-hv { fill: var(--paper-3); }
 .cm-haxis { font-size: 11px; fill: var(--muted); }
 .cm-htick { stroke: var(--rule); }
-.cm-hevent { font-size: 10.5px; font-weight: 650; fill: var(--ink); text-anchor: middle; }
+.cm-hevent { font-size: 11.5px; font-weight: 650; fill: var(--ink); text-anchor: middle; }
 .cm-hist-read { display: flex; gap: 0.8rem; align-items: flex-start; font-family: var(--sans); font-size: 0.86rem; color: var(--ink-2); margin-top: 0.6rem; min-height: 3.6em; }
 .cm-hist-read b { color: var(--ink); }
 .cm-hist-read code { font-size: 0.78rem; }
@@ -128,7 +136,7 @@ pre.cm-tree-narrow { display: none; }
 .cm-group-label small { font-size: 0.72rem; font-weight: 450; letter-spacing: 0; text-transform: none; color: var(--muted); }
 .cm-peek { display: block; width: 100%; text-align: left; font: inherit; background: var(--paper); border: 1px dashed var(--rule); border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer; line-height: 1.7; color: var(--ink-2); touch-action: manipulation; }
 .cm-peek:hover { border-color: var(--ink-2); }
-.cm-peek code { font-size: 0.74rem; background: none; padding: 0; margin-right: 0.6rem; color: var(--ink-2); }
+.cm-peek code { white-space: nowrap; display: inline-block; font-size: 0.78rem; background: none; padding: 0; margin-right: 0.6rem; color: var(--ink-2); }
 .cm-pins .cm-br { display: block; font-family: var(--mono); font-size: 0.74rem; color: var(--ink-2); margin-top: 0.1rem; }
 .cm-pins .cm-br::before { content: '⎇\00a0'; color: var(--muted); }
 .cm-pins .cm-date { white-space: nowrap; }
@@ -137,4 +145,75 @@ pre.cm-tree-narrow { display: none; }
 @media (max-width: 420px) {
   table.cm-pins td, table.cm-pins th { padding-right: 0.35rem; }
   table.cm-pins code { font-size: 0.7rem; }
+}
+
+/* ---------- the stack in layers (src/viz/code-map-stack.js) ---------- */
+#stack-graph svg.cms { display: block; width: 100%; max-width: 900px; height: auto; margin: 0 auto; font-family: var(--sans); overflow: visible; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+#stack-graph svg.cms.narrow { max-width: 27rem; }
+.cms-band { fill: var(--paper-3); }
+.cms-band.side { fill: none; stroke: var(--rule); stroke-width: 1.2; stroke-dasharray: 5 4; opacity: 1; }
+.cms-blabel { fill: var(--accent-ink); font-size: 11px; font-weight: 650; letter-spacing: 0.08em; dominant-baseline: central; }
+.cms-node { cursor: pointer; touch-action: manipulation; outline: none; transition: opacity 0.2s; }
+.cms-node rect { fill: var(--paper); stroke: var(--ink); stroke-width: 1.4; }
+.cms-node.side rect { stroke: var(--ink-2); stroke-dasharray: 4 3; }
+.cms-node text { text-anchor: middle; dominant-baseline: central; }
+.cms-node .l { fill: var(--ink); font-size: 13px; font-weight: 500; }
+.cms-node .s { fill: var(--muted); font-size: 11.5px; }
+.cms-node .k { fill: var(--accent-ink); font-size: 11.5px; font-weight: 650; letter-spacing: 0.07em; }
+/* Dimmed boxes fade their outline, not their text: labels stay readable while a step is lit. */
+.cms-node rect, .cms-node text { transition: stroke 0.2s, fill 0.2s; }
+.cms-node.dim rect { stroke: var(--rule); }
+.cms-node.dim .l { fill: var(--ink-2); }
+.cms-node.hot rect, .cms-node:focus-visible rect { stroke: var(--accent); stroke-width: 2.2; }
+.cms-edge { stroke: var(--ink-2); stroke-width: 1.4; fill: none; transition: opacity 0.2s; }
+.cms-edge.dash { stroke-dasharray: 4 4; }
+.cms-edge.dim { opacity: 0.4; }
+.cms-edge.hot { stroke: var(--accent); stroke-width: 2.4; }
+.cms-elabel { fill: var(--ink-2); font-size: 11.5px; paint-order: stroke; stroke: var(--paper-3); stroke-width: 4px; stroke-linejoin: round; transition: opacity 0.2s; }
+.cms-elabel.dim { fill: var(--muted); }
+.cms-pulse { fill: var(--accent); }
+.cm-steps-hint { font-family: var(--sans); font-size: 0.86rem; color: var(--ink-2); margin: 0 0 0.6rem; }
+.cm-steps { justify-content: center; gap: 0.5rem 0.9rem; margin: 0.7rem 0 0; }
+.cm-step-count { min-width: 7.5em; text-align: center; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.cm-step-count b { color: var(--ink); font-weight: 600; }
+.cm-steps .btn:disabled { opacity: 0.4; cursor: default; }
+.cm-stack-note { min-height: 4.6em; line-height: 1.5; margin-top: 0.6rem; scroll-margin-bottom: 0.8rem; }
+.cm-stack-note code { font-size: 0.8rem; overflow-wrap: anywhere; }
+.cm-where { color: var(--muted); }
+.cm-jumps { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; align-items: baseline; margin-left: 0.2rem; }
+.graph-note .cm-jump { font-family: var(--sans); font-size: 0.8rem; padding: 0.15rem 0.5rem; }
+@media (max-width: 640px) {
+  .fig .panel.cm-stack-panel { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .cm-steps { justify-content: space-between; gap: 0.4rem; padding: 0 0.4rem; }
+  .cm-steps-hint { padding: 0 0.4rem; }
+  .cm-stack-note { min-height: 9.5em; }
+}
+
+/* release history: month separators, and the phone list */
+.cm-hsep { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 3; }
+.cm-hnote { text-anchor: end; font-style: italic; }
+.cm-hist-read[hidden] { display: none; }
+.cm-hlist { font-family: var(--sans); }
+.cm-hl-key { font-family: var(--sans); font-size: 0.82rem; line-height: 1.6; color: var(--ink-2); margin: 0 0 0.5rem; }
+.cm-hl-month { font-size: 0.74rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); margin: 0.8rem 0 0.3rem; }
+.cm-hl-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+.cm-hl-rows li { background: var(--paper); border-radius: 8px; padding: 0.45rem 0.65rem 0.5rem; }
+.cm-hl-rows li.rs { box-shadow: inset 3px 0 0 var(--accent); }
+.cm-hl-top { display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.88rem; color: var(--ink); }
+.cm-hl-date { flex: none; width: 3.4em; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.8rem; }
+.cm-hl-msg { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.cm-hl-sha { flex: none; }
+.cm-hl-sha code { font-size: 0.74rem; }
+.cm-hl-chips { display: flex; flex-wrap: wrap; gap: 0.25rem; margin: 0.3rem 0 0 3.9em; }
+.cm-hchip { display: inline-block; font-size: 0.76rem; line-height: 1.4; background: var(--paper-2); color: var(--ink-2); border-radius: 999px; padding: 0 0.45rem; white-space: nowrap; }
+.cm-hchip b { color: var(--accent-ink); font-weight: 650; }
+.cm-hchip.ring { background: transparent; color: var(--accent-ink); box-shadow: inset 0 0 0 1.2px var(--accent); }
+.cm-hnone { font-size: 0.78rem; color: var(--muted); }
+.cm-hl-more { margin-top: 0.7rem; }
+@media (max-width: 640px) {
+  .cm-repo-head { padding: 0.45rem 0.65rem 0.45rem; }
+  /* Bigger tap targets for package chips and dependency refs. */
+  .cm-pkgs, .cm-codes { gap: 0.45rem; }
+  .cm-pkg, .cm-ref { padding: 0.4rem 0.7rem; min-height: 34px; }
+  .cm-crumb .cm-ref { min-height: 0; padding: 0.3rem 0; }
 }

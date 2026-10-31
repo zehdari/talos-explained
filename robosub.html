@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RoboSub and the course · How Talos works</title>
-<meta name="description" content="What RoboSub is, how a run is judged and scored, every task on the RoboSub 2026 course and how Talos's hardware and its competition tree RepairCompMpcTree attempt each one, prequalification, and the team's robots from Riptide to Talos and Triton.">
+<meta name="description" content="What RoboSub is, every task on the RoboSub 2026 course and how Talos and its competition tree RepairCompMpcTree attempt each one, how a run is judged and scored, prequalification, and the team's robots from Riptide to Talos and Triton.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%23d9480f'/></svg>">
 </head>
 <body>
@@ -16,21 +16,146 @@
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>RoboSub is RoboNation's international student competition for autonomous underwater vehicles (AUVs). In July 2026 UWRT placed 4th in its Autonomy Challenge with Talos.</li>
+      <li>RoboSub is RoboNation's international student competition for autonomous underwater vehicles. In July 2026 UWRT placed 4th in its Autonomy Challenge with Talos.</li>
       <li>During a run nobody may talk to the vehicle. It must pass the gate first; after that, any task in any order. Surfacing outside the octagon ends the run.</li>
-      <li>The 2026 course: a gate where you pick a role, a slalom, bins with magnet lights, a torpedo board, an octagon with a table of objects to sort, and back through the gate.</li>
-      <li>Talos runs all of it from one behaviour tree, <code>RepairCompMpcTree</code>, as the Survey &amp; Repair role, flying between positions in its map of the course.</li>
-      <li>A second, separate competition is judged on land: a report, website, video, presentation and system assessment (860 points), ranked on its own.</li>
+      <li>The 2026 course: a gate where you pick a role, a slalom, a torpedo board, an octagon with a table of objects to sort, bins with magnet lights, and back through the gate.</li>
+      <li>Talos runs all of it from one behaviour tree, <code>RepairCompMpcTree</code>, flying between stored positions of the props and letting its cameras correct them.</li>
     </ul></aside>
 
     <div class="prose">
       <h2 id="robosub">What RoboSub is</h2>
-      <p><a href="https://robosub.org">RoboSub</a> is run by RoboNation with the US Office of Naval Research. Student teams (high school or university, at least 75 % students) build an AUV and bring it to one pool for a week. Each team may enter one or two vehicles. The pool is 2.1 m (7 ft) deep. Everything here comes from the <a href="https://robonation.org/app/uploads/sites/4/2026/07/RoboSub-2026_Team-Handbook_20260711-compressed.pdf">RoboSub 2026 Team Handbook</a> unless a link says otherwise.</p>
+      <p><a href="https://robosub.org">RoboSub</a> is run by RoboNation with the US Office of Naval Research. Student teams build an <a class="gl" href="glossary.html#term-auv">AUV</a> (a robot submarine that runs with nobody steering it) and bring it to one pool for a week in July. The pool is 2.1 m (7 ft) deep. Facts here come from the <a href="https://robonation.org/app/uploads/sites/4/2026/07/RoboSub-2026_Team-Handbook_20260711-compressed.pdf">RoboSub 2026 Team Handbook</a> unless a link says otherwise.</p>
       <p>Two competitions run side by side and are ranked separately:</p>
       <ul>
-        <li><strong>The Autonomy Challenge</strong>: runs in the pool, scored by judges watching the vehicle.</li>
-        <li><strong>Design Documentation</strong>: what the team writes, films and presents about how and why it built the vehicle.</li>
+        <li><strong>The Autonomy Challenge</strong>: runs in the pool, scored by judges watching the vehicle. Most of this site is about this one.</li>
+        <li><strong>Design Documentation</strong>: what the team writes, films and presents about how and why it built the vehicle (<a href="#season">below</a>).</li>
       </ul>
+
+      <h2 id="course">The 2026 course</h2>
+      <p>The 2026 theme is <a class="gl" href="glossary.html#term-storm-response"><em>Storm Response</em></a>. At the gate the vehicle takes one of two roles, and the role decides which half of every later task is "correct". The tree this page follows, <code>RepairCompMpcTree</code>, takes Survey &amp; Repair.</p>
+      <table class="params rs-roles">
+        <thead><tr><th></th><th>Survey &amp; Repair <span class="rs-tag">Talos</span></th><th>Search &amp; Rescue</th></tr></thead>
+        <tbody>
+          <tr><th>Gate half</th><td>compass, hammer and wrench</td><td>buoy, SOS</td></tr>
+          <tr><th>Bins, torpedo holes</th><td>fire (and fire engine)</td><td>blood (and ambulance)</td></tr>
+          <tr><th>Table items</th><td>nut and bolt, plug</td><td>pill, bandage</td></tr>
+          <tr><th>Their basket</th><td>warning sign</td><td>helmet</td></tr>
+        </tbody>
+      </table>
+      <p>Step through the run below. The map is one course as modelled in the <a href="nereus.html">Nereus</a> simulator, and the line is where Talos really went in a full run there.</p>
+    </div>
+    <figure class="fig" id="course-fig">
+      <div class="panel rs-course">
+        <div class="rs-map-col">
+          <div class="controls rs-controls"><span class="seg rs-steps" id="task-chips" role="group" aria-label="Step through the run"></span></div>
+          <div class="rs-map" id="course-map"></div>
+          <div class="rs-views" id="course-views" hidden><span class="seg" role="group" aria-label="Which part of this task"></span><p class="rs-stopnote" aria-live="polite"></p></div>
+          <div class="rs-nav">
+            <button type="button" class="rs-loc" id="course-loc" aria-pressed="false" aria-label="Show the whole course"></button>
+            <div class="rs-now">
+              <div class="rs-now-t" id="course-now" aria-live="polite"></div>
+              <div class="rs-pn"><button type="button" class="btn" id="step-prev"></button><button type="button" class="btn primary" id="step-next"></button></div>
+            </div>
+          </div>
+        </div>
+        <div class="rs-card" id="task-card" aria-live="polite"></div>
+      </div>
+      <figcaption><b>The 2026 course, task by task, in the order Talos does them.</b> The time on each button is when that task starts in a full <a href="perception/mission.html">Nereus run</a>. The map is seen from above; the thick line is Talos's path during the chosen task, the thin grey line the rest of the run. Where that path is a tangle (the octagon and the bins), numbered stops show what Talos did, in order. Solid dark props belong to Survey &amp; Repair, hollow ones to Search &amp; Rescue. The small map shows where the close-up is: tap it for the whole course. On a real course the props sit elsewhere, and the team sets Talos's stored positions to match (<a href="perception/map.html">The course map</a>).</figcaption>
+    </figure>
+    <div class="prose">
+      <p>The handbook numbers the tasks 1 to 6 (gate, slalom, bins, torpedoes, octagon, return home). Talos does them in a different order: gate, slalom, torpedo, octagon, bins, home. A random pinger step between the slalom and the torpedo chooses whether the torpedo or the octagon comes first.</p>
+    </div>
+
+    <figure class="fig">
+      <video class="rs-video" id="run-video" controls muted playsinline preload="none" width="768" height="432"></video>
+      <figcaption><b>The same Nereus run in the viewer,</b> at 8× speed, the camera following behind Talos. <i>Watch this task</i> on a task card jumps here. More on this run in <a href="perception/mission.html">One mission in Nereus</a>.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <p>The handbook also describes two orange path markers on the pool floor and an acoustic pinger at the torpedo board and at the octagon. Talos's detector has no path-marker class: the tree flies straight to stored positions instead. The pingers are used once, to choose the order of the torpedo and table tasks.</p>
+
+      <h2 id="runs">How a run works</h2>
+      <ul>
+        <li><strong>Gate first.</strong> Every other task needs the gate passed first. After that, tasks can be done in any order, and a score only goes up: going back to a task keeps the better result.</li>
+        <li><strong>Start.</strong> The vehicle starts on the surface and dives before it leaves the start zone. For extra points the team can ask for a <a class="gl" href="glossary.html#term-coin-flip">coin flip</a> that decides which way it starts facing.</li>
+        <li><strong>The last run counts.</strong> In the semi-finals each team gets a 20-minute slot a day. Starting a new run throws away the previous run's points.</li>
+        <li><strong>Breaching.</strong> Surfacing inside the octagon is a task. Breaking the surface anywhere else ends the run.</li>
+        <li><strong>Time bonus.</strong> A vehicle that passes one slalom row, drops one marker in a bin (or fires one torpedo through the board) and surfaces fully in the octagon earns 100 points per minute left.</li>
+      </ul>
+      <details class="rs-more">
+        <summary>Practice, semi-finals, finals and courses</summary>
+        <ul>
+          <li><strong>Practice and qualifying.</strong> Teams book 30-minute practice slots. A team qualifies by passing through the gate on its own, or ahead of time with a <a href="#prequal">prequalification video</a>.</li>
+          <li><strong>Semi-finals.</strong> Two days, one 20-minute slot each day, on two different courses. The first 5 minutes are setup with the vehicle out of the water.</li>
+          <li><strong>Finals.</strong> The top teams, with all scores reset. The best run counts.</li>
+          <li><strong>Several courses.</strong> The pool holds practice courses A, B1, B2, C1, C2 and D. Semi-finals run on A and D; the finals combine A, B1 and B2. Task positions differ between courses, and no three elements are ever in a line.</li>
+          <li><strong>Attempts.</strong> Each task has an imaginary sphere of 3 m radius around it. Entering it starts an attempt; leaving ends it.</li>
+        </ul>
+      </details>
+
+      <h2 id="tree" data-short="The competition tree">One tree for the whole run</h2>
+      <p>On competition day the operator starts one <a class="gl" href="glossary.html#term-behaviour-tree">behaviour tree</a>, <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a>, about <span id="tree-len">4&#8239;100</span> lines of XML. Talos does not detect its role: this file is the Survey &amp; Repair mission, and <code>RescueCompMpcTree.xml</code> is the same mission for the other role. In order, it:</p>
+      <ol>
+        <li>waits for the kill switch to be put in, then dives in place;</li>
+        <li>passes the gate and the slalom;</li>
+        <li>listens for the pinger, which picks torpedo or table first;</li>
+        <li>does the torpedo and the table;</li>
+        <li>drops markers in the bins and turns off the magnet lights;</li>
+        <li>goes home through the gate and stops.</li>
+      </ol>
+      <div class="callout" id="pinger-caveat"><span class="label">The pinger order looks backwards</span>
+        <p>The tree listens at the torpedo stop, then at the table stop. As written, a louder torpedo pinger sends Talos to the table first, which looks inverted against the rule. It may be a bug, and it is not confirmed either way, so don't count on the pinger bonus. Details in <a href="mission-tree.html#pinger">The pinger picks the order</a>.</p>
+      </div>
+      <p>Two ideas run through the whole tree:</p>
+      <ul>
+        <li><strong>A failed task doesn't end the run.</strong> Each task is wrapped so that a timeout or failed check counts as done, and the tree moves on. Points only go up, so giving up costs nothing but time.</li>
+        <li><strong>The cameras correct, the map decides.</strong> Talos flies to where its <a class="gl" href="glossary.html#term-prior-map">prior map</a> says a prop is, looks with the camera that task needs, and lets mapping move the prop before it commits to a shot, drop or grab (<a href="perception/map.html">The course map</a>).</li>
+      </ul>
+      <p>How the tree is built, node by node, is in <a href="bt.html">Behaviour trees</a> and <a href="mission-tree.html">The competition mission</a>.</p>
+
+      <h2 id="scoring">How it scores</h2>
+      <p>Judges score the run live. Nereus implements the same 2026 rules (<a href="https://github.com/osu-uwrt/nereus/blob/main/extensions/rules/robosub_2026/robosub_2026.cpp">robosub_2026.cpp</a>, points in <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/tasks/robosub_2026/tasks.yaml#L103"><code>tasks.yaml</code></a>), so a simulated run shows a scorecard in the <a href="viewer.html">viewer</a>. A few rows are left to the judges: pinger awards, keeping control through the gate, weight, and inter-vehicle communication.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel">
+        <div class="controls"><span class="seg" id="score-mode" role="group" aria-label="Show"><button type="button" data-m="talos" aria-pressed="true">What Talos goes for</button><button type="button" data-m="all" aria-pressed="false">Every row</button></span></div>
+        <div id="score-list" class="rs-score"></div>
+        <div class="rs-score-total" id="score-total"></div>
+      </div>
+      <figcaption><b>The most each task can give, in run order.</b> Dark is what <code>RepairCompMpcTree</code> tries for; light is the rest of the task's points. Tap a task for its rows and why Talos skips some.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>Three things stand out. The octagon and table is the largest single task, up to 7&#8239;700 points, and almost all of it needs a way to pick things up: that is why Talos got a claw for 2026. The torpedo's 1&#8239;400-point sequence bonus needs both shots through the right holes, large first. And the two coin flips at the gate add 450 points for a vehicle that can start facing any way and take either role.</p>
+
+      <h2 id="rules" data-short="Rules that shape Talos">Rules that shape the vehicle</h2>
+      <p>A vehicle may not enter the water until it passes a static safety inspection. These rules explain a lot of Talos's design:</p>
+      <dl class="spec">
+        <dt>Fully autonomous</dt><dd>All decisions on board; no communication with people or off-board computers during a run (a team's two vehicles may talk to each other, which scores as inter-vehicle communication). So the computer, cameras and the mission tree all live inside Talos (<a href="computers.html">Computers and networks</a>).</dd>
+        <dt>Submerged</dt><dd>Everything attached must go under with the vehicle. No tether in a scored run.</dd>
+        <dt>Kill switch</dt><dd>Clearly marked, easy for a diver to pull, cuts battery power to all propulsion, and the props must not start spinning again when it is put back (<a href="commanding.html">Commanding Talos</a>).</dd>
+        <dt>Shrouded props</dt><dd>Commercial shrouded thrusters count; Talos's are Blue Robotics T200s (<a href="thrusters-hw.html">Thrusters and ESCs</a>).</dd>
+        <dt>Floats when killed</dt><dd>Positively buoyant by at least 0.5 % of its mass with the kill switch pulled (<a href="mechanical.html">Hull, frame and layout</a>).</dd>
+        <dt>Size</dt><dd>Fits in a 0.9 × 0.9 × 1.8 m box.</dd>
+        <dt>Weight</dt><dd>Over 60 kg is disqualified; over 38 kg costs points; under 38 kg earns 4.4 points per kg below 38. Talos's <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L10">config</a> gives 32.4 kg dry (weighed for the October 2026 pool tests, claw fitted), about +24 points (the official number is the competition's own scale).</dd>
+        <dt>Batteries</dt><dd>Sealed, at most 60 V open-circuit, never charged inside a sealed housing (<a href="electrical.html">Power and wiring</a>).</dd>
+        <dt>Markers, torpedoes</dt><dd>At most two of each, each within 51 × 51 × 152 mm and 0.91 kg, marked with the team's name or emblem (<a href="actuators.html">Torpedoes, dropper and claw</a>).</dd>
+      </dl>
+
+      <h2 id="prequal">Prequalification</h2>
+      <p>Before the event a team may <a class="gl" href="glossary.html#term-prequal">qualify from home</a> with an unbroken video of one autonomous run on a simple course: a 2 m horizontal gate 1 m under the surface, and a vertical marker 10 m beyond it. The vehicle starts submerged 3 m behind the gate, passes through, circles the marker and comes back through, without breaking the surface. Teams that pass go straight to the semi-finals. Talos <a href="https://org.osu.edu/osu-uwrt/2026/03/12/talos-has-prequalified-for-robosub-2026/">prequalified for 2026</a> in March.</p>
+      <p>The tree for that run is <a id="prequal-link" href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/PreQualMpcTree.xml#L60"><code>PreQualMpcTree.xml</code></a>: dive to 1 m, then one path through the gate, out 3 m to the side of the pole, a half circle behind it while facing it, and back through the gate nose first. The gate and pole are two stored positions, <code>prequal_gate</code> and <code>prequal_pole</code>, 10 m apart.</p>
+    </div>
+    <figure class="fig narrow">
+      <div class="panel">
+        <div class="controls"><button type="button" class="btn primary" id="pq-play">Play</button></div>
+        <div id="pq-map"></div>
+      </div>
+      <figcaption><b>The prequalification path</b> built by <code>PreQualMpcTree</code>, seen from above. Talos faces along the path except round the pole, where it turns to face the pole. Press Play.</figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2 id="season" data-short="The season">The season and Design Documentation</h2>
+      <p>The pool week is the end of a season that starts online in December.</p>
     </div>
     <figure class="fig narrow">
       <div class="panel">
@@ -38,7 +163,6 @@
       </div>
       <figcaption><b>The RoboSub 2026 season.</b> The online deadlines, then the week at the Woollett Aquatics Center in Irvine, California.</figcaption>
     </figure>
-
     <div class="prose">
       <h3 id="docs">Design Documentation</h3>
       <table class="params rs-doc">
@@ -62,150 +186,30 @@
         <li><strong>2026:</strong> 4th in the Autonomy Challenge, 3rd (tie) in Design Documentation, 2nd in the system assessment (<a href="https://robosub.org/2026/results">results</a>).</li>
       </ul>
 
-      <h2 id="rules" data-short="Rules that shape Talos">Rules that shape the vehicle</h2>
-      <p>A vehicle may not enter the water until it passes a static safety inspection. These rules explain a lot of Talos's design:</p>
-      <dl class="spec">
-        <dt>Fully autonomous</dt><dd>All decisions on board; no communication with people or off-board computers during a run (a team's two vehicles may talk to each other, which scores as inter-vehicle communication). So the computer, cameras and the mission tree all live inside Talos (<a href="computers.html">Computers and networks</a>).</dd>
-        <dt>Submerged</dt><dd>Everything attached must go under with the vehicle. No tether in a scored run.</dd>
-        <dt>Kill switch</dt><dd>Clearly marked, easy for a diver to pull, cuts battery power to all propulsion, and the props must not start spinning again when it is put back (<a href="commanding.html">Commanding Talos</a>).</dd>
-        <dt>Shrouded props</dt><dd>Commercial shrouded thrusters count; Talos's are Blue Robotics T200s (<a href="thrusters-hw.html">Thrusters and ESCs</a>).</dd>
-        <dt>Floats when killed</dt><dd>Positively buoyant by at least 0.5 % of its mass with the kill switch pulled (<a href="mechanical.html">Hull, frame and layout</a>).</dd>
-        <dt>Size</dt><dd>Fits in a 0.9 × 0.9 × 1.8 m box.</dd>
-        <dt>Weight</dt><dd>Over 60 kg is disqualified; over 38 kg costs points; under 38 kg earns 4.4 points per kg below 38. Talos's <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L10">config</a> gives 32.4 kg dry (weighed for the October 2026 pool tests, claw fitted), about +24 points (the official number is the competition's own scale).</dd>
-        <dt>Batteries</dt><dd>Sealed, at most 60 V open-circuit, never charged inside a sealed housing (<a href="electrical.html">Power and wiring</a>).</dd>
-        <dt>Markers, torpedoes</dt><dd>At most two of each, each within 51 × 51 × 152 mm and 0.91 kg, marked with the team's name or emblem (<a href="actuators.html">Torpedoes, dropper and claw</a>).</dd>
-      </dl>
-
-      <h2 id="runs">How a run works</h2>
-      <ul>
-        <li><strong>Practice and qualifying.</strong> Teams book 30-minute practice slots. A team qualifies by passing through the gate autonomously, or ahead of time with a prequalification video (below).</li>
-        <li><strong>Semi-finals.</strong> Two days, one 20-minute slot per day, on two different courses. The first 5 minutes are setup with the vehicle out of the water. A new run forfeits the previous run's points, so only the last run counts.</li>
-        <li><strong>Finals.</strong> The top teams, all scores reset. The best run counts.</li>
-        <li><strong>Start.</strong> The vehicle starts on the surface and must submerge before it leaves the start zone. For extra points the team can ask for a coin flip that decides which way it faces.</li>
-        <li><strong>Gate first.</strong> Every other task needs the gate passed first. After that tasks can be done in any order, and a row's score only goes up: revisiting a task keeps the better result.</li>
-        <li><strong>Breaching.</strong> Surfacing inside the octagon is a task. Breaking the surface anywhere else ends the run.</li>
-        <li><strong>Several courses.</strong> The pool holds practice courses A, B1, B2, C1, C2 and D. Semi-finals run on A and D; the finals combine A, B1 and B2. Task positions differ between courses, and no three elements are ever in a line.</li>
-        <li><strong>Attempts.</strong> Each task has an imaginary 3 m radius sphere around it. Entering it starts an attempt; leaving ends it.</li>
-        <li><strong>Time bonus.</strong> A vehicle that passes one slalom row, drops one marker in a bin (or fires one torpedo through the board) and surfaces fully in the octagon earns 100 points per minute left on the clock.</li>
-      </ul>
-
-      <h2 id="course">The 2026 course</h2>
-      <p>The 2026 theme is <em>Storm Response</em>. At the gate the vehicle takes one of two roles, and the role decides which half of every later task is "correct":</p>
-      <table class="params rs-roles">
-        <thead><tr><th></th><th>Survey &amp; Repair</th><th>Search &amp; Rescue</th></tr></thead>
-        <tbody>
-          <tr><th>Gate half</th><td>compass, hammer and wrench</td><td>buoy, SOS</td></tr>
-          <tr><th>Bins, torpedo holes</th><td>fire (and <code>fire_engine</code>)</td><td>blood (and <code>ambulance</code>)</td></tr>
-          <tr><th>Table items</th><td>nut and bolt, plug</td><td>pill, bandage</td></tr>
-          <tr><th>Their basket</th><td>warning sign</td><td>helmet</td></tr>
-          <tr><th>Octagon image</th><td>compass (1 item), hammer and wrench (2 or more)</td><td>buoy (1 item), SOS (2 or more)</td></tr>
-        </tbody>
-      </table>
-      <p>The words in the table match the detector's class names (<code>hammer_and_wrench</code>, <code>nut_and_bolt</code> and so on in code). The map below is the course in Talos's own <code>map</code> frame: task positions from the <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/scenarios/talos_uwrt/scenario.yaml#L32">Nereus scenario</a>, which match Talos's prior map, and each prop's shape from the <a href="https://github.com/osu-uwrt/nereus/tree/main/content/packs/tasks/robosub_2026">robosub_2026 task pack</a>.</p>
-    </div>
-    <figure class="fig">
-      <div class="panel flush rs-course">
-        <div class="rs-map-col">
-          <div class="rs-chips" id="task-chips" role="group" aria-label="Tasks"></div>
-          <div class="rs-map" id="course-map"></div>
-          <div class="rs-toggles" id="map-toggles"></div>
-          <div class="rs-timeline" id="run-timeline" aria-label="The exact-course Nereus run, task by task"></div>
-        </div>
-        <div class="rs-card" id="task-card"><div class="rs-card-body" id="task-card-body" aria-live="polite"></div></div>
-      </div>
-      <figcaption><b>The RoboSub 2026 course from above, in Talos's map frame.</b> Tap a task on the map, a button above it or a segment of the timeline to see what Talos must do, how it scores, and which chapters explain the parts; <i>Zoom to task</i> shows its props close up. The coloured line is Talos's true path in the full-stack <a href="nereus.html">Nereus</a> run of <a href="perception/mission.html">One mission in Nereus</a>, coloured by task; diamonds are the waypoints the tree flies between. This is one course as modelled in Nereus, not a fixed layout: on each real course the priors must be set to where its props are (<a href="perception/map.html">The course map</a>).</figcaption>
-    </figure>
-
-    <figure class="fig">
-      <video class="rs-video" id="run-video" controls muted playsinline preload="none"></video>
-      <figcaption><b>The same Nereus run in the viewer,</b> at 8× speed, the camera behind Talos. <i>Watch this task</i> on a task card jumps here. More on this run in <a href="perception/mission.html">One mission in Nereus</a>.</figcaption>
-    </figure>
-
-    <div class="prose">
-      <p>The handbook also describes two orange path markers (gate to slalom, slalom to bins) and acoustic pingers at the torpedo board and the octagon. Talos's detector has no path-marker class: the tree flies straight to positions in its map instead. The pingers are used once, to choose the order of the torpedo and table tasks.</p>
-
-      <h2 id="tasks" data-short="What each task uses">What each task uses on Talos</h2>
-    </div>
-    <figure class="fig narrow">
-      <div class="panel" id="use-table"></div>
-      <figcaption><b>Task, camera, mechanism and subtree.</b> <i>ffc</i> and <i>dfc</i> are the forward and downward ZED X Mini cameras. Tap a task to show it on the map; subtree names link to their line in <code>RepairCompMpcTree.xml</code>.</figcaption>
-    </figure>
-
-    <div class="prose">
-      <h2 id="tree" data-short="The competition tree">One tree for the whole run</h2>
-      <p>On competition day the operator starts one behaviour tree, <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a> (about <span id="tree-len">4&#8239;100</span> lines). Its root sets <code>repair_mission = 1</code> and runs <code>CompMissionTreeMpc</code>; <code>RescueCompMpcTree.xml</code> is the same mission for the other role. In order:</p>
-      <ol>
-        <li><strong>Wait</strong> for the kill switch to be inserted, then about 6 s more (1 s, then 5 s). Lock the map, reload and disarm the actuators.</li>
-        <li><strong>Dive</strong> in place to 0.75 m and hold the starting heading (the tree asks for 0.56 m; <code>PrimitiveMovePosition</code> never goes shallower than 0.75 m).</li>
-        <li><strong>Gate, slalom, pinger.</strong> The pinger check sets <code>pinger_is_table</code>: true means table first, false means torpedo first.</li>
-        <li><strong>Torpedo and table</strong>, in that order or the other.</li>
-        <li><strong>Bins</strong>, which ends with the magnet lights.</li>
-        <li><strong>Home</strong> through the gate, then stop the controller.</li>
-      </ol>
-      <div class="callout"><span class="label">The pinger order looks backwards</span>
-        <p>The tree listens at the torpedo stop, then at the table stop. As written, a louder torpedo pinger sends Talos to the table first, which looks inverted against the rule (unconfirmed: it may be a bug). Until it is settled, don't count on the pinger bonus. Details in <a href="mission-tree.html#pinger">The pinger picks the order</a>.</p>
-      </div>
-      <p>Four design choices run through it:</p>
-      <ul>
-        <li><strong>The role is chosen by the operator, not detected.</strong> <code>RepairCompMpcTree</code> sets <code>repair_mission = 1</code> and <code>RescueCompMpcTree</code> sets it to 0; that is the only behavioural difference between the two files. For the role coin flip, the team starts the tree that matches the flip.</li>
-        <li><strong>Every task is wrapped in <code>ForceSuccess</code>.</strong> A task that times out or fails a check doesn't end the run; the tree moves on to the next one. Points only go up, so giving up on a task costs nothing but the time spent.</li>
-        <li><strong>Transits are paths, not searches.</strong> Between tasks the tree builds a list of waypoints (<code>pre_torpedo_pose</code>, <code>pre_bin_pose</code>, …) and hands it to the MPC with <code>FollowPath</code>, between 0.75 m and 2.5 m deep. Those waypoints are priors in the mapping config, measured before the run (<a href="perception/frames.html">Frames, targets and the mission tree</a>, <a href="control/reference.html">Where to go: profiles and paths</a>). The map above uses the competition layout from the built (installed) config; the branch's <code>config.yaml</code> currently has the table moved for pool testing.</li>
-        <li><strong>The cameras refine, the map decides.</strong> Each task starts from its prior position, looks with the camera that task needs, and lets mapping move the prop before Talos commits to a shot, drop or grab (<a href="perception/map.html">The course map</a>).</li>
-      </ul>
-      <p>The tree's nodes and how to write one are in <a href="bt.html">Behaviour trees</a> and <a href="mission-tree.html">The competition mission</a>.</p>
-
-      <h2 id="scoring">How it scores</h2>
-      <p>Judges score the run live. Nereus implements the same 2026 rules (<a href="https://github.com/osu-uwrt/nereus/blob/main/extensions/rules/robosub_2026/robosub_2026.cpp">robosub_2026.cpp</a>, points in <a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/tasks/robosub_2026/tasks.yaml#L103"><code>tasks.yaml</code></a>), so a simulated run shows a scorecard in the <a href="viewer.html">viewer</a>. A few rows are left to the judges: pinger awards (no acoustics in Nereus yet), maintaining control through the gate, weight, and inter-vehicle communication.</p>
-    </div>
-    <figure class="fig">
-      <div class="panel">
-        <div class="controls"><span class="seg" id="score-mode" role="group" aria-label="Show"><button type="button" data-m="all" aria-pressed="true">Every row</button><button type="button" data-m="talos" aria-pressed="false">What the tree goes for</button></span></div>
-        <div id="score-list" class="rs-score"></div>
-        <div class="rs-score-total" id="score-total"></div>
-      </div>
-      <figcaption><b>The maximum each task can give.</b> Bars are to scale; tap a task to see its rows. "What the tree goes for" greys out the rows <code>RepairCompMpcTree</code> doesn't attempt, with the reason.</figcaption>
-    </figure>
-    <div class="prose">
-      <p>Three things stand out. The octagon and table is the largest single task, up to 7&#8239;700 points, and almost all of it needs a way to pick things up: that is why Talos got a claw for 2026. The torpedo's 1&#8239;400-point sequence bonus needs both shots through the right holes, large first. And the two coin flips at the gate add 450 points for a vehicle that can start facing any way and take either role.</p>
-
-      <h2 id="prequal">Prequalification</h2>
-      <p>Before the event a team may qualify from home with an unbroken video of one autonomous run on a simple course: a 2 m horizontal gate 1 m under the surface, and a vertical marker 10 m beyond it. The vehicle starts submerged 3 m behind the gate, passes through, circles the marker and comes back through, without breaking the surface. Teams that pass go straight to the semi-finals. Talos <a href="https://org.osu.edu/osu-uwrt/2026/03/12/talos-has-prequalified-for-robosub-2026/">prequalified for 2026</a> in March.</p>
-      <p>The current version of that run is <a id="prequal-link" href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/PreQualMpcTree.xml#L60"><code>PreQualMpcTree.xml</code></a>: dive to 1 m, then a single path through the gate, out 3 m to the side of the pole, a half circle behind it while facing it, and back through the gate nose first. The gate and pole are just two priors in the mapping config, <code>prequal_gate</code> and <code>prequal_pole</code>, 10 m apart.</p>
-    </div>
-    <figure class="fig narrow">
-      <div class="panel">
-        <div class="controls"><button type="button" class="btn primary" id="pq-play">Play</button></div>
-        <div id="pq-map"></div>
-      </div>
-      <figcaption><b>The prequalification path</b> built by <code>PreQualMpcTree</code>, in the map frame. Talos faces along the path except round the pole, where it turns to face the pole. Press Play.</figcaption>
-    </figure>
-
-    <div class="prose">
-      <h2 id="team">The team</h2>
-      <p>UWRT has four subteams (team website, <code>src/config/subteams.ts</code>):</p>
-      <ul>
-        <li><strong>Mechanical</strong> designs, machines and assembles the hulls, frames, thruster mounts and manipulators.</li>
-        <li><strong>Electrical</strong> builds the custom circuit boards and power systems and integrates the sensors: what drives the thrusters and keeps the computer alive.</li>
-        <li><strong>Software</strong> writes the autonomy stack: perception, mapping, control and mission planning.</li>
-        <li><strong>Business</strong> runs sponsorships, finances, outreach and media.</li>
-      </ul>
-      <p>Each technical subteam has a reading path under <a href="index.html#paths">Where to start</a>: Mechanical, Electrical, and for Software the Software, Autonomy, Perception and Controls paths. Anyone coming to the pool should read First pool test.</p>
-      <p>The lab is in Dreese Laboratory, room 457, 2015 Neil Ave (team website, <code>src/config/site.ts</code>). Two things come from a lead, not from this site: write access to the team's GitHub (<a href="setup.html#before">Before you start</a>) and access to the robot's network from your own laptop (<a href="computers.html#join">Joining from your own laptop</a>).</p>
-
-      <h2 id="history" data-short="The team's robots">The team's robots, and their names in the code</h2>
-      <p>UWRT started with ROVs and switched to AUVs for RoboSub in 2015; the software subteam was founded then. The stack is still called <strong>Riptide</strong> after the first AUV, which is why every package is <code>riptide_*</code> (team website). Every AUV since is below; from 2025 the team also built a second, smaller vehicle beside the main one.</p>
-    </div>
-    <figure class="fig">
-      <div class="media-grid rs-robots" id="robots"></div>
-      <figcaption><b>UWRT's AUVs, from Riptide to Triton.</b> Photos and placings from the team website. The code names in brackets are the files in <a href="https://github.com/osu-uwrt/riptide_core/tree/followpath-speed/riptide_descriptions/config"><code>riptide_descriptions/config</code></a>.</figcaption>
-    </figure>
-    <div class="prose">
-      <p>Old names survive in the code. You will meet them in:</p>
-      <ul>
-        <li><strong>Vehicle configs.</strong> <code>riptide_descriptions/config</code> has <code>talos.yaml</code>, <code>tempest.yaml</code>, <code>puddles.yaml</code>, <code>liltank.yaml</code> and <code>simulator.yaml</code>. Launch files take a <code>robot</code> argument and load the matching file, so <code>puddles_ekf.yaml</code> or a <code>tempest</code> default in an old teleop launch is history, not a second robot.</li>
-        <li><strong>liltank.</strong> <code>liltank.yaml</code> (added May 2025) describes a 22.7 kg vehicle with two thrusters and an active ballast tank, and only a forward camera. That matches the tracked, ballast-driven SS Flip Barker, so liltank is almost certainly its code name. <code>LiltankCompTree.xml</code> is the tank's own run: it dives, then waits for Talos (<code>WaitForTalos</code>). <code>DeployTankTree.xml</code> is Talos's side: it lines up <code>talos/hitch_link</code> (the <code>hitch</code> in <code>talos.yaml</code>) over the table to drop the tank there. The release step itself is still a placeholder in that tree.</li>
-        <li><strong>Triton</strong>, the 2026 second vehicle, runs a separate stack, <a href="https://github.com/osu-uwrt/mercury_release">Mercury</a>. For 2026 the team planned it for the gate, the slalom and the return home, talking to Talos acoustically (inter-vehicle communication).</li>
-      </ul>
+      <h2 id="team" data-short="The team and its robots">The team and its robots</h2>
+      <p>UWRT has four subteams: Mechanical, Electrical, Software and Business. The lab is in Dreese Laboratory, room 457, 2015 Neil Ave. Two things come from a lead, not from this site: write access to the team's GitHub (<a href="setup.html#before">Before you start</a>) and access to the robot's network from your own laptop (<a href="computers.html#join">Joining from your own laptop</a>).</p>
+      <details class="rs-more" id="team-more">
+        <summary>What each subteam does</summary>
+        <ul>
+          <li><strong>Mechanical</strong> designs, machines and assembles the hulls, frames, thruster mounts and manipulators.</li>
+          <li><strong>Electrical</strong> builds the custom circuit boards and power systems and integrates the sensors.</li>
+          <li><strong>Software</strong> writes the autonomy stack: perception, mapping, control and mission planning.</li>
+          <li><strong>Business</strong> runs sponsorships, finances, outreach and media.</li>
+        </ul>
+        <p>Each technical subteam has a reading path under <a href="index.html#paths">Where to start</a>. Anyone coming to the pool should read First pool test. (Team website, <code>src/config/subteams.ts</code> and <code>site.ts</code>.)</p>
+      </details>
+      <p id="history">UWRT started with ROVs and switched to AUVs for RoboSub in 2015. The software stack is still called <strong>Riptide</strong> after the first AUV, which is why every package is <code>riptide_*</code>. Old robot names survive in the code: <code>riptide_descriptions/config</code> has <code>talos.yaml</code>, <code>tempest.yaml</code>, <code>puddles.yaml</code>, <code>liltank.yaml</code> and <code>simulator.yaml</code>, and launch files load the one named by their <code>robot</code> argument. So <code>puddles_ekf.yaml</code> or a <code>tempest</code> default in an old launch file is history, not a second robot.</p>
+      <details class="rs-more" id="robots-more">
+        <summary>Every UWRT AUV, and the 2025–26 second vehicles</summary>
+        <figure class="fig rs-robots-wrap">
+          <div class="media-grid rs-robots" id="robots"></div>
+          <figcaption><b>UWRT's AUVs, from Riptide to Triton.</b> Photos and placings from the team website. A code chip is the vehicle's config file in <a href="https://github.com/osu-uwrt/riptide_core/tree/followpath-speed/riptide_descriptions/config"><code>riptide_descriptions/config</code></a>; Triton runs the separate Mercury stack.</figcaption>
+        </figure>
+        <ul>
+          <li><strong>liltank.</strong> <code>liltank.yaml</code> (added May 2025) describes a 22.7 kg vehicle with two thrusters, an active ballast tank and only a forward camera. That matches the tracked, ballast-driven SS Flip Barker, so liltank is probably its code name. <code>LiltankCompTree.xml</code> is the tank's own run: it dives, then waits for Talos. <code>DeployTankTree.xml</code> is Talos's side: it lines up Talos's <code>hitch</code> over the table to drop the tank there; the release step itself is still a placeholder.</li>
+          <li><strong>Triton</strong>, the 2026 second vehicle, runs a separate stack, <a href="https://github.com/osu-uwrt/mercury_release">Mercury</a>. For 2026 the team planned it for the gate, the slalom and the return home, talking to Talos acoustically (inter-vehicle communication).</li>
+        </ul>
+      </details>
       <p>Everything else on this site is about Talos and the Riptide stack. Next: <a href="code-map.html">A map of the code</a>.</p>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>

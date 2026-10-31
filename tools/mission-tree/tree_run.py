@@ -219,6 +219,6 @@ NOISE = re.compile(r'^(Alignment computed|Translation Complete|Rotation Complete
 log = [[round(tmap(w), 2), lvl[0], re.sub(r'/home/\S*/', '', m)] for w, lvl, m in raw if not NOISE.search(m) and tmap(w) > -5]
 
 out = {'duration': END, 'dt': DT, 'paths': paths, 'steps': steps, 'spans': spans, 'segments': segs, 'log': log,
-       'phases': hero['phases'], 'video': {'src': 'video/cam_exact.mp4', 't0': -0.04}}
+       'phases': hero['phases'], 'video': {'src': 'video/mission-tree/cam.mp4', 't0': -0.04}}
 OUT.write_text(json.dumps(out, separators=(',', ':')))
 print('wrote', OUT, f'{OUT.stat().st_size / 1e3:.0f} kB,', len(paths), 'leaf paths,', len(spans), 'nodes ran,', len(log), 'log lines')

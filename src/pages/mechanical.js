@@ -2,7 +2,7 @@ import { setup } from '../layout.js';
 import '../css/chapter.css';
 import '../css/mechanical.css';
 import { barChart, el } from '../viz/chart.js';
-import { Graph } from '../viz/graph.js';
+import { mountTrim } from '../viz/mechanical-trim.js';
 
 setup();
 
@@ -15,79 +15,126 @@ const YAML = `${GH}/riptide_core/blob/followpath-speed/riptide_descriptions/conf
 const MODEL = `${GH}/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml`;
 const fmt = (v, d = 1) => (Math.abs(v) < 0.5 * 10 ** -d ? 0 : v).toFixed(d).replace('-', '−');
 
+// Numbered callouts on a CAD render. data-pts = [[label, [target, ...]], ...]; a target is [x %, y %, r, badge x %,
+// badge y %]: the part's centre, a ring around it (r in % of the picture's width, or [rx, ry] for an oval; 0 = no
+// ring, the badge sits on the part, for big parts) and where its numbered badge goes: beside the part, with a short
+// leader line, so the badge never hides what it names. The labels sit in a list under the picture, so nothing
+// overlaps on a phone. Tapping a number or a label pairs them up.
+const SVGNS = 'http://www.w3.org/2000/svg';
+const svgEl = (tag, attrs, parent) => {
+  const e = document.createElementNS(SVGNS, tag);
+  Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+  parent.appendChild(e);
+  return e;
+};
+document.querySelectorAll('.mx-callout').forEach((box) => {
+  const pts = JSON.parse(box.dataset.pts);
+  const img = box.querySelector('img');
+  const W = +img.getAttribute('width'), H = +img.getAttribute('height');
+  const wrap = document.createElement('div');
+  wrap.className = 'mx-callout-pic';
+  img.replaceWith(wrap);
+  wrap.appendChild(img);
+  const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, 'aria-hidden': 'true', class: 'mx-callout-svg' }, wrap);
+  const ol = document.createElement('ol');
+  ol.className = 'mx-callout-list';
+  const items = pts.map(([label, targets], i) => {
+    const g = svgEl('g', {}, svg);
+    const badges = targets.map(([x, y, r, bx = x, by = y]) => {
+      const cx = (x * W) / 100, cy = (y * H) / 100, px = (bx * W) / 100, py = (by * H) / 100;
+      const [rx, ry] = (Array.isArray(r) ? r : [r, r]).map((v) => (v * W) / 100);
+      if (rx) {
+        const dx = px - cx, dy = py - cy, k = 1 / Math.hypot(dx / rx, dy / ry);
+        if (k < 1) {
+          const ln = { x1: cx + dx * k, y1: cy + dy * k, x2: px, y2: py };
+          svgEl('line', { ...ln, class: 'halo' }, g);
+          svgEl('line', { ...ln, class: 'lead' }, g);
+        }
+        svgEl('ellipse', { cx, cy, rx, ry, class: 'halo' }, g);
+        svgEl('ellipse', { cx, cy, rx, ry, class: 'ring' }, g);
+      }
+      const m = document.createElement('button');
+      m.type = 'button';
+      m.className = 'mx-num';
+      m.style.left = `${bx}%`;
+      m.style.top = `${by}%`;
+      m.textContent = i + 1;
+      m.setAttribute('aria-label', label.replace(/<[^>]+>/g, ''));
+      wrap.appendChild(m);
+      return m;
+    });
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="mx-num-key">${i + 1}</span><span>${label}</span>`;
+    ol.appendChild(li);
+    return { g, badges, li };
+  });
+  const on = (k) => items.forEach(({ g, badges, li }, i) => {
+    g.classList.toggle('on', i === k);
+    badges.forEach((b) => b.classList.toggle('on', i === k));
+    li.classList.toggle('on', i === k);
+  });
+  items.forEach(({ badges, li }, i) => {
+    [...badges, li].forEach((e) => {
+      e.addEventListener('click', () => on(i));
+      e.addEventListener('pointerenter', (ev) => ev.pointerType === 'mouse' && on(i));
+    });
+  });
+  const title = box.querySelector('.mx-cage-title');
+  if (title) box.insertBefore(title, wrap);
+  box.appendChild(ol);
+});
+
 fetch(`${BASE}data/mechanical/mechanical.json`).then((r) => r.json()).then(init);
 
 function init(data) {
 
 // ---------------------------------------------------------------- 3D explorer
-// Systems of the CAD model. anchor: where the hotspot sits (CAD metres: +X port, +Y up, +Z bow);
-// explode: how far the system moves when pulled apart.
+// Systems of the CAD model, one colour each. view: the direction the camera looks from when the system is picked
+// (CAD axes: +X port, +Y up, +Z bow); explode: how far the system moves when pulled apart.
 const thrusterNodes = data.groups.filter((g) => g.group === 'thrusters').map((g) => g.node);
 const SYSTEMS = [
-  { id: 'frame', name: 'Frame', nodes: ['frame', 'thruster_guards'], anchor: [0.15, -0.205, 0.155], img: 'ctx-frame-iso',
-    text: 'Four triangular corner modules, joined by two cross bars under the hull and braced by stainless cables. Everything else mounts to it. This group also holds the thruster guards.',
-    facts: [['Size', '805 × 555 × 346 mm, bare'], ['Metal', '6063 C-channel, 5052 plate, 6061 angle'], ['CAD mass', '7.6 kg with thrusters and foam']], link: ['#frame', 'The frame'] },
-  { id: 'thrusters', name: 'Thrusters', nodes: thrusterNodes, anchor: [0.406, 0.244, 0.075], img: 'ctx-thrusters-iso',
-    text: 'Eight Blue Robotics T200s, all at one fore-aft position. Each orange arrow shows which way that thruster pushes Talos when its command is positive (from talos.yaml).',
-    facts: [['Outer four', 'V: push fore and aft'], ['Inner four', 'H: tilted 45°, push up or down and sideways'], ['Limit', '±24 N each, 73 N total']], link: ['#thrusters', 'Eight thrusters in one plane'] },
-  { id: 'hull', name: 'Main hull', nodes: ['hull'], anchor: [0.215, 0.07, 0.14], img: 'ctx-main-housing-iso',
-    text: 'Two clear polycarbonate tubes between aluminium rings: flat windows at the bow, removable lids with every connector at the stern.',
-    facts: [['Size', '513 × 255 × 376 mm, without connectors'], ['Seals', 'Static O-rings at the rings and lids'], ['CAD mass', '17.8 kg, with the cages and bottles']], link: ['#hull', 'The main hull'] },
-  { id: 'electronics', name: 'Electronics', nodes: ['electronics'], inside: true, anchor: [0.123, 0.03, 0.06], explode: [0, 0, -0.55], img: 'sub-housing-internals-iso',
-    text: 'One cage per tube. Starboard: the Jetson AGX Orin, the forward camera and the IMU. Port: the stack of circuit boards behind a 90 mm fan. Both slide out of the stern.',
-    facts: [['Starboard', 'Orin, GMSL2 card, ZED X Mini, VN-100'], ['Port', 'Board stack, kill switch sensor, LED boards']], link: ['#inside', 'Inside the hull'] },
-  { id: 'batteries', name: 'Battery pods', nodes: ['batteries'], split: 0.24, anchor: [0.274, 0.078, 0.2], explode: [0.24, 0, 0], img: 'ctx-battery-pods-iso',
+  { id: 'frame', name: 'Frame', nodes: ['frame', 'thruster_guards'], colour: '#7d8f99', fill: 0.92, view: [1.05, 0.62, 1.2],
+    text: 'Four triangular corner modules, joined by two cross bars under the hull and braced by stainless cables. Everything else bolts to it. The thruster guards are in this group too.',
+    facts: [['Size', '805 × 555 × 346 mm, bare'], ['Metal', 'aluminium C-channel, plate and angle']], link: ['#frame', 'The frame'] },
+  { id: 'thrusters', name: 'Thrusters', nodes: thrusterNodes, colour: '#d9480f', fill: 0.86, view: [0.35, 0.28, 1],
+    text: 'Eight Blue Robotics T200s, all in one cross-section. Each arrow shows which way that thruster pushes Talos when its command is positive (from talos.yaml).',
+    facts: [['Outer four', 'push fore and aft'], ['Inner four', 'tilted 45°: up or down and sideways'], ['Limit', '±24 N each, 73 N total']], link: ['#thrusters', 'Eight thrusters in one plane'] },
+  { id: 'hull', name: 'Main hull', nodes: ['hull'], colour: '#2a78d6', view: [0.9, 0.75, 1],
+    text: 'Two clear polycarbonate tubes between aluminium rings: flat windows at the bow, a removable lid on each tube at the stern.',
+    facts: [['Size', '513 × 255 × 376 mm, without connectors']], link: ['#hull', 'The main hull'] },
+  { id: 'electronics', name: 'Cages', nodes: ['electronics'], colour: '#008300', inside: true, view: [0.55, 1, 0.75], explode: [0, 0, -0.5],
+    text: 'One cage per tube, each sliding out of the stern. Starboard: the camera cage. Port: the board stack.',
+    facts: [['Starboard', 'Jetson AGX Orin, forward ZED X Mini, VN-100 IMU'], ['Port', 'circuit boards, 90 mm fan, kill switch sensor']], link: ['#inside', 'Inside the hull'] },
+  { id: 'batteries', name: 'Batteries', nodes: ['batteries'], colour: '#eda100', split: 0.24, view: [1, 0.55, 0.55], explode: [0.24, 0, 0],
     text: 'Two milled aluminium pods, one per side, clipped onto rails. Each holds a LiPo pack, its battery-management board and a display behind a window.',
     facts: [['Size', 'about 82 × 150 × 380 mm each'], ['Pack', 'MaxAmps 8000 mAh 5S2P, 18.5 V']], link: ['#batteries', 'Battery pods'] },
-  { id: 'foam', name: 'Buoyancy', nodes: ['foam'], anchor: [0.048, 0.2, 0.02], explode: [0, 0.3, 0], img: 'ctx-buoyancy-iso',
-    text: 'A foam block in each corner module, a centre block between the tubes, and two bottles on top of the hull. They decide how much Talos floats and where the lift acts.',
-    facts: [['Net buoyancy', '+1.63 N (MPC model)'], ['COB', '22.5 mm above the COM']], link: ['#trim', 'Buoyancy and trim'] },
-  { id: 'dvl', name: 'DVL', nodes: ['dvl'], anchor: [0, -0.25, 0.0], explode: [0, -0.3, 0], img: 'ctx-dvl-below',
-    text: 'A Nortek DVL1000 (300 m model) under the middle of the robot, on two brackets. It measures Talos\'s velocity over the pool floor.',
-    facts: [['Mount', 'turned 45° (talos.yaml)'], ['Rate', '8 Hz']], link: ['sensors.html#dvl', 'Navigation sensors: DVL'] },
-  { id: 'down_camera', name: 'Down camera', nodes: ['down_camera'], inside: true, anchor: [-0.126, -0.1, 0.0], img: 'sub-down-camera-below',
-    text: 'A second ZED X Mini, mounted against the bottom of the starboard tube and looking down through its wall. When the camera cage slides in, a slide-in adapter connects it, so there is no cable to plug in by hand (2025 report).',
-    facts: [['Frame', 'dfc'], ['Note', 'the CAD has it rolled 180° from the robot']], link: ['cameras.html', 'The cameras'] },
-  { id: 'acoustics', name: 'Acoustics', nodes: ['acoustics'], anchor: [-0.127, -0.29, -0.17], explode: [0, -0.18, -0.12], img: 'ctx-acoustics-below',
-    text: 'The hydrophone pod (an H1C hydrophone and its preamp in a small housing) low at the stern on the starboard side, and the transducer that sends acoustic messages on the port side.',
-    facts: [], link: ['sensors.html#acoustics', 'Navigation sensors: acoustics'] },
-  { id: 'launcher', name: 'Launcher', nodes: ['launcher'], anchor: [0.14, -0.154, 0.245], explode: [0.08, -0.25, 0], img: 'ctx-torpedo-marker-launcher-iso',
-    text: 'The V8 torpedo and marker launcher: two torpedoes pointing forward and two markers pointing down, all released by one servo.',
+  { id: 'foam', name: 'Buoyancy', nodes: ['foam'], colour: '#e87ba4', view: [0.8, 0.95, 1], explode: [0, 0.25, 0],
+    text: 'A foam block in each of the four corner modules, one between the tubes, and two bottles on top of the hull. With the air in the hull, they set how much Talos floats and where the lift acts.',
+    facts: [['Net buoyancy', '+1.6 N (MPC model), just under RoboSub\'s 1.68 N minimum']], link: ['#trim', 'Buoyancy and trim'] },
+  { id: 'sensors', name: 'Sensors', nodes: ['dvl', 'down_camera', 'acoustics'], colour: '#1baf7a', fill: 0.8, view: [-0.65, -0.85, 0.75], explode: [0, -0.22, 0],
+    labels: [['dvl', 0, 'DVL'], ['down_camera', 0, 'Down camera'], ['acoustics', -1, 'Hydrophone'], ['acoustics', 1, 'Transducer']], splitX: ['acoustics'],
+    text: '<b>DVL:</b> a Nortek DVL1000 under the middle, turned 45°; it measures velocity over the pool floor. <b>Down camera:</b> a ZED X Mini inside the starboard tube, looking down through its wall. <b>Hydrophone</b> (starboard, low at the stern): hears the pinger and the other vehicle\'s messages (IVC). <b>Transducer</b> (port): sends IVC messages. The depth sensor is part of the hull here, in the starboard lid (<a href="#hull">the lids</a>).',
+    facts: [], link: ['sensors.html', 'Navigation sensors'] },
+  { id: 'tools', name: 'Tools', nodes: ['launcher', 'claw', 'magnet_poker'], colour: '#6250d6', view: [0.55, -0.55, 1], explode: [0, -0.15, 0.2],
+    labels: [['claw', 0, 'Claw'], ['launcher', 0, 'Launcher'], ['magnet_poker', 0, 'Magnet poker']],
+    text: '<b>Claw:</b> hangs below the bow, the lowest point of the robot. <b>Launcher</b> (V8): two torpedoes forward, two markers down, one servo. <b>Magnet poker:</b> a printed rod with a magnet at its tip.',
     facts: [], link: ['actuators.html', 'Torpedoes, dropper and claw'] },
-  { id: 'claw', name: 'Claw', nodes: ['claw'], anchor: [0, -0.40, 0.32], explode: [0, -0.12, 0.22], img: 'ctx-claw-iso',
-    text: 'One servo turns a pinion between two racks to open and close the jaws. It hangs below the bow and is the lowest point of the robot.',
-    facts: [['Reach', 'hangs 81 mm below the rest of the robot']], link: ['actuators.html', 'Torpedoes, dropper and claw'] },
-  { id: 'magnet_poker', name: 'Magnet poker', nodes: ['magnet_poker'], anchor: [-0.14, -0.192, 0.33], explode: [-0.06, 0, 0.25], img: 'ctx-magnet-poker-iso',
-    text: 'A printed rod with a magnet at its tip, held on by zip ties, pointing forward under the starboard side.',
-    facts: [], link: ['actuators.html', 'Torpedoes, dropper and claw'] },
-  { id: 'kill_switch', name: 'Kill switch', nodes: ['kill_switch'], anchor: [0.123, 0.057, 0.2], explode: [0, 0.05, 0.3], img: 'ctx-kill-switch-iso',
-    text: 'The red handle on the port bow window. Pulling it cuts power to the thrusters and nothing else.',
-    facts: [['Sensor', 'a Hall-effect switch behind the window']], link: ['electrical.html#kill', 'Power and wiring: the kill switch'] },
-  { id: 'subconns', name: 'SubConns', nodes: ['subconns', 'cables'], anchor: [0.14, 0.05, -0.24], explode: [0, 0, -0.25], img: 'ctx-lids-connectors-rear',
-    text: 'SubConn wet-mate connectors carry every cable through the stern lids: thrusters, batteries, DVL, hydrophone. The battery pods, the hydrophone pod and the DVL have their own. The snap-on SubConn cover protects the port lid\'s connectors; it is not the kill switch. The modelled cables (light blue) belong to this group too.',
-    facts: [['Port lid', '17 small bulkheads, 2 battery bulkheads'], ['Starboard lid', '4 bulkheads (2 DBH8F, 2 MCBH4F)'], ['Also on', 'battery pods, hydrophone pod, DVL']], link: ['#hull', 'The main hull'] },
+  { id: 'subconns', name: 'SubConns and cables', nodes: ['subconns', 'cables'], colour: '#3d9bb8', fill: 0.9, view: [0.45, 0.4, -1], explode: [0, 0, -0.2],
+    text: 'Waterproof SubConn plugs carry every cable into the hull through the two stern lids. The battery pods, the hydrophone pod and the DVL have their own. On the robot a green snap-on cover protects the port lid\'s plugs.',
+    facts: [['Port lid', '17 small bulkheads, 2 battery bulkheads'], ['Starboard lid', '4 bulkheads (2 DBH8F, 2 MCBH4F)']], link: ['#sealing', 'Keeping water out'] },
+  { id: 'kill_switch', name: 'Kill switch', nodes: ['kill_switch'], colour: '#e34948', view: [0.35, 0.3, 1], explode: [0, 0.05, 0.25], minBox: 0.17, fill: 0.6, hideMarkers: true,
+    text: 'The red handle on the port bow window. Pulling it cuts power to the thrusters and nothing else. A Hall-effect sensor behind the window reads it.',
+    facts: [], link: ['electrical.html#kill', 'Power and wiring: the kill switch'] },
 ];
-// Focus point for each system: halfway between the robot's middle and the system's box centre, so the camera eases, not jumps.
-const boxOf = (nodes) => {
-  const gs = data.groups.filter((g) => nodes.includes(g.node));
-  const mn = [0, 1, 2].map((i) => Math.min(...gs.map((g) => g.min[i]))), mx = [0, 1, 2].map((i) => Math.max(...gs.map((g) => g.max[i])));
-  return { mn, mx, c: mn.map((v, i) => (v + mx[i]) / 2) };
-};
-SYSTEMS.forEach((s) => {
-  s.colour = data.groups.find((g) => g.node === s.nodes[0])?.colour || '#7d8f99';
-  const c = boxOf(s.nodes).c;
-  s.focus = [c[0] * 0.5, -0.06 + (c[1] + 0.06) * 0.5, 0.02 + (c[2] - 0.02) * 0.5];
-});
 
 const F = data.frames;
 const MARKERS = [
-  { id: 'com', label: 'COM', pos: F.com, color: '#2a78d6', dx: -46, dy: 10 },
-  { id: 'cob', label: 'COB', pos: F.cob, color: '#1baf7a', dx: 8, dy: -12 },
-  { id: 'base', label: 'base_link', pos: F.base_link, color: '#0f2633', dx: 4, dy: 16 },
-  { id: 'origin', label: 'origin', pos: F.origin, color: '#546d79', dx: 6, dy: -30 },
+  { id: 'com', label: 'COM', pos: F.com, color: '#2a78d6', side: 'left' },
+  { id: 'cob', label: 'COB', pos: F.cob, color: '#13734f', side: 'right' },
 ];
 const robotToCad = (d) => [d[1], d[2], d[0]];
 const THR_LABELS = data.thrusters.map((t) => ({ node: t.glb_node, name: t.name, dir: robotToCad(t.dir) }));
+const PART_LABELS = SYSTEMS.flatMap((s) => (s.labels || []).map(([node, half, name]) => ({ group: s.id, node, half: half || undefined, name })));
 
 const chips = document.getElementById('mx-chips');
 const card = document.getElementById('mx-card');
@@ -108,21 +155,24 @@ const chipEls = SYSTEMS.map((s) => {
 });
 
 const OVERVIEW = `<h3>Talos, system by system</h3>
-  <p>Each colour is one system. Tap a name above, a dot or a part of the model. Make the hull see-through to look at the cages inside.</p>
-  <dl class="spec"><dt>Size</dt><dd>925 × 639 × 582 mm without claw and poker</dd><dt>Mass</dt><dd>32.4 kg dry (scale)</dd><dt>Model</dt><dd>233k triangles, from the July 2026 CAD</dd></dl>`;
+  <p>Each colour is one system. Pick one above (or tap a part) and the view turns to it. <em>See-through</em> shows the cages inside the hull.</p>
+  <dl class="spec"><dt>Size</dt><dd>925 × 639 × 582 mm, without the claw and poker</dd><dt>Model</dt><dd>the July 2026 CAD, simplified</dd></dl>`;
 
 function renderCard(id) {
   const s = SYSTEMS.find((x) => x.id === id);
   if (!s) { card.innerHTML = OVERVIEW; return; }
   const facts = s.facts.length ? `<dl class="spec">${s.facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>` : '';
-  card.innerHTML = `<h3>${s.name}</h3><p>${s.text}</p>${facts}
-    <img src="${BASE}img/mechanical/800/${s.img}.webp" alt="${s.name} highlighted on the CAD" loading="lazy">
+  card.innerHTML = `<h3><i style="background:${s.colour}"></i>${s.name}</h3><p>${s.text}</p>${facts}
     <div class="mx-more">More: <a href="${s.link[0]}">${s.link[1]}</a></div>`;
 }
 function setSeg(seg, v) { seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v))); }
 function pick(id) {
   current = id || null;
-  chipEls.forEach((b, i) => b.setAttribute('aria-pressed', String(SYSTEMS[i].id === current)));
+  chipEls.forEach((b, i) => {
+    const on = SYSTEMS[i].id === current;
+    b.setAttribute('aria-pressed', String(on));
+    if (on && chips.scrollWidth > chips.clientWidth) chips.scrollTo({ left: b.offsetLeft - chips.clientWidth / 2 + b.offsetWidth / 2, behavior: 'smooth' });
+  });
   renderCard(current);
   explorer?.select(current);
 }
@@ -140,6 +190,9 @@ framesSeg.addEventListener('click', (e) => {
   explorer?.setMarkers(b.dataset.v === 'on');
 });
 explodeIn.addEventListener('input', () => explorer?.setExplode(+explodeIn.value));
+document.getElementById('mx-reset').addEventListener('click', () => explorer?.reset());
+// Mouse: drag in any direction; touch: sideways only (vertical swipes scroll the page).
+if (!matchMedia('(pointer: coarse)').matches) document.querySelector('.mx-hint').textContent = 'Drag to turn · click, then scroll to zoom';
 
 // Build the 3D view only when it comes near the screen (three.js and the 2.7 MB model are the heaviest things here).
 const view = document.getElementById('mx-view');
@@ -149,7 +202,7 @@ new IntersectionObserver((entries, obs) => {
   import('../viz/mechanical-explorer.js').then(({ createExplorer }) => {
     const loading = document.getElementById('mx-loading');
     explorer = createExplorer(document.getElementById('mx-canvas'), {
-      groups: SYSTEMS, markers: MARKERS, thrusterLabels: THR_LABELS, labelHost: document.getElementById('mx-labels'),
+      groups: SYSTEMS, markers: MARKERS, thrusterLabels: THR_LABELS, partLabels: PART_LABELS, labelHost: document.getElementById('mx-labels'),
       onPick: pick,
       onHullAuto: (v) => setSeg(hullSeg, v),
       onLoad: (err) => { loading.hidden = !err; if (err) loading.textContent = 'The 3D model did not load.'; },
@@ -172,37 +225,58 @@ function responsiveBars(host, rowsFn, opts) {
     if (!w || Math.abs(w - lastW) < 2) return;
     lastW = w;
     const narrow = w < 520;
-    barChart(host, rowsFn(), { ...opts, width: narrow ? Math.max(w, 330) : 640, labelW: narrow ? opts.labelW * 0.85 : opts.labelW, valueW: narrow ? 52 : 64, rowH: narrow ? 24 : 26 });
+    barChart(host, rowsFn(), { ...opts, width: narrow ? w : 640, labelW: narrow ? opts.labelW * 0.85 : opts.labelW, valueW: narrow ? 52 : 64, rowH: narrow ? 24 : 26 });
   };
   new ResizeObserver(draw).observe(host);
   draw();
   return () => { lastW = 0; draw(); };
 }
+// Colours follow the 3D explorer's systems.
 const SUB_NAME = {
   main_housing: ['Main hull assembly', '#2a78d6'], frame_thruster_modules: ['Corner modules', '#7d8f99'], battery_pods: ['Battery pods', '#eda100'],
-  dvl: ['DVL', '#1baf7a'], torpedo_marker_launcher: ['Launcher', '#6250d6'], claw: ['Claw', '#6250d6'], duplicate_foam: ['Duplicate foam', '#e87ba4'],
-  cables: ['Modelled cables', '#8fb3bf'], frame_crossbars_rails: ['Bars, rails, cables', '#7d8f99'], kill_switch_covers: ['Kill switch, SubConn cover', '#e34948'],
-  acoustics: ['Acoustics', '#1baf7a'], magnet_poker: ['Magnet poker', '#6250d6'], down_camera: ['Down camera', '#1baf7a'],
+  dvl: ['DVL', '#1baf7a'], torpedo_marker_launcher: ['Launcher', '#6250d6'], claw: ['Claw', '#6250d6'],
+  cables: ['Cables', '#3d9bb8'], frame_crossbars_rails: ['Bars and rails', '#7d8f99'], kill_switch: ['Kill switch handle', '#e34948'],
+  subconn_cover: ['SubConn cover', '#3d9bb8'], acoustics: ['Acoustics', '#1baf7a'], magnet_poker: ['Magnet poker', '#6250d6'], down_camera: ['Down camera', '#1baf7a'],
 };
-const massRows = () => [...data.cad_mass.subsystems].sort((a, b) => b.kg - a.kg).map((s) => {
-  const [label, color] = SUB_NAME[s.id] || [s.id, '#7d8f99'];
-  return { label, segments: [{ value: s.kg, color, name: label }] };
-});
-const MAT_NAME = (n) => (n.startsWith('(none') ? 'No material set' : n.replace('1.4310 (X10CrNi18-8)', 'Stainless 18-8').replace(' (SS)', '').replace('Stainless Steel (ferritic)', 'Stainless (ferritic)').replace('PC High Viscosity', 'Polycarbonate').replace('Acrylic (Medium-high impact)', 'Acrylic').replace('PBT General Purpose', 'PBT'));
-const matRows = () => [...data.materials].sort((a, b) => b.kg - a.kg).filter((m) => m.kg >= 0.01).map((m) => {
-  const label = MAT_NAME(m.name);
-  const over = label === 'No material set' || label === 'Brass';
-  return { label, segments: [{ value: m.kg, color: over ? '#d9480f' : '#3f5b67', name: label }] };
-});
+// Parts the CAD counts that aren't on the robot: two duplicate foam blocks, and two hidden parts inside the main hull
+// assembly (the old ZED2i camera, 0.237 kg, and a bulkhead mounting plate, 0.283 kg; public/data/cad/assembly.json).
+// Taking them out leaves the visible model, 34.9 kg, close to the 34.708 kg SolidWorks gives (talos.yaml).
+const HIDDEN = { main_housing: 0.237 + 0.283 };
+const NOT_ON_ROBOT = 0.237 + 0.283 + data.cad_mass.subsystems.find((s) => s.id === 'duplicate_foam').kg;
+const massRows = () => [
+  ...data.cad_mass.subsystems.filter((s) => s.id !== 'duplicate_foam').map((s) => ({ ...s, kg: s.kg - (HIDDEN[s.id] || 0) })).sort((a, b) => b.kg - a.kg).map((s) => {
+    const [label, color] = SUB_NAME[s.id] || [s.id, '#7d8f99'];
+    return { label, segments: [{ value: s.kg, color, name: label }] };
+  }),
+  { label: 'Not on the robot', segments: [{ value: NOT_ON_ROBOT, color: '#c9d6d9', name: 'Hidden or duplicate parts' }] },
+];
+const MAT_NAME = (n) => (n.startsWith('(none') ? 'No material set' : n.startsWith('6061') ? 'Aluminium 6061' : n.replace('1.4310 (X10CrNi18-8)', 'Stainless 18-8').replace(' (SS)', '').replace('Stainless Steel (ferritic)', 'Stainless (ferritic)').replace('PC High Viscosity', 'Polycarbonate').replace('Acrylic (Medium-high impact)', 'Acrylic').replace('PBT General Purpose', 'PBT').replace('6063-O', 'Aluminium 6063').replace('5052-H32', 'Aluminium 5052'));
+// The same parts left out by material: the duplicate foam and the plate have no material set, the ZED2i is ABS.
+const MAT_HIDDEN = { 'No material set': NOT_ON_ROBOT - 0.237, ABS: 0.237 };
+const matRows = () => {
+  const kg = new Map(Object.entries(MAT_HIDDEN).map(([k, v]) => [k, -v]));
+  data.materials.forEach((m) => kg.set(MAT_NAME(m.name), (kg.get(MAT_NAME(m.name)) || 0) + m.kg));
+  return [...kg].sort((a, b) => b[1] - a[1]).filter(([, v]) => v >= 0.01).map(([label, v]) => {
+    const over = label === 'No material set' || label === 'Brass';
+    return { label, segments: [{ value: v, color: over ? '#d9480f' : '#3f5b67', name: label }] };
+  });
+};
 {
   const seg = document.getElementById('mx-mass-seg');
+  const cap = document.getElementById('mx-mass-cap');
+  const CAP = {
+    group: '<b>Where the CAD\'s mass sits.</b> The visible parts add up to 34.9 kg; half of it is the main hull assembly (tubes, lids, both cages, the bottles). <em>Cables</em> are the thruster, battery and DVL ones, the only ones modelled; <em>bars and rails</em> include the frame\'s tension cables. Grey: 1.4 kg the CAD also counts that isn\'t on the robot (two duplicate foam blocks, a hidden old ZED2i camera and a hidden plate).',
+    material: '<b>The same 34.9 kg by material.</b> The orange bars are why the CAD is heavier than the scale: parts with <em>no material set</em> count as water (all the foam, every vendor model), and the brass is the connector models.',
+  };
   let by = 'group';
-  const redraw = responsiveBars(document.getElementById('mx-mass'), () => (by === 'group' ? massRows() : matRows()), { unit: 'kg', digits: 2, labelW: 136 });
+  const redraw = responsiveBars(document.getElementById('mx-mass'), () => (by === 'group' ? massRows() : matRows()), { unit: 'kg', digits: 2, labelW: 150 });
+  cap.innerHTML = CAP[by];
   seg.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b || b.dataset.v === by) return;
     by = b.dataset.v;
     setSeg(seg, by);
+    cap.innerHTML = CAP[by];
     redraw();
   });
 }
@@ -216,24 +290,47 @@ const matRows = () => [...data.materials].sort((a, b) => b.kg - a.kg).filter((m)
   const px = (X) => im.x0 + ((X - im.u[0]) / (im.u[1] - im.u[0])) * (im.x1 - im.x0);
   const py = (Y) => im.y1 - ((Y - im.v[0]) / (im.v[1] - im.v[0])) * (im.y1 - im.y0);
   const MOTIONS = [
-    { id: 'names', label: 'Names', title: 'Which thruster is which', text: 'Seen from the front, so port is on the right. Dashed lines are the tilted thrusters\' axes; the corner ones point straight at you. Pick a motion above, or tap a thruster.' },
-    { id: 'surge', label: 'Forward', title: 'Surge: forward', text: 'Only the four corner thrusters. The lower two push a little harder: the centre of mass sits nearer them, and equal pushes would pitch the nose down.' },
-    { id: 'sway', label: 'Sideways', title: 'Sway: toward port', text: 'Almost only the four tilted thrusters. All push toward port; their up and down halves cancel in diagonal pairs. The corners add 2 % to cancel a small yaw, as the tilted four sit 1 cm ahead of the centre of mass.' },
-    { id: 'heave', label: 'Up', title: 'Heave: up', text: 'Almost only the four tilted thrusters. All push up; their sideways halves cancel, upper pair against lower pair. The corners add 3 % to cancel a small pitch, as the tilted four sit 1 cm ahead of the centre of mass.' },
-    { id: 'roll', label: 'Roll', title: 'Roll: port side up', text: 'The tilted thrusters again: up on the port side, down on the starboard side, and sideways in opposite directions top and bottom. Every push turns Talos the same way.' },
-    { id: 'pitch', label: 'Pitch', title: 'Pitch: nose down', text: 'Only the corners: the upper pair pushes forward and the lower pair back.' },
-    { id: 'yaw', label: 'Yaw', title: 'Yaw: turn to port', text: 'Only the corners: the starboard pair pushes forward and the port pair back.' },
+    { id: 'names', label: 'Names', title: 'Which thruster is which', text: 'Seen from the front, so port is on the right. Dashed lines are the tilted thrusters\' axes; the corner ones point straight at you. Pick a motion, or tap a thruster.' },
+    { id: 'surge', label: 'Forward', group: 'Move', title: 'Surge: forward', text: 'Only the four corner thrusters. The lower two push a little harder: the centre of mass sits nearer them, and equal pushes would pitch the nose down.' },
+    { id: 'sway', label: 'Sideways', group: 'Move', title: 'Sway: toward port', text: 'Almost only the four tilted thrusters. All push toward port; their up and down halves cancel in diagonal pairs. The corners add 2 % to cancel a small yaw, as the tilted four sit 1 cm ahead of the centre of mass.' },
+    { id: 'heave', label: 'Up', group: 'Move', title: 'Heave: up', text: 'Almost only the four tilted thrusters. All push up; their sideways halves cancel, upper pair against lower pair. The corners add 3 % to cancel a small pitch.' },
+    { id: 'roll', label: 'Roll', group: 'Turn', title: 'Roll: port side up', text: 'The tilted thrusters again: up on the port side, down on the starboard side, and sideways in opposite directions top and bottom. Every push turns Talos the same way.' },
+    { id: 'pitch', label: 'Pitch', group: 'Turn', title: 'Pitch: nose down', text: 'Only the corners: the upper pair pushes forward and the lower pair back.' },
+    { id: 'yaw', label: 'Yaw', group: 'Turn', title: 'Yaw: turn to port', text: 'Only the corners: the starboard pair pushes forward and the port pair back.' },
   ];
   let mode = 'names', picked = null;
-  MOTIONS.forEach((m) => {
+  // Controls: a "Names" button, then two short segmented groups (Move, Turn) that each fit on a phone.
+  const ctlButton = (m, parent) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = m.label;
     b.dataset.v = m.id;
     b.setAttribute('aria-pressed', String(m.id === mode));
     b.addEventListener('click', () => { mode = m.id; picked = null; draw(); });
-    seg.appendChild(b);
-  });
+    parent.appendChild(b);
+  };
+  {
+    const names = document.createElement('div');
+    names.className = 'seg';
+    names.setAttribute('role', 'group');
+    names.setAttribute('aria-label', 'Names');
+    ctlButton(MOTIONS[0], names);
+    seg.appendChild(names);
+    for (const grp of ['Move', 'Turn']) {
+      const lab = document.createElement('span');
+      lab.className = 'mx-thr-grp';
+      lab.textContent = grp;
+      const g = document.createElement('div');
+      g.className = 'seg';
+      g.setAttribute('role', 'group');
+      g.setAttribute('aria-label', grp);
+      MOTIONS.filter((m) => m.group === grp).forEach((m) => ctlButton(m, g));
+      const wrap = document.createElement('div');
+      wrap.className = 'mx-thr-pair';
+      wrap.append(lab, g);
+      seg.appendChild(wrap);
+    }
+  }
   const thr = data.thrusters.map((t) => ({ ...t, x: px(t.cad_origin_mm[0] / 1000), y: py(t.cad_origin_mm[1] / 1000) }));
   const words = (d) => {
     const w = [];
@@ -294,275 +391,217 @@ const matRows = () => [...data.materials].sort((a, b) => b.kg - a.kg).filter((m)
       const below = t.name[1] === 'L';
       const tx = el('text', { x: t.x, y: t.y + (below ? 92 : -62) }, g);
       tx.textContent = t.name;
-      const choose = () => { picked = picked === j ? null : j; draw(); };
+      const choose = () => { picked = picked === j ? null : j; scrollPick = true; draw(); };
       g.addEventListener('click', choose);
       g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); } });
     });
-    // the card
+    // the card: the tapped thruster first (it's what the reader just touched), then the motion
     const m = MOTIONS.find((x) => x.id === mode);
-    let html = `<h3>${m.title}</h3><p>${m.text}</p>`;
-    if (f) {
-      html += `<div class="bars">${thr.map((t, j) => {
-        const v = f[j], w = Math.abs(v) * 50;
-        return `<span class="n">${t.name}</span><span class="b"><span class="${v < 0 ? 'rev' : ''}" style="left:${v < 0 ? 50 - w : 50}%;width:${w}%"></span></span><span class="v">${fmt(v * 100, 0)} %</span>`;
-      }).join('')}</div><p style="font-size:.82rem">Commands as a share of the largest one; orange forward, blue reversed.</p>`;
-    }
+    let html = '';
     if (picked !== null) {
       const t = thr[picked];
       const p = t.pose;
-      html += `<h3 style="margin-top:.8rem">${t.name}</h3><dl class="spec">
+      html += `<div class="mx-thr-pick" id="mx-thr-pick"><h3>${t.name}</h3><dl class="spec">
         <dt>Letters</dt><dd>${[...t.name].map((c) => LETTERS[c]).join(', ')}</dd>
-        <dt>Positive push</dt><dd>${words(t.dir)}</dd>
+        <dt>Positive command</dt><dd>pushes ${words(t.dir)}</dd>
+        ${f ? `<dt>In this motion</dt><dd>${fmt(f[picked] * 100, 0)} % of the largest command</dd>` : ''}
         <dt>Position</dt><dd>x ${fmt(p[0], 3)}, y ${fmt(p[1], 3)}, z ${fmt(p[2], 3)} m (<a href="${YAML}#L397-L438">talos.yaml</a>)</dd>
-        <dt>Index</dt><dd>${t.index} in the thruster list</dd>
-        <dt>CAD part</dt><dd><code>${t.cad_part}</code></dd></dl>`;
+        <dt>Index</dt><dd>${t.index} in the thruster list</dd></dl></div>`;
+    }
+    html += `<h3>${m.title}</h3><p>${m.text}</p>`;
+    if (f) {
+      html += `<div class="bars">${thr.map((t, j) => {
+        const v = f[j], w = Math.abs(v) * 50;
+        return `<span class="n${picked === j ? ' on' : ''}">${t.name}</span><span class="b"><span class="${v < 0 ? 'rev' : ''}" style="left:${v < 0 ? 50 - w : 50}%;width:${w}%"></span></span><span class="v">${fmt(v * 100, 0)} %</span>`;
+      }).join('')}</div><p class="mx-thr-key">Each command as a share of the largest one. Orange: positive; blue: negative.</p>`;
     }
     out.innerHTML = html;
+    if (picked !== null && scrollPick) {
+      const r = out.querySelector('#mx-thr-pick').getBoundingClientRect();
+      if (r.bottom > innerHeight || r.top < 0) out.querySelector('#mx-thr-pick').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+    scrollPick = false;
   }
+  let scrollPick = false;
   draw();
 }
 
+// ---------------------------------------------------------------- buoyancy and trim: adding a part
+mountTrim(document.getElementById('trim-calc'), data);
+
 // ---------------------------------------------------------------- outside the hull
+// Desktop: picture on the left, list on the right. Phones: an accordion, with the picture inside the open row
+// so a tap always changes something on screen. Pictures are crops of the CAD renders around the part (orange).
 {
+  const CROP = (f) => `${BASE}img/mechanical/crop/${f}.webp`;
   const OUT = [
-    ['DVL', 'Nortek DVL1000, under the middle on two brackets, turned 45° (the <code>dvl</code> pose in <code>talos.yaml</code>).', 'ctx-dvl-below', [1600, 1594], [['sensors.html#dvl', 'DVL']]],
-    ['Down camera', 'A ZED X Mini inside the starboard tube, against its bottom wall, looking down through it.', 'sub-down-camera-below', [1600, 874], [['cameras.html', 'Cameras']]],
-    ['Depth sensor', 'In the starboard lid. The CAD shows a Bar30; the firmware drives it as a Bar02.', 'ctx-depth-sensor-zoom', [1600, 1037], [['sensors.html#depth', 'Depth']]],
-    ['Hydrophones and transducer', 'Low at the stern: the hydrophone pod to starboard, the transducer that sends acoustic messages to port.', 'ctx-acoustics-below', [1600, 1594], [['sensors.html#acoustics', 'Acoustics'], ['boards.html#led-ivc', 'IVC board']]],
-    ['Torpedo and marker launcher', 'Under the hull, port of centre: torpedoes point forward, markers drop down.', 'ctx-torpedo-marker-launcher-below', [1600, 1594], [['actuators.html#launcher', 'The launcher']]],
-    ['Claw', 'Hangs below the bow, the lowest point of the robot, on a hinged arm.', 'ctx-claw-iso', [1600, 1759], [['actuators.html#claw', 'The claw']]],
-    ['Magnet poker', 'In the July CAD, a rod pointing forward under the starboard side. The files disagree on where it is.', 'ctx-magnet-poker-iso', [1600, 1759], [['actuators.html#claw', 'The magnet poker']]],
-    ['Kill switch', 'A red handle on the port bow window.', 'ctx-kill-switch-iso', [1600, 1759], [['electrical.html#kill', 'Kill switch']]],
+    ['DVL', 'Under the middle of the robot on two brackets, turned 45° (the <code>dvl</code> pose in <code>talos.yaml</code>). It measures velocity over the pool floor.', 'ctx-dvl-below', [['sensors.html#dvl', 'DVL']]],
+    ['Depth sensor', 'In the starboard lid at the stern, open to the water. The CAD shows a Bar30; the firmware drives it as a Bar02.', 'ctx-depth-sensor-zoom', [['sensors.html#depth', 'Depth']]],
+    ['Hydrophone and transducer', 'Low at the stern. The hydrophone pod (starboard) hears both the competition pinger and the other vehicle\'s IVC messages; the transducer (port) sends IVC messages.', 'ctx-acoustics-below', [['sensors.html#acoustics', 'Acoustics'], ['boards.html#led-ivc', 'IVC board']],
+      // tags on the crop (x %, y % of the part; x %, y % of the tag): the transducer is small at this scale
+      [[65, 38, 'Transducer', 80, 20], [44, 66, 'Hydrophone pod', 70, 86]]],
+    ['Torpedo and marker launcher', 'Under the hull, port of centre: two torpedoes point forward, two markers drop down.', 'ctx-torpedo-marker-launcher-below', [['actuators.html#launcher', 'The launcher']]],
+    ['Claw', 'Hangs below the bow on a hinged arm; it is the lowest point of the robot.', 'ctx-claw-iso', [['actuators.html#claw', 'The claw']]],
+    ['Magnet poker', 'A printed rod with a magnet at its tip. <code>talos.yaml</code> puts it near the centre line at the bow (the <code>poker</code> pose); the July CAD has it 12 cm further to starboard. Check the robot.', 'ctx-magnet-poker-iso', [['actuators.html#claw', 'The magnet poker']]],
+    ['Kill switch', 'The red handle on the port bow window. Pull it to cut power to the thrusters.', 'ctx-kill-switch-iso', [['electrical.html#kill', 'Kill switch']]],
   ];
+  const host = document.getElementById('mx-out');
   const list = document.getElementById('mx-out-list');
+  const pic = document.getElementById('mx-out-pic');
   const img = document.getElementById('mx-out-img');
-  const items = OUT.map(([name, where, , , links], i) => {
+  const tags = document.createElement('div');
+  tags.className = 'mx-out-tags';
+  pic.appendChild(tags);
+  const narrow = matchMedia('(max-width: 760px)');
+  let cur = 0;
+  const items = OUT.map(([name, where, , links], i) => {
     const li = document.createElement('li');
     const b = document.createElement('button');
     b.type = 'button';
-    b.setAttribute('aria-pressed', String(i === 0));
-    b.innerHTML = `<b>${name}</b><span>${where}</span>`;
-    b.addEventListener('click', () => show(i));
-    li.appendChild(b);
-    const more = document.createElement('div');
-    more.className = 'mx-out-more';
-    more.innerHTML = 'More: ' + links.map(([h, t]) => `<a href="${h}">${t}</a>`).join(', ');
-    li.appendChild(more);
+    b.setAttribute('aria-expanded', 'false');
+    b.innerHTML = `<b>${name}</b>`;
+    b.addEventListener('click', () => show(i, true));
+    const body = document.createElement('div');
+    body.className = 'mx-out-body';
+    body.innerHTML = `<p>${where}</p><p class="mx-out-more">More: ${links.map(([h, t]) => `<a href="${h}">${t}</a>`).join(', ')}</p>`;
+    li.append(b, body);
     list.appendChild(li);
     return li;
   });
-  function show(i) {
-    const [name, where, f, [w, h]] = OUT[i];
-    img.srcset = CAD_SRCSET(f);
-    img.src = CAD(f);
-    img.width = w; img.height = h;
-    img.alt = `${name} highlighted on the CAD of Talos. ${where.replace(/<[^>]+>/g, '')}`;
-    items.forEach((li, k) => { li.classList.toggle('on', k === i); li.firstChild.setAttribute('aria-pressed', String(k === i)); });
+  function place() {
+    // On phones the picture lives in the open row; on wide screens in its own column.
+    if (narrow.matches) items[cur].querySelector('.mx-out-body').prepend(pic);
+    else host.prepend(pic);
   }
+  function show(i, tapped) {
+    const [name, where, f, , tagList = []] = OUT[i];
+    cur = i;
+    img.src = CROP(f);
+    tags.innerHTML = tagList.length ? `<svg viewBox="0 0 100 75" preserveAspectRatio="none" aria-hidden="true">${tagList.map(([x, y, , tx, ty]) => `<line x1="${x}" y1="${y * 0.75}" x2="${tx}" y2="${ty * 0.75}"/><circle cx="${x}" cy="${y * 0.75}" r="0.9"/>`).join('')}</svg>`
+      + tagList.map(([, , t, tx, ty]) => `<span style="left:${tx}%;top:${ty}%">${t}</span>`).join('') : '';
+    img.alt = `${name} in orange on the CAD of Talos. ${where.replace(/<[^>]+>/g, '')}`;
+    items.forEach((li, k) => { li.classList.toggle('on', k === i); li.firstChild.setAttribute('aria-expanded', String(k === i)); });
+    place();
+    if (tapped && narrow.matches) {
+      const r = items[i].getBoundingClientRect();
+      if (r.top < 60 || r.bottom > innerHeight) items[i].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+  narrow.addEventListener('change', place);
   show(0);
 }
 
-// ---------------------------------------------------------------- trim
-{
-  const B = data.body.buoyancy_N, Wt = data.body.weight_N, g = data.body.g, cob = data.body.cob_rel, mass = data.body.model_mass_kg;
-  const P = data.pinv; // 8x6
-  const im = data.images['talos-side-port'];
-  // side view: image x grows toward the stern (u = -Z), image y grows downward (v = Y)
-  const px = (Z) => im.x0 + ((-Z - im.u[0]) / (im.u[1] - im.u[0])) * (im.x1 - im.x0);
-  const py = (Y) => im.y1 - ((Y - im.v[0]) / (im.v[1] - im.v[0])) * (im.y1 - im.y0);
-  const toZ = (x) => -(im.u[0] + ((x - im.x0) / (im.x1 - im.x0)) * (im.u[1] - im.u[0]));
-  const toY = (y) => im.v[0] + ((im.y1 - y) / (im.y1 - im.y0)) * (im.v[1] - im.v[0]);
-  const rot = document.getElementById('mx-trim-rot');
-  const svg = document.getElementById('mx-trim-svg');
-  const top = document.getElementById('mx-trim-top');
-  const out = document.getElementById('mx-trim-out');
-  const wIn = document.getElementById('mx-trim-w'), wOut = document.getElementById('mx-trim-wo');
-  const modeSeg = document.getElementById('mx-trim-mode');
-  const com = F.com; // CAD m
-  let item = { Z: 0.22, Y: -0.30 }; // on the claw's arm
-  let mode = 'on';
-
-  const comX = px(com[2]), comY = py(com[1]);
-  rot.style.transformOrigin = `${(comX / 1600) * 100}% ${(comY / 1618) * 100}%`;
-  const mk = (cls, attrs, parent = svg) => el(cls, attrs, parent);
-  // static markers
-  const dot = (x, y, color, label, dx, dy, anchor = 'start') => {
-    mk('circle', { cx: x, cy: y, r: 13, fill: color, stroke: '#fff', 'stroke-width': 4 });
-    const t = mk('text', { x: x + dx, y: y + dy, fill: color, 'text-anchor': anchor });
-    t.textContent = label;
-  };
-  dot(comX, comY, '#2a78d6', 'COM', -26, 44, 'end');
-  dot(px(F.cob[2]), py(F.cob[1]), '#1baf7a', 'COB', 24, -22);
-  mk('path', { d: `M${px(F.base_link[2]) - 16},${py(F.base_link[1])}H${px(F.base_link[2]) + 16}M${px(F.base_link[2])},${py(F.base_link[1]) - 16}V${py(F.base_link[1]) + 16}`, stroke: '#0f2633', 'stroke-width': 5 });
-  mk('text', { x: px(F.base_link[2]) + 22, y: py(F.base_link[1]) + 12, fill: '#0f2633' }).textContent = 'base_link';
-  mk('text', { x: im.x0 + 6, y: im.y0 + 50, fill: '#546d79' }).textContent = '← bow';
-  const itemLine = mk('line', { stroke: '#d9480f', 'stroke-width': 4, 'stroke-dasharray': '10 8' });
-  const itemDot = mk('circle', { r: 26, fill: '#d9480f', stroke: '#fff', 'stroke-width': 6 });
-  const itemArrow = mk('path', { fill: '#d9480f' });
-  // drag handle (only while the picture is level)
-  const handle = el('circle', { class: 'drag', r: 120, fill: 'transparent' }, top);
-
-  function physics(wg) {
-    const Wa = (wg / 1000) * g; // N, positive sinks
-    const p = [item.Z - com[2], item.X ?? 0, item.Y - com[1]]; // robot axes relative to the COM (x fwd, y port, z up)
-    const Fz = B - Wt - Wa;
-    const tx = cob[1] * B - p[1] * Wa, ty = -cob[0] * B + p[0] * Wa;
-    const tau = [0, 0, Fz, tx, ty, 0];
-    const f = P.map((row) => -row.reduce((s, v, i) => s + v * tau[i], 0));
-    const A = -B * cob[2] + Wa * p[2], C = -B * cob[0] + Wa * p[0];
-    let th = Math.PI - Math.atan2(C, A);
-    th = Math.atan2(Math.sin(th), Math.cos(th));
-    return { Fz, ty, f, th, sum: f.reduce((s, v) => s + Math.abs(v), 0), max: Math.max(...f.map(Math.abs)) };
-  }
-  const base = physics(0);
-  function draw() {
-    const wg = +wIn.value;
-    wOut.textContent = `${wg > 0 ? '+' : wg < 0 ? '−' : ''}${Math.abs(wg)} g`;
-    const x = px(item.Z), y = py(item.Y);
-    itemDot.setAttribute('cx', x); itemDot.setAttribute('cy', y);
-    itemLine.setAttribute('x1', comX); itemLine.setAttribute('y1', comY); itemLine.setAttribute('x2', x); itemLine.setAttribute('y2', y);
-    const s = Math.sign(wg) || 0, L = Math.min(110, 30 + Math.abs(wg) * 0.25);
-    itemArrow.setAttribute('d', s ? `M${x - 9},${y + s * 30}V${y + s * (30 + L)}H${x - 20}L${x},${y + s * (52 + L)}L${x + 20},${y + s * (30 + L)}H${x + 9}V${y + s * 30}Z` : '');
-    handle.setAttribute('cx', x); handle.setAttribute('cy', y);
-    handle.style.pointerEvents = mode === 'on' ? '' : 'none';
-    const r = physics(wg);
-    const deg = (r.th * 180) / Math.PI;
-    rot.style.transform = mode === 'off' ? `rotate(${(-deg).toFixed(2)}deg)` : '';
-    const rule = 0.005 * mass * g;
-    const pitchWord = (d) => (Math.abs(d) < 0.5 ? 'level' : `${fmt(Math.abs(d), 0)}° nose-${d < 0 ? 'up' : 'down'}`);
-    const flips = Math.abs(deg) > 90;
-    out.innerHTML = `<dl class="spec">
-      <dt>Net buoyancy</dt><dd><b>${r.Fz >= 0 ? '+' : '−'}${fmt(Math.abs(r.Fz), 2)} N</b> ${r.Fz >= rule ? `<span class="ok">over RoboSub's ${fmt(rule, 2)} N</span>` : r.Fz > 0 ? `<span class="bad">floats, under RoboSub's ${fmt(rule, 2)} N</span>` : '<span class="bad">sinks</span>'}</dd>
-      <dt>Held level by</dt><dd><b>${fmt(r.sum, 1)} N</b> of thrust in total, largest ${fmt(r.max, 1)} N of 24 (model as is: ${fmt(base.sum, 1)} N)</dd>
-      <dt>Pitch torque</dt><dd><b>${fmt(Math.abs(r.ty), 2)} N·m</b> ${Math.abs(r.ty) < 0.005 ? '' : r.ty < 0 ? 'nose-up' : 'nose-down'}</dd>
-      <dt>Thrusters off</dt><dd><b>${flips ? 'turns over' : pitchWord(deg)}</b> (model as is: ${pitchWord((base.th * 180) / Math.PI)})</dd>
-    </dl>
-    <p>${wg === 0 ? 'No part added: this is the model as identified.' : mode === 'off' ? 'Switch back to <em>holding level</em> to move the part.' : 'Drag the orange dot to move the part.'}</p>`;
-  }
-  wIn.addEventListener('input', draw);
-  modeSeg.addEventListener('click', (e) => {
-    const b = e.target.closest('button');
-    if (!b) return;
-    mode = b.dataset.v;
-    modeSeg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-    draw();
-  });
-  // dragging, in the picture's own coordinates
-  const toSvg = (e) => {
-    const r = top.getBoundingClientRect();
-    return [((e.clientX - r.left) / r.width) * 1600, ((e.clientY - r.top) / r.height) * 1618];
-  };
-  let dragging = false;
-  handle.addEventListener('pointerdown', (e) => { dragging = true; handle.setPointerCapture(e.pointerId); e.preventDefault(); });
-  handle.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const [x, y] = toSvg(e);
-    const cx = Math.min(Math.max(x, im.x0), im.x1), cy = Math.min(Math.max(y, im.y0), im.y1);
-    item = { Z: toZ(cx), Y: toY(cy) };
-    draw();
-  });
-  const stop = () => (dragging = false);
-  handle.addEventListener('pointerup', stop);
-  handle.addEventListener('pointercancel', stop);
-  draw();
-}
-
 // ---------------------------------------------------------------- where the geometry lives
+// Three columns instead of a node graph: where the numbers come from, the hand-kept files, the code that reads
+// them. Tap a card: it opens in place with its links, and the cards it connects to light up.
 {
-  const host = document.getElementById('mx-graph');
-  const note = document.getElementById('mx-graph-note');
-  const hint = 'Tap or hover a box.';
+  const host = document.getElementById('mx-flow');
   const a = (href, text) => `<a href="${href}">${text}</a>`;
-  const nodes = [
-    { id: 'cad', x: 110, y: 170, label: 'SolidWorks CAD', sub: 'Talos 7-11-26', html: '<b>The CAD.</b> The design model this page is drawn from (<em>Talos 7-11-26</em>). The camera positions and the inertia in the configs come from it; the MPC model\'s mass comes from the newer "TalosMostlyGood" CAD (2026-10-24).' },
-    { id: 'scale', x: 110, y: 55, label: 'A scale', sub: 'mass', html: '<b>Weighing the robot.</b> The dry mass in <code>talos.yaml</code> (32.444 kg) is a scale weight; so is the 34.084 kg wet weigh-in that the 2026-10-03 fit used.' },
-    { id: 'pool', x: 110, y: 290, label: 'pool_identify', sub: 'a session in the pool', html: `<b>Pool identification.</b> Flies a scripted session and fits buoyancy, centre of buoyancy, drag and added mass (${a('control/identify.html', 'System identification')}).` },
-    { id: 'yaml', x: 380, y: 100, label: 'talos.yaml', sub: 'riptide_descriptions', bold: true, html: `<b>${a(YAML, 'riptide_descriptions/config/talos.yaml')}.</b> The vehicle config: <code>base_link</code>, mass, COM, inertia, and the pose of every thruster, sensor, camera and tool, all measured from <code>origin</code>.` },
-    { id: 'model', x: 380, y: 250, label: 'models/talos.yaml', sub: 'riptide_mpc', bold: true, html: `<b>${a(MODEL, 'riptide_mpc/config/models/talos.yaml')}.</b> The MPC's model of the real robot. Mass 34.307 kg from the newer CAD; inertia from the July CAD; COM from the wet weigh-in; displaced volume, COB, drag and added mass from the pool fit.` },
-    { id: 'xacro', x: 640, y: 50, label: 'talos.xacro → URDF', sub: 'robot_state_publisher', html: `<b>The URDF.</b> ${a(`${GH}/riptide_core/blob/followpath-speed/riptide_descriptions/robots/talos.xacro`, 'talos.xacro')} reads <code>talos.yaml</code>; ${a(`${GH}/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py#L44-L70`, 'navigation.launch.py')} runs it and starts <code>robot_state_publisher</code>.` },
-    { id: 'tf', x: 820, y: 130, label: 'TF frames', sub: 'talos/base_link, …', html: `<b>TF.</b> <code>talos/base_link</code>, <code>talos/origin</code> and a frame for each sensor and thruster (${a('perception/frames.html', 'how TF works')}).` },
-    { id: 'mpc', x: 640, y: 210, label: 'riptide_mpc', sub: 'the controller', html: `<b>The MPC.</b> Thruster and sensor poses from <code>talos.yaml</code>, the body and hydrodynamics from its model file. At start-up it checks its IMU and DVL mounts against TF (${a('control/model.html', 'the model it flies')}).` },
-    { id: 'nereus', x: 640, y: 320, label: 'robots/talos/robot.yaml', sub: 'Nereus', html: `<b>${a(`${GH}/nereus/blob/main/content/packs/robots/talos/robot.yaml`, 'Nereus\'s robot pack')}.</b> Its own copy of the frames, body, thrusters and sensors, plus the meshes the simulator draws. Kept in step with the MPC model by hand.` },
-    { id: 'sim', x: 840, y: 320, label: 'Nereus', sub: 'simulator + viewer', html: `<b>The simulator.</b> Flies the robot pack's body and draws its meshes (${a('nereus.html', 'Nereus')}).` },
+  const COLS = [
+    ['src', 'Where the numbers come from'],
+    ['file', 'Files kept by hand'],
+    ['use', 'Code that reads them'],
   ];
-  const edges = [
-    { from: 'cad', to: 'yaml', dash: true, label: 'positions' },
-    { from: 'scale', to: 'yaml', dash: true },
-    { from: 'cad', to: 'model', dash: true, label: 'mass (newer CAD)' },
-    { from: 'pool', to: 'model', label: 'fit' },
-    { from: 'yaml', to: 'xacro' },
-    { from: 'xacro', to: 'tf' },
-    { from: 'yaml', to: 'mpc', label: 'poses' },
-    { from: 'model', to: 'mpc', label: 'body' },
-    { from: 'tf', to: 'mpc', dash: false, label: 'check', bend: 0 },
-    { from: 'model', to: 'nereus', dash: true, label: 'copied' },
-    { from: 'nereus', to: 'sim' },
+  const NODES = [
+    { id: 'cad', col: 'src', label: 'SolidWorks CAD', sub: 'Talos 7-11-26', html: 'The design model this page is drawn from. The camera and thruster positions and the inertia in the configs came from it; the MPC model\'s mass comes from the newer "TalosMostlyGood" CAD (2026-10-24).' },
+    { id: 'scale', col: 'src', label: 'A scale', sub: 'weighing the robot', html: 'The dry mass in <code>talos.yaml</code> (32.444 kg) is a scale weight, and so is the 34.084 kg wet weigh-in after the 2026-10-03 pool test.' },
+    { id: 'pool', col: 'src', label: 'Pool identification', sub: 'pool_identify', html: `Flies a scripted session and fits buoyancy, centre of buoyancy, drag and added mass. It writes <code>model_identified.yaml</code> in the session folder; a person copies the result into the model file (${a('control/identify.html', 'System identification')}).` },
+    { id: 'yaml', col: 'file', label: 'talos.yaml', sub: 'riptide_descriptions', html: `${a(YAML, 'The vehicle config')}: <code>base_link</code>, mass, COM, inertia, and the pose of every thruster, sensor, camera and tool, all measured from <code>origin</code>.` },
+    { id: 'model', col: 'file', label: 'models/talos.yaml', sub: 'riptide_mpc', html: `${a(MODEL, 'The MPC\'s model')} of the real robot: mass, COM and inertia, plus the displaced volume, COB, drag and added mass from the pool fit.` },
+    { id: 'nereus', col: 'file', label: 'robot.yaml', sub: 'Nereus robot pack', html: `${a(`${GH}/nereus/blob/main/content/packs/robots/talos/robot.yaml`, 'Nereus\'s own copy')} of the frames (same <code>origin</code> as <code>talos.yaml</code>), the body from the MPC model, the thrusters and sensors, and the meshes it draws. Right now it still has the 2026-10-03 body (34.084 kg).` },
+    { id: 'tf', col: 'use', label: 'URDF → TF', sub: 'robot_state_publisher', html: `${a(`${GH}/riptide_core/blob/followpath-speed/riptide_descriptions/robots/talos.xacro`, 'talos.xacro')} reads <code>talos.yaml</code>; ${a(`${GH}/riptide_core/blob/followpath-speed/riptide_hardware/launch/navigation.launch.py#L44-L70`, 'navigation.launch.py')} turns it into a URDF and <code>robot_state_publisher</code> publishes the <code>talos/…</code> frames (${a('perception/frames.html', 'how TF works')}).` },
+    { id: 'mpc', col: 'use', label: 'riptide_mpc', sub: 'the controller', html: `Reads thruster and sensor poses from <code>talos.yaml</code> and the body from its model file (${a(`${GH}/riptide_control/blob/mpc/riptide_mpc/launch/mpc_controller.launch.py#L47`, 'mpc_controller.launch.py')}). At start-up it warns if its IMU and DVL mounts differ from TF (${a('control/model.html', 'the model it flies')}).` },
+    { id: 'sim', col: 'use', label: 'Nereus', sub: 'simulator and viewer', html: `Flies the robot pack's body and draws its meshes (${a('nereus.html', 'Nereus')}).` },
   ];
-  const narrow = {
-    below: 600, width: 400, height: 610,
-    nodes: {
-      scale: { x: 100, y: 36 }, pool: { x: 300, y: 36 }, cad: { x: 200, y: 136 },
-      yaml: { x: 100, y: 236 }, model: { x: 300, y: 236 }, mpc: { x: 200, y: 346 },
-      xacro: { x: 100, y: 456 }, nereus: { x: 300, y: 456 }, tf: { x: 100, y: 566 }, sim: { x: 300, y: 566 },
-    },
-    edges: {
-      'tf>mpc': { via: [240, 480], label: 'check', lx: 214, ly: 470 },
-      'cad>yaml': { lx: 160, ly: 182, anchor: 'start' },
-      'cad>model': { lx: 252, ly: 202, anchor: 'end' },
-    },
-  };
-  new Graph(host, { width: 940, height: 370, nodes, edges, narrow, info: (n) => { note.innerHTML = n ? n.html : hint; } });
-  note.textContent = hint;
+  // by: 'hand' = a person copies numbers across; 'code' = a program reads the file.
+  const LINKS = [
+    ['cad', 'yaml', 'hand', 'positions, inertia'], ['scale', 'yaml', 'hand', 'mass'],
+    ['cad', 'model', 'hand', 'mass, inertia'], ['scale', 'model', 'hand', 'COM'], ['pool', 'model', 'hand', 'buoyancy, drag'],
+    ['yaml', 'nereus', 'hand', 'frames'], ['model', 'nereus', 'hand', 'body'],
+    ['yaml', 'tf', 'code'], ['yaml', 'mpc', 'code', 'poses'], ['model', 'mpc', 'code', 'body'], ['nereus', 'sim', 'code'],
+  ];
+  const byId = Object.fromEntries(NODES.map((n) => [n.id, n]));
+  const cards = {};
+  host.innerHTML = COLS.map(([c, title], i) => `<div class="mx-col"><h4><span>${i + 1}</span>${title}</h4><div class="mx-col-cards" data-col="${c}"></div></div>`).join('');
+  NODES.forEach((n) => {
+    const card = document.createElement('div');
+    card.className = 'mx-node' + (n.col === 'file' ? ' file' : '');
+    card.innerHTML = `<button type="button" aria-expanded="false"><b>${n.label}</b><small>${n.sub}</small></button><div class="mx-node-body"></div>`;
+    card.firstChild.addEventListener('click', () => pick(cur === n.id ? null : n.id));
+    host.querySelector(`[data-col="${n.col}"]`).appendChild(card);
+    cards[n.id] = card;
+  });
+  const chip = (id, by, what) => `<button type="button" class="mx-rel ${by}" data-go="${id}">${byId[id].label}${what ? `<small>${what}</small>` : ''}</button>`;
+  let cur = null;
+  function pick(id) {
+    cur = id;
+    const rel = new Set();
+    Object.entries(cards).forEach(([k, c]) => {
+      c.classList.remove('on', 'rel', 'dim');
+      c.firstChild.setAttribute('aria-expanded', 'false');
+      c.lastChild.innerHTML = '';
+    });
+    host.classList.toggle('picked', !!id);
+    if (!id) return;
+    const n = byId[id];
+    const from = LINKS.filter((l) => l[1] === id), to = LINKS.filter((l) => l[0] === id);
+    from.forEach((l) => rel.add(l[0])); to.forEach((l) => rel.add(l[1]));
+    const row = (title, list, end) => (list.length ? `<div class="mx-rels"><span>${title}</span>${list.map((l) => chip(l[end], l[2], l[3])).join('')}</div>` : '');
+    const hand = (l) => l[2] === 'hand', code = (l) => l[2] === 'code';
+    cards[id].lastChild.innerHTML = `<p>${n.html}</p>`
+      + row('Filled from, by hand', from.filter(hand), 0) + row('Read from, by code', from.filter(code), 0)
+      + row('Copied by hand into', to.filter(hand), 1) + row('Read by', to.filter(code), 1);
+    Object.entries(cards).forEach(([k, c]) => c.classList.add(k === id ? 'on' : rel.has(k) ? 'rel' : 'dim'));
+    cards[id].firstChild.setAttribute('aria-expanded', 'true');
+  }
+  host.addEventListener('click', (e) => {
+    const go = e.target.closest('[data-go]');
+    if (!go) return;
+    pick(go.dataset.go);
+    const r = cards[go.dataset.go].getBoundingClientRect();
+    if (r.top < 60 || r.bottom > innerHeight) cards[go.dataset.go].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+  pick('yaml');
 }
 
 // ---------------------------------------------------------------- gallery
+// Eight plain views, picked by name from a row of chips right under the picture.
 {
   const VIEWS = [
-    ['talos-iso', 'From above, front left', 'The default view: bow and port side.'],
-    ['talos-iso-rear', 'From above, rear right', 'The stern: lids, the SubConn cover, battery connectors.'],
-    ['talos-iso-below', 'From below, front left', 'Claw, DVL, down camera, launcher and acoustics.'],
-    ['talos-front', 'Front', 'Straight from the bow: both windows, the four corner thrusters.'],
-    ['talos-back', 'Back', 'Straight from the stern.'],
-    ['talos-side-port', 'Port side', 'Bow to the left. The triangular modules face-on.'],
-    ['talos-side-starboard', 'Starboard side', 'Bow to the right.'],
-    ['talos-top', 'Top', 'From above, bow up.'],
-    ['talos-bottom', 'Bottom', 'From below, bow up.'],
-    ['talos-hull-hidden-iso', 'Hull hidden', 'The tubes, rings, windows and lids hidden: the two cages inside.'],
-    ['talos-hull-hidden-top', 'Hull hidden, top', 'From above, hull hidden.'],
-    ['talos-systems-iso', 'Systems', 'Each system in one colour, as in the 3D model.', true],
-    ['talos-systems-front', 'Systems, front', 'Each system in one colour, from the bow.', true],
-    ['talos-systems-port', 'Systems, port', 'Each system in one colour, from the port side.', true],
-    ['talos-systems-top', 'Systems, top', 'Each system in one colour, from above.', true],
-    ['talos-systems-below', 'Systems, below', 'Each system in one colour, from below.', true],
+    ['talos-iso', 'Angled, above', 'Bow and port side toward you.', [1600, 1759]],
+    ['talos-iso-below', 'Angled, below', 'Claw, DVL, launcher and the hydrophone pod.', [1600, 1594]],
+    ['talos-front', 'Front', 'Straight from the bow: both windows and the four corner thrusters.', [1600, 1265]],
+    ['talos-back', 'Back', 'Straight from the stern: the two lids and their connectors.', [1600, 1265]],
+    ['talos-side-port', 'Port', 'Bow to the left; the triangular corner modules face-on.', [1600, 1618]],
+    ['talos-side-starboard', 'Starboard', 'Bow to the right.', [1600, 1618]],
+    ['talos-top', 'Top', 'Plan view from straight above, bow up.', [1600, 1251]],
+    ['talos-bottom', 'Bottom', 'Plan view from straight below, bow up.', [1600, 1251]],
   ];
-  const SIZES = { 'talos-iso': [1600, 1759], 'talos-iso-rear': [1600, 1637], 'talos-iso-below': [1600, 1594], 'talos-front': [1600, 1265], 'talos-back': [1600, 1265],
-    'talos-side-port': [1600, 1618], 'talos-side-starboard': [1600, 1618], 'talos-top': [1600, 1251], 'talos-bottom': [1600, 1251], 'talos-hull-hidden-iso': [1600, 1759],
-    'talos-hull-hidden-top': [1600, 2045], 'talos-systems-iso': [1600, 1759], 'talos-systems-front': [1600, 1265], 'talos-systems-port': [1600, 1618], 'talos-systems-top': [1600, 1251], 'talos-systems-below': [1600, 1594] };
-  const LEGEND = [['Frame', '#7d8f99'], ['Main hull', '#2a78d6'], ['Buoyancy', '#e87ba4'], ['Thrusters', '#d9480f'], ['Batteries', '#eda100'], ['Sensors outside', '#1baf7a'], ['Tools', '#6250d6'], ['Cables', '#8fb3bf'], ['SubConns', '#0f2633'], ['Kill switch', '#e34948']];
   const img = document.getElementById('mx-gal-img');
   const cap = document.getElementById('mx-gal-cap');
-  const legend = document.getElementById('mx-legend');
-  const thumbs = document.getElementById('mx-thumbs');
-  legend.innerHTML = LEGEND.map(([n, c]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
-  const btns = VIEWS.map(([f, title, text, sys], i) => {
+  const row = document.getElementById('mx-gal-views');
+  const btns = VIEWS.map(([, title], i) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.setAttribute('aria-label', title);
+    b.textContent = title;
     b.setAttribute('aria-pressed', String(i === 0));
-    b.innerHTML = `<img src="${BASE}img/mechanical/thumbs/${f}.webp" alt="" loading="lazy">`;
-    b.addEventListener('click', () => show(i));
-    thumbs.appendChild(b);
+    b.addEventListener('click', () => show(i, true));
+    row.appendChild(b);
     return b;
   });
-  function show(i) {
-    const [f, title, text, sys] = VIEWS[i];
+  function show(i, tapped) {
+    const [f, title, text, [w, h]] = VIEWS[i];
     img.srcset = CAD_SRCSET(f);
     img.src = CAD(f);
-    img.width = SIZES[f][0]; img.height = SIZES[f][1];
-    img.alt = `Talos CAD render: ${title.toLowerCase()}. ${text}`;
+    img.width = w; img.height = h;
+    img.alt = `Talos CAD render, ${title.toLowerCase()}. ${text}`;
     cap.innerHTML = `<b>${title}.</b> ${text}`;
-    legend.hidden = !sys;
     btns.forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+    if (tapped) {
+      if (row.scrollWidth > row.clientWidth) row.scrollTo({ left: btns[i].offsetLeft - row.clientWidth / 2 + btns[i].offsetWidth / 2, behavior: 'smooth' });
+      const r = img.getBoundingClientRect();
+      if (r.top < 0) img.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
   }
   show(0);
 }

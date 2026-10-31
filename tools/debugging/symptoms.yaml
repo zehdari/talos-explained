@@ -4,7 +4,7 @@
 # local checkout of that branch, then writes public/data/debugging/symptoms.json.
 #
 # src: [label, repo, path, line(s) or null]   repo keys are listed in build_data.py
-#      [label, href]                          a chapter of this site or an external page
+#      [label, href]                          a chapter of this site or an external page; href null: no public link
 categories:
   net: Network
   launch: Launcher
@@ -13,7 +13,6 @@ categories:
   ctrl: Control and ESCs
   kill: Kill switch
   vision: Perception
-  sim: Nereus
   data: Bags and time
   tools: Workflow
 
@@ -35,20 +34,14 @@ symptoms:
     src:
       - [launcher.py run_discovery_server, launch, remote_launch/remote_launch/launcher.py, 751-804]
       - [ros_launcher.service, launch, remote_launch/ros_launcher.service, null]
-  - id: type-unknown
-    cat: net
-    symptom: '<code>ros2 topic echo</code> says the message type is invalid; the viewer''s plot row says <i>Can''t read this topic</i>'
-    cause: 'The message type (usually a <code>riptide_msgs2</code> one) isn''t installed in your shell: only <code>/opt/ros</code> is sourced.'
-    check: '<code>source ~/osu-uwrt/release/install/setup.bash</code>, then start the tool (or the viewer) again from that shell.'
-    src:
-      - ['viewer.md: Plots', nereus, docs/viewer.md, 154-200]
   - id: hz-over-link
     cat: net
     symptom: '<code>ros2 topic hz</code> on a laptop says a camera stream is slow'
     cause: 'A rate measured on a laptop is the rate that crossed the tether or Wi-Fi, not what the Orin publishes. Subscribing to several camera streams at once loads the link further.'
     check: 'Measure one topic at a time. For the true rate, run <code>ros2 topic hz</code> on the Orin over SSH.'
     src:
-      - ['pretest_checks: rates measured one topic at a time', 'pool-test.html#pretest']
+      - ['pretest_checks robot.yaml: rates measured one topic at a time (team tool, not on GitHub)', null]
+      - ['Pool test day: pre-test checks', 'pool-test.html#pretest']
 
   # ------------------------------------------------------------------ launcher
   - id: launcher-down
@@ -61,11 +54,11 @@ symptoms:
   - id: launch-pending
     cat: launch
     symptom: 'A launch sits at <b>3/4 completed</b> on the launcher page instead of <b>Running</b>'
-    cause: 'The launcher counts a launch as running once every topic listed for it in the launch YAML has been seen. One hasn''t: that node didn''t start, or the topic was renamed. Hover the bar for <i>Pending Topics</i>. riptide_navigation''s entry lists <code>/a</code>.'
+    cause: 'The launcher counts a launch as running once every topic listed for it in the launch YAML has been seen. One hasn''t: that node didn''t start, or the topic was renamed. Hover the bar for <i>Pending Topics</i>. One case is normal: riptide_navigation also waits for a placeholder topic <code>/a</code> that nothing publishes, so it always stops at <b>4/5 completed</b>.'
     check: 'Read the launch''s output on the launcher page (cyan while starting). The page shows only lines printed while it is open: for earlier ones, restart the launch with the page open, or read <code>~/.ros/log/</code> on the Orin. <code>ros2 topic hz</code> on the pending topic.'
     src:
       - [main.js progress bar, launch, remote_launch/pages/main.js, 67-88]
-      - [talos_launch_bench_mpc.yaml, launch, remote_launch/launches/talos_launch_bench_mpc.yaml, 43-57]
+      - ['talos_launch_mpc.yaml: navigation waits for /a', launch, remote_launch/launches/talos_launch_mpc.yaml, 55]
   - id: launch-died
     cat: launch
     symptom: 'A launch''s bar on the launcher page says <b>ERROR!</b>'
@@ -98,7 +91,7 @@ symptoms:
     check: '<code>ros2 topic echo /talos/state/firmware --field board_name</code> should list every board within a few seconds. On the Orin: <code>ip -br link show can0</code>, then <code>candump can0</code> for the boards'' own frames (see <a href="firmware.html#debug">Firmware</a>).'
     src:
       - [Debugging a board, 'firmware.html#debug']
-      - [pool-test.html pretest, 'pool-test.html#pretest']
+      - ['Pool test day: pre-test checks', 'pool-test.html#pretest']
   - id: dvl-lock
     cat: sensors
     symptom: '<code>dvl_twist</code> stops; MPC warns <code>Stale sensors, using EKF instead: dvl</code>'
@@ -261,30 +254,16 @@ symptoms:
     check: '<code>ros2 topic echo /talos/detected_objects --field detections</code> and read the class ids.'
     src:
       - [Props made of several pieces, 'perception/composites.html']
-  - id: config-not-taking
-    cat: tools
-    symptom: 'You edited a config YAML and nothing changed'
-    cause: 'Nodes read the copy in <code>install/&lt;pkg&gt;/share</code>, not your source tree. Rebuild (or build with <code>--symlink-install</code>). On the robot, nothing changes until the code is deployed. (Building this site turned up a mapping prior that differed between the source and installed <code>config.yaml</code>.)'
-    check: '<code>ros2 pkg prefix riptide_mapping2</code>, then diff that package''s <code>share/</code> config against <code>src/</code>. On a running node, <code>ros2 param get</code>.'
-    src:
-      - [Setting up your machine, 'setup.html#sourcing']
 
-  # ------------------------------------------------------------------ Nereus
+  # (perception, only seen in sim)
   - id: sim-offset-prior
-    cat: sim
+    cat: vision
     symptom: 'In sim, mapping''s course offset starts hugely uncertain (about 17,900 m²)'
     cause: 'A start-up bug: mapping stamps <code>last_predict_time</code> when the node starts, before <code>/clock</code> arrives, so the first drift prediction covers about 1.8 × 10<sup>9</sup> s (time zero to the sim clock). Only in sim; on the robot the clock is wall time.'
     check: 'Echo <code>/talos/mapping/&lt;object&gt;</code> covariance right after start. A fix would start the first prediction at the first <code>/clock</code> message.'
     src:
       - [mapping.py, perception, riptide_mapping/riptide_mapping2/mapping.py, 216]
       - [mapping.py predict_offset, perception, riptide_mapping/riptide_mapping2/mapping.py, 921-927]
-  - id: clock-step
-    cat: sim
-    symptom: 'The viewer loses TF (robot frozen, frames missing) right after a clock change'
-    cause: 'A clock that steps backwards by more than about 10 s makes the Nereus viewer drop TF. That is why the opbox time setup lets the robot step its clock only in its first three updates after boot.'
-    check: '<code>chronyc tracking</code> on each machine. Restart the viewer after a big step.'
-    src:
-      - [Time sync, 'computers.html#time']
 
   # ------------------------------------------------------------------ bags and time
   - id: bag-no-metadata
@@ -307,14 +286,38 @@ symptoms:
     cause: 'The replay shares a graph with live nodes. Bag messages and live ones mix, and a replayed command could reach the robot.'
     check: 'Isolate the replay: <code>RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=&lt;unused&gt;</code> and unset the <code>ZENOH_*</code> variables.'
     src:
-      - [Replay section, '#replay']
+      - [viewer_replay.sh (the isolated replay used for this chapter), site, tools/debugging/viewer_replay.sh, null]
   - id: negative-age
     cat: data
     symptom: 'In a bag, messages seem to arrive before they were sent'
     cause: 'The recorder''s clock is behind the publisher''s. A bench bag from 2026-10-27 has every message "arriving" about 37 ms early.'
     check: '<code>chronyc tracking</code> on both machines, or record on the Orin itself.'
     src:
-      - [Time section, '#time']
+      - [bag_stats.py (message ages read from the bag), site, tools/debugging/bag_stats.py, null]
+  - id: clock-step
+    cat: data
+    symptom: 'The viewer loses TF (robot frozen, frames missing) right after a clock change'
+    cause: 'A clock that steps backwards by more than about 10 s makes the Nereus viewer drop TF. That is why the opbox time setup lets the robot step its clock only in its first three updates after boot.'
+    check: '<code>chronyc tracking</code> on each machine. Restart the viewer after a big step.'
+    src:
+      - ['Opbox chrony client setup: makestep 1 3 on the robot (setup-client.sh, not on GitHub)', null]
+      - ['Computers and networks: time', 'computers.html#time']
+
+  # ------------------------------------------------------------------ workflow
+  - id: config-not-taking
+    cat: tools
+    symptom: 'You edited a config YAML and nothing changed'
+    cause: 'Nodes read the copy in <code>install/&lt;pkg&gt;/share</code>, not your source tree. Rebuild (or build with <code>--symlink-install</code>). On the robot, nothing changes until the code is deployed. (Building this site turned up a mapping prior that differed between the source and installed <code>config.yaml</code>.)'
+    check: '<code>ros2 pkg prefix riptide_mapping2</code>, then diff that package''s <code>share/</code> config against <code>src/</code>. On a running node, <code>ros2 param get</code>.'
+    src:
+      - [Setting up your machine, 'setup.html#sourcing']
+  - id: type-unknown
+    cat: tools
+    symptom: '<code>ros2 topic echo</code> says the message type is invalid; the viewer''s plot row says <i>Can''t read this topic</i>'
+    cause: 'The message type (usually a <code>riptide_msgs2</code> one) isn''t installed in your shell: only <code>/opt/ros</code> is sourced.'
+    check: '<code>source ~/osu-uwrt/release/install/setup.bash</code>, then start the tool (or the viewer) again from that shell.'
+    src:
+      - ['viewer.md: Plots', nereus, docs/viewer.md, 154-200]
   - id: checkbt-rewrites
     cat: tools
     symptom: '<code>git status</code> says every behaviour tree changed after a check'

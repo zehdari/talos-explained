@@ -208,7 +208,7 @@
   "PublishFloat32": {
    "group": "ros", "tags": ["topic", "actuators"],
    "summary": "Publishes one std_msgs/Float32 on any topic.",
-   "what": ["Creates the publisher when it starts and publishes once; SUCCESS. The competition tree publishes claw moves with it on <code>command/actuator/claw_move_s</code>, which Nereus's claw answers. No firmware in <code>titan_firmware</code> listens to that topic (the actuator board takes <code>command/actuator/claw</code>), so check it before relying on it in the pool."],
+   "what": ["Creates the publisher when it starts and publishes once; SUCCESS. The competition tree publishes claw moves with it on <code>command/actuator/claw_move_s</code>, which Nereus's claw answers. No firmware in <code>titan_firmware</code> listens to that topic (the POAC board takes <code>command/actuator/claw</code>), so check it before relying on it in the pool."],
    "ports": {"data": {"defaultText": "0"}}
   },
   "PublishInt8": {
@@ -229,7 +229,7 @@
   },
   "GetActuatorStatus": {
    "group": "ros", "tags": ["actuators"],
-   "summary": "Reads the actuator board's state: claw, torpedoes, droppers and whether it is busy.",
+   "summary": "Reads the POAC board's actuator state (state/actuator/status, state/actuator/busy): claw, torpedoes, droppers and whether it is busy.",
    "what": ["Needs one message on both <code>state/actuator/status</code> and <code>state/actuator/busy</code> after it starts; FAILURE after 3 s. States are the numbers in <code>riptide_msgs2/ActuatorStatus</code> (torpedo 3 = charged, dropper 2 = ready…)."]
   },
   "Wait": {
@@ -243,7 +243,7 @@
    "what": [
     "A failed child is retried on the next tick (every 30 ms), not straight away, and the decorator reports RUNNING meanwhile.",
     "FAILURE (with an error in the log) when the time is up."],
-   "watch": ["When it times out it does not halt a child that is still RUNNING (read from the code; not yet tested in Nereus). A <code>FollowPath</code> inside skips its <code>onHalted</code>, so the MPC keeps flying that path until the next setpoint or path."
+   "watch": ["When it times out it does not halt a child that is still RUNNING (read from the code; not yet tested in Nereus). A <code>FollowPath</code> inside skips its <code>onHalted</code>, so the MPC keeps flying that path until the next setpoint or path.", "It turns RUNNING only after ticking its child, so on <code>autonomy/tree_stack</code> (and in the viewer's stack) its name sits above the child it is waiting on, and the child's later pop removes the decorator's name instead."
    ]
   },
   "CheckBlackboardExists": {

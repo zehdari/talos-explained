@@ -2,9 +2,11 @@
 # Re-captures the two Autonomy panel screenshots at 2x UI scale (2026-10-31), on a private X display and the
 # sandbox's isolated ROS domain. Needs a sandbox built by sandbox.sh (default /tmp/btws2) and a built nereus viewer.
 #   1. this script starts Xvfb :94, doTask, a 10 Hz fake odometry publisher at z = -1, and the viewer (--ui-scale 2);
-#   2. then, by hand with xdotool on DISPLAY=:94: drag the left dock's splitter (x ~ 476) right to ~860 and the
-#      Motion/Autonomy splitter (y ~ 1656) up to ~1000, pick a tree, `import -window root`, crop 840 px wide at y = 1000;
-#   3. send_goal a 60 s copy of DeeperThanDemo.xml and capture again for the "running" shot.
+#   2. then, by hand with xdotool on DISPLAY=:94 (the viewer only redraws on input: nudge the mouse before each
+#      `import -window root`): drag the left dock's right edge (x ~ 858) left to x = 580, press Refresh, open the
+#      tree drop-down, type "DeeperThanDemo" in its search box and click the one entry. Crop x 0-566 from just under
+#      the Mapping/Vision/Autonomy tabs (y ~ 1078) to below the stack: the "ready" shot;
+#   3. with the sandbox's DeeperThanDemo.xml temporarily set to Wait 60 s, send_goal it and capture again: "running".
 WS=${1:-/tmp/btws2}
 source "$WS/env.sh"
 export DISPLAY=:94 XDG_CONFIG_HOME=$WS/xdg

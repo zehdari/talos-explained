@@ -3,106 +3,117 @@
 
 ## Frame (mechanical)
 aka: chassis
-part: vehicle
+part: mechanical
 slug: chassis
 The open aluminium structure that carries everything on Talos: the main hull, thrusters, battery pods, sensors and tools all mount to it.
 > mechanical.html#frame
 
 ## Main hull
 aka: hull
-part: vehicle
-The sealed centre of Talos: two clear tubes, the starboard one holding the [[camera cage]] (Orin, IMU, gyro, forward camera), the port one the [[board stack]].
+part: mechanical
+The sealed centre of Talos: two clear tubes, the starboard one holding the [[camera cage]] (Orin, IMU, gyro, both cameras), the port one the [[board stack]].
 > mechanical.html#hull
 > mechanical.html#inside
 
 ## Battery pods
 aka: battery housing
-part: vehicle
+part: mechanical
 Two sealed aluminium pods on the frame rails, one per side, each holding a [[smart battery housing]]. They swap without tools and without opening the main hull.
 > mechanical.html#batteries
+> batteries.html
 
 ## SubConn
 aka: wet-mate connector, bulkhead connector
-part: vehicle
+part: mechanical
 MacArtney's wet-mate connectors: every cable that leaves a housing goes through one. They are colour-coded so each plug goes back where it came from.
 > electrical.html#connectors
 > mechanical.html#sealing
+> sealing.html
 
 ## COM
 exp: Centre of mass
 aka: centre of gravity, center of mass
-part: vehicle
+part: mechanical
 Where Talos's weight acts. Measured with the team's three-load-cell COM scale; with the [[COB]] it decides how Talos floats and tilts.
 > mechanical.html#trim
 > control/model.html#restoring
+> buoyancy.html
 
 ## COB
 exp: Centre of buoyancy
 aka: center of buoyancy
-part: vehicle
+part: mechanical
 Where buoyancy (the weight of the displaced water) pushes up. Talos's is identified in the pool, because CAD doesn't know every air pocket.
 > mechanical.html#trim
 > control/identify.html#statics
+> buoyancy.html
 
 ## Buoyancy
 aka: positively buoyant, net buoyancy
-part: vehicle
-The upward push of the water. RoboSub requires a killed vehicle to float up by at least 0.5 % of its mass; Talos's model gives it about 1.6 N net up.
+part: mechanical
+The upward push of the water. RoboSub requires a killed vehicle to float up by at least 0.5 % of its weight (1.68 N for Talos). The MPC model gives 1.63 N, just under; the untethered pool identification of 26 October 2026 fitted 1.68 N, right on it. That is why [[trim]] is checked at every pool test.
 > mechanical.html#trim
+> pool-test.html#trim
 > robosub.html#rules
+> buoyancy.html
 
 ## Trim
-part: vehicle
+part: mechanical
 Adjusting weights and floats so Talos sits level and slightly positive in the water. It is checked in the water at each pool test.
 > mechanical.html#trim
 > pool-test.html#trim
+> buoyancy.html
 
 ## Depressurization test
 aka: PVT, pressure test, vacuum test
-part: vehicle
+part: mechanical
 The leak test before a pool test: pump the hull 0.05 bar below ambient through the vacuum valve and watch the pressure for five minutes. Passed means the green SubConn cover goes on.
 > pool-test.html#pvt
 > mechanical.html#sealing
+> sealing.html
 
 ## Smart battery housing
-aka: SBH, smart battery, LiPo
-part: vehicle
-Each of Talos's two batteries: a MaxAmps 8000 mAh 5S LiPo (18.5 V nominal, about 148 Wh) sealed with its own [[BMS]] and microcontroller board, which report over CAN.
+aka: battery, batteries, SBH, smart battery, LiPo
+part: electrical
+Each of Talos's two batteries: a MaxAmps 8000 mAh 5S2P LiPo (five pairs of cells in series, 18.5 V nominal, about 148 Wh) sealed with its own [[BMS]] and microcontroller board, which report over CAN.
 > electrical.html#smart
 > boards.html#batteries
+> batteries.html
 
 ## BMS
 exp: Battery management system
 aka: BQ40Z80
-part: vehicle
-The protection board in each battery housing: a TI BQ40Z80 watches and balances the five cells and switches the pack off when something is wrong.
+part: electrical
+The protection board in each battery housing: a TI BQ40Z80 watches and balances the five cell groups (the pack is 5S2P) and switches the pack off when something is wrong.
 > boards.html#batteries
 > electrical.html#smart
+> batteries.html
 
 ## Ideal-diode OR
 aka: battery balancer
-part: vehicle
+part: electrical
 The circuit on the POAC that joins the two packs: whichever has the higher voltage carries the load, and current never flows from one pack into the other.
 > electrical.html#two-packs
 
 ## Rail
 aka: power rail, V+, MOTOR_PWR
-part: vehicle
+part: electrical
 A supply voltage distributed around the robot. `V+` is the battery bus; `MOTOR_PWR` feeds only the ESC boards and is the one rail the kill switch cuts.
 > electrical.html#rails
 > electrical.html#kill
 
 ## Kill switch
-aka: physical kill, Hall-effect switch
-part: vehicle
-The magnetic (Hall-effect) switch a swimmer inserts to let Talos move and pulls to stop it. It cuts only the ESC supply, so the computer and sensors stay on.
+aka: kill, physical kill, kill handle, red handle, Hall-effect switch
+part: electrical
+The red handle on the port tube's bow window. A swimmer seats it to let Talos move and pulls it off to stop it; a Hall-effect sensor (a magnet detector) right behind the window, on the board stack's fan plate, feels its magnet. It cuts only the ESC supply, so the computer and sensors stay on. The cover at the stern is the [[SubConn cover]], not the kill switch.
 > electrical.html#kill
 > boards.html#kill
 > commanding.html#kill
+> mechanical.html#inside
 
 ## Kill slot
 aka: KillSwitchReport, software kill, slot 0, slot 1, slot 3
-part: ops
+part: control
 One of four inputs to the kill decision on the POAC: slot 0 the physical switch, 1 the Nereus viewer, 2 a topside button (unused), 3 the command line and scripts. Talos is killed if any enabled slot asserts.
 > commanding.html#kill
 > commanding.html#viewer-slot
@@ -116,20 +127,20 @@ A flag on a kill-slot report. True makes it a heartbeat that must repeat within 
 
 ## state/kill
 aka: SAFETY_KILLED
-part: ops
+part: control
 The POAC's verdict, published every 150 ms and on any change: true means killed. The ESC boards treat it as a heartbeat and report `SAFETY_KILLED` while killed.
 > commanding.html#stops
 > firmware.html#kill
 
 ## Board stack
-part: vehicle
+part: electrical
 The 3D-printed cage of circuit boards that slides out of the main hull's port tube. The camera cage, with the Orin, is in the starboard tube; one CAN cable chains the boards in both to the Orin.
 > boards.html#glance
 > boards.html#system
 
 ## POAC
 exp: Power + actuator board
-part: vehicle
+part: electrical
 The board that takes both batteries in, makes the power rails, decides the kill and drives the torpedo/marker servo. CAN client 1.
 > boards.html#poac
 > electrical.html#rails
@@ -138,13 +149,13 @@ The board that takes both batteries in, makes the power rails, decides the kill 
 ## ESC
 exp: Electronic speed controller
 aka: APD 80F3
-part: vehicle
+part: electrical
 Turns battery DC into the three-phase current a brushless motor needs. Talos has eight APD 80F3 ESCs, four on each of two [[ESC board|ESC boards]].
 > thrusters-hw.html#esc
 > boards.html#esc
 
 ## ESC board
-part: vehicle
+part: electrical
 One of two identical boards that each run four ESCs (thrusters 0 to 3 and 4 to 7). Its RP2040 runs an RPM loop per thruster on the targets the MPC sends over CAN.
 > boards.html#esc
 > thrusters-hw.html#rpm-loop
@@ -152,76 +163,75 @@ One of two identical boards that each run four ESCs (thrusters 0 to 3 and 4 to 7
 
 ## Camera cage
 aka: computer cage
-part: vehicle
-The slide-out printed cage in the starboard hull tube holding the Orin, its GMSL2 card, the forward camera, the IMU, the FOG, the network switch and the camera cage breakout board ([[CCBB]]).
+part: mechanical
+The slide-out printed cage in the starboard hull tube holding the Orin, its GMSL2 card, the forward ZED X Mini, the IMU, the FOG, the network switch and the camera cage breakout board ([[CCBB]]). The down camera ([[dfc]]) sits in the same tube against its bottom wall and meets the cage through a slide-in adapter.
 > mechanical.html#inside
 > computers.html#orin
 > boards.html#ccbb
 
 ## CCBB
 exp: Camera cage breakout board
-part: vehicle
+part: electrical
 The board in the [[camera cage]] that powers the Orin and DVL, reads the depth sensor and joins the Orin to CAN.
 > boards.html#ccbb
 
 ## LED board
 aka: status light
-part: vehicle
+part: electrical
 Drives Talos's RGBW status light: red flashes when the kill switch is pulled, blue when it goes in, and colours set by trees through `SetStatus`.
 > boards.html#led-ivc
 > mission-tree.html#leds
 
 ## IVC board
 exp: Inter-vehicle communication board
-aka: IVC, hydrophone
-part: vehicle
-An acoustic modem for talking to Triton that also listens for the competition pinger through its hydrophone.
+aka: IVC, acoustic modem
+part: electrical
+An acoustic modem: it sends 17 and 19 kHz tones through the [[transducer]] and listens through the [[hydrophone]], for Triton and for the competition pinger.
 > boards.html#led-ivc
 > sensors.html#acoustics
 
 ## Orin HAT
-part: vehicle
+part: electrical
 An add-on board on the Orin with its CAN transceivers (`can0`, `can1`) and a serial port for the IMU.
 > boards.html#orin-side
 
 ## Mark 1, Mark 2
 aka: Mark 1, Mark 2, mk2
-part: vehicle
+part: electrical
 slug: mark-2
 The team's electronics generations. Mark 1 (Tempest) shared I²C buses that failed on long runs; Mark 2 (Talos) put an RP2040 on every board and joined them with CAN.
 > boards.html#rp2040
-> boards.html#history
 
 ## RP2040
 aka: Raspberry Pi RP2040, Pico
-part: vehicle
+part: electrical
 The Raspberry Pi microcontroller on every Talos board that runs firmware. Each board has its own, so a fault stays on one board.
 > boards.html#rp2040
 > firmware.html#boards
 
 ## Pico SDK
-part: vehicle
+part: electrical
 Raspberry Pi's C SDK for the RP2040, which titan_firmware is built on.
 > firmware.html#repo
 > firmware.html#build
 
 ## SWD
 exp: Serial Wire Debug
-part: vehicle
+part: electrical
 The RP2040's debug and flashing port, on Tag-Connect pads on each board. Used for the first flash; after that updates go over CAN.
 > boards.html#rp2040
 > firmware.html#debug
 
 ## Bootloader
 aka: titan_bootloader, upload_tool
-part: vehicle
+part: electrical
 The small program on each board that can take a new firmware image over CAN, so boards are updated without opening the hull.
 > firmware.html#flash
 
 ## CAN
 exp: Controller Area Network
 aka: CAN bus, can0, can1
-part: vehicle
+part: electrical
 A two-wire bus where every node hears every frame. Talos's boards use it to talk to each other and to the Orin, which sees the internal bus as `can0` and the external (battery) bus as `can1`.
 > firmware.html#can
 > computers.html#can
@@ -229,7 +239,7 @@ A two-wire bus where every node hears every frame. Talos's boards use it to talk
 
 ## CAN FD
 aka: CAN flexible data rate
-part: vehicle
+part: electrical
 The newer CAN that can send a frame's data faster than its header. Talos's firmware configures the internal bus for it (1 / 5 Mbit/s), but every frame sent today is classic; the battery bus is classic CAN at 250 kbit/s.
 > firmware.html#can
 > boards.html#rp2040
@@ -237,67 +247,67 @@ The newer CAN that can send a frame's data faster than its header. Talos's firmw
 
 ## Termination
 aka: terminator, TERM
-part: vehicle
+part: electrical
 A 120 Ω resistor at each end of a CAN bus, and nowhere else, so signals don't bounce off the cable ends. Talos's boards have a switch for it.
 > boards.html#rp2040
 
 ## CANmore
 aka: titan_canmore
-part: vehicle
+part: electrical
 The team's own protocol on top of CAN: the frame ID carries the board's client ID, the direction and a channel, so every data byte is payload. It also carries longer messages split over several frames.
 > firmware.html#canmore
 > firmware.html#can
 
 ## Client ID
 aka: CAN ID
-part: vehicle
+part: electrical
 Each board's address on CAN (POAC 1, ESC boards 2 and 3, CCBB 4, …), from `client_ids.h`.
 > boards.html#glance
 > computers.html#can
 
 ## micro-ROS
 aka: XRCE-DDS, Micro-XRCE-DDS
-part: vehicle
+part: electrical
 ROS 2 for microcontrollers. Each board runs a small XRCE-DDS client that asks the agent on the Orin ([[copro_agent]]) to create its publishers and subscribers, so its topics appear in ROS like any other node's.
 > firmware.html#microros
 > boards.html#system
 
 ## copro_agent
 aka: micro-ROS agent, micro_ros_agent
-part: vehicle
+part: electrical
 The micro-ROS agent on the Orin that bridges every board's micro-ROS client on CAN into ROS 2 (`copro_agent.launch.py`).
 > boards.html#system
 > computers.html#can
 
 ## Watchdog
 aka: titan_safety, safety_tick
-part: vehicle
+part: electrical
 A timer that resets a board whose main loop stops checking in. The firmware's safety code feeds it, and a reset board comes back with a fault bit saying why.
 > firmware.html#safety
 
 ## DShot
 aka: DShot600, bidirectional DShot, 3D mode
-part: vehicle
+part: electrical
 The digital protocol from an ESC board to each ESC: 16-bit frames with throttle and a checksum, at 600 kbit/s. In bidirectional DShot the ESC answers with its speed, which the RPM loop runs on.
 > thrusters-hw.html#dshot
 > firmware.html#thrusters
 
 ## T200
 aka: thruster, Blue Robotics T200
-part: vehicle
+part: electrical
 Blue Robotics' shrouded brushless thruster. Talos has eight; their published force curves are what the MPC uses for thrust.
 > thrusters-hw.html#t200
 > control/thrusters.html#rpm
 
 ## Thruster names
 aka: VUS, VUP, HUS, HUP, HLS, HLP, VLS, VLP
-part: vehicle
+part: electrical
 `talos.yaml`'s names for the eight thrusters: Heave or Vector, Upper or Lower, Port or Starboard (HLP is heave, lower, port). The index 0 to 7 is the order `VUS VUP HUS HUP HLS HLP VLS VLP`.
 > thrusters-hw.html#layout
 > nereus.html#bridge
 
 ## RPM loop
-part: vehicle
+part: electrical
 The control loop on each ESC board that holds each thruster at the RPM the MPC asked for, from the speed the ESC reports over DShot.
 > thrusters-hw.html#rpm-loop
 > firmware.html#thrusters
@@ -310,31 +320,31 @@ The bench step that spins each thruster in turn, 0 to 7, so you can check each o
 
 ## Force gauge
 aka: thruster_calibration_tools
-part: vehicle
+part: electrical
 The team's rig for measuring a thruster's force against its command in a tank.
 > thrusters-hw.html#gauge
 
 ## Launcher
 aka: torpedo launcher, dropper, marker
-part: vehicle
-One servo on the POAC that fires two forward torpedoes and drops two markers. From its 120° home it turns one way for torpedoes and the other for markers.
+part: mechanical
+One servo, driven by the [[POAC]], fires two forward torpedoes and drops two markers. From its 120° home it turns one way for torpedoes and the other for markers.
 > actuators.html#launcher
 > actuators.html#shot
 
 ## Claw
-part: vehicle
+part: mechanical
 The gripper under Talos's bow, added for 2026 to pick up and sort the table objects.
 > actuators.html#claw
 
 ## Magnet poker
-part: vehicle
+part: mechanical
 A passive magnet on a rod. Talos flies it close to a magnet light to switch it on; nothing on board drives it.
 > actuators.html#claw
 > mission-tree.html#magnets
 
 ## Arm
 aka: armed, disarm, SetActuatorsArmed
-part: vehicle
+part: mechanical
 Making the actuators ready to fire. The POAC refuses to arm while the robot is killed, and refuses a torpedo unless armed; trees arm just before a task and disarm after.
 > actuators.html#poac
 > actuators.html#trees
@@ -342,20 +352,20 @@ Making the actuators ready to fire. The POAC refuses to arm while the robot is k
 ## IMU
 exp: Inertial measurement unit
 aka: VectorNav, VN-100
-part: vehicle
+part: sensing
 A sensor for turn rates, acceleration and tilt. Talos's is a VectorNav VN-100-T, whose own filter gives roll and pitch from gravity.
 > sensors.html#imu
 
 ## FOG
 exp: Fibre-optic gyro
 aka: fiber-optic gyro, gyro
-part: vehicle
+part: sensing
 A gyro that measures turning from light sent both ways round a fibre coil (the Sagnac effect). Its bias barely drifts, so Talos uses it for yaw rate.
 > sensors.html#fog
 
 ## Tare
 aka: TareGyro, gyro tare
-part: vehicle
+part: sensing
 Measuring the gyro's bias while Talos is perfectly still and level, then subtracting it. A tare on a tilted or moving robot makes the heading drift.
 > sensors.html#fog-tare
 > localization.html#trouble
@@ -363,59 +373,59 @@ Measuring the gyro's bias while Talos is perfectly still and level, then subtrac
 ## DVL
 exp: Doppler velocity log
 aka: Nortek DVL1000, DVL1000
-part: vehicle
+part: sensing
 A sonar that pings the floor through four slanted beams and measures Talos's velocity from the echoes' Doppler shift. Talos's is a Nortek DVL1000.
 > sensors.html#dvl
 
 ## Bottom lock
 aka: dvl/bottom_lock
-part: vehicle
+part: sensing
 The DVL is tracking the floor and its velocity is valid. Without it only the IMU's acceleration drives the velocity estimate, which drifts.
 > localization.html#trouble
 > sensors.html#dvl-driver
 
 ## Depth sensor
-aka: Bar02, MS5837, pressure sensor
-part: vehicle
-A Blue Robotics Bar02 (MS5837) pressure sensor on the camera cage, read by the CCBB and published at 20 Hz as `state/depth/raw`. It is zeroed at power-up.
+aka: depth, Bar02, MS5837, pressure sensor
+part: sensing
+A Blue Robotics Bar02 (MS5837) pressure sensor in the starboard hull lid at the stern, wired to the [[CCBB]], which publishes it at 20 Hz as `state/depth/raw`. It is zeroed at power-up, so power Talos on at the surface.
 > sensors.html#depth
 > firmware.html#depth
 
 ## Hydrophone
-part: vehicle
-An underwater microphone. Talos's one hydrophone feeds the IVC board, for the pinger and for talking to Triton.
+part: sensing
+An underwater microphone (Aquarian Audio H1C), in a small pod under the frame. It only listens: it feeds the [[IVC board]], which uses it to hear the pinger and to receive messages from Triton. Talos sends through the [[transducer]].
 > sensors.html#acoustics
 > boards.html#led-ivc
 
 ## ZED X Mini
 aka: ZED, Stereolabs
-part: vehicle
+part: sensing
 Stereolabs' stereo camera. Talos has two, [[ffc]] and [[dfc]], each giving colour and a depth image at 1920 × 1200 and 15 Hz.
 > cameras.html#two-cameras
 > cameras.html#settings
 
 ## ffc
 exp: Forward-facing camera
-part: vehicle
+part: sensing
 The forward ZED X Mini, and its namespace: `/talos/ffc/zed_node/…`.
 > cameras.html#two-cameras
 > cameras.html#topics
 
 ## dfc
 exp: Downward-facing camera
-part: vehicle
-The downward ZED X Mini, used over the bins and the table: `/talos/dfc/zed_node/…`.
+part: sensing
+The downward ZED X Mini, used over the bins and the table: `/talos/dfc/zed_node/…`. It is inside the starboard hull tube, looking down through the tube's bottom wall.
 > cameras.html#two-cameras
 > cameras.html#topics
 
 ## GMSL2
-part: vehicle
+part: sensing
 A serial video link over one coax cable, from each ZED X Mini to a capture card on the Orin.
 > cameras.html#two-cameras
 
 ## ZED SDK
 aka: zed-ros2-wrapper, zed_node, zed.launch.py
-part: vehicle
+part: sensing
 Stereolabs' library that grabs, rectifies and computes depth on the GPU. The ROS wrapper runs one `zed_node` per camera, both from `zed.launch.py`.
 > cameras.html#pipeline
 > cameras.html#launch
@@ -435,7 +445,7 @@ The ZED's own video file format with both eyes. The viewer's Recording panel wri
 
 ## Odometry
 aka: odometry/filtered, GetOdometry
-part: vehicle
+part: sensing
 The estimate of Talos's pose and velocity. The EKF publishes it as `odometry/filtered` (pose in `odom`, velocity in the body), 30 times a second. Tree nodes read it with `GetOdometry`.
 > localization.html#ekf
 > localization.html#users
@@ -443,7 +453,7 @@ The estimate of Talos's pose and velocity. The EKF publishes it as `odometry/fil
 ## EKF
 exp: Extended Kalman filter
 aka: robot_localization, ekf_node
-part: vehicle
+part: sensing
 The filter that fuses the IMU, gyro, DVL and depth sensor into Talos's odometry: predict with the model, correct with each measurement. Talos uses robot_localization's. Mapping, the tree and the viewer use it; the MPC flies on its own [[MPC state estimator|estimator]] and uses the EKF only as an anchor.
 > localization.html#ekf
 > localization.html#fused
@@ -456,7 +466,7 @@ An estimator that keeps a best guess and a covariance, predicts how both change,
 
 ## Process noise
 aka: Q
-part: vehicle
+part: sensing
 How much uncertainty the EKF adds per second while predicting: how much it expects reality to stray from its simple motion model.
 > localization.html#ekf
 
@@ -469,40 +479,40 @@ A matrix of how uncertain an estimate is, drawn as an ellipsoid. Trees wait for 
 
 ## base_link
 aka: talos/base_link
-part: vehicle
+part: sensing
 Talos's body frame: x forward, y to port, z up. The pose of Talos is the transform from `odom` to `talos/base_link`.
 > localization.html#frames
 > control/model.html#frames
 
 ## odom
-part: vehicle
+part: sensing
 The frame where odometry starts: wherever Talos was, facing that way, when the EKF started. It drifts as errors add up.
 > localization.html#drift
 > perception/frames.html#tree
 
 ## map
 aka: map frame, world
-part: perception
+part: sensing
 The course's frame, set before a run by the AprilTag calibration. `world → map` is that calibration; props hang under `map → offset`.
 > localization.html#drift
 > perception/frames.html#tree
 
 ## AprilTag calibration
 aka: AprilTag, tag calibration, Calibrate, apriltag_ros
-part: perception
+part: sensing
 Before a run Talos faces the tag board and the operator presses Calibrate; the tag's pose sets where the course map sits. Redo it if the EKF restarts.
 > localization.html#tag
 > viewer.html#mapping
 
 ## chameleon_tf
-part: perception
+part: sensing
 A node that publishes a transform which can be re-set at run time. Mapping uses one (`world_to_map`) for the AprilTag calibration.
 > localization.html#tag
 > code-map.html#explorer
 
 ## Jetson AGX Orin
 aka: Orin, orin2, Jetson
-part: vehicle
+part: sensing
 Talos's only computer: an NVIDIA ARM board with a GPU for the detector and the ZED depth. Every ROS node of the real robot runs on it; its host name is `orin2`.
 > computers.html#orin
 
@@ -516,59 +526,59 @@ The systemd service on the Orin that starts and stops the stack. It loads a laun
 
 ## colcon deploy
 aka: colcon_riptide, ~/colcon_deploy
-part: ops
 The team's colcon verb that copies package sources from your release workspace to `~/colcon_deploy` on the Orin and builds them there. Run from op-top.
 > computers.html#deploy
 > setup.html#deploy
 
 ## op-top
 aka: optop, operator laptop
-part: ops
+part: sensing
 The team laptop used as the operator station at the pool: it runs the Nereus viewer, deploys code and runs the pre-test checks.
 > computers.html#optop
 
 ## Opbox
 aka: operator box
-part: ops
+part: sensing
 A Raspberry Pi in the operator box that gets the robot network onto the internet through campus Wi-Fi and serves the time every clock follows.
 > computers.html#opbox
 
 ## Tether
-part: ops
+part: sensing
 The cable from Talos to the deck during testing, carrying the robot's Ethernet. Only compressed images should cross it; RoboSub runs are untethered.
 > computers.html#lan
 > cameras.html#bandwidth
 
 ## Robot LAN
-part: ops
+part: sensing
 The wired network on deck: the Orin (through the tether), the router, the opbox and the laptops.
 > computers.html#lan
 > computers.html#map
 
 ## Tailscale
-part: ops
+part: sensing
 The encrypted overlay network the team uses for remote access. Its tunnels still travel over the same tether and Wi-Fi.
 > computers.html#map
 > computers.html#join
 
 ## chrony
 aka: time server, NTP
-part: ops
+part: sensing
 The time-sync service. The opbox runs it as the team clock so every machine's timestamps agree.
 > computers.html#time
 
 ## CAD
 exp: Computer-aided design
 aka: SolidWorks
-part: vehicle
+part: mechanical
 The 3D model of the vehicle, in SolidWorks (this site uses the assembly `Talos 7-11-26`, saved 11 July 2026). The software never reads it: sensor and thruster poses are copied by hand into `talos.yaml`. Where the CAD and the real robot disagree, the robot wins.
 > mechanical.html#software
 > mechanical.html#limits
+> mech-design.html
 
 ## MCU
 exp: Microcontroller unit
 aka: microcontroller
-part: vehicle
+part: electrical
 A small computer on one chip that runs a board's firmware. Every Talos board with one uses the same [[RP2040]] block, so they all share one pin map and one CAN driver.
 > boards.html#rp2040
 > firmware.html#boards
@@ -576,14 +586,15 @@ A small computer on one chip that runs a board's firmware. Every Talos board wit
 ## PCB
 exp: Printed circuit board
 aka: Altium, electric_boogaloo, JLCPCB
-part: vehicle
+part: electrical
 A circuit board: layers of copper traces that join the chips. Talos's are designed in Altium (repo `electric_boogaloo`), made by JLCPCB and assembled by the team.
 > boards.html#design
 > boards.html#explorer
+> board-design.html
 
 ## PWM
 exp: Pulse-width modulation
-part: vehicle
+part: electrical
 Sending a value as the width of a repeating pulse; Blue Robotics rates the T200 against 1100 to 1900 µs. Talos drives its ESCs with [[DShot]] instead, which is digital, needs no calibrating and reports the RPM back.
 > thrusters-hw.html#dshot
 > thrusters-hw.html#curves
@@ -591,8 +602,110 @@ Sending a value as the width of a repeating pulse; Blue Robotics rates the T200 
 ## UART
 exp: Universal asynchronous receiver-transmitter
 aka: serial, RS-232, RS-422, ttyTHS1, ttyTHS2
-part: vehicle
+part: electrical
 A plain serial link: bytes one after another at an agreed baud rate. The IMU speaks RS-232 on `/dev/ttyTHS1`; the fibre-optic gyro RS-422 (a pair of wires with opposite signals, which shrugs off noise) at 921,600 baud on `/dev/ttyTHS2`. Every board also has a 115200-baud debug UART.
 > boards.html#orin-side
 > sensors.html#fog
 > firmware.html#debug
+
+## Port, starboard, bow, stern
+aka: port side, starboard side, bow, stern, fore, aft, left side, right side
+part: mechanical
+slug: port-starboard
+Boat words for directions on Talos, fixed to the robot rather than to you. The bow is the front, where the forward camera looks; the stern is the back; port is the left and starboard the right when you face the bow. In [[base_link]], x points to the bow and y to port. A behaviour-tree [[Port]] is something else.
+> mechanical.html#hull
+> localization.html#frames
+
+## Transducer
+aka: IVC transducer, underwater speaker
+part: sensing
+The underwater speaker the [[IVC board]] sends its messages through, outside the hull to port. It is a separate part from the [[hydrophone]], which only listens.
+> boards.html#led-ivc
+> sensors.html#acoustics
+
+## O-ring
+aka: seal, gasket, X-ring
+part: mechanical
+A rubber ring squeezed in a groove to seal a joint. The main hull's lids seal on X-profile nitrile O-rings, and the tubes meet their end rings on square-profile ones. Inspect and clean the lid sealing surfaces every time you close the hull.
+> mechanical.html#hull
+> mechanical.html#service
+> sealing.html
+
+## Foam
+aka: foam block, buoyancy foam
+part: mechanical
+Blocks of foam in the frame's corner modules that add buoyancy. Moving them shifts the [[COB]], the way sliding the battery pods shifts the [[COM]].
+> mechanical.html#frame
+> mechanical.html#trim
+> buoyancy.html
+
+## SubConn cover
+aka: green cover, connector cover
+part: mechanical
+The green cover over the port lid's [[SubConn]] plugs, at the stern of the main hull. It goes on only after the hull passes the [[depressurization test]], so a cover on means sealed and tested. It is not the [[kill switch]], which is the red handle at the bow.
+> mechanical.html#hull
+> pool-test.html#pvt
+> sealing.html
+
+## Dorito, Taco
+aka: Dorito, Taco, corner module, frame module
+part: mechanical
+slug: dorito-taco
+The CAD's names for the frame's four corner modules: the two upper ones are Doritos, the two lower ones Tacos. Each is an aluminium C-channel triangle carrying two [[T200|T200s]] with guards, a [[foam]] block and handles; the Doritos also have crane hooks.
+> mechanical.html#frame
+
+## Turnbuckle
+part: mechanical
+The screw fittings that tension the eight stainless cables bracing the frame. Slacken them before unbolting a corner module.
+> mechanical.html#frame
+> mechanical.html#service
+
+## Stack link
+aka: Mini-Fit Jr
+part: electrical
+The team's name for the Molex Mini-Fit Jr plug that carries power and CAN from board to board in one locking connector.
+> electrical.html#connectors
+
+## AUX switch
+aka: state/aux, AUX sensor
+part: electrical
+A second Hall-effect sensor beside the [[kill switch]] sensor, on the board stack's fan plate, published as `state/aux`. Nothing uses it today: the code meant to use it as a start button is commented out.
+> electrical.html#kill
+
+## GPIO
+exp: General-purpose input/output
+aka: pin
+part: electrical
+A microcontroller pin the firmware can read or drive as a plain on/off signal. The ESC boards read GPIO 29 at boot to learn which four thrusters are theirs.
+> firmware.html#identity
+> boards.html#rp2040-detail
+
+## ADC
+exp: Analog-to-digital converter
+aka: MCP3428
+part: electrical
+A chip (or part of one) that turns a voltage into a number. The POAC's 16-bit MCP3428 reads four power rails; the IVC board's ADC samples the [[hydrophone]].
+> electrical.html#measured
+> boards.html#led-ivc
+
+## PIO
+exp: Programmable I/O
+part: electrical
+Small state machines inside the [[RP2040]] that run a pin protocol on their own, without the main core. The ESC boards use them to speak [[DShot]].
+> firmware.html#thrusters
+
+## CRC
+exp: Cyclic redundancy check
+aka: checksum, CRC-18, CRC-32
+part: electrical
+A checksum that catches corrupted data. [[CANmore]] ends each long message with a CRC-18, and the [[bootloader]] starts a board's program only if its CRC-32 matches, so a half-written image never runs.
+> firmware.html#canmore
+> firmware.html#flash
+
+## FOV
+exp: Field of view
+aka: field of view
+part: sensing
+How wide a camera sees, as two angles. After rectification the detector sees about 54.5° × 35.7° through the forward camera and 54.9° × 36.0° through the downward one.
+> cameras.html#fov
+

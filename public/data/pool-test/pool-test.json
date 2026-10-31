@@ -1969,6 +1969,7 @@
   {
    "id": "days",
    "title": "Days before",
+   "short": "Days before",
    "steps": [
     {
      "id": "updates",
@@ -1983,23 +1984,13 @@
        "Freeze the code"
       ]
      ]
-    },
-    {
-     "id": "charge",
-     "t": "Charge both battery housings",
-     "why": "Talos runs on two smart battery housings, port and starboard, ORed onto one bus. Each holds a MaxAmps 8000 mAh 5S2P LiPo, charged to at most 4.15 V a cell (20.75 V). On the bench Talos runs from a power supply, so the packs are only tested once they're in.",
-     "refs": [
-      [
-       "#batteries",
-       "Batteries"
-      ]
-     ]
     }
    ]
   },
   {
    "id": "bench",
    "title": "The day before, on the bench",
+   "short": "Bench",
    "steps": [
     {
      "id": "orings",
@@ -2139,7 +2130,7 @@
     },
     {
      "id": "pvt",
-     "t": "Depressurization test (PVT), then the green subconn cover on",
+     "t": "Pressure test (PVT), then the green SubConn cover on",
      "safety": true,
      "checks": "G6",
      "why": "The hull is pumped down by hand (0.05 bar below ambient in the 2025 design report) and watched for at least 5 minutes. The green cover says Talos is sealed and tested. Open it again and the test has to be repeated."
@@ -2148,12 +2139,24 @@
      "id": "handsoff",
      "t": "Tell the team nobody opens Talos or swaps parts until the test",
      "why": "Any internal mechanical or electrical change voids the localization and thruster tests you just did."
+    },
+    {
+     "id": "charge",
+     "t": "Charge both battery housings, the night before",
+     "why": "On the bench Talos runs from a power supply, so the packs are only tested once they're in. Freshly charged packs read about 21 V on the bus. B4 fails below 18.5 V (nominal), which means the packs weren't charged.",
+     "refs": [
+      [
+       "#batteries",
+       "Batteries"
+      ]
+     ]
     }
    ]
   },
   {
    "id": "pack",
    "title": "Pack and leave",
+   "short": "Pack",
    "steps": [
     {
      "id": "packlist",
@@ -2182,7 +2185,20 @@
   {
    "id": "setup",
    "title": "At the pool, on deck",
+   "short": "On deck",
    "steps": [
+    {
+     "id": "roles",
+     "t": "Name the operator and the swimmer",
+     "safety": true,
+     "why": "The kill switch is the red handle on Talos's port bow window, so only someone at the robot can pull it. The operator is the only person at the viewer; the swimmer seats and pulls the handle.",
+     "refs": [
+      [
+       "#roles",
+       "Who does what, and the kill switch"
+      ]
+     ]
+    },
     {
      "id": "network",
      "t": "Router, opbox and tether up; op-top on the robot LAN",
@@ -2202,9 +2218,9 @@
     },
     {
      "id": "power",
-     "t": "Kill switch OUT, then power Talos on",
+     "t": "Kill switch handle OUT, then power Talos on",
      "safety": true,
-     "why": "With the switch out the thrusters have no power, whatever any software does. Talos boots killed, and the launcher service starts on its own.",
+     "why": "The handle is on Talos's port bow window. Out, the thrusters have no power, whatever any software does. Talos boots killed, and the launcher service starts on its own.",
      "refs": [
       [
        "#power",
@@ -2215,7 +2231,7 @@
     {
      "id": "launcher",
      "t": "Launcher: load talos_launch_mpc.yaml, start the sensors, perception and autonomy",
-     "why": "Start hardware, navigation (riptide_hardware2's, the first of the two), zed, tensorrt, mapping and autonomy. Leave control_system for later. The diagnostics node is no longer used.",
+     "why": "Start hardware (the real DVL), riptide_hardware2's navigation (not riptide_navigation's), zed, tensorrt, mapping and autonomy. Leave control_system for later. Skip diagnostics: it's no longer used.",
      "cmd": "http://orin2:8080",
      "where": "browser",
      "refs": [
@@ -2228,7 +2244,7 @@
     {
      "id": "viewer",
      "t": "Start the Nereus viewer against the robot",
-     "why": "The viewer is the operator UI. It kills Talos on slot 1 from the moment it opens, until someone presses Enable.",
+     "why": "The viewer is the operator's screen. It holds a kill on slot 1 from the moment it opens, until someone presses Enable.",
      "cmd": "source ~/osu-uwrt/release/scripts/dds_scripts/config_rmw.bash   # Zenoh client of orin2\nros2 launch nereus robot.launch.py pool:=rpac",
      "where": "op-top",
      "refs": [
@@ -2242,7 +2258,7 @@
      "id": "health",
      "t": "Quick health check: boards, rails and battery bus, rates, kill, ESCs",
      "checks": "B3\u2013B7",
-     "why": "Catches what the drive over changed. <code>pretest dayof</code> is planned for this; until then, run the bench checks that don't start anything. In the viewer: the FOG temperature and the PORT and STBD charge.",
+     "why": "Catches what the drive over changed. <code>pretest dayof</code> is planned for this; until then, run the bench checks that don't start anything. B3 lists the battery housings as missing while the can1 agent is off; watch the bus voltage instead. In the viewer: the FOG and DVL chips.",
      "cmd": "./pretest bench --only B3,B4,B5,B6,B7 --power battery",
      "where": "op-top"
     },
@@ -2251,13 +2267,26 @@
      "t": "Hull opened or anything rewired since the bench? Rerun the thruster test on the stand",
      "safety": true,
      "checks": "G4",
-     "why": "Any internal change voids the bench's thruster test. Run it again before control_system starts (the two would both command the thrusters over CAN): killed first, then Enable, one full cycle, pull the switch, Ctrl-C. Talos on its stand, props clear, someone at the switch.",
+     "why": "Any internal change voids the bench's thruster test. Run it again before control_system starts (the two would both command the thrusters over CAN): killed first, then Enable, one full cycle, pull the switch, Ctrl-C. Talos on its stand, props clear, someone with a hand on the kill switch handle.",
      "cmd": "ssh ros@orin2\nsource ~/colcon_deploy/install/setup.bash\nros2 run riptide_controllers2 thruster_test_canbus",
      "where": "Orin",
      "refs": [
       [
        "#thruster-test",
        "The thruster test"
+      ]
+     ]
+    },
+    {
+     "id": "mapprep",
+     "t": "Course: place and measure the props, edit the prior map, deploy riptide_mapping2, restart mapping",
+     "why": "The trees navigate in the map frame, from the prior map. This is deck work and can be done before Talos goes in: Edit map in the viewer (Ctrl+M), save, deploy the package, then restart mapping in the launcher so it reads the new file.",
+     "cmd": "cd ~/osu-uwrt/release && colcon deploy orin2 --packages-select riptide_mapping2\n# then restart mapping in the launcher",
+     "where": "op-top",
+     "refs": [
+      [
+       "#course",
+       "Mapping the course"
       ]
      ]
     },
@@ -2278,16 +2307,17 @@
   {
    "id": "water",
    "title": "In the water",
+   "short": "In the water",
    "steps": [
     {
      "id": "killholder",
-     "t": "Name the kill-switch holder; switch out; two people lift Talos in",
+     "t": "Handle out; two people lift Talos in",
      "safety": true,
-     "why": "Talos is about 32 kg dry. One person's only job is the switch: they hold it, and they pull it when anyone says so.",
+     "why": "Out, the thrusters have no power whatever the viewer says. Talos is about 32 kg dry.",
      "refs": [
       [
-       "#kill",
-       "Kill switch rules"
+       "#roles",
+       "Who does what, and the kill switch"
       ]
      ]
     },
@@ -2304,13 +2334,46 @@
     },
     {
      "id": "enable",
-     "t": "Switch in, Enable in the viewer, wait for the ESCs, Dive in place",
+     "t": "Enable in the viewer, handle still out",
+     "why": "Slot 1 is now clear and latched; the handle still holds Talos killed.",
+     "refs": [
+      [
+       "#sensors",
+       "The first dive"
+      ]
+     ]
+    },
+    {
+     "id": "handlein",
+     "t": "The swimmer seats the handle and moves clear",
      "safety": true,
-     "why": "The ESC boards hold their motors for about 5 s after power comes back. Dive in place targets the current x, y and heading, level, at the configured depth.",
+     "why": "About 5 s later the ESCs are ready and Talos drives to its last target, so nobody's hands stay on it.",
+     "refs": [
+      [
+       "#kill",
+       "The kill rules"
+      ]
+     ]
+    },
+    {
+     "id": "dive",
+     "t": "Dive in place",
+     "why": "Motion panel. It holds the current x, y and heading, level, at 0.75 m deep, so the DVL can lock.",
      "refs": [
       [
        "viewer.html",
        "Driving from the viewer"
+      ]
+     ]
+    },
+    {
+     "id": "sensors",
+     "t": "Before any other move: DVL lock, depth, both cameras, detections, still pose",
+     "why": "Each fails in its own way in water: no bottom lock near the floor or a wall, depth offset, a fogged lens. Check them before blaming a tree.",
+     "refs": [
+      [
+       "#sensors",
+       "Sensor checks"
       ]
      ]
     },
@@ -2328,22 +2391,9 @@
      ]
     },
     {
-     "id": "sensors",
-     "t": "Sensor sanity: DVL lock, depth, both cameras, detections, still pose",
-     "why": "Each fails in its own way in water: no bottom lock near the floor or a wall, depth offset, a fogged lens. Check them before blaming a tree.",
-     "refs": [
-      [
-       "#sensors",
-       "Sensor checks"
-      ]
-     ]
-    },
-    {
      "id": "map",
-     "t": "Put the course in the prior map, then calibrate on the AprilTag",
-     "why": "The trees navigate in the map frame. Edit the prior map in the viewer (Ctrl+M), deploy riptide_mapping2, then Calibrate in the Mapping panel with the tag in view.",
-     "cmd": "cd ~/osu-uwrt/release && colcon deploy orin2 --packages-select riptide_mapping2\n# then restart mapping in the launcher; Calibrate in the viewer's Mapping panel",
-     "where": "op-top",
+     "t": "Calibrate the map on the AprilTag",
+     "why": "With the tag in view, Calibrate in the viewer's Mapping panel sets world \u2192 map from the tag board's pose.",
      "refs": [
       [
        "#course",
@@ -2364,9 +2414,9 @@
     },
     {
      "id": "trees",
-     "t": "Run trees: Enable, Start, unplug, insert the switch",
+     "t": "Run trees: Enable, Start, unplug, the swimmer seats the handle",
      "safety": true,
-     "why": "A tree waits for <code>state/kill</code> to go false, then 6 s more. Untethered, the physical switch is the only kill.",
+     "why": "A tree waits for <code>state/kill</code> to go false, then 6 s more. Untethered, only the handle stops Talos, and only someone at the robot can pull it. End every run as in Ending a run.",
      "refs": [
       [
        "#trees",
@@ -2377,7 +2427,7 @@
     {
      "id": "ident",
      "t": "Identification runs, untethered, from the committed model",
-     "why": "A tethered run fits the tether's pull as buoyancy. <code>IdentificationTree</code> first flies to the map origin facing map +x at 0.85 m, so map and calibrate first; leave 3 m clear ahead (map +x) and to port (map +y) of the origin, and 2.5 m below. Red breath right after the blue fast flash: pool_identify wasn't launched.",
+     "why": "A tethered run fits the tether's pull as buoyancy. <code>IdentificationTree</code> first flies to the map origin facing map +x at 0.85 m, so map and calibrate first; leave 3 m clear ahead (map +x) and to port (map +y) of the origin, and 2.5 m below (water at least about 3.4 m deep there). Red breath right after the blue fast flash: pool_identify wasn't launched.",
      "cmd": "ssh ros@orin2\ntmux new -s ident\nsource ~/colcon_deploy/install/setup.bash\nsource ~/uwrt_config/source/zenoh_server.bash\nexport RMW_IMPLEMENTATION=rmw_zenoh_cpp\nros2 launch riptide_mpc pool_identify.launch.py wait_for_trigger:=true max_iterations:=1",
      "where": "Orin",
      "refs": [
@@ -2396,10 +2446,11 @@
   {
    "id": "after",
    "title": "After",
+   "short": "After",
    "steps": [
     {
      "id": "out",
-     "t": "Kill switch out, Talos out with two people, power off",
+     "t": "Handle out, Talos out with two people, power off",
      "safety": true,
      "why": "Out first: nobody's hands go near the thrusters while the robot can be enabled."
     },

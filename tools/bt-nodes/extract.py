@@ -432,18 +432,26 @@ if args.mission and os.path.exists(args.mission):
             return None
         return c.most_common(1)[0][0] if len(c) == 1 else (c.most_common(1)[0][0] if c.most_common(1)[0][1] > sum(c.values()) / 2 else None)
 
-    prev_top = None
+    # UwrtLogger pushes a node's name when it turns RUNNING. RetryUntilSuccessfulOrTimeout ticks its child before it
+    # turns RUNNING itself, so its name lands ON TOP of its running child (and the child's later pop removes the
+    # decorator's name instead). A custom decorator on top is therefore not where the time goes: charge the entry
+    # below it.
+    DECOR = {nid for nid, n in nodes.items() if n['kind'] == 'decorator'}
+    prev_top, prev_depth = None, 0
     for i, (t, s) in enumerate(stack):
-        top = s[-1] if s else None
+        k = len(s) - 1
+        while k > 0 and type_of(s[k]) in DECOR:
+            k -= 1
+        top = s[k] if s else None
         t_next = stack[i + 1][0] if i + 1 < len(stack) else t
         ty = type_of(top) if top else None
         if ty is None and top:
             unmapped[top] += t_next - t
         elif ty:
             secs[ty] += t_next - t
-            if top != prev_top or (i > 0 and len(stack[i - 1][1]) < len(s)):
+            if top != prev_top or prev_depth < k + 1:
                 starts[ty] += 1
-        prev_top = top
+        prev_top, prev_depth = top, k + 1
     t0, t1 = stack[0][0], stack[-1][0]
     rows = [{'id': k, 'secs': round(v, 1), 'starts': starts[k], 'custom': k in CUSTOM,
              'group': next((n['group'] for n in nodes.values() if n['id'] == k), None)}

@@ -16,35 +16,43 @@
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>The robot runs ROS 2 packages mainly from five team repos: <code>riptide_core</code> (drivers, messages, the EKF), <code>riptide_control</code> (the MPC), <code>riptide_perception</code> (detector and map), <code>riptide_autonomy</code> (behaviour trees) and <code>riptide_launch</code>, plus the DVL driver, the ZED camera wrapper, the micro-ROS agent, the AprilTag detector and <code>chameleon_tf</code>.</li>
-      <li><code>riptide_release</code> ties them together. Each repo is a git submodule pinned to one commit. You deploy from that workspace, but deploy copies your checkout as it is, so update the submodules first.</li>
+      <li>The robot runs ROS 2 packages from five team repos (<code>riptide_core</code>, <code>_control</code>, <code>_perception</code>, <code>_autonomy</code>, <code>_launch</code>) plus a few outside drivers.</li>
+      <li><code>riptide_release</code> ties them together: each repo is a git <a class="gl" href="glossary.html#term-submodule">submodule</a> <a class="gl" href="glossary.html#term-pin">pinned</a> to one commit, and you deploy from that workspace.</li>
       <li>Most of them run a feature branch, not <code>master</code>. Check the branch before you clone.</li>
       <li>Below ROS sits <code>titan_firmware</code> on the boards; beside it is <code>Nereus</code>, the simulator and operator GUI for both sim and robot.</li>
-      <li>Mercury is a different robot's stack (Triton). <code>riptide_simulator</code> and <code>riptide_rviz</code> are legacy.</li>
+      <li>Mercury is a different robot's stack (Triton). <code>riptide_simulator</code> and the RViz panels in <code>riptide_gui</code> are legacy, but the Nereus viewer still draws the props from <code>riptide_gui</code>'s meshes.</li>
     </ul></aside>
 
     <div class="prose">
       <h2 id="layers">The stack in layers</h2>
-      <p>Before the list of repos, here is the robot's software as one picture: data flows up from the boards through drivers, the state estimate and perception to the mission tree, then back down as thruster commands. Each box is one package.</p>
+      <p>Before the list of repos, here is the robot's software as one picture: data flows up from the boards through the drivers, the state estimate and perception to the mission tree, then back down as thruster commands. Each box is one program, labelled with the package that provides it (the sensor box groups three drivers); the dashed boxes are what the operator runs.</p>
     </div>
     <figure class="fig">
-      <div class="panel" id="stack-graph"></div>
-      <div class="graph-note" id="stack-note" aria-live="polite">Tap or hover a box to see its package and repo.</div>
-      <figcaption><b>Talos's packages by layer.</b> Arrows are data: sensor readings up to the EKF, detections into the map, map frames into the mission tree, goals into the MPC, thruster commands back to the boards over CAN. Dashed: the operator's commands from the Nereus viewer. The remote launcher has no arrows: it starts the other boxes' launch files on the Orin. Tap or hover a box for its repo and branch; "Show in explorer" opens it below.</figcaption>
+      <div class="panel cm-stack-panel">
+        <p class="cm-steps-hint">Step through the loop with <b>Next</b> under the picture, or tap a box.</p>
+        <div id="stack-graph"></div>
+        <div class="controls cm-steps">
+          <button class="btn" id="stack-prev" type="button" aria-label="Previous step">‹ Back</button>
+          <span class="cm-step-count" id="stack-count" aria-live="polite">Step 1 of 6</span>
+          <button class="btn primary" id="stack-next" type="button" aria-label="Next step">Next ›</button>
+        </div>
+      </div>
+      <div class="graph-note cm-stack-note" id="stack-note" aria-live="polite"></div>
+      <figcaption><b>Talos's software by layer.</b> Arrows are data; the dashed arrow is the operator's command from the Nereus viewer. Tap a box for its repo and branch.</figcaption>
     </figure>
     <div class="prose">
       <ul>
-        <li><strong>Firmware</strong> runs on the RP2040 microcontrollers in the hull (<a href="firmware.html">Firmware on the boards</a>). Each board is a micro-ROS node, bridged onto ROS 2 over CAN by the micro-ROS agent on the Orin. Talos has two CAN buses: at the pin, <code>copro_agent.launch.py</code> runs an agent on <code>can0</code> for the main boards and an "external network" agent on <code>can1</code>; the newest <code>riptide_core</code> commit, not pinned yet, turns the <code>can1</code> agent off.</li>
+        <li><strong>Firmware</strong> runs on the RP2040 boards (<a href="firmware.html">Firmware on the boards</a>). Each board is a <a class="gl" href="glossary.html#term-micro-ros">micro-ROS</a> node, bridged onto ROS 2 over CAN by an agent on the Orin. Thruster RPMs skip ROS: the MPC writes them to the ESC boards as raw CAN frames.</li>
         <li><strong>Drivers</strong> turn devices into ROS topics: IMU, fiber-optic gyro, DVL, the two ZED cameras (<a href="sensors.html">Navigation sensors</a>, <a href="cameras.html">The cameras</a>).</li>
         <li><strong>Estimation</strong> is the robot_localization EKF, launched and configured by <code>riptide_hardware</code> (<a href="localization.html">State estimation</a>).</li>
         <li><strong>Perception</strong> and <strong>mapping</strong> find the props and keep one estimate of each (<a href="perception/index.html">How Talos sees</a>).</li>
-        <li><strong>Autonomy</strong> runs a behaviour tree that decides what to do next (<a href="bt.html">Behaviour trees</a>); <strong>control</strong> turns that into thrust (<a href="control/index.html">How Talos flies</a>).</li>
+        <li><strong>Autonomy</strong> runs a <a class="gl" href="glossary.html#term-behaviour-tree">behaviour tree</a> that decides what to do next (<a href="bt.html">Behaviour trees</a>); <strong>control</strong> turns that into thrust (<a href="control/index.html">How Talos flies</a>).</li>
       </ul>
       <p>Each package talks to the others only through ROS topics, services, actions and TF frames (<a href="ros2.html">ROS 2, the Talos way</a>). That's why the code can live in separate repos: a package mostly needs another repo for its message types, not its code.</p>
 
       <h2 id="explorer">Every repo and package</h2>
       <p>The explorer below is generated from the repositories themselves: <code>package.xml</code> for names, versions and dependencies, <code>CMakeLists.txt</code> and <code>setup.py</code> for the nodes each package installs, and a line count of every tracked source file. Vendored libraries (the VectorNav SDK, Dear ImGui, the Pico SDK and the like) are left out.</p>
-      <p>"Depends on" lists only the team's packages. Talos also leans on outside packages that come from ROS 2 or the system, not a team repo: <code>robot_localization</code> (the EKF), <code>behaviortree_cpp_v3</code> (the mission trees), Eigen and yaml-cpp (the MPC), <code>rmw_zenoh_cpp</code> (the middleware; the launcher starts its router) and the detector's OpenCV and Ultralytics. Each package's "Upstream packages" line lists its own.</p>
+      <p>"Depends on" lists only the team's packages. Talos also leans on outside packages that come from ROS 2 or the system, not a team repo: <code>robot_localization</code> (the EKF), <code>behaviortree_cpp_v3</code> (the mission trees), Eigen and yaml-cpp (the MPC), <code>rmw_zenoh_cpp</code> (the <a class="gl" href="glossary.html#term-rmw">middleware</a>: <a class="gl" href="glossary.html#term-zenoh">Zenoh</a>; the launcher starts its router) and the detector's OpenCV and Ultralytics. Each package's "Upstream packages" line lists its own.</p>
     </div>
     <figure class="fig" id="explorer-fig">
       <div class="panel cm-panel">
@@ -59,13 +67,13 @@
             <label class="cm-search"><span class="cm-vh">Search</span><input type="search" id="cm-q" placeholder="Search: mpc, gyro, launch…" autocomplete="off" spellcheck="false"></label>
           </div>
         </div>
+        <div class="cm-legend" id="cm-legend"></div>
         <div class="cm-body">
           <div class="cm-list" id="cm-list"></div>
           <aside class="cm-detail" id="cm-detail" aria-live="polite"></aside>
         </div>
-        <div class="cm-legend" id="cm-legend"></div>
       </div>
-      <figcaption><b>The code explorer.</b> Each repo row shows its size (bar length, lines of code, coloured by language) and its packages. Tap a repo or a package for what it does, the nodes it installs, what it depends on and which chapter explains it. Filter by layer, or search for a node or file name.</figcaption>
+      <figcaption><b>The code explorer.</b> Each row shows a repo's size (bar length, lines of code, coloured by language). Tap a repo for its packages and what it does; tap a package for its nodes, dependencies and chapter. Filter by layer, or search for a package, node or launch file.</figcaption>
     </figure>
     <div class="prose">
       <p>A few things stand out:</p>
@@ -73,7 +81,7 @@
         <li><strong>Nereus and the firmware are the biggest pieces.</strong> The simulator and viewer are about 78,000 lines of C++ and Python, the board firmware about 58,000 of C and C++. The robot's own ROS packages are smaller: <code>riptide_control</code> (mostly <code>riptide_mpc</code>) is about 18,000.</li>
         <li><strong>The mission is mostly XML.</strong> <code>riptide_autonomy</code> has about 10,000 lines of code (mostly the C++ tree nodes) and about 86,000 lines of XML, nearly all of it the trees in <code>trees/</code>. The competition tree alone is over 4,000.</li>
         <li><strong>Package names don't always match folder names.</strong> The folder <code>riptide_hardware</code> builds the package <code>riptide_hardware2</code>; likewise <code>riptide_msgs2</code>, <code>riptide_descriptions2</code>, <code>riptide_controllers2</code>, <code>riptide_mapping2</code>, <code>riptide_autonomy2</code>, <code>riptide_bringup2</code>. <code>ros2 run</code> and <code>ros2 launch</code> want the package name, not the folder.</li>
-        <li><strong>Two marker files</strong> change how a package is built. <code>COLCON_IGNORE</code> makes colcon skip it everywhere (<code>riptide_teleop</code>, and Nereus, which has its own CMake build). <code>DEPLOY_IGNORE</code> keeps it off the robot (<code>riptide_rviz</code>, <code>riptide_meshes</code>, <code>camera_faker</code>).</li>
+        <li><strong>Two marker files</strong> change how a package is built. <a class="gl" href="glossary.html#term-colcon-ignore"><code>COLCON_IGNORE</code></a> makes <a class="gl" href="glossary.html#term-colcon">colcon</a> skip it everywhere (<code>riptide_teleop</code>, and Nereus, which has its own CMake build). <a class="gl" href="glossary.html#term-deploy-ignore"><code>DEPLOY_IGNORE</code></a> keeps it off the robot (<code>riptide_rviz</code>, <code>riptide_meshes</code>, <code>camera_faker</code>).</li>
       </ul>
 
       <h2 id="disk">Where it lives on your machine</h2>
@@ -87,7 +95,8 @@
 │   │   ├── riptide_core/  riptide_control/  riptide_perception/
 │   │   ├── riptide_autonomy/  riptide_launch/  nortek_dvl/
 │   │   ├── chameleon_tf/  apriltag_ros/  apriltag_msgs/  opbox_software/
-│   │   ├── riptide_gui/  riptide_simulator/   <span class="c">legacy</span>
+│   │   ├── riptide_gui/        <span class="c">prop meshes the viewer draws; RViz (legacy)</span>
+│   │   ├── riptide_simulator/  <span class="c">legacy</span>
 │   │   └── zed-ros2-wrapper/ …  <span class="c">not submodules: from zed_wrapper.repos</span>
 │   ├── nereus/             <span class="c">submodule; own CMake build, not colcon</span>
 │   ├── zed_wrapper.repos   <span class="c">pins the ZED wrapper + image transports</span>
@@ -114,7 +123,9 @@
 │   │   ├── apriltag_ros/
 │   │   ├── apriltag_msgs/
 │   │   ├── opbox_software/
-│   │   ├── riptide_gui/  <span class="c">legacy</span>
+│   │   ├── riptide_gui/
+│   │   │     <span class="c">prop meshes the viewer draws;</span>
+│   │   │     <span class="c">RViz panels (legacy)</span>
 │   │   ├── riptide_simulator/  <span class="c">legacy</span>
 │   │   └── zed-ros2-wrapper/ …
 │   │         <span class="c">not submodules: from</span>
@@ -143,20 +154,20 @@
     <div class="prose">
       <p>There are two workspaces because they do different jobs:</p>
       <ul>
-        <li><strong><code>development/</code></strong> is created by <a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/setup_scripts/dev_install/riptide.repos"><code>riptide.repos</code></a> with <code>vcs import</code>. It clones the team repos on <code>master</code> (<code>ros2</code> for autonomy) and the dependencies on their own branches (<code>ros2_dev</code> for the DVL driver), and builds them as two chained colcon workspaces.</li>
+        <li><strong><code>development/</code></strong> is created by <a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/setup_scripts/dev_install/riptide.repos"><code>riptide.repos</code></a> with <code>vcs import</code> (a tool that clones every repo a list names). It clones the team repos on <code>master</code> (<code>ros2</code> for autonomy) and the dependencies on their own branches (<code>ros2_dev</code> for the DVL driver), and builds them as two chained colcon workspaces.</li>
         <li><strong><code>release/</code></strong> is <a href="https://github.com/osu-uwrt/riptide_release">riptide_release</a>, cloned with <code>--recursive</code>. It is the one you deploy from and the one GUI tools should run from, so your laptop and the robot run the same code.</li>
       </ul>
       <p>Talos's current code is on feature branches, so a fresh <code>development/</code> on <code>master</code> isn't what the robot runs. Check out the branch from the table below, or work in <code>release/src</code> directly.</p>
 
       <h2 id="pinning">The release repo pins everything</h2>
-      <p>A git submodule records one exact commit of another repo. So one commit of <code>riptide_release</code> names exactly which commit of every package was meant to be on the robot. That's the whole idea (the <a href="https://github.com/osu-uwrt/riptide_release/blob/master/README.md">README</a> spells out the routine):</p>
+      <p>A git submodule records one exact commit of another repo. The <a class="gl" href="glossary.html#term-release-workspace">release workspace</a> is built on that. So one commit of <code>riptide_release</code> names exactly which commit of every package was meant to be on the robot. That's the whole idea (the <a href="https://github.com/osu-uwrt/riptide_release/blob/master/README.md">README</a> spells out the routine):</p>
       <ol>
         <li><strong>Before a pool test</strong>, move each submodule to the commit you want to test and commit the release repo ("Pre RPAC test 10-12-26").</li>
-        <li><strong>At the pool</strong>, deploy from <code>~/osu-uwrt/release</code> with <code>colcon deploy</code>: it copies the package sources to <code>~/colcon_deploy/src</code> on the Orin and builds them there. Packages with <code>DEPLOY_IGNORE</code> stay behind.</li>
+        <li><strong>At the pool</strong>, deploy from <code>~/osu-uwrt/release</code> with <a class="gl" href="glossary.html#term-colcon-deploy"><code>colcon deploy</code></a>: it copies the package sources to <code>~/colcon_deploy/src</code> on the Orin and builds them there. Packages with <code>DEPLOY_IGNORE</code> stay behind.</li>
         <li><strong>After the test</strong>, commit any fixes made at the pool in their own repos, bump the submodules, and tag the release with the date. If a later change breaks something, you can roll back to a tag.</li>
       </ol>
-      <p>The release repo's CI, <a href="https://github.com/osu-uwrt/riptide_release/blob/master/.github/workflows/ros2-ci.yml"><code>ros2-ci.yml</code></a> ("ROS 2 Full Stack CI"), builds the submodules in <code>src/</code> (all but <code>tensor_detector</code>) with colcon on every push and pull request to <code>master</code>. That is the automatic check that a set of pins builds, with one catch: if a pinned commit can't be fetched, it falls back to that submodule's branch tip, so a green build doesn't prove that exact pin builds.</p>
-      <p>In practice the last dated tag is from June 2024 (<code>6-29-24_talos</code>) and <code>robosub2026</code> is the newest tag. Recent tests are found by their "Pre … test" release commits instead (the grid below).</p>
+      <p>The release repo's CI, <a href="https://github.com/osu-uwrt/riptide_release/blob/master/.github/workflows/ros2-ci.yml"><code>ros2-ci.yml</code></a> ("ROS 2 Full Stack CI"), builds every package in <code>src/</code> except <code>tensor_detector</code> with colcon on every push and pull request to <code>master</code>. That is the automatic check that a set of pins builds, with one catch: if a pinned commit can't be fetched, it falls back to that submodule's branch tip, so a green build doesn't prove that exact pin builds.</p>
+      <p>In practice the last dated tag is from June 2024 (<code>6-29-24_talos</code>) and <code>robosub2026</code> is the newest tag. Recent tests are found by their "Pre … test" release commits instead (the history below).</p>
       <div class="callout"><p><strong>A pin only matches the robot if your checkout matches the pin.</strong> <code>colcon deploy</code> rsyncs each package folder from your working tree (<a href="https://github.com/osu-uwrt/riptide_setup/blob/humble/colcon_riptide/colcon_riptide/verb/deploy.py"><code>deploy.py</code></a>), not the pinned commit, and the robot's copy has no git history. Local edits, untracked files and branch commits past the pin all go to the Orin. Run <code>git submodule update</code> in <code>~/osu-uwrt/release</code> and check <code>git status</code> is clean before you deploy. Packages generated from Simulink by <a href="https://github.com/osu-uwrt/riptide_simulink">riptide_simulink</a> (staged in <code>src/simulink_models/</code>) aren't in any repo, so no release commit pins them.</p></div>
       <p><a href="pool-test.html">Pool test day</a> covers the routine and <a href="setup.html">Setting up your machine</a> the commands. Here is what the pins look like now:</p>
       <table class="params cm-pins" id="cm-pins">
@@ -169,7 +180,7 @@
     <figure class="fig">
       <div class="panel" id="cm-history"></div>
       <div class="cm-hist-read" id="cm-hist-read" aria-live="polite"></div>
-      <figcaption><b>Fourteen months of release commits.</b> One column per commit of <code>riptide_release</code> since August 2025 (first-parent history, so merges count once), one row per submodule. A filled dot means that commit moved the pin forward, bigger for more commits pulled in. A ring means the pin was added, or moved to a commit that isn't ahead of the old one. Tap a column, or use the arrows, to read the commit.</figcaption>
+      <figcaption><b>Fourteen months of release commits.</b> Every commit of <code>riptide_release</code> since August 2025 (merge commits counted once) and the submodule pins it moved.</figcaption>
     </figure>
     <div class="prose">
       <p id="cm-hist-sum"></p>
@@ -192,23 +203,23 @@
           <tr><td>A board's firmware</td><td><a href="https://github.com/osu-uwrt/titan_firmware/tree/master/talos"><code>titan_firmware/talos/&lt;Board&gt;/</code></a></td></tr>
         </tbody>
       </table>
-      <p><a href="https://github.com/osu-uwrt/riptide_launch/blob/newsim/remote_launch/launches/talos_launch_mpc.yaml#L43-L57"><code>talos_launch_mpc.yaml</code></a> also lists <code>riptide_navigation</code>, a Simulink-built navigation whose source isn't in any team repo; the team runs <code>riptide_hardware2</code>'s navigation instead, never both (<a href="launch.html#entries">Launching the stack, the pool list</a>).</p>
 
       <h2 id="legacy">Legacy code and other robots</h2>
       <p>The repos carry a lot of history, and GitHub search will happily send you to it. What's no longer used on Talos:</p>
       <ul>
         <li><strong><code>riptide_simulator</code></strong> (<code>c_simulator</code>, <code>camera_faker</code>): the previous simulator. Nereus replaced it (<a href="nereus.html">Nereus, the simulator</a>).</li>
-        <li><strong><code>riptide_rviz</code></strong> in <code>riptide_gui</code>: RViz panels for the old operator GUI. The team no longer uses RViz; the <a href="viewer.html">Nereus viewer</a> drives both sim and robot. Old READMEs still say "start RViz".</li>
+        <li><strong>The RViz panels in <code>riptide_rviz</code></strong> (in <code>riptide_gui</code>): the old operator GUI. The team no longer uses RViz; the <a href="viewer.html">Nereus viewer</a> drives both sim and robot. Old READMEs still say "start RViz". One file in it is still live: the viewer reads <code>riptide_rviz/config/markers.yaml</code>, the list of course markers.</li>
         <li><strong>complete_controller</strong>: the Simulink sliding-mode/PID controller in <code>riptide_controllers/models</code>, built with <code>riptide_simulink</code>. <code>riptide_mpc</code> replaced it; <code>control_system.launch.py</code> still starts it unless you pass <code>active_control_model:=mpc</code>.</li>
         <li><strong>The <code>vectornav</code> driver</strong> in the dependencies workspace: <code>riptide_imu</code> replaced it.</li>
         <li><strong>The monitor nodes</strong> in <code>diagnostics.launch.py</code>: out of date and not run. The <code>diagnostics</code> entry is still in <code>talos_launch_mpc.yaml</code> and the bench list, but nobody starts it (<a href="launch.html#entries">Launching the stack</a>). <strong>The leak sensor</strong>: no longer used.</li>
         <li><strong>Archived repos</strong> on GitHub (<code>riptide_kill_switch</code>, <code>riptide_controllers</code>, <code>riptide_mapping</code> as separate repos, <code>riptide_yolo</code>, <code>uuv_simulator</code>, …) are from before the current repo layout.</li>
         <li><strong><code>riptide_slam</code> and <code>riptide_isaacSim</code></strong> are experiments that Talos doesn't use; Nereus now makes the synthetic training data (<a href="perception/training.html">Training the detector</a>).</li>
       </ul>
+      <p><code>riptide_gui</code> and <code>riptide_simulator</code> are still submodules, which is why they show up in the pins table and the history above. <code>riptide_gui</code> is still pinned because the Nereus viewer draws the mapped props with its <code>riptide_meshes</code> models, placed by the marker list in <code>riptide_rviz/config/markers.yaml</code>; its recent commits (September and October 2026) are prop mesh fixes, and a wrong-looking prop in the viewer is fixed there. Its RViz panels were last used at RoboSub 2026 (the "Semis2" and "Finals config" commits, July 2026). The old simulator was worked on until September 2026, when Nereus was started; Nereus joined the release repo on 27 October 2026. Don't start new work in <code>riptide_simulator</code> or the RViz panels.</p>
       <p>The <code>mercury_*</code> repos (<code>mercury_release</code>, <code>mercury_dev</code>, <code>mercury_controller</code>, …) are a separate ROS 2 stack for <strong>Triton</strong>, the team's second vehicle: the 2025-26 rebuild of the earlier secondary AUV, competing at RoboSub 2026 (<a href="robosub.html">RoboSub and the course</a>). The firmware's <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/tools/DeviceList.jsonc#L26"><code>DeviceList.jsonc</code></a> lists the "Triton boards" with <code>mercury/…</code> board types. Its <code>mercury_release</code> pins submodules the same way <code>riptide_release</code> does. The <code>uwrt_docs</code> Sphinx docs cover Mercury packages, not Talos's. Inside the Talos repos you'll also meet configs for older vehicles (Puddles, Tempest, LilTank in <code>riptide_descriptions/config</code>); Talos's are always the <code>talos*</code> files.</p>
 
       <h2 id="open" data-short="Open problems">Open problems</h2>
-      <p>Looking for something to work on? These are the known gaps the other chapters describe, one line each. They reflect the code at the <a href="index.html#branches">branches this site describes</a>; check the code before you start, since someone may have fixed one since.</p>
+      <p>Looking for something to work on? These are the known gaps the other chapters describe, one line each. They reflect the code at the <a href="#pinning">branches in the pins table</a>; check the code before you start, since someone may have fixed one since.</p>
       <ul>
         <li><strong>The pinger order looks inverted.</strong> <code>buffer_0_closer</code> true means the torpedo stop was louder, but the mission stores it as <code>is_table</code> (<a href="sensors.html#acoustics">Acoustics</a>).</li>
         <li><strong>The pinger comparison can go stale.</strong> In <code>max</code> mode, peaks 1000 or more apart set nothing, and the node keeps publishing the old answer (<a href="sensors.html#acoustics">Acoustics</a>).</li>
@@ -218,7 +229,7 @@
         <li><strong>The diagnostics monitors are out of date</strong> and not run, so the viewer's CPU chip stays grey (<a href="launch.html#entries">Launching the stack</a>).</li>
         <li><strong>The prebuilt downward-camera engine is an untested risk.</strong> <code>dfc_rs_26.engine</code> only loads on the GPU and TensorRT it was built for, with no fallback (<a href="setup.html#gpu">Setting up your machine</a>).</li>
         <li><strong>Nereus has no pinger</strong>, so the random-pinger step can't be tested in sim (<a href="nereus.html#limits">Nereus</a>).</li>
-        <li><strong><code>riptide_navigation</code>, still in the pool list, has no source in any team repo</strong> (<a href="#start">above</a>).</li>
+        <li><strong><code>riptide_navigation</code>, still in the pool list, has no source in any team repo.</strong> It is a Simulink-built navigation; the team runs <code>riptide_hardware2</code>'s instead, never both (<a href="launch.html#entries">Launching the stack</a>).</li>
       </ul>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>

@@ -1,14 +1,12 @@
 import { setup } from '../layout.js';
 import '../css/chapter.css';
 import '../css/commanding.css';
-import { FlowGraph } from '../viz/commanding-flow.js';
+import { FlowSteps } from '../viz/commanding-steps.js';
 import { KillSim, makeConstants, HISTORY_SECONDS } from '../viz/commanding-killsim.js';
 
 setup();
 
 const BASE = import.meta.env.BASE_URL;
-// Public images: set from here, because Vite's dev server rewrites an absolute src under the base a second time.
-document.querySelectorAll('img[data-src]').forEach((img) => { img.src = BASE + img.dataset.src; });
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const hex = (v, n = 2) => '0x' + v.toString(16).toUpperCase().padStart(n, '0');
 
@@ -36,23 +34,128 @@ fetch(BASE + 'data/commanding/commanding.json').then((r) => r.json()).then(init)
 
 function init(data) {
 
+// ---------------------------------------------------------------- the step-through flow
+{
+  const L = data.mpc.links, F = data.firmware.links, V = data.viewer.links, O = data.overseer.links;
+  const id0 = hex(data.can.esc0.id), id1 = hex(data.can.esc1.id);
+  const ms = (o) => `${o.value} ms`;
+  const tick = data.mpc.control_period_s * 1000, beat = data.viewer.heartbeat_s * 1000, slot = data.viewer.slot;
+  const NODES = {
+    bt: { label: 'Autonomy', sub: 'behaviour tree', where: 'Orin',
+      info: 'The mission tree (riptide_autonomy2). Sends goals, waits on settle trust, and waits for <code>state/kill</code> to read false before a run.',
+      link: 'https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/FollowPath.btaction.hpp' },
+    viewer: { label: 'Nereus viewer', sub: 'motion panel', where: 'Laptop',
+      info: `The operator UI. Commands poses, and owns software kill slot ${slot}: it asserts kill every ${beat} ms until you press Enable.`, link: V.report },
+    sw: { label: 'Kill switch', sub: 'red handle, port bow window', where: 'Hull',
+      info: 'A Hall-effect sensor behind the window senses the magnet in the handle. Pulled off = killed: the switch line cuts <code>MOTOR_PWR</code>, the ESC boards\' power, in hardware, and the POAC board reads it on a GPIO interrupt as slot 0. The circuit: <a href="boards.html#kill">The circuit boards</a>.', link: F.physical },
+    mpc: { label: 'mpc_controller', sub: `riptide_mpc, every ${tick} ms`, where: 'Orin',
+      info: `Holds the reference and ticks every ${tick} ms. It sends zero thrust while killed, while motion is disabled, or with odometry older than ${data.mpc.odom_timeout_s} s.`, link: L.tick },
+    ov: { label: 'controller_overseer', sub: 'riptide_controllers2', where: 'Orin',
+      info: 'Left over from the old controller and still launched with the MPC. It turns ESC telemetry into <code>controller/motion_enabled</code> and publishes the feedforward wrench.', link: O.telemetry_cb },
+    agent: { label: 'micro-ROS agent', sub: 'bridges ROS to can0', where: 'Orin',
+      info: `Bridges ROS 2 to the boards' micro-ROS clients over the internal CAN bus (<a class="gl" href="glossary.html#term-can-fd">CAN FD</a>, ${data.can.rate / 1e6} Mbit/s, ${data.can.fd_rate / 1e6} Mbit/s data). Every ROS message to or from a board crosses it.`,
+      link: 'https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/copro_agent.launch.py' },
+    esc: { label: 'ESC boards 0 and 1', sub: 'four APD ESCs each', where: 'Board',
+      info: `Each board keeps its four RPM targets for ${data.firmware.esc_rpm_timeout_ms.value} ms. Its RP2040 runs a PI speed loop per thruster and drives its four on-board APD 80F3 ESCs over DShot${data.firmware.dshot_rate_khz.value}, with RPM fed back. The ESCs drive the motor phases out to the thrusters. Power comes in on <code>MOTOR_PWR</code>, through the kill (<a href="boards.html#kill">circuit</a>).`, link: F.esc_flags },
+    poac: { label: 'POAC board', sub: 'decides the kill', where: 'Board',
+      info: 'Power and actuator board. It combines the physical switch and the software slots into one kill, drives the soft-kill pin and publishes <code>state/kill</code>.', link: F.refresh },
+    thr: { label: '8 thrusters', sub: 'Blue Robotics T200', where: 'Frame',
+      info: 'Mounted on the frame outside the hulls. Each is a brushless motor driven by one ESC on an ESC board, through the thruster SubConn.', link: 'thrusters-hw.html' },
+  };
+  // Every link, for the "Every box" view.
+  const EDGES = [
+    ['bt', 'mpc', '<code>follow_path</code> (FollowPath action) and <code>controller/linear</code>, <code>/angular</code> (ControllerCommand)'],
+    ['mpc', 'bt', `<code>controller/scale/trust</code> (Twist), action feedback (both every ${tick} ms) and the result`],
+    ['viewer', 'mpc', '<code>controller/linear</code> + <code>/angular</code> (ControllerCommand), on Command and while dragging'],
+    ['viewer', 'agent', `<code>command/software_kill</code> (KillSwitchReport), slot ${slot}, every ${beat} ms`],
+    ['agent', 'poac', 'the slot reports, over CAN'],
+    ['poac', 'agent', `<code>state/kill</code> (Bool), every ${ms(data.firmware.poac_kill_publish_ms)} and at once on a change; <code>state/firmware</code> with the kill bitmasks`],
+    ['sw', 'poac', 'the switch line: cuts ESC power, and a GPIO interrupt on the POAC board'],
+    ['poac', 'esc', '<code>MOTOR_PWR</code>, the ESCs\' power; the soft-kill pin can cut it even with the switch in'],
+    ['agent', 'mpc', '<code>state/kill</code>: true makes the MPC send zeros and abort any path'],
+    ['agent', 'esc', `<code>state/kill</code>, used by the ESC boards as their own heartbeat (${ms(data.firmware.switch_timeout_ms)} timeout)`],
+    ['mpc', 'esc', `two raw CAN frames every ${tick} ms, ${id0} and ${id1}, four RPMs each, skipping ROS`],
+    ['esc', 'thr', 'motor phases: each on-board ESC drives one T200'],
+    ['esc', 'ov', `<code>state/thrusters/telemetry</code>, every ${ms(data.firmware.esc_telemetry_ms)} per board, through the agent`],
+    ['ov', 'mpc', '<code>controller/motion_enabled</code> (Bool), and <code>controller/FF_body_force</code> at 1 Hz'],
+  ];
+  const hop = (k, s, o = {}) => ({ k, s, ...o });
+  const off = (h) => ({ ...h, cold: true });
+  const G = {
+    goal: hop('<code>follow_path</code>', 'or a ControllerCommand per half'),
+    can: hop(`raw CAN ${id0}, ${id1}`, `every ${tick} ms, skips ROS`),
+    dshot: hop('motor phases', 'ESC drives the T200'),
+    trust: hop('trust, feedback, result', `<code>controller/scale/trust</code>, every ${tick} ms`, { back: true }),
+  };
+  const goalChain = ['bt', 'mpc', 'esc', 'thr'];
+  const pathMove = '<code>state/kill</code>';
+  const STORIES = [
+    { id: 'goal', name: 'A goal', steps: [
+      { nodes: goalChain, hops: [G.goal, off(G.can), off(G.dshot)],
+        text: `The tree's <code>FollowPath</code> node sends a goal on <code>follow_path</code>. The MPC checks it, plans the whole path and starts the reference moving.` },
+      { nodes: goalChain, hops: [off(G.goal), G.can, off(G.dshot)],
+        text: `Every ${tick} ms the MPC estimates, solves, publishes <code>thruster_forces</code>, converts them to RPM and writes frames ${id0} and ${id1} on <code>can0</code>.` },
+      { nodes: goalChain, hops: [off(G.goal), off(G.can), G.dshot],
+        text: `Each ESC board keeps its four targets for ${data.firmware.esc_rpm_timeout_ms.value} ms. A speed loop per thruster drives one of the board's own APD ESCs over <a class="gl" href="glossary.html#term-dshot">DShot600</a> (RPM comes back the same way), and the ESC drives the T200 out on the frame.` },
+      { nodes: goalChain, hops: [G.trust, off(G.can), off(G.dshot)],
+        text: `Back up: action feedback every tick (metres along the path) and settle trust. The goal succeeds once trust reaches ${data.mpc.success_trust} at the end.` },
+    ] },
+    { id: 'enable', name: 'Enable', steps: [
+      { nodes: ['viewer', 'agent', 'poac'], hops: [hop('<code>software_kill</code>', `slot ${slot}: "not killed", every ${beat} ms`), hop('CAN bus', 'to the board\'s micro-ROS client')],
+        text: `You press Enable. The viewer's slot-${slot} report changes to "not killed", and the micro-ROS agent carries it over CAN to the POAC board.` },
+      { nodes: ['sw', 'poac', 'esc'], hops: [hop('switch line', 'closed: the switch is in'), hop('<code>MOTOR_PWR</code> on', 'power to the boards\' ESCs')],
+        text: 'No slot asserting and the switch in, so the POAC board releases its soft-kill pin and the ESC boards\' ESCs get power.' },
+      { nodes: ['poac', 'agent', ['esc', 'mpc']], hops: [hop(`${pathMove} false`, `at once, then every ${ms(data.firmware.poac_kill_publish_ms)}`), hop(pathMove, 'to every subscriber')],
+        text: '<code>state/kill</code> goes false at once. The ESC boards and the MPC clear their own kill.' },
+      { nodes: ['esc', 'ov', 'mpc'], hops: [hop('telemetry', `every ${ms(data.firmware.esc_telemetry_ms)}, flags set`), hop('<code>motion_enabled</code>', 'true once the flags clear')],
+        text: `For ${data.firmware.esc_poweron_delay_ms.value / 1000} s the ESC boards flag <code>ESC_POWERON_DELAY</code> while the ESCs start, so the overseer keeps <code>motion_enabled</code> false. Then the flags clear and the MPC may drive.` },
+    ] },
+    { id: 'kill', name: 'Switch out', steps: [
+      { nodes: ['sw', 'poac', 'esc'], hops: [hop('switch line', 'open: the switch is out'), hop('<code>MOTOR_PWR</code> off', 'in hardware, at once')],
+        text: 'You pull the red handle. The switch line opens and the ESCs\' power drops in hardware. The POAC board\'s GPIO interrupt marks slot 0 as asserting.' },
+      { nodes: ['poac', 'agent', ['esc', 'mpc']], hops: [hop(`${pathMove} true`, 'at once, on the change'), hop(pathMove, 'to every subscriber')],
+        text: 'The ESC boards zero their throttles. The MPC sends zeros and aborts any running path.' },
+      { nodes: ['mpc', 'esc'], hops: [hop('raw CAN: zeros', `every ${tick} ms`)],
+        text: 'The MPC keeps writing frames of zeros, so the ESC targets never go stale. It keeps its reference for when the switch goes back in (<a href="#survives">what it flies then</a>).' },
+      { nodes: ['poac', 'agent', ['viewer', 'bt']], hops: [hop(`${pathMove}, <code>state/firmware</code>`, `every ${ms(data.firmware.poac_kill_publish_ms)}`), hop('through ROS', 'to the operator and the tree')],
+        text: 'The viewer shows the robot as killed, and <code>state/firmware</code> says which slot holds the kill. A tree waiting in <code>WaitForKillSwitch</code> stays there.' },
+    ] },
+  ];
+  new FlowSteps(document.getElementById('flow-body'), { nodes: NODES, edges: EDGES, stories: STORIES, segmented });
+}
+
 // ---------------------------------------------------------------- message definitions
 {
   const tabs = document.getElementById('msg-tabs');
   const pre = document.getElementById('msg-text');
   const src = document.getElementById('msg-src');
   const names = ['ControllerCommand', 'FollowPath', 'PathSegment', 'KillSwitchReport', 'DshotCommand'];
-  const highlight = (text) => text.split('\n').map((line) => {
+  // One block per line, so a long comment wraps under its own line (see commanding.css). On a phone, a run of
+  // comment-only lines is joined into one paragraph, so it wraps as prose instead of ragged '#' fragments.
+  const narrow = matchMedia('(max-width: 640px)');
+  const isRule = (l) => /^#\s*=+\s*$/.test(l);
+  const joinComments = (lines) => lines.reduce((out, l) => {
+    const prev = out[out.length - 1];
+    const cmt = /^\s*#/.test(l) && !isRule(l);
+    if (cmt && prev !== undefined && /^\s*#/.test(prev) && !isRule(prev)) out[out.length - 1] = prev.replace(/\s+$/, '') + ' ' + l.replace(/^\s*#\s*/, '');
+    else out.push(l);
+    return out;
+  }, []);
+  const highlight = (text) => (narrow.matches ? joinComments(text.split('\n')) : text.split('\n')).map((line) => {
     const i = line.indexOf('#');
     const code = i >= 0 ? line.slice(0, i) : line, comment = i >= 0 ? line.slice(i) : '';
     let html = esc(code);
     if (/^---/.test(code)) html = `<span class="sep">${html}</span>`;
     else html = html.replace(/^(\s*)([\w/\[\]]+)(\s+)([A-Za-z_]\w*)/, '$1<span class="k">$2</span>$3<span class="f">$4</span>');
-    return html + (comment ? `<span class="c">${esc(comment)}</span>` : '');
-  }).join('\n');
+    const cls = code.trim() && comment ? 'ln both' : isRule(line) ? 'ln rule' : 'ln';
+    return `<span class="${cls}">${html}${comment ? `<span class="c">${esc(comment)}</span>` : ''}${line ? '' : ' '}</span>`;
+  }).join('');
+  let current = names[0];
   const show = (name) => {
+    current = name;
     const m = data.msgs[name];
-    pre.innerHTML = `<code>${highlight(m.text)}</code>`;
+    pre.innerHTML = `<code>${highlight(m.text.replace(/\n+$/, ''))}</code>`;
+    pre.scrollTop = 0;
     src.innerHTML = `<a href="${m.url}">${esc(m.path)}</a>`;
   };
   names.forEach((n, i) => {
@@ -64,147 +167,7 @@ function init(data) {
     tabs.appendChild(b);
   });
   show(names[0]);
-}
-
-// ---------------------------------------------------------------- the message-flow graph
-{
-  const L = data.mpc.links, F = data.firmware.links, V = data.viewer.links, O = data.overseer.links;
-  const canId = (b) => hex(data.can[b].id);
-  const NODES = [
-    { id: 'bt', label: 'Autonomy', sub: 'behaviour tree', x: 118, y: 75,
-      info: 'The mission tree (riptide_autonomy2). Sends goals, waits on settle trust, and waits for <code>state/kill</code> to read false before a run.',
-      link: 'https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/FollowPath.btaction.hpp' },
-    { id: 'viewer', label: 'Nereus viewer', sub: 'motion panel', x: 118, y: 250,
-      info: `The operator UI on a laptop. Commands poses, and owns software kill slot ${data.viewer.slot}: it asserts kill every ${data.viewer.heartbeat_s * 1000} ms until you press Enable.`, link: V.report },
-    { id: 'sw', label: 'Kill switch', sub: 'on the hull', x: 118, y: 425,
-      info: 'Pulled = killed. The kill line removes ESC power, and the POAC board reads the switch on a GPIO interrupt as slot 0.', link: F.physical },
-    { id: 'mpc', label: 'mpc_controller', sub: 'riptide_mpc, 20 Hz', x: 390, y: 75,
-      info: `Holds the reference and ticks every ${data.mpc.control_period_s * 1000} ms. It sends zero thrust while killed, while motion is disabled, or with odometry older than ${data.mpc.odom_timeout_s} s.`, link: L.tick },
-    { id: 'ov', label: 'controller_overseer', sub: 'riptide_controllers2', x: 390, y: 215,
-      info: 'Left over from the Simulink controller and still launched with the MPC. It turns ESC telemetry into <code>controller/motion_enabled</code> and publishes the feedforward wrench.', link: O.telemetry_cb },
-    { id: 'agent', label: 'micro-ROS agent', sub: 'on the Orin, can0', x: 390, y: 355,
-      info: `Bridges ROS 2 to the boards' micro-ROS clients over the internal CAN bus (CAN FD, ${data.can.rate / 1e6} Mbit/s, ${data.can.fd_rate / 1e6} Mbit/s data). Every ROS message to or from a board crosses it.`,
-      link: 'https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_hardware/launch/copro_agent.launch.py' },
-    { id: 'esc', label: 'ESC boards 0 and 1', sub: `CAN ${canId('esc0')}, ${canId('esc1')}`, x: 660, y: 145,
-      info: `Four thrusters each. Each target expires after ${data.firmware.esc_rpm_timeout_ms.value} ms. A PI speed loop per thruster runs on DShot${data.firmware.dshot_rate_khz.value} with RPM fed back from the ESC.`, link: F.esc_flags },
-    { id: 'poac', label: 'POAC board', sub: 'kill authority', x: 660, y: 425,
-      info: 'Power and actuator board. It combines the physical switch and the software slots into one kill. It drives the soft-kill pin and publishes <code>state/kill</code>.', link: F.refresh },
-    { id: 'thr', label: '8 thrusters', sub: 'ESCs + T200s', x: 850, y: 145,
-      info: 'Each ESC runs one T200 at the throttle the board sends. The ESCs are powered through the kill line.', link: 'thrusters-hw.html' },
-  ];
-  const ms = (o) => `${o.value} ms`;
-  const EDGES = [
-    { from: 'bt', to: 'mpc', label: 'follow_path, controller/*', bend: 22,
-      meta: '<code>follow_path</code> (FollowPath action) and <code>controller/linear</code>, <code>/angular</code> (ControllerCommand)' },
-    { from: 'mpc', to: 'bt', label: 'trust, result', bend: 22,
-      meta: '<code>controller/scale/trust</code> (Twist, 20 Hz), action feedback (20 Hz) and result' },
-    { from: 'viewer', to: 'mpc', label: 'controller/*',
-      meta: '<code>controller/linear</code> + <code>/angular</code> (ControllerCommand), on Command and while dragging' },
-    { from: 'viewer', to: 'agent', label: 'software_kill', lx: 236, ly: 296,
-      meta: `<code>command/software_kill</code> (KillSwitchReport), slot ${data.viewer.slot}, every ${data.viewer.heartbeat_s * 1000} ms` },
-    { from: 'agent', to: 'poac', label: 'software_kill', bend: 20, meta: 'the slot reports, over CAN' },
-    { from: 'poac', to: 'agent', label: 'state/kill', bend: 20,
-      meta: `<code>state/kill</code> (Bool), every ${ms(data.firmware.poac_kill_publish_ms)} and on a change; <code>state/firmware</code> kill bitmasks` },
-    { from: 'sw', to: 'poac', label: 'kill line', meta: 'the switch line: ESC power, and a GPIO interrupt on the POAC board' },
-    { from: 'poac', to: 'thr', label: 'ESC power', dash: true, meta: 'the kill line; the soft-kill pin can cut it even with the switch in' },
-    { from: 'agent', to: 'mpc', label: 'state/kill', via: [215, 215], lx: 296, ly: 250, anchor: 'end',
-      meta: '<code>state/kill</code>: true makes the MPC send zeros and abort any path' },
-    { from: 'agent', to: 'esc', label: 'state/kill', lx: 560, ly: 260,
-      meta: `<code>state/kill</code>, used by the ESC boards as their own heartbeat slot (${ms(data.firmware.switch_timeout_ms)} timeout)` },
-    { from: 'mpc', to: 'esc', label: 'raw CAN, 20 Hz', lx: 524, ly: 100,
-      meta: `two CAN frames each tick, ${canId('esc0')} and ${canId('esc1')}, four int16 RPMs each, skipping ROS entirely` },
-    { from: 'esc', to: 'thr', label: 'DShot600', ly: 133, meta: 'throttle out, RPM back (bidirectional DShot)' },
-    { from: 'esc', to: 'ov', label: 'telemetry, 2 Hz', lx: 524, ly: 160,
-      meta: `<code>state/thrusters/telemetry</code> (DshotPartialTelemetry), every ${ms(data.firmware.esc_telemetry_ms)} per board, through the agent` },
-    { from: 'ov', to: 'mpc', label: 'motion_enabled', lx: 398, ly: 128, anchor: 'start',
-      meta: '<code>controller/motion_enabled</code> (Bool) and <code>controller/FF_body_force</code> (1 Hz)' },
-  ];
-  const narrow = {
-    below: 620, width: 360, height: 720, bands: [],
-    nodes: {
-      bt: { x: 88, y: 46 }, viewer: { x: 272, y: 46 },
-      mpc: { x: 88, y: 210 }, ov: { x: 246, y: 182, label: 'overseer', sub: 'controller_overseer' },
-      agent: { x: 272, y: 330 }, esc: { x: 88, y: 420, label: 'ESC boards', sub: `${canId('esc0')}, ${canId('esc1')}` },
-      poac: { x: 272, y: 480 }, thr: { x: 88, y: 590 }, sw: { x: 272, y: 650 },
-    },
-    edges: {
-      'bt>mpc': { label: 'goals', bend: 20, lx: 56, ly: 132, anchor: 'end' },
-      'mpc>bt': { label: 'trust', bend: 20, lx: 122, ly: 132, anchor: 'start' },
-      'viewer>mpc': { label: 'controller/*', lx: 196, ly: 112, anchor: 'start' },
-      'viewer>agent': { via: [436, 196], label: 'software_kill', lx: 336, ly: 256, anchor: 'end' },
-      'agent>poac': { bend: 18, lx: 300, ly: 410, anchor: 'start', label: 'kill reports' },
-      'poac>agent': { bend: 18, lx: 244, ly: 410, anchor: 'end', label: 'state/kill' },
-      'sw>poac': { lx: 280, ly: 570, anchor: 'start', label: 'kill line' },
-      'poac>thr': { lx: 196, ly: 560, anchor: 'end' },
-      'agent>mpc': { lx: 190, ly: 254, anchor: 'start', label: '' },
-      'agent>esc': { lx: 200, ly: 380, anchor: 'end', label: '' },
-      'mpc>esc': { lx: 80, ly: 318, anchor: 'end', label: 'CAN' },
-      'esc>thr': { lx: 80, ly: 508, anchor: 'end', label: 'DShot' },
-      'esc>ov': { label: '' },
-      'ov>mpc': { label: '' },
-    },
-  };
-  const bands = [
-    { label: 'WHO COMMANDS', points: [[24, 14], [212, 14], [212, 478], [24, 478]] },
-    { label: 'ON THE ORIN', points: [[262, 14], [520, 14], [520, 478], [262, 478]] },
-    { label: 'BOARDS AND THRUSTERS', points: [[566, 14], [924, 14], [924, 478], [566, 478]] },
-  ];
-  const STORIES = [
-    { id: 'goal', name: 'A goal', intro: 'A goal from the tree to the propellers, and the answer back.', steps: [
-      { edges: ['bt>mpc'], text: '<code>FollowPath</code> sends a goal on <code>follow_path</code>. The MPC checks it, plans the whole path and starts the reference moving.' },
-      { edges: ['mpc>esc'], text: `Every ${data.mpc.control_period_s * 1000} ms: estimate, solve, publish <code>thruster_forces</code>, convert to RPM, write frames ${canId('esc0')} and ${canId('esc1')} on <code>can0</code>.` },
-      { edges: ['esc>thr'], text: `Each ESC board keeps its four targets for ${data.firmware.esc_rpm_timeout_ms.value} ms. Its speed loops drive the ESCs over DShot600.` },
-      { edges: ['mpc>bt'], text: `Feedback every tick (metres along the path). Success once settle trust reaches ${data.mpc.success_trust} at the end.` },
-    ] },
-    { id: 'enable', name: 'Enable', intro: 'Pressing Enable in the viewer, until the props are allowed to turn.', steps: [
-      { edges: ['viewer>agent', 'agent>poac'], text: `The viewer's slot-${data.viewer.slot} report (every ${data.viewer.heartbeat_s * 1000} ms) changes to "not killed".` },
-      { edges: ['poac>thr'], text: 'No slot asserting and the switch in: the POAC board releases its soft-kill pin, and the ESCs get power.' },
-      { edges: ['poac>agent', 'agent>esc', 'agent>mpc'], text: '<code>state/kill</code> goes false at once. The ESC boards and the MPC clear their kill.' },
-      { edges: ['esc>ov', 'ov>mpc'], text: `For ${data.firmware.esc_poweron_delay_ms.value / 1000} s the ESC boards report <code>ESC_POWERON_DELAY</code>, so the overseer keeps <code>motion_enabled</code> false. Then the flags clear and the MPC may drive.` },
-    ] },
-    { id: 'kill', name: 'Pull the switch', intro: 'Pulling the physical switch.', steps: [
-      { edges: ['sw>poac', 'poac>thr'], text: "The switch line drops. ESC power goes, and the POAC board's interrupt marks slot 0 as asserting." },
-      { edges: ['poac>agent', 'agent>esc', 'agent>mpc'], text: '<code>state/kill</code> = true goes out at once. The ESC boards zero their throttles, and the MPC sends zeros and aborts any path.' },
-      { edges: ['mpc>esc'], text: 'The MPC keeps writing frames of zeros every tick, so the ESC targets never go stale. The reference is kept for when the switch goes back in. A running path is cut short, and its last point becomes the reference.' },
-    ] },
-    { id: 'health', name: 'Health back', intro: 'What flows back up to the controller and the tree.', steps: [
-      { edges: ['esc>ov'], text: 'Each ESC board reports at 2 Hz: disabled flags, RPM, ESC temperature, voltage and current.' },
-      { edges: ['ov>mpc'], text: `The overseer turns that into <code>motion_enabled</code>: false after more than ${data.overseer.stop_tolerance.value} flagged messages in a row, or ${data.overseer.power_timeout_s.value} s with none.` },
-      { edges: ['poac>agent'], text: '<code>state/kill</code> and <code>state/firmware</code> (with per-slot kill bitmasks) go to anyone listening: the viewer shows "Robot: killed / enabled".' },
-      { edges: ['mpc>bt'], text: 'The MPC publishes settle trust each tick. <code>WaitForController</code> and the <code>FollowPath</code> result use it.' },
-    ] },
-  ];
-
-  const note = document.getElementById('flow-note');
-  const stepsEl = document.getElementById('flow-steps');
-  let story = STORIES[0];
-  const describe = (n) => {
-    const ins = EDGES.filter((e) => e.to === n.id), outs = EDGES.filter((e) => e.from === n.id);
-    const name = (id) => NODES.find((x) => x.id === id).label;
-    const list = (arr, dir) => arr.map((e) => `<li><span class="dir">${dir} ${esc(name(dir === 'from' ? e.from : e.to))}:</span> ${e.meta}</li>`).join('');
-    return `<b>${esc(n.label)}.</b> ${n.info} <a href="${n.link}">Code</a>.<ul class="io">${list(ins, 'from')}${list(outs, 'to')}</ul>`;
-  };
-  const graph = new FlowGraph(document.getElementById('flow-graph'), {
-    width: 940, height: 494, nodes: NODES, edges: EDGES, bands, narrow,
-    info: (n) => { note.innerHTML = n ? describe(n) : `<b>${story.name}.</b> ${story.intro} Tap a step to light just its links.`; },
-  });
-  const showStory = (s) => {
-    story = s;
-    stepsEl.innerHTML = s.steps.map((st, i) => `<li><button type="button" data-i="${i}">${st.text}</button></li>`).join('');
-    stepsEl.querySelectorAll('button').forEach((b) => {
-      b.onclick = () => {
-        const on = b.getAttribute('aria-pressed') !== 'true';
-        stepsEl.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-        b.setAttribute('aria-pressed', String(on));
-        graph.route(on ? s.steps[+b.dataset.i].edges : s.steps.flatMap((x) => x.edges));
-      };
-    });
-    graph.route(s.steps.flatMap((x) => x.edges));
-    note.innerHTML = `<b>${s.name}.</b> ${s.intro} Tap a step to light just its links.`;
-  };
-  segmented(document.getElementById('flow-stories'), STORIES.map((s) => [s.id, s.name]), STORIES[0].id,
-    (id) => showStory(STORIES.find((s) => s.id === id)));
-  showStory(STORIES[0]);
+  narrow.addEventListener('change', () => show(current));
 }
 
 // ---------------------------------------------------------------- force -> RPM -> CAN frame
@@ -228,21 +191,31 @@ function init(data) {
   const controls = document.getElementById('can-controls');
   const readout = document.getElementById('can-readout');
   const frames = document.getElementById('can-frames');
-  const wrap = document.createElement('label');
+  const wrap = document.createElement('div');
   wrap.className = 'can-pick';
-  wrap.textContent = 'Thruster ';
+  // Two rows of four, one per ESC board, so the picker lines up with the two frames below.
+  wrap.innerHTML = `<span class="can-lab">Thruster</span><span class="can-rows" aria-hidden="true"><span>${hex(data.can.esc0.id)}</span><span>${hex(data.can.esc1.id)}</span></span>`;
   segmented(wrap, names.map((n, i) => [String(i), n]), '0', (v) => { st.i = +v; draw(); }, 'Thruster');
   controls.appendChild(wrap);
   const sl = document.createElement('label');
-  sl.innerHTML = 'Force <input type="range" min="-24" max="24" step="0.5" value="10" aria-label="Force in newtons"> <output></output>';
+  sl.innerHTML = '<span class="can-lab">Force</span> <input type="range" min="-24" max="24" step="0.5" value="10" aria-label="Force in newtons"> <output></output>';
   controls.appendChild(sl);
   const input = sl.querySelector('input'), out = sl.querySelector('output');
   input.addEventListener('input', () => { st.f = +input.value; draw(); });
   const lay = data.can.layout;
-  const idExplain = (b) => {
+  const bits = (b) => {
     const c = data.can[b];
-    return `${hex(c.id)} = client ${c.client} ≪ ${lay.client[0]} | type 1 ≪ ${lay.type[0]} | direction 1 ≪ ${lay.direction[0]} | channel 0`;
+    return `<span class="nw">${hex(c.id)} = ${c.client}≪${lay.client[0]} | 1≪${lay.type[0]} | 1≪${lay.direction[0]} | 0</span>`;
   };
+  document.getElementById('can-id').innerHTML = `
+    <p>An 11-bit CAN id in titan_canmore's layout (<a href="${data.can.client_ids_url}">client_ids.h</a>), high bits first:</p>
+    <ul>
+      <li><b>client id</b>, 5 bits: which board. ESC board 0 is ${data.can.esc0.client}, board 1 is ${data.can.esc1.client}.</li>
+      <li><b>type</b> = 1: a utility frame, not a micro-ROS message.</li>
+      <li><b>direction</b> = 1: from the Orin to the board.</li>
+      <li><b>channel</b> = 0: the thruster-command channel.</li>
+    </ul>
+    <p>Client, type, direction, channel, shifted into place:</p><p class="can-bits">${bits('esc0')}<br>${bits('esc1')}</p>`;
   function draw() {
     out.textContent = `${st.f.toFixed(1)} N`;
     const rpm = Math.max(-32768, Math.min(32767, Math.round(forceToRpm(st.f))));
@@ -255,7 +228,7 @@ function init(data) {
         const v = cmds[bi * 4 + k], on = bi * 4 + k === st.i;
         bytes.push(`<div class="pair${on ? ' on' : ''}"><span>${hex(v >> 8).slice(2)}</span><span>${hex(v & 0xff).slice(2)}</span><small>${names[bi * 4 + k]}</small></div>`);
       }
-      return `<div class="frame"><div class="fhead"><b>${hex(data.can[b].id)}</b> to ESC board ${bi}<small>${idExplain(b)}</small></div><div class="bytes">${bytes.join('')}</div></div>`;
+      return `<div class="frame"><div class="fhead"><b>${hex(data.can[b].id)}</b> to ESC board ${bi}, thrusters ${bi * 4} to ${bi * 4 + 3}</div><div class="bytes">${bytes.join('')}</div></div>`;
     }).join('');
   }
   draw();
@@ -267,12 +240,23 @@ function init(data) {
   const sim = new KillSim(K);
   const host = document.getElementById('killsim');
   host.innerHTML = `
-    <div class="ks-head">
-      <div class="controls"><span class="ks-label">Story</span><span id="ks-stories"></span></div>
-      <p class="ks-say" id="ks-say" aria-live="polite"></p>
+    <div class="controls ks-storybar"><span id="ks-stories"></span></div>
+    <div class="ks-nav">
+      <button type="button" class="btn" id="ks-back">‹ Back</button>
+      <span class="ks-count" id="ks-count" aria-live="polite"></span>
+      <button type="button" class="btn primary" id="ks-next">Next ›</button>
+      <button type="button" class="btn ks-replay" id="ks-replay" aria-label="Replay this story" title="Replay this story">↺</button>
     </div>
+    <p class="ks-say" id="ks-say" aria-live="polite"></p>
     <div class="ks-grid">
-      <div class="ks-controls">
+      <div class="ks-main">
+        <div class="ks-verdict" id="ks-verdict"></div>
+        <div class="ks-strips" id="ks-strips"></div>
+        <div class="ks-chain" id="ks-chain"></div>
+      </div>
+      <details class="ks-more ks-side" id="ks-ctl">
+        <summary>Work the controls yourself</summary>
+        <div class="ks-echo" id="ks-echo" aria-hidden="true"></div>
         <div class="ks-group"><h4>Kill switch</h4><div id="ks-switch"></div></div>
         <div class="ks-group"><h4>Nereus viewer <small>slot ${K.viewerSlot}</small></h4>
           <div class="ks-row" id="ks-viewer"></div>
@@ -287,39 +271,128 @@ function init(data) {
           <div class="ks-row"><span class="ks-mini">micro-ROS agent</span><span id="ks-link"></span></div>
           <div class="ks-row"><span class="ks-mini">control_system</span><span id="ks-control"></span></div>
         </div>
-      </div>
-      <div class="ks-status">
-        <div class="ks-verdict" id="ks-verdict"></div>
-        <div class="ks-chain" id="ks-chain"></div>
-      </div>
-      <div class="ks-detail">
-        <div class="table-scroll"><table class="params ks-slots"><thead><tr><th>Slot</th><th>Enabled</th><th>Asserting</th><th>Needs update</th><th>Lock</th></tr></thead><tbody id="ks-slots"></tbody></table></div>
-        <div class="ks-strips" id="ks-strips"></div>
-        <h4 class="ks-loghead">Events</h4>
+      </details>
+      <details class="ks-more ks-det" id="ks-det">
+        <summary>The four slots and the event log</summary>
+        <table class="params ks-slots"><thead><tr><th>Slot</th><th>Enabled</th><th>Asserting</th><th>Kind</th><th class="lock">Lock</th></tr></thead><tbody id="ks-slots"></tbody></table>
+        <h4 class="ks-loghead">Events, newest first</h4>
         <ol class="ks-log" id="ks-log"></ol>
-      </div>
+      </details>
     </div>`;
   const $ = (id) => host.querySelector('#' + id);
-  const say = (html) => { $('ks-say').innerHTML = html; };
+  if (matchMedia('(min-width: 1100px)').matches) { $('ks-ctl').open = true; $('ks-det').open = true; }
 
+  // ---- stories: one action per step; Next jumps the clock to the step's time ----
+  // A held step shows one moment: the clock stops there, so the panel matches the narration until Next.
+  const s = (after, run, text, hold = false) => ({ after, run, text, hold });
+  const h = (after, run, text) => s(after, run, text, true);
+  const STORIES = {
+    pool: { name: 'Pool run', start: () => { sim.reset(); sim.advance(2); }, steps: [
+      s(0, () => {}, 'Switch in, viewer open. The viewer\'s heartbeat asserts kill on slot 1, so the POAC board keeps ESC power off.'),
+      s(2.5, () => sim.viewerEnable(), 'Enable: slot 1 clears and the POAC board turns ESC power on. The ESC boards hold <code>ESC_POWERON_DELAY</code> for 5 s, and the overseer keeps <code>motion_enabled</code> false until then.'),
+      s(7, () => sim.viewerCommand(), 'Command: a <code>POSITION</code> pair. The MPC holds position and the thrusters run.'),
+      s(3.5, () => sim.closeViewer(), 'Unplug and close the viewer. Its enable latched (<code>needs_update</code> false), so slot 1 stays clear and the run continues.'),
+      s(3.5, () => sim.setSwitch(false), 'Pull the switch: ESC power is cut at once, <code>state/kill</code> goes true, and the MPC sends zeros.'),
+      s(3.5, () => sim.setSwitch(true), 'Put it back in: 5 s of power-on delay, then the MPC flies to its last reference again (<a href="#survives">it survived the kill</a>).'),
+    ] },
+    nobody: { name: 'Nobody on a slot', start: () => sim.reset({ viewerOpen: false }), steps: [
+      s(0, () => {}, 'Viewer closed, nobody on any software slot, switch in. Slot 0 is the only enabled slot and it is clear, so the POAC board enables. Software slots can only add kills.'),
+      s(1.6, () => {}, 'The ESC boards hold <code>ESC_POWERON_DELAY</code> for 5 s. <code>motion_enabled</code> blinked true for the first second: the overseer only says false after three flagged telemetry messages in a row, and it had just started.'),
+      s(4.5, () => {}, 'After the power-on delay everything is ready. Nothing has sent a command, so only the MPC\'s <code>DISABLED</code> reference keeps the propellers still.'),
+    ] },
+    bench: { name: 'Bench hold', start: () => sim.reset({ viewerOpen: false, control: false }), steps: [
+      s(0, () => sim.laptopSend(3, true, true, true), 'The pre-test tool holds a kill on slot 3: asserting, <code>needs_update</code>, 20 Hz. If the tool dies, the slot times out and the robot stays killed.'),
+      s(2, () => sim.setControl(true), 'Only now does it start <code>control_system</code>. The ESC boards report <code>SAFETY_KILLED</code>, so nothing can spin. (A fresh overseer says <code>motion_enabled</code> true until it has seen three flagged telemetry messages in a row, about 1 s.)'),
+      s(3, () => sim.laptopSend(1, true, true, true), 'To hand over, it first leaves a kill on slot 1 with <code>needs_update</code>, because no viewer is up yet.'),
+      s(0.5, () => { sim.laptopStop(); sim.laptopSend(3, false, false, false); }, 'Then it stops publishing and clears slot 3, latched. Slot 1 times out into a kill, so the robot stays killed until someone presses Enable in the viewer.'),
+      s(2.5, () => sim.openViewer(), 'Open the viewer. Its first heartbeat asserts kill on slot 1, which takes the lock from the laptop.'),
+      s(1.5, () => sim.viewerEnable(), 'The viewer now holds slot 1\'s lock, so its Enable can clear the kill. ESC power comes on.'),
+    ] },
+    two: { name: 'Two operators', start: () => { sim.reset(); sim.advance(0.3); sim.viewerEnable(); sim.advance(6); }, steps: [
+      s(0, () => {}, 'The viewer is enabled and the ESCs are ready.'),
+      s(2.5, () => sim.laptopSend(1, false, false, false), 'A laptop publishes "not killed" on slot 1. The firmware accepts it, because slot 1 isn\'t asserting. But the viewer sees another sender on its slot and drops its enable: slot 1 asserts kill and the viewer takes the lock.'),
+      s(3, () => sim.laptopSend(1, false, false, false), 'The laptop tries to clear slot 1 again. The POAC board rejects it: the lock belongs to the viewer.'),
+      s(3, () => sim.viewerEnable(), 'Once the other sender has been quiet for 1 s, the viewer can enable again.'),
+    ] },
+    agent: { name: 'Agent crash', start: () => { sim.reset(); sim.advance(0.3); sim.viewerEnable(); sim.advance(6); sim.viewerCommand(); sim.advance(1); }, steps: [
+      s(0, () => {}, 'Talos is holding position.'),
+      h(2, () => sim.setLink(false), 'The micro-ROS agent on the Orin dies. No ROS message reaches the boards any more, but nothing has timed out yet, so the thrusters still run on the MPC\'s raw CAN frames.'),
+      h(0.55, () => {}, `The ESC boards have not heard <code>state/kill</code> for ${K.switchTimeout * 1000} ms, so they kill and zero their throttles. The thrusters stop here.`),
+      h(0.3, () => {}, `About ${K.sessionLoss.toFixed(1)} s after the agent died, more than 7 failed heartbeats make every board drop its micro-ROS session. The POAC board kills and cuts ESC power.`),
+      h(1.2, () => {}, `The MPC never heard a kill (that came through the agent too). But after ${K.overseerTimeout} s without ESC telemetry the overseer drops <code>motion_enabled</code>, so the MPC sends zeros as well.`),
+      s(2, () => sim.setLink(true), 'The agent restarts. The POAC board reconnects with its slots as they were (slot 1 still clear) and turns ESC power back on, so the ESC boards hold <code>ESC_POWERON_DELAY</code> for 5 s. For the first two flagged telemetry messages the overseer still says true (it waits for three in a row), so <code>motion_enabled</code> blinks on before the delay ends.'),
+      s(6, () => {}, 'The delay is over: the flags clear, <code>motion_enabled</code> is true, and the MPC drives to its last reference again.'),
+    ] },
+  };
+  const state = { key: 'pool', idx: 0, at: 0, manual: false, t0: 0 };
+  const storyBar = segmented($('ks-stories'), Object.entries(STORIES).map(([k, v]) => [k, v.name]), 'pool', (k) => runStory(k), 'Story');
+
+  // Before the story starts, the strips show the starting state, so 'no history yet' doesn't read as 'off'.
+  function prefill() {
+    sim.step();
+    const now = sim.hist[sim.hist.length - 1];
+    sim.hist = [];
+    for (let k = HISTORY_SECONDS / 0.05; k >= 1; k--) sim.hist.push({ ...now, t: now.t - k * 0.05 });
+    sim.hist.push(now);
+    state.t0 = sim.t;
+  }
+  function runStep(i) {
+    const st = STORIES[state.key].steps[i];
+    st.run();
+    state.idx = i;
+    state.at = sim.t;
+  }
+  function runStory(k, upto = 0) {
+    const st = STORIES[k];
+    state.key = k;
+    state.manual = false;
+    st.start();
+    prefill();
+    sim.log = [];
+    runStep(0);
+    for (let i = 1; i <= upto; i++) { sim.advance(st.steps[i].after); runStep(i); }
+    storyBar.set(k);
+    syncInputs();
+    render();
+  }
+  function next() {
+    const steps = STORIES[state.key].steps;
+    if (state.idx >= steps.length - 1) {
+      const keys = Object.keys(STORIES);
+      runStory(keys[(keys.indexOf(state.key) + 1) % keys.length]);
+      return;
+    }
+    const wait = steps[state.idx + 1].after - (sim.t - state.at);
+    if (wait > 0) sim.advance(wait);
+    runStep(state.idx + 1);
+    syncInputs();
+    render();
+  }
+  $('ks-next').onclick = () => (state.manual ? runStory(state.key) : next());
+  $('ks-back').onclick = () => { if (!state.manual && state.idx > 0) runStory(state.key, state.idx - 1); };
+  $('ks-replay').onclick = () => runStory(state.key);
+
+  // ---- manual controls: leave the story ----
+  const manual = (fn) => (...a) => { if (!state.manual) { state.manual = true; storyBar.set(''); } fn(...a); syncInputs(); render(); };
   const ui = {};
-  ui.sw = segmented($('ks-switch'), [['in', 'In'], ['out', 'Out (killed)']], 'in', (v) => { sim.script = []; sim.setSwitch(v === 'in'); }, 'Kill switch');
-  ui.viewer = segmented($('ks-viewer'), [['open', 'Open'], ['closed', 'Closed']], 'open', (v) => { sim.script = []; if (v === 'open') { if (!sim.viewer.open) sim.openViewer(); } else sim.closeViewer(); }, 'Viewer');
+  ui.sw = segmented($('ks-switch'), [['in', 'In'], ['out', 'Out (killed)']], 'in', manual((v) => sim.setSwitch(v === 'in')), 'Kill switch');
+  ui.viewer = segmented($('ks-viewer'), [['open', 'Open'], ['closed', 'Closed']], 'open', manual((v) => {
+    if (v === 'open') { if (!sim.viewer.open) sim.openViewer(); } else sim.closeViewer();
+  }), 'Viewer');
   ui.slot = segmented($('ks-slot'), [['1', 'Slot 1'], ['2', 'Slot 2'], ['3', 'Slot 3']], '3', () => {}, 'Slot');
-  ui.link = segmented($('ks-link'), [['up', 'Up'], ['down', 'Down']], 'up', (v) => { sim.script = []; sim.setLink(v === 'up'); }, 'micro-ROS agent');
-  ui.control = segmented($('ks-control'), [['run', 'Running'], ['stop', 'Stopped']], 'run', (v) => { sim.script = []; sim.setControl(v === 'run'); }, 'control_system');
+  ui.link = segmented($('ks-link'), [['up', 'Up'], ['down', 'Down']], 'up', manual((v) => sim.setLink(v === 'up')), 'micro-ROS agent');
+  ui.control = segmented($('ks-control'), [['run', 'Running'], ['stop', 'Stopped']], 'run', manual((v) => sim.setControl(v === 'run')), 'control_system');
   const laptopSlot = () => +host.querySelector('#ks-slot [aria-pressed="true"]').dataset.v;
-  $('ks-enable').onclick = () => { sim.script = []; if (sim.viewer.enabled) sim.viewerKill(false); else sim.viewerEnable(); };
-  $('ks-command').onclick = () => {
-    sim.script = [];
+  $('ks-enable').onclick = manual(() => { if (sim.viewer.enabled) sim.viewerKill(false); else sim.viewerEnable(); });
+  $('ks-command').onclick = manual(() => {
     if (!sim.inputs.control) sim.note('Viewer: "Control mode service unavailable" (control_system is down)', 'bad');
     else sim.viewerCommand();
-  };
-  $('ks-lkill').onclick = () => { sim.script = []; sim.laptopSend(laptopSlot(), true, $('ks-nu').checked, $('ks-repeat').checked); };
-  $('ks-lclear').onclick = () => { sim.script = []; sim.laptopSend(laptopSlot(), false, $('ks-nu').checked, $('ks-repeat').checked); };
-  $('ks-lstop').onclick = () => { sim.laptopStop(); };
+  });
+  $('ks-lkill').onclick = manual(() => sim.laptopSend(laptopSlot(), true, $('ks-nu').checked, $('ks-repeat').checked));
+  $('ks-lclear').onclick = manual(() => sim.laptopSend(laptopSlot(), false, $('ks-nu').checked, $('ks-repeat').checked));
+  $('ks-lstop').onclick = manual(() => sim.laptopStop());
 
-  const syncInputs = () => {
+  function syncInputs() {
     ui.sw.set(sim.inputs.switchIn ? 'in' : 'out');
     ui.viewer.set(sim.viewer.open ? 'open' : 'closed');
     ui.link.set(sim.inputs.link ? 'up' : 'down');
@@ -327,84 +400,49 @@ function init(data) {
     ui.slot.set(String(sim.laptop.slot));
     $('ks-nu').checked = sim.laptop.needsUpdate;
     $('ks-repeat').checked = !!sim.laptop.repeat;
-  };
-
-  // Stories: scripted actions with narration, on the simulator's clock.
-  const s = (after, run, text) => ({ after, run: () => { run(); if (text) say(text); syncInputs(); } });
-  const STORIES = {
-    pool: { name: 'Pool run', start: () => sim.reset(), steps: [
-      s(0, () => {}, 'Switch in, viewer open. The viewer\'s heartbeat asserts kill on slot 1, so the POAC board keeps ESC power off.'),
-      s(2.5, () => sim.viewerEnable(), 'Enable: slot 1 clears and the POAC board turns ESC power on. The ESC boards hold <code>ESC_POWERON_DELAY</code> for 5 s, and the overseer keeps <code>motion_enabled</code> false until then.'),
-      s(7, () => sim.viewerCommand(), 'Command: a <code>POSITION</code> pair. The MPC holds position and the thrusters run.'),
-      s(3.5, () => sim.closeViewer(), 'Unplug and close the viewer. Its enable latched (<code>needs_update</code> false), so slot 1 stays clear and the run continues.'),
-      s(3.5, () => sim.setSwitch(false), 'Pull the switch: ESC power is cut at once, <code>state/kill</code> goes true, and the MPC sends zeros.'),
-      s(3.5, () => sim.setSwitch(true), 'Re-insert it: 5 s of power-on delay, then the MPC flies to its last reference again. The reference survived the kill. Had a path been running, that reference would be the path\'s last point.'),
-    ] },
-    nobody: { name: 'Nobody on a slot', start: () => sim.reset({ viewerOpen: false }), steps: [
-      s(0, () => {}, 'Viewer closed, nobody on any software slot, switch in. Slot 0 is the only enabled slot and it is clear, so the POAC board enables. Software slots can only add kills.'),
-      s(6, () => {}, 'After the power-on delay everything is ready. Only the MPC\'s <code>DISABLED</code> reference keeps the propellers still.'),
-    ] },
-    bench: { name: 'Bench hold', start: () => sim.reset({ viewerOpen: false, control: false }), steps: [
-      s(0, () => sim.laptopSend(3, true, true, true), 'The pre-test tool holds a kill on slot 3: asserting, <code>needs_update</code>, 20 Hz. If the tool dies, the slot times out and the robot stays killed.'),
-      s(2, () => sim.setControl(true), 'Only now does it start <code>control_system</code>. The ESC boards report <code>SAFETY_KILLED</code>, so nothing can spin.'),
-      s(3, () => sim.laptopSend(1, true, true, true), 'Releasing. No viewer is up, so first it leaves a kill on slot 1 with <code>needs_update</code>…'),
-      s(0.5, () => { sim.laptopStop(); sim.laptopSend(3, false, false, false); }, '…then clears slot 3, latched. Slot 1 times out into a kill, and the robot waits for someone to Enable in the viewer.'),
-      s(2.5, () => sim.openViewer(), 'Open the viewer. Its first heartbeat asserts kill on slot 1, which takes the lock from the laptop.'),
-      s(1.5, () => sim.viewerEnable(), 'So Enable can clear it.'),
-    ] },
-    two: { name: 'Two operators', start: () => { sim.reset(); sim.advance(0.3); sim.viewerEnable(); sim.advance(6); sim.hist = []; }, steps: [
-      s(0, () => {}, 'The viewer is enabled and the ESCs are ready.'),
-      s(2.5, () => sim.laptopSend(1, false, false, false), 'A laptop publishes "not killed" on slot 1. The firmware accepts it, because slot 1 isn\'t asserting. But the viewer sees another sender on its slot and drops its enable: slot 1 asserts kill and the viewer takes the lock.'),
-      s(3, () => sim.laptopSend(1, false, false, false), 'The laptop tries to clear slot 1 again. The POAC board rejects it: the lock belongs to the viewer.'),
-      s(3, () => sim.viewerEnable(), 'Once the other sender has been quiet for 1 s, the viewer can enable again.'),
-    ] },
-    agent: { name: 'Agent crash', start: () => { sim.reset(); sim.advance(0.3); sim.viewerEnable(); sim.advance(6); sim.viewerCommand(); sim.advance(1); sim.hist = []; }, steps: [
-      s(0, () => {}, 'Talos is holding position.'),
-      s(2, () => sim.setLink(false), `The micro-ROS agent on the Orin dies, and no ROS message reaches the boards. The ESC boards stop hearing <code>state/kill</code> and kill once ${K.switchTimeout * 1000} ms pass without it. After about ${K.sessionLoss.toFixed(1)} s of failed heartbeats every board drops its session, and the POAC board kills, because its safety code only runs while connected. The MPC never hears a kill (<code>state/kill</code> came through the agent too), but after ${K.overseerTimeout} s without telemetry the overseer drops <code>motion_enabled</code>, so the MPC sends zeros and would abort a path.`),
-      s(4, () => sim.setLink(true), 'The agent restarts. The POAC board reconnects with its slots as they were (slot 1 still clear) and re-enables. The ESC boards report <code>ESC_POWERON_DELAY</code> for 5 s, then <code>motion_enabled</code> returns and the MPC drives to its last reference again.'),
-    ] },
-  };
-  const storyBar = segmented($('ks-stories'), Object.entries(STORIES).map(([k, v]) => [k, v.name]), 'pool', (k) => runStory(k), 'Story');
-  function runStory(k) {
-    const st = STORIES[k];
-    st.start();
-    // Past the overseer's start-up flicker (its first flagged telemetry messages still read true, under its
-    // tolerance), to the steady, killed state, and drop that from the strips.
-    if (k === 'pool') { sim.advance(2); sim.hist = []; }
-    sim.log = [];
-    sim.play(st.steps);
-    storyBar.set(k);
-    syncInputs();
   }
 
   // ---- rendering ----
-  const slotNames = ['0 · physical', '1 · viewer', '2 · topside', '3 · debug'];
+  const slotNames = ['0 · switch', '1 · viewer', '2 · topside', '3 · debug'];
   const yes = (b) => (b ? '<span class="y">yes</span>' : 'no');
   const LANES = [
     ['sw', 'Switch in'], ['poac', 'POAC enabled'], ['kill', 'state/kill false'], ['esc', 'ESC boards ready'],
     ['motion', 'motion_enabled'], ['thrust', 'Thrusters running'],
   ];
-  function chip(label, ok, value) {
-    return `<div class="chip ${ok ? 'ok' : 'no'}"><small>${label}</small><b>${value}</b></div>`;
-  }
+  const chip = (label, ok, value) => `<div class="chip ${ok ? 'ok' : 'no'}"><small>${label}</small><b>${value}</b></div>`;
+  let lastSay = '';
   function render() {
     const p = sim.poac, e = sim.esc, o = sim.overseer, m = sim.mpc, t = sim.t;
+    const steps = STORIES[state.key].steps;
+    let say;
+    if (state.manual) {
+      const ev = sim.log[0];
+      say = `<b>Your controls.</b> ${ev ? `Latest: ${esc(ev.msg)} (t = ${ev.t.toFixed(1)} s).` : 'Change anything above; the result shows below.'}`;
+    } else say = steps[state.idx].text;
+    if (say !== lastSay) { $('ks-say').innerHTML = say; lastSay = say; }
+    $('ks-count').innerHTML = state.manual ? 'Manual' : `Step ${state.idx + 1} of ${steps.length}${steps[state.idx].hold ? '<small>clock paused</small>' : ''}`;
+    $('ks-back').disabled = state.manual || state.idx === 0;
+    $('ks-next').textContent = state.manual ? 'Resume ›' : state.idx === steps.length - 1 ? 'Next story ›' : 'Next ›';
     const v = sim.verdict();
     $('ks-verdict').className = 'ks-verdict ' + (v.ok ? 'go' : v.idle ? 'idle' : 'stop');
     $('ks-verdict').innerHTML = `<span class="t">t = ${t.toFixed(1)} s</span>${v.text}`;
+    // The same verdict at the top of the open controls, so a phone shows the result next to the control tapped.
+    $('ks-echo').className = $('ks-verdict').className + ' ks-echo';
+    $('ks-echo').innerHTML = $('ks-verdict').innerHTML;
     const flagNames = K.flags.filter((f) => e.flags & (1 << f.bit)).map((f) => f.name);
     $('ks-chain').innerHTML = [
       chip('POAC board', !p.asserting, p.asserting ? 'killed' : 'enabled'),
       chip('state/kill', sim.inputs.link && p.stateKill === false, sim.inputs.link ? String(p.stateKill) : 'silent'),
       chip('ESC flags', e.flags === 0, flagNames.length ? flagNames.map((f, i) => `<span class="nw">${f}${i < flagNames.length - 1 ? ',' : ''}</span>`).join(' ') : 'none'),
       chip('motion_enabled', sim.inputs.control && o.motionEnabled, sim.inputs.control ? String(o.motionEnabled) : 'not running'),
-      chip('MPC', e.thrustersOn, !sim.inputs.control ? 'not running' : m.killed ? 'killed: zeros' : m.mode === 'DISABLED' ? 'DISABLED: zeros' : m.commanding ? 'thrusting' : 'zeros'),
+      chip('MPC', sim.inputs.control && m.commanding, !sim.inputs.control ? 'not running' : m.killed ? 'killed: zeros' : m.mode === 'DISABLED' ? 'DISABLED: zeros' : m.commanding ? 'sending RPM' : 'zeros'),
     ].join('');
     $('ks-slots').innerHTML = p.slots.map((s, i) => {
       const timed = s.enabled && s.needsUpdate && t >= s.timeoutAt;
       const lock = i === 0 ? 'GPIO' : s.lock || '–';
       const assertCell = s.asserting ? '<span class="n">kill</span>' : timed ? '<span class="n">timed out</span>' : s.enabled ? '<span class="y">clear</span>' : '–';
-      return `<tr class="${!s.enabled ? 'off' : s.asserting || timed ? 'bad' : ''}"><td>${slotNames[i]}</td><td>${yes(s.enabled)}</td><td>${assertCell}</td><td>${s.enabled ? (s.needsUpdate ? 'yes' : 'no, latched') : '–'}</td><td class="lock">${esc(lock)}</td></tr>`;
+      const lockLine = i > 0 && s.lock ? `<small class="lk">lock: ${esc(s.lock)}</small>` : '';
+      return `<tr class="${!s.enabled ? 'off' : s.asserting || timed ? 'bad' : ''}"><td>${slotNames[i]}${lockLine}</td><td>${yes(s.enabled)}</td><td>${assertCell}</td><td>${s.enabled ? (s.needsUpdate ? 'heartbeat' : 'latched') : '–'}</td><td class="lock">${esc(lock)}</td></tr>`;
     }).join('');
     $('ks-enable').textContent = sim.viewer.enabled ? 'KILL' : 'Enable';
     $('ks-enable').classList.toggle('kill', sim.viewer.enabled);
@@ -412,18 +450,18 @@ function init(data) {
     $('ks-command').disabled = !sim.viewer.open || !sim.viewer.enabled;
     $('ks-log').innerHTML = sim.log.length
       ? sim.log.map((l) => `<li class="${l.kind}"><span>${l.t.toFixed(2)} s</span> ${esc(l.msg)}</li>`).join('')
-      : '<li class="empty">Nothing has changed yet. Events appear here, newest first.</li>';
+      : '<li class="empty">Nothing has changed yet.</li>';
     drawStrips();
   }
   function drawStrips() {
-    const host2 = $('ks-strips');
-    const W = Math.max(260, host2.clientWidth), lh = 20, labelW = W < 420 ? 0 : 118, H = LANES.length * lh + 18;
-    const x0 = labelW, x1 = W - 4, t1 = sim.t, t0 = t1 - HISTORY_SECONDS;
-    const X = (t) => x0 + ((t - t0) / HISTORY_SECONDS) * (x1 - x0);
+    const box = $('ks-strips');
+    const W = Math.max(260, box.clientWidth), lh = 22, labelW = W < 420 ? 108 : 124, H = LANES.length * lh + 20;
+    const x0 = labelW, x1 = W - 2, t1 = sim.t, t0 = t1 - HISTORY_SECONDS;
+    const X = (t) => x0 + ((Math.max(t, t0) - t0) / HISTORY_SECONDS) * (x1 - x0);
     let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Last 20 seconds of each layer">`;
     LANES.forEach(([key, name], li) => {
-      const y = li * lh + 3;
-      svg += `<rect x="${x0}" y="${y}" width="${x1 - x0}" height="${lh - 7}" class="lane"/>`;
+      const y = li * lh + 3, bh = lh - 8;
+      svg += `<rect x="${x0}" y="${y}" width="${x1 - x0}" height="${bh}" class="lane"/>`;
       let start = null;
       const h = sim.hist;
       for (let i = 0; i <= h.length; i++) {
@@ -431,32 +469,37 @@ function init(data) {
         if (on && start === null) start = h[i].t;
         if (!on && start !== null) {
           const end = i < h.length ? h[i].t : t1;
-          svg += `<rect x="${X(start).toFixed(1)}" y="${y}" width="${Math.max(1, X(end) - X(start)).toFixed(1)}" height="${lh - 7}" class="on ${key}"/>`;
+          svg += `<rect x="${X(start).toFixed(1)}" y="${y}" width="${Math.max(1, X(end) - X(start)).toFixed(1)}" height="${bh}" class="on ${key}"/>`;
           start = null;
         }
       }
-      svg += labelW ? `<text x="${labelW - 8}" y="${y + (lh - 7) / 2}" class="lname">${name}</text>` : `<text x="${x0 + 4}" y="${y + (lh - 7) / 2}" class="lname in">${name}</text>`;
+      svg += `<text x="${labelW - 8}" y="${y + bh / 2}" class="lname">${name}</text>`;
     });
-    svg += `<text x="${x1}" y="${H - 2}" class="tick" text-anchor="end">now</text><text x="${x0}" y="${H - 2}" class="tick">−${HISTORY_SECONDS} s</text></svg>`;
-    host2.innerHTML = svg;
+    const xs = X(state.t0);
+    if (state.t0 > t0) {
+      svg += `<line x1="${xs.toFixed(1)}" x2="${xs.toFixed(1)}" y1="0" y2="${LANES.length * lh}" class="start"/>`;
+      if (xs - x0 > 46 && x1 - xs > 70) svg += `<text x="${xs.toFixed(1)}" y="${H - 3}" class="tick" text-anchor="middle">story start</text>`;
+    }
+    svg += `<text x="${x1}" y="${H - 3}" class="tick" text-anchor="end">now</text><text x="${x0}" y="${H - 3}" class="tick">−${HISTORY_SECONDS} s</text></svg>`;
+    box.innerHTML = svg;
   }
 
   // ---- clock: real time while on screen ----
   let visible = false, last = null, acc = 0, lastRender = 0;
   new IntersectionObserver(([en]) => { visible = en.isIntersecting; last = null; }).observe(host);
   const loop = (now) => {
-    if (visible) {
+    const held = !state.manual && STORIES[state.key].steps[state.idx].hold;
+    if (visible && !held) {
       if (last !== null) {
         acc += Math.min(0.1, (now - last) / 1000);
         while (acc >= 0.01) { sim.step(); acc -= 0.01; }
       }
       last = now;
       if (now - lastRender > 66) { render(); lastRender = now; }
-    }
+    } else last = null;
     requestAnimationFrame(loop);
   };
   runStory('pool');
-  render();
   requestAnimationFrame(loop);
 }
 }

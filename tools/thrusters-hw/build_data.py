@@ -169,6 +169,7 @@ def usage(npz_path, run_dir, T, limit, total_limit):
     edges = np.arange(-24.5, 25, 1.0)  # 1 N bins; the middle one is the idle band, |F| <= 0.5 N
     hist = [np.histogram(F[:, i], bins=edges)[0].tolist() for i in range(8)]
     wrench = (T @ F.T).T
+    hold = enabled & (kind == 'hold') & np.array([lab.startswith('hold level') for lab in label])
     run_max = max(float(r['speed']) for r in segs.values() if r['kind'] == 'run' and int(r['axis']) in (0, 1))
     return {
         'source': 'thruster_forces (the MPC command, 20 Hz), untethered identification run 2026-10-26 20:47 '
@@ -200,6 +201,10 @@ def usage(npz_path, run_dir, T, limit, total_limit):
         'total_median': round(float(np.median(total)), 1),
         'total_p90': round(float(np.percentile(total, 90)), 1),
         'mean_wrench': [round(float(x), 2) for x in wrench.mean(0)],
+        # Holding still, level: the two 'hold level' segments. What it takes to stay put (trim and buoyancy).
+        'hold_level_wrench': [round(float(x), 2) for x in (T @ f[hold, 1:].T).T.mean(0)],
+        'hold_level_forces': [round(float(x), 2) for x in f[hold, 1:].mean(0)],
+        'hold_level_seconds': round(float(hold.sum() / 20), 1),
     }
 
 
@@ -297,6 +302,7 @@ def main():
     print('cap by run', u['cap_by_run'])
     print('usage total at cap', u['total_at_cap'], 'median total', u['total_median'],
           'p90', u['total_p90'], 'mean wrench', u['mean_wrench'])
+    print('level hold', u['hold_level_seconds'], 's: wrench', u['hold_level_wrench'], 'forces', u['hold_level_forces'])
     print('at per-thruster limit', u['at_limit'])
     print('idle', u['idle'])
     print('T rank', np.linalg.matrix_rank(T))

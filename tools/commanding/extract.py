@@ -246,6 +246,8 @@ def main():
             "hw_output": url("control", node, line_of(nt, r"void configureHardwareOutput\(")),
             "destructor": url("control", node, line_of(nt, r"~MpcControllerNode\(\)")),
             "config": url("control", cfg_path, line_of(cfgt, r"^\s*path:")),
+            "table_mode": url("control", cfg_path, line_of(cfgt, r"^\s*table_mode:")),
+            "rpm_offset": url("control", cfg_path, line_of(cfgt, r"^\s*hardware\.rpm_offset:")),
             "modes": url("control", "riptide_mpc/src/mpc.cpp",
                          line_of(show("control", "riptide_mpc/src/mpc.cpp"), r"reference\.linear_mode == Mode::DISABLED \|\|")),
         },

@@ -1,24 +1,23 @@
 /* Appendix B: the glossary. Search toolbar, A-Z bar and the entries. */
 
-.gl-intro p { font-size: 1.02rem; color: var(--ink-2); }
-
-/* Part filter: the shared segmented control, centred on the reading column. */
-.gl-filter-wrap { max-width: var(--measure); margin: 0.4rem auto 0.9rem; }
+.gl-how { max-width: var(--measure); margin: 0 auto 0.8rem; font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; color: var(--ink-2); }
 
 /* ---------- the sticky toolbar ---------- */
 .gl-tools {
   position: sticky; top: 0; z-index: 30;
-  max-width: var(--measure); margin: 0 auto;
+  /* The text column plus 0.6rem each side, like the entries' rows (margin 0 -0.6rem), so their dividers and
+     tints never show beside the bar when it is stuck. Centred when the article is wider than the column. */
+  margin: 0 max(-0.6rem, calc((100% - var(--measure)) / 2 - 0.6rem));
   background: var(--paper);
-  padding: 0.55rem 0 0.5rem;
+  padding: 0.55rem 0.6rem 0.5rem;
   border-bottom: 1px solid var(--rule);
   font-family: var(--sans);
-  transition: padding-left 0.2s ease;
 }
 /* Once stuck, the bar spans the column edge to edge with a soft shadow, so entries scroll under it cleanly. */
 .gl-tools.stuck { box-shadow: 0 6px 10px -8px rgba(15, 38, 51, 0.25); }
-.gl-row { display: flex; align-items: center; gap: 0.6rem; }
-.gl-search { position: relative; flex: 1 1 auto; min-width: 0; display: block; }
+/* One row on wide screens: search, part, count. */
+.gl-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'search pick count'; align-items: center; gap: 0.5rem 0.7rem; }
+.gl-search { grid-area: search; position: relative; min-width: 0; display: block; margin-left: var(--room, 0px); transition: margin-left 0.2s ease; }
 .gl-search svg { position: absolute; left: 0.7rem; top: 50%; width: 1.05rem; height: 1.05rem; transform: translateY(-50%); fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; pointer-events: none; }
 .gl-search input {
   width: 100%; font: inherit; font-size: 1rem; color: var(--ink);
@@ -30,9 +29,38 @@
 .gl-search input:focus { outline: none; border-color: var(--ink-2); box-shadow: 0 0 0 3px rgba(217, 72, 15, 0.18); }
 .gl-search input::-webkit-search-cancel-button { cursor: pointer; }
 .gl-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.gl-count { flex: none; font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gl-count { grid-area: count; justify-self: end; min-width: 5.6em; text-align: right; font-size: 0.86rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .gl-count b { color: var(--ink); font-weight: 650; }
-.gl-az-btn { display: none; flex: none; }
+.gl-az-btn { grid-area: az; display: none; }
+
+/* The part filter: a pill with a native drop-down (a picker on phones), filled in when a part is chosen. */
+.gl-pick { grid-area: pick; display: flex; align-items: center; gap: 0.3rem; min-width: 0; }
+.gl-pick-box {
+  position: relative; display: flex; align-items: center; min-width: 0;
+  border: 1px solid var(--rule); border-radius: 999px; background: var(--paper);
+  font-family: var(--sans); font-size: 0.9rem; min-height: 2.6rem; padding: 0 0.2rem 0 0.85rem;
+}
+.gl-pick-box:hover { border-color: var(--ink-2); }
+.gl-pick-l { color: var(--muted); margin-right: 0.35rem; pointer-events: none; }
+.gl-pick select {
+  font: inherit; font-weight: 600; color: var(--ink); background: transparent; border: 0; cursor: pointer;
+  padding: 0.4rem 1.6rem 0.4rem 0; min-width: 0; max-width: 13rem; text-overflow: ellipsis;
+  -webkit-appearance: none; appearance: none;
+}
+.gl-pick select:focus { outline: none; }
+.gl-pick-box:focus-within { border-color: var(--ink-2); box-shadow: 0 0 0 3px rgba(217, 72, 15, 0.18); }
+.gl-pick-box svg { position: absolute; right: 0.7rem; top: 50%; width: 0.75rem; height: 0.75rem; transform: translateY(-50%); fill: none; stroke: var(--ink-2); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.gl-pick.on .gl-pick-box { background: var(--ink); border-color: var(--ink); }
+.gl-pick.on .gl-pick-l { color: var(--paper-3); }
+.gl-pick.on select { color: var(--paper); }
+.gl-pick.on .gl-pick-box svg { stroke: var(--paper); }
+.gl-pick select option { color: var(--ink); background: #fff; }
+.gl-pick-x {
+  flex: none; width: 2.3rem; height: 2.3rem; border-radius: 50%; border: 1px solid var(--rule); background: var(--paper);
+  font: 500 1.25rem/1 var(--sans); color: var(--ink-2); cursor: pointer; display: grid; place-items: center; padding: 0 0 0.1rem;
+}
+.gl-pick-x:hover { border-color: var(--ink-2); color: var(--ink); }
+.gl-pick-x[hidden] { display: none; }
 
 /* A-Z: one row of letters on wide screens. */
 .gl-az { display: flex; justify-content: space-between; margin-top: 0.45rem; }
@@ -58,8 +86,8 @@
 .gl-name:hover { color: var(--accent); }
 .gl-exp { font-size: 0.92rem; color: var(--ink-2); }
 .gl-part {
-  margin-left: auto; font-size: 0.66rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--muted); border: 1px solid var(--rule); border-radius: 999px; padding: 0.08rem 0.5rem; white-space: nowrap;
+  margin-left: auto; font-size: 0.76rem; font-weight: 560;
+  color: var(--ink-2); border: 1px solid var(--rule); border-radius: 999px; padding: 0.06rem 0.55rem; white-space: nowrap;
 }
 .gl-entry dd { margin: 0; }
 .gl-entry dd > p { margin: 0 0 0.45rem; font-size: 1.02rem; line-height: 1.55; }
@@ -87,45 +115,69 @@
 /* A light accent tint, not paper-2, so the link chips keep their boxes while it shows. */
 .gl-entry.gl-flash { background: linear-gradient(rgba(217, 72, 15, 0.06), rgba(217, 72, 15, 0.06)); box-shadow: inset 3px 0 0 var(--accent); }
 .gl-entry.gl-flash { animation: gl-fade 2.4s ease 0.6s forwards; }
-/* The best name match for a search (where Enter goes), when it isn't already the first entry shown. */
+/* The best name match for a search (where Enter goes): listed first, with a label on its own line. */
 .gl-entry.gl-best { box-shadow: inset 3px 0 0 var(--accent); }
-.gl-entry.gl-best .gl-name::after {
-  content: 'Best match'; margin-left: 0.5rem; vertical-align: 0.15em;
-  font-size: 0.64rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent);
+.gl-entry.gl-best::before {
+  content: 'Best match'; display: inline-block; margin-bottom: 0.35rem;
+  font-family: var(--sans); font-size: 0.76rem; font-weight: 650; color: var(--accent-ink);
+  background: rgba(217, 72, 15, 0.1); border-radius: 999px; padding: 0.1rem 0.6rem;
 }
+/* While searching: one ranked column, no letter headings (order is set by the script). */
+.gl-body.searching { display: flex; flex-direction: column; min-height: 100vh; }
+.gl-body.searching .gl-letter, .gl-body.searching .gl-list { display: contents; }
+.gl-body.searching .gl-letter[hidden] { display: none; }
+.gl-body.searching .gl-letter > h2 { display: none; }
+.gl-body.searching .gl-entry[hidden] { display: none; }
+/* The empty box and the "more in other parts" note lead the results; the maintainer note ends them. */
+.gl-body.searching > .gl-empty { order: -2; }
+.gl-body.searching > .gl-more { order: -1; }
+.gl-body.searching > .gl-maint { order: 100000; }
+.gl-sub { font-family: var(--sans); font-size: 0.86rem; font-weight: 650; color: var(--ink-2); margin: 1.6rem 0 0; padding-bottom: 0.35rem; border-bottom: 2px solid var(--ink); }
+.gl-sub[hidden] { display: none; }
 @keyframes gl-fade { to { background-color: transparent; background-image: none; box-shadow: inset 3px 0 0 transparent; } }
 
 .gl-empty { font-family: var(--sans); font-size: 0.98rem; background: var(--paper-2); border-radius: 8px; padding: 1rem 1.1rem 0.4rem; margin: 1.4rem 0; }
-.gl-empty .btn { margin-left: 0.3rem; vertical-align: baseline; }
-.gl-maint { font-family: var(--sans); font-size: 0.84rem; color: var(--muted); margin-top: 2.4rem; }
+.gl-empty .gl-empty-act { margin: 0.2rem 0 0.7rem; }
+.gl-empty [hidden] { display: none; }
+/* "N more matches in other parts": shown while a part filter hides some of a search's matches. */
+.gl-more {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 0.8rem;
+  font-family: var(--sans); font-size: 0.95rem; color: var(--ink); background: var(--paper-2); border-radius: 8px;
+  margin: 0.9rem 0 0.3rem; padding: 0.55rem 0.6rem 0.55rem 0.9rem;
+}
+.gl-more .btn { background: var(--paper); }
+.gl-more[hidden] { display: none; }
+.gl-maint { font-family: var(--sans); font-size: 0.9rem; color: var(--ink-2); margin-top: 2.4rem; }
 
 /* ---------- phones ---------- */
-@media (max-width: 900px) {
-  /* The floating "Chapters" button covers the bar's left end while it shows: make room for it. */
-  .gl-tools.room { padding-left: 7.2rem; }
-}
 @media (max-width: 640px) {
+  /* Two rows: search and A-Z, then the part and the count. */
+  .gl-bar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'search az' 'pick count'; gap: 0.45rem 0.5rem; }
   .gl-tools { padding-top: 0.5rem; }
-  .gl-count { font-size: 0.76rem; }
-  .gl-az-btn { display: inline-flex; padding-left: 0.7rem; padding-right: 0.7rem; }
+  .gl-pick-box { min-height: 2.4rem; }
+  .gl-pick select { max-width: 12.5rem; }
+  .gl-count { font-size: 0.84rem; }
+  .gl-az-btn { display: inline-flex; align-items: center; min-height: 2.6rem; padding-left: 0.85rem; padding-right: 0.85rem; font-size: 0.92rem; }
   .gl-az-btn[aria-expanded='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   /* The letters become a drop-down grid under the bar. */
   .gl-az {
     display: none; position: absolute; left: 0; right: 0; top: 100%;
     grid-template-columns: repeat(7, 1fr); gap: 0.3rem;
-    background: var(--paper); border-bottom: 1px solid var(--rule); padding: 0.5rem 0 0.7rem;
+    background: var(--paper); border-bottom: 1px solid var(--rule); padding: 0.5rem 0.6rem 0.7rem;
     box-shadow: 0 10px 14px -10px rgba(15, 38, 51, 0.3); margin: 0;
   }
   .gl-az.open { display: grid; }
   .gl-az a { font-size: 1rem; padding: 0.62rem 0; background: var(--paper-2); }
   .gl-az a.off { background: none; }
-  .gl-tools.room .gl-count { display: none; }
   .gl-part { margin-left: 0; }
   .gl-name { font-size: 1.08rem; }
   .gl-entry dd > p { font-size: 1rem; }
+  /* Link chips: big enough to tap, with room between them. */
+  .gl-see { gap: 0.5rem; }
+  .gl-see a { min-height: 36px; padding: 0.45rem 0.7rem; display: inline-flex; flex-wrap: wrap; align-items: center; }
 }
 
 @media print {
-  .gl-tools, .gl-filter-wrap, .gl-maint { display: none; }
+  .gl-tools, .gl-how, .gl-maint { display: none; }
   .gl-entry { break-inside: avoid; }
 }

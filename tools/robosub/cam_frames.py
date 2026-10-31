@@ -25,6 +25,8 @@ for x in durs[:-1]: times.append(times[-1] + x)
 
 cards = {c[1]: c[0] for c in json.load(open(ROOT / 'public/data/mission_hero_exact.json'))['cards']}
 OUT = ROOT / 'public/img/robosub'
+# Crop to the detections (x, y, w, h in the 1120 px frame) so the detector's labels stay readable on a phone.
+CROP = {'cam_slalom': (300, 60, 780, 460), 'cam_torpedo': (130, 160, 600, 460), 'cam_table': (0, 120, 800, 560), 'cam_bins': (60, 140, 820, 520)}
 for card, name in [('m11_000.webp', 'cam_slalom'), ('m11_003.webp', 'cam_torpedo'), ('m11_005.webp', 'cam_table'), ('m11_016.webp', 'cam_bins')]:
     i = max(0, bisect.bisect_right(times, cards[card] + 0.3) - 1)
     img = cv2.imread(files[i])
@@ -33,5 +35,7 @@ for card, name in [('m11_000.webp', 'cam_slalom'), ('m11_003.webp', 'cam_torpedo
     small = cv2.resize(img, (ref.shape[1], ref.shape[0]), interpolation=cv2.INTER_AREA)
     err = float(((small.astype(float) - ref.astype(float)) ** 2).mean() ** 0.5)
     img = cv2.resize(img, (1120, round(img.shape[0] * 1120 / img.shape[1])), interpolation=cv2.INTER_AREA)
-    cv2.imwrite(str(OUT / f'{name}.webp'), img, [cv2.IMWRITE_WEBP_QUALITY, 80])
+    x, y, w, hh = CROP[name]
+    img = img[y:y + hh, x:x + w]
+    cv2.imwrite(str(OUT / f'{name}.webp'), img, [cv2.IMWRITE_WEBP_QUALITY, 82])
     print(name, files[i].rsplit('/', 1)[-1], f'rms vs card {err:.1f}', (OUT / f'{name}.webp').stat().st_size // 1024, 'KB')

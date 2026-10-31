@@ -1,0 +1,28 @@
+/* The trim calculator (src/viz/mechanical-trim.js). */
+.mx-trim-body { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+.mx-trim-pic { position: relative; background: #fff; border-radius: 8px; overflow: hidden; }
+.mx-trim-rot { position: relative; transform-origin: 50% 50%; }
+.mx-trim-rot img { display: block; width: 100%; height: auto; opacity: 0.6; }
+.mx-trim-svg, .mx-trim-top { position: absolute; inset: 0; width: 100%; height: 100%; font-family: var(--sans); -webkit-user-select: none; user-select: none; }
+.mx-trim-top { pointer-events: none; }
+.mx-trim-top .drag { pointer-events: auto; cursor: grab; touch-action: none; }
+.mx-trim-top .drag:active { cursor: grabbing; }
+.mx-trim-top .hint { animation: mx-trim-hint 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes mx-trim-hint { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .mx-trim-top .hint { animation: none; opacity: 0.6; } }
+.mx-trim-pic text { font-size: calc(13px * var(--k, 4)); font-weight: 650; paint-order: stroke; stroke: #fff; stroke-width: calc(3.5px * var(--k, 4)); stroke-linejoin: round; }
+.mx-trim-out { font-family: var(--sans); font-size: 0.9rem; line-height: 1.45; color: var(--ink-2); }
+.mx-trim-out dl.spec { font-size: 0.86rem; gap: 0.3rem 0.9rem; margin-bottom: 0.6rem; }
+.mx-trim-out dd b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.mx-trim-out .ok { color: #13734f; }
+.mx-trim-out .bad { color: #b3261e; }
+.mx-trim-out p { margin: 0 0 0.5rem; }
+.mx-trim-controls input[type='range'] { width: 9rem; }
+@media (max-width: 860px) {
+  .mx-trim-body { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .mx-trim-controls { gap: 0.6rem; }
+  .mx-trim-controls input[type='range'] { width: 7.5rem; }
+  .mx-trim-out dl.spec { grid-template-columns: max-content 1fr; }
+}

@@ -3,6 +3,10 @@
 Checks every link (the page exists and has an element with that id), every [[cross-reference]] and every slug,
 then replaces everything between <!-- glossary:start --> and <!-- glossary:end --> in glossary.html.
 
+Links to a chapter that is still the template ("Being written.") are left out with a warning; they come back by
+themselves when the chapter is written and this is re-run. An entry's part defaults to the part of its first shown
+link's chapter; an explicit "part:" that matches none of its shown links gets a warning.
+
 Usage: python3 tools/glossary/build.py [--check]   (--check: validate only, don't write)
 """
 import glob, html, os, re, sys, json
@@ -10,8 +14,40 @@ import glob, html, os, re, sys, json
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 PAGE = os.path.join(ROOT, 'glossary.html')
-PARTS = {'start': 'Start here', 'vehicle': 'Vehicle', 'perception': 'Perception', 'control': 'Control',
-         'autonomy': 'Autonomy', 'ops': 'Running Talos'}
+
+
+def site_parts():
+    """The parts of the site, id -> title, read from src/site.js so the tags can't drift from the rail."""
+    src = open(os.path.join(ROOT, 'src', 'site.js')).read()
+    return dict(re.findall(r"\bid: '([^']+)',\s*title: '([^']+)'", src))
+
+
+PARTS = site_parts()
+
+
+def page_parts():
+    """Chapter href -> part id, from src/site.js."""
+    src = open(os.path.join(ROOT, 'src', 'site.js')).read()
+    out, cur = {}, None
+    for m in re.finditer(r"\bid: '([^']+)',\s*title|href: '([^']+)'", src):
+        if m.group(1):
+            cur = m.group(1)
+        else:
+            out[m.group(2)] = cur
+    return out
+
+
+PAGE_PART = page_parts()
+PLACEHOLDER = 'Being written.'
+_stub_cache = {}
+
+
+def is_stub(page):
+    """A chapter that is still the template, so a link to it would be a dead end."""
+    if page not in _stub_cache:
+        path = os.path.join(ROOT, page)
+        _stub_cache[page] = os.path.exists(path) and PLACEHOLDER in open(path).read()
+    return _stub_cache[page]
 
 
 def slugify(s):
@@ -85,7 +121,21 @@ def main():
     check_only = '--check' in sys.argv
     entries = parse()
     titles = chapter_titles()
-    errors = []
+    errors, warnings = [], []
+    stubs = {}
+    for e in entries:
+        live = [t for t in e['links'] if not is_stub(t.partition('#')[0])]
+        for t in e['links']:
+            if t not in live:
+                stubs.setdefault(t.partition('#')[0], []).append(e['name'])
+        e['links'] = live
+        parts = [PAGE_PART.get(t.partition('#')[0]) for t in live]
+        if not e['part'] and parts:
+            e['part'] = parts[0]
+        elif e['part'] and parts and e['part'] not in parts:
+            warnings.append(f'{e["name"]}: part {e["part"]!r} matches none of its links ({", ".join(sorted(set(filter(None, parts))))})')
+    for page, names in sorted(stubs.items()):
+        warnings.append(f'left out {len(names)} link(s) to {page} (still "{PLACEHOLDER}"): {", ".join(names)}')
     by_slug, lookup = {}, {}
     for e in entries:
         if e['slug'] in by_slug:
@@ -99,6 +149,13 @@ def main():
             lookup.setdefault(k.lower(), e)
     for e in entries:  # names win over aliases
         lookup[e['name'].lower()] = e
+    # How many other entries link to each one: breaks ties in the search ranking (data-w).
+    refs = {}
+    for e in entries:
+        for k in set(re.findall(r'\[\[([^\]|]+)', e['text'])):
+            t = lookup.get(k.lower())
+            if t is not None and t is not e:
+                refs[t['slug']] = refs.get(t['slug'], 0) + 1
 
     def link_html(target):
         page, _, anchor = target.partition('#')
@@ -149,7 +206,7 @@ def main():
             links = ''.join(link_html(t) for t in e['links'])
             aka = [a for a in e['aka'] if a.lower() != e['name'].lower()]
             items.append(
-                f'<div class="gl-entry" id="term-{e["slug"]}" data-part="{e["part"]}" data-k="{html.escape(search)}">\n'
+                f'<div class="gl-entry" id="term-{e["slug"]}" data-part="{e["part"]}" data-w="{refs.get(e["slug"], 0)}" data-k="{html.escape(search)}">\n'
                 f'  <dt><a class="gl-name" href="#term-{e["slug"]}">{html.escape(e["name"])}</a>'
                 + (f' <span class="gl-exp">{html.escape(e["exp"])}</span>' if e['exp'] else '')
                 + f' <span class="gl-part">{PARTS.get(e["part"], "")}</span></dt>\n'
@@ -159,6 +216,8 @@ def main():
         parts_html.append(f'<section class="gl-letter" data-letter="{letter}">\n<h2 id="{lid}" data-short="{letter}">{letter}</h2>\n<dl class="gl-list">\n'
                           + '\n'.join(items) + '\n</dl>\n</section>')
 
+    for w in warnings:
+        print('warning:', w)
     if errors:
         print('\n'.join(errors))
         sys.exit(1)

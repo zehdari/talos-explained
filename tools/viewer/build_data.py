@@ -8,6 +8,7 @@ Writes public/data/viewer/:
                 direction, type, the nodes on the other side (from the captured graph) and the rate measured in sim.
                 Sources: nereus content/viewer/talos_uwrt_panels.yaml + talos_uwrt_host.yaml (names), and
                 public/data/rosgraph/{rosgraph,topics}.json (captured 2026-10-30 from the full stack in Nereus).
+  priormap.json every object in the prior map (name, parent, x, y, z, yaw relative to the parent), for #mapping.
   course.json   the top-level props of riptide_mapping's prior map (map frame), for the typed-move sandbox.
 """
 import json
@@ -159,9 +160,26 @@ groups = [
         iface(el["tare_action"], "action", "out", "Tare gyro"),
         iface(el["imu"]["mag_cal_action"], "action", "out", "IMU magnetometer calibration"),
         iface(el["imu"]["config_service"], "service", "out", "Read / write IMU registers"),
-        iface(el["pinger"]["enable_topic"], "topic", "out", f"Pinger enable, re-sent every {el['pinger']['heartbeat_s']} s"),
-        iface(el["pinger"]["frequency_topic"], "topic", "out", "Pinger frequency: " + ", ".join(map(str, el["pinger"]["frequencies_khz"])) + " kHz"),
-        iface(el["ivc"]["tx_topic"], "topic", "out", "IVC (inter-vehicle comms) byte"),
+        # Acoustics: Talos carries no pinger. These choose which pinger frequency the IVC board listens for through
+        # the hydrophone; IVC messages go out through the transducer.
+        iface(el["pinger"]["enable_topic"], "topic", "out",
+              f"Acoustics on / off (listening for the pinger through the hydrophone), re-sent every {el['pinger']['heartbeat_s']} s",
+              robot="IVC board firmware (talos/IVCBoard2/src/ros.c, on the blake/ivc branch)"),
+        iface(el["pinger"]["frequency_topic"], "topic", "out",
+              "Pinger frequency to listen for: " + ", ".join(map(str, el["pinger"]["frequencies_khz"])) + " kHz",
+              robot="pinger_broker (riptide_hardware), which passes it on to the IVC board as ivc/pinger/set_freq_khz"),
+        iface(el["pinger"]["selected_topic"], "topic", "in", "The frequency the IVC board is listening for now",
+              robot="IVC board firmware (talos/IVCBoard2/src/ros.c, on the blake/ivc branch)"),
+        iface(el["pinger"]["amplitude_topic"], "topic", "in", "How loud the pinger is at that frequency",
+              robot="IVC board firmware (talos/IVCBoard2/src/ros.c, on the blake/ivc branch)"),
+        iface(el["ivc"]["tx_topic"], "topic", "out", "IVC: one byte out through the transducer",
+              robot="IVC board firmware (talos/IVCBoard/src/ros.c)"),
+        iface(el["ivc"]["tx_topic"], "topic", "in", "IVC log: every byte sent, the viewer's own included",
+              robot="Whoever sends on ivc/tx"),
+        iface(el["ivc"]["rx_topic"], "topic", "in", "IVC log: bytes received (from Triton, the team's second vehicle)",
+              robot="IVC board firmware (talos/IVCBoard/src/ros.c)"),
+        iface(el["ivc"]["confirm_topic"], "topic", "in", "IVC log: the board confirms a byte went out",
+              robot="Nothing on master publishes it (only riptide_hardware2's fake_ivc.py)"),
     ]},
     {"id": "recording", "title": "Recording", "node": "/talos/viewer_panels", "items": [
         *[iface(c[k], "service", "out", f"{c['label']} SVO {k.split('_')[0]}") for c in re["cameras"] for k in ("start_service", "stop_service")],
@@ -231,8 +249,26 @@ for name, o in init.items():
     pose = o.get("pose", {})
     x, y, z, yaw = (float(pose.get(k, 0)) for k in ("x", "y", "z", "yaw"))
     course.append({"name": name, "x": round(x, 3), "y": round(y, 3), "z": round(z, 3), "yaw": round(yaw, 2)})
+# The table from the simulator's course: the prior map's table entry is set for an RPAC dive-well test (riptide_perception
+# 2f3da82 "RPAC table"), so it isn't where the RoboSub course has it. Marked "sim" so the map draws it apart.
+SCENARIO = yaml.safe_load((NEREUS / "content/packs/scenarios/talos_uwrt/scenario.yaml").read_text())
+for t in SCENARIO["task_placements"]:
+    if t["task"] == "table":
+        x, y, z = t["position_m"]
+        course.append({"name": "table", "x": round(x, 3), "y": round(y, 3), "z": round(z, 3), "yaw": round(t["yaw_deg"], 2), "sim": True})
+
+# ---- the whole prior map, for the table in #mapping ----
+prior = []
+for name, o in init.items():
+    pose = o.get("pose", {})
+    parent = (o.get("parent") or "map")
+    if parent.endswith("_frame"):
+        parent = parent[: -len("_frame")]
+    prior.append({"name": name, "parent": parent,
+                  **{k: round(float(pose.get(k, 0)), 2) for k in ("x", "y", "z", "yaw")}})
 
 OUT.mkdir(parents=True, exist_ok=True)
+(OUT / "priormap.json").write_text(json.dumps({"source": str(MAPPING.relative_to(Path.home() / "osu-uwrt/release/src")), "objects": prior}, indent=1))
 (OUT / "wiring.json").write_text(json.dumps(wiring, indent=1))
 (OUT / "course.json").write_text(json.dumps({"source": str(MAPPING.relative_to(Path.home() / "osu-uwrt/release/src")), "props": course}, indent=1))
 print(sum(len(g["items"]) for g in groups), "interfaces;", len(course), "map props")

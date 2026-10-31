@@ -1,12 +1,14 @@
-// A two-state Kalman filter in the shape robot_localization uses for one axis: a value s and its rate d, with
-// s' = d and d a random walk. Q is per second and scaled by the time step, as in robot_localization's ekf.cpp
-// (P += dt * Q). Two sensors: one measures s, one measures d. A measurement older than the filter's last update
-// is applied to the current state (smooth_lagged_data off), or the filter rewinds to its stamp and replays the
-// newer measurements (smooth_lagged_data on).
+// A Kalman filter in the shape robot_localization uses for one axis. Q is per second and scaled by the time step,
+// as in robot_localization's ekf.cpp (P += dt * Q). A measurement older than the filter's last update is applied to
+// the current state (smooth_lagged_data off), or the filter rewinds to its stamp and replays the newer measurements
+// (smooth_lagged_data on).
 //
 // Two set-ups, both with Talos's numbers:
-//   velocity: s = surge velocity (DVL, 8 Hz, 125 ms old), d = acceleration (IMU, 400 Hz)
-//   rate:     s = pitch angle (IMU attitude, 400 Hz),      d = pitch rate (IMU gyro, 400 Hz)
+//   rate:     two states, pitch angle s (IMU attitude, 400 Hz) and pitch rate d (IMU gyro, 400 Hz), s' = d, d a
+//             random walk;
+//   velocity: one state, surge velocity s (DVL, 8 Hz, 125 ms old), a random walk with process noise Qs. The real
+//             EKF also has an acceleration state fed by the IMU; a two-state toy with it overshot every rise (its
+//             acceleration carried on), which the real EKF doesn't do, so the toy leaves it out.
 
 // Deterministic noise: the same draws on every run, so moving a slider changes only the filter.
 function gaussian(seed) {
@@ -51,10 +53,9 @@ const PROFILES = {
 // R*: the covariance the messages report. Q*: talos_ekf.yaml process noise for that axis.
 export const SETUPS = {
   velocity: {
-    T: 10, plot: 0, unit: 'm/s', digits: 3,
+    T: 10, plot: 0, unit: 'm/s', digits: 3, oneState: true,
     sRate: 8, sAge: 0.125, sTrue: 0.006, Rs: 7.6e-7, // DVL: 6 mm/s (robot.yaml); fom^2 median 7.6e-7 (2026-10-26 pool run)
-    dRate: 400, dAge: 0, dTrue: 0.035, Rd: 0.01,      // IMU accel: vectornav.yaml linear_acceleration_covariance
-    Qs: 2.5e-5, Qd: 1e-5,                             // vx, ax
+    Qs: 2.5e-5,                                       // vx
   },
   rate: {
     T: 9, plot: 1, unit: 'rad/s', digits: 3,
@@ -83,16 +84,17 @@ function filter(kind, o, withNoise) {
   const gs = withNoise ? g1 : () => 0, gd = withNoise ? g2 : () => 0;
   // Measurements with their stamps (when measured) and arrival times.
   const ms = [];
-  const sStep = Math.round(400 / o.sRate), dStep = Math.round(400 / o.dRate);
+  const sStep = Math.round(400 / o.sRate), dStep = o.oneState ? 0 : Math.round(400 / o.dRate);
   for (let i = 0; i <= n; i++) {
     const t = i * dt, [s, d] = prof(t);
     if (i % sStep === 0) ms.push({ k: 0, stamp: t, arrive: t + o.sAge, y: s + o.sTrue * gs() });
-    if (i % dStep === 0) ms.push({ k: 1, stamp: t, arrive: t + o.dAge, y: d + o.dTrue * gd() });
+    if (dStep && i % dStep === 0) ms.push({ k: 1, stamp: t, arrive: t + o.dAge, y: d + o.dTrue * gd() });
   }
   ms.sort((a, b) => a.arrive - b.arrive || a.k - b.k);
 
   // State x = [s, d], covariance P (symmetric 2x2: p00, p01, p11).
-  let x0 = 0, x1 = 0, p00 = 1, p01 = 0, p11 = 1, tf = 0;
+  // One-state (surge): the rate state stays at zero with no uncertainty, so the value is a plain random walk.
+  let x0 = 0, x1 = 0, p00 = 1, p01 = 0, p11 = o.oneState ? 0 : 1, tf = 0;
   const predict = (to) => {
     const h = to - tf;
     if (h <= 0) return;
@@ -100,7 +102,7 @@ function filter(kind, o, withNoise) {
     // P = F P F' + h Q, F = [[1, h], [0, 1]]
     p00 += 2 * h * p01 + h * h * p11 + h * o.Qs;
     p01 += h * p11;
-    p11 += h * o.Qd;
+    p11 += h * (o.oneState ? 0 : o.Qd);
     tf = to;
   };
   const correct = (k, y) => {

@@ -56,13 +56,6 @@
   "ignored": false
  },
  {
-  "name": "serial_library",
-  "build_type": "ament_cmake",
-  "folder": "opbox_software/serial_library",
-  "repo": "opbox_software",
-  "ignored": false
- },
- {
   "name": "riptide_autonomy2",
   "build_type": "ament_cmake",
   "folder": "riptide_autonomy",
@@ -73,13 +66,6 @@
   "name": "riptide_controllers2",
   "build_type": "ament_cmake",
   "folder": "riptide_control/riptide_controllers",
-  "repo": "riptide_control",
-  "ignored": false
- },
- {
-  "name": "riptide_motion_panel",
-  "build_type": "ament_python",
-  "folder": "riptide_control/riptide_motion_panel",
   "repo": "riptide_control",
   "ignored": false
  },

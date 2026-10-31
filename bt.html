@@ -12,40 +12,46 @@
   <header class="page-head">
     <div class="kicker">Autonomy · Chapter 1</div>
     <h1>Behaviour trees</h1>
-    <p class="lede">Every Talos mission is a behaviour tree: an XML file of small nodes that a C++ library walks through every 30 ms. Learn how one walk goes and you can read any of the team's trees.</p>
+    <p class="lede">Every Talos mission is a behaviour tree: an XML file of small nodes that a C++ library walks through every 30&nbsp;ms. Learn how one walk goes and you can read any of the team's trees.</p>
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>A tree is XML. The <code>doTask</code> node <span class="term">ticks</span> its root about every 30 ms until it returns SUCCESS or FAILURE.</li>
+      <li>A tree is XML. <code>doTask</code>, the autonomy program that runs trees, <a class="gl term" href="glossary.html#term-tick">ticks</a> the tree's root about every 30&nbsp;ms until it returns SUCCESS or FAILURE.</li>
       <li>Each tick, every node it reaches answers <b>SUCCESS</b>, <b>FAILURE</b> or <b>RUNNING</b>. Leaves act or check; Sequence, Fallback and decorators decide what runs next.</li>
-      <li>Nodes share data on a <span class="term">blackboard</span>. A subtree gets its own, and in BehaviorTree.CPP v3 its ports map only to the caller's key names. That is why the trees are full of <code>SetBlackboard "15" = "15"</code>.</li>
-      <li>Anything slow (a path, a service call) is an <span class="term">async action</span>. It starts on one tick, returns RUNNING, and checks its ROS reply on later ticks. Halting it tells the node to stop: <code>FollowPath</code> cancels its MPC goal.</li>
-      <li>The team wrote missions as state machines (SMACH in 2017, FlexBE by 2019-2021) until 2022, then switched to BehaviorTree.CPP v3.</li>
+      <li>Nodes share data on a <a class="gl term" href="glossary.html#term-blackboard">blackboard</a>. A <a class="gl" href="glossary.html#term-subtree">subtree</a> gets its own, and values reach it only through named keys.</li>
+      <li>Anything slow (a path, a service call) is an <a class="gl term" href="glossary.html#term-action-node">async action</a>. It starts on one tick, returns RUNNING, and checks its ROS reply on later ticks. Halting it tells the node to stop: <code>FollowPath</code> cancels its MPC goal.</li>
+      <li>The team wrote missions as state machines (SMACH in 2017, then FlexBE: planned in 2019, adopted in 2021) until 2022, then switched to BehaviorTree.CPP v3.</li>
     </ul></aside>
 
     <div class="prose">
-      <p>Autonomy lives in <a href="https://github.com/osu-uwrt/riptide_autonomy/tree/autonomy-mapping"><code>riptide_autonomy</code></a> (ROS package <code>riptide_autonomy2</code>), on <a href="https://www.behaviortree.dev/docs/3.8/intro/">BehaviorTree.CPP</a> <b>version 3</b> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/package.xml">package.xml</a>; Humble ships 3.8.7). Version 4 changed a lot, so read the 3.8 docs. Trees are edited in <a href="https://github.com/osu-uwrt/Groot">the team's fork of Groot</a>, a graphical editor (<a href="bt-workflow.html">Chapter 4</a>).</p>
-      <p>A whole real subtree, <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L3086"><code>WaitForKillSwitch</code></a>, the first thing the competition mission runs:</p>
+      <p>Missions live in <a href="https://github.com/osu-uwrt/riptide_autonomy/tree/autonomy-mapping"><code>riptide_autonomy</code></a> and run on <a class="gl" href="glossary.html#term-behaviortree-cpp">BehaviorTree.CPP</a> <b>version 3</b> (read the <a href="https://www.behaviortree.dev/docs/3.8/intro/">3.8 docs</a>; version 4 differs). Trees are edited in the team's <a class="gl" href="glossary.html#term-groot">Groot</a> fork (<a href="bt-workflow.html">Chapter 4</a>).</p>
+      <p>A whole real subtree, <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L3086"><code>WaitForKillSwitch</code></a>, the first thing the competition mission runs (messages shortened):</p>
 <pre><code><span class="k">&lt;BehaviorTree</span> ID="WaitForKillSwitch"&gt;
   <span class="k">&lt;Sequence&gt;</span>
-    &lt;Action ID="SetStatus" status="waiting"/&gt;          <span class="c">&lt;!-- LEDs solid red --&gt;</span>
-    &lt;Action ID="Info" message="Waiting for kill switch insert..."/&gt;
+    <span class="c">&lt;!-- LEDs solid red --&gt;</span>
+    &lt;Action ID="SetStatus" status="waiting"/&gt;
+    &lt;Action ID="Info" message="Waiting..."/&gt;
     &lt;Action ID="Wait" seconds="5"/&gt;
-    <span class="k">&lt;RetryUntilSuccessful</span> num_attempts="-1"&gt;       <span class="c">&lt;!-- try forever --&gt;</span>
+    <span class="c">&lt;!-- try forever --&gt;</span>
+    <span class="k">&lt;RetryUntilSuccessful</span> num_attempts="-1"&gt;
       <span class="k">&lt;Sequence&gt;</span>
-        &lt;Action ID="GetBoolTopic" topic="state/kill" value="{kill_switch_inserted}"/&gt;
+        <span class="c">&lt;!-- read state/kill once --&gt;</span>
+        &lt;Action ID="GetBoolTopic" topic="state/kill"
+                value="{kill_switch_inserted}"/&gt;
+        <span class="c">&lt;!-- go on only if it is false --&gt;</span>
         <span class="k">&lt;Inverter</span> name="IsFalse"&gt;
           &lt;Condition ID="IsTrue" value="{kill_switch_inserted}"/&gt;
         <span class="k">&lt;/Inverter&gt;</span>
         &lt;Action ID="Wait" seconds="1"/&gt;
-        &lt;Action ID="Info" message="KILL SWITCH INSERTED, TREE STARTING IN 5 SECONDS"/&gt;
+        &lt;Action ID="Info" message="INSERTED..."/&gt;
       <span class="k">&lt;/Sequence&gt;</span>
     <span class="k">&lt;/RetryUntilSuccessful&gt;</span>
-    &lt;Action ID="SetStatus" status="starting"/&gt;         <span class="c">&lt;!-- LEDs blink blue --&gt;</span>
+    <span class="c">&lt;!-- LEDs blink blue --&gt;</span>
+    &lt;Action ID="SetStatus" status="starting"/&gt;
     &lt;Action ID="Wait" seconds="5"/&gt;
   <span class="k">&lt;/Sequence&gt;</span>
 <span class="k">&lt;/BehaviorTree&gt;</span></code></pre>
-      <p>Read it top to bottom: show red, wait 5 s, keep reading <code>state/kill</code> until it says <code>false</code>, then blink blue and wait 5 s more. (<code>state/kill</code> is <code>true</code> while killed, so <code>kill_switch_inserted</code> really holds "killed"; the <code>Inverter</code> flips the check.)</p>
+      <p>Read it top to bottom: show red, wait 5 s, keep reading <code>state/kill</code> until it says <code>false</code>, then blink blue and wait 5 s more. <a class="gl" href="glossary.html#term-state-kill"><code>state/kill</code></a> is <code>true</code> while the robot is killed (despite the key's name), so the <code>Inverter</code> waits for <code>false</code>.</p>
 
       <h2 id="ticks">Ticks and statuses</h2>
       <p>A <strong>tick</strong> is one function call on the root, which ticks a child, which ticks one of its children, and so on down. Every node it reaches returns one of three statuses:</p>
@@ -54,18 +60,19 @@
         <li><b>FAILURE</b>: done, it didn't (or the answer to a check is no).</li>
         <li><b>RUNNING</b>: not finished, tick me again.</li>
       </ul>
-      <p>A fourth state, <b>IDLE</b>, means "not started". A parent that no longer needs a RUNNING child <strong>halts</strong> it, back to IDLE. A tick must be quick: a node that waits returns RUNNING and checks again next tick.</p>
+      <p>A fourth state, <b>IDLE</b>, means "not started". A parent that no longer needs a RUNNING child <a class="gl" href="glossary.html#term-halt"><strong>halts</strong></a> it, back to IDLE. A tick must be quick: a node that waits returns RUNNING and checks again next tick.</p>
+      <p>The figure below ticks <code>WaitForKillSwitch</code>. Three rules are enough to follow it: a <b>Sequence</b> ticks its children in order and stops at the first that fails or is still RUNNING; <b>RetryUntilSuccessful</b> ticks its child again when it fails; an <b>Inverter</b> swaps SUCCESS and FAILURE.</p>
     </div>
     <figure class="fig">
       <div class="panel" id="wfk-graph"></div>
-      <figcaption><b><code>WaitForKillSwitch</code> drawn as a tree</b> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L3086">the XML above</a>). Pick a tick to see what each node returned; the small number is the order the tick reached it, and faded nodes were not ticked. Tap or hover a node for what it does.</figcaption>
+      <figcaption><b><code>WaitForKillSwitch</code>, five ticks.</b> Step through them: each node shows what it returned and, in orange, the order the tick reached it; faded nodes were not ticked. Tap a node for what it does.</figcaption>
     </figure>
     <div class="prose">
       <p>Statuses travel up: a leaf answers, and each parent turns its children's answers into its own. The thing that calls <code>tick</code> on the root again and again is <code>doTask</code>:</p>
     </div>
     <figure class="fig">
       <div class="panel" id="dotask-graph"></div>
-      <figcaption><b>How <code>doTask</code> runs a tree</b> (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L195-L306"><code>DoTask.cpp</code></a>). It ticks the root, sleeps until the next 30 ms mark, and repeats while the root says RUNNING. Tap or hover a step.</figcaption>
+      <figcaption><b>How <code>doTask</code> runs a tree.</b> It ticks the root, sleeps until the next 30&nbsp;ms mark, and repeats while the root says RUNNING (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L195-L306"><code>DoTask.cpp</code></a>). Tap a step.</figcaption>
     </figure>
     <div class="prose">
       <ul>
@@ -96,16 +103,16 @@
     </div>
     <figure class="fig narrow">
       <div class="panel" id="control-table"></div>
-      <figcaption><b>The control nodes Talos uses</b>, with how often each appears in <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a> (every subtree in the file, counted by <code>tools/bt/extract.py</code>). The library's <code>ReactiveFallback</code> and <code>SequenceStar</code> are not used.</figcaption>
+      <figcaption><b>The control nodes Talos uses.</b> Uses are counted over every subtree in <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml"><code>RepairCompMpcTree.xml</code></a>; the library's <code>ReactiveFallback</code> and <code>SequenceStar</code> are not used.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="decorators">Decorators</h2>
-      <p>A <strong>decorator</strong> has exactly one child and changes how it runs or what it returns.</p>
+      <p>A <a class="gl" href="glossary.html#term-decorator"><strong>decorator</strong></a> has exactly one child and changes how it runs or what it returns.</p>
     </div>
     <figure class="fig narrow">
       <div class="panel" id="decorator-table"></div>
-      <figcaption><b>Decorators in the competition tree</b>, with how often each appears. All are built into the library except <code>RetryUntilSuccessfulOrTimeout</code>, the team's own (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_decorators/RetryUntilSuccessfulOrTimeout.btdecorator.hpp">source</a>). The library's <code>Timeout</code> is not used.</figcaption>
+      <figcaption><b>Decorators in the competition tree.</b> All come with the library except <code>RetryUntilSuccessfulOrTimeout</code>, the team's own (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_decorators/RetryUntilSuccessfulOrTimeout.btdecorator.hpp">source</a>); the library's <code>Timeout</code> is not used.</figcaption>
     </figure>
     <div class="prose">
       <ul>
@@ -118,23 +125,8 @@
         <p>When its time runs out, <code>RetryUntilSuccessfulOrTimeout</code> returns FAILURE <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_decorators/RetryUntilSuccessfulOrTimeout.btdecorator.hpp#L47-L59">without halting a child that is still RUNNING</a> (the library's <code>Timeout</code> would). If <code>SearchMpc</code>'s 100 s run out mid-sweep, nobody cancels the <code>FollowPath</code> goal: the <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L1117-L1129">MPC</a> flies on until the path ends, stalls or is preempted. The simulator marks such a node "left running".</p>
       </div>
 
-      <h2 id="simulator">Tick it yourself</h2>
-      <p>This runs the real <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L2062"><code>SearchMpc</code></a> subtree with BehaviorTree.CPP v3's rules: the torpedo task sweeps arcs round the mapped estimate until it sees the board, chases the detection, then holds until the map is confident. You play the ROS side. Inputs are <code>TorpedoTreeMpc</code>'s: <code>max_dist</code> 2 m, <code>min_dist</code> 1 m, <code>target_cov</code> 0.0025, <code>timeout_secs</code> 100 s.</p>
-    </div>
-    <figure class="fig" id="sim-fig">
-      <div class="panel bt-sim" id="bt-sim"></div>
-      <figcaption><b>The real <code>SearchMpc</code>, one tick at a time.</b> Each tick is 30 ms of tree time. A solid chip is what a node returned this tick (the number is the order reached); a pale chip is kept from an earlier tick. Tap a node for its XML and what it does.</figcaption>
-    </figure>
-    <div class="prose">
-      <p>Things to try:</p>
-      <ol>
-        <li><b>Step</b> a few times. The first tick runs the bookkeeping nodes straight through, then stops at <code>SetMappingTarget</code>, which waits for a service reply. A few ticks later <code>FollowPath</code> is flying.</li>
-        <li>Turn <b>Torpedo in view</b> on and step once. The <code>ReactiveSequence</code> re-checks <code>SeenRecently</code>, its <code>Inverter</code> fails, and <code>FollowPath</code> is halted (its goal is cancelled). The chase starts on the same tick.</li>
-        <li>Reset, switch to <b>plain Sequence</b> and do the same: nothing happens until the path ends, because a <code>Sequence</code> goes straight back to its RUNNING child.</li>
-      </ol>
-
       <h2 id="blackboard">The blackboard and ports</h2>
-      <p>The <strong>blackboard</strong> is a key-value store shared by the nodes of one tree. Nodes reach it through <strong>ports</strong>, the named inputs and outputs each node type declares in C++:</p>
+      <p>The <a class="gl" href="glossary.html#term-blackboard"><strong>blackboard</strong></a> is a key-value store shared by the nodes of one tree. Nodes reach it through <strong>ports</strong>, the named inputs and outputs each node type declares in C++:</p>
       <ul>
         <li><code>seconds="5"</code> is a literal; <code>seconds="{hold_secs}"</code> reads the key <code>hold_secs</code>.</li>
         <li>An output port names the key to write: <code>out="stage"</code> and <code>out="{stage}"</code> both write <code>stage</code>.</li>
@@ -144,7 +136,7 @@
       <ul>
         <li><strong>Every port is a string</strong>, converted only when read (<a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/autonomy_lib.hpp#L204-L215">autonomy_lib.hpp</a>): <code>"abc"</code> throws and aborts the tree, while <code>"1.5m"</code> quietly reads as 1.5.</li>
         <li><strong>Empty means default:</strong> Groot saves unset ports as <code>""</code>, and the nodes read that as "use my default".</li>
-        <li><strong><code>{key}</code> inside text</strong> (<code>message="error {cov}, target: {target_cov}"</code>) is filled in by Talos's <code>formatStringWithBlackboard</code> in <code>Info</code>, <code>Format</code> and <code>FollowPath</code>, not by the library.</li>
+        <li><strong><code>{key}</code> inside text</strong> (<code>message="error {cov}, target: {target_cov}"</code>) is filled in by Talos's <code>formatStringWithBlackboard</code> in <code>Info</code>, <code>Error</code>, <code>Format</code> and <code>FollowPath</code>, not by the library.</li>
       </ul>
 
       <h2 id="subtrees">Subtrees and remapping</h2>
@@ -157,17 +149,20 @@
       <p>The main tree passes <code>repair_mission</code> = 1 like this:</p>
 <pre><code><span class="k">&lt;BehaviorTree</span> ID="BehaviorTree"&gt;
   <span class="k">&lt;Sequence</span> name="MISSION"&gt;
-    &lt;SetBlackboard output_key="1" value="1"/&gt;   <span class="c">&lt;!-- key "1" now holds "1" --&gt;</span>
+    <span class="c">&lt;!-- key "1" now holds "1" --&gt;</span>
+    &lt;SetBlackboard output_key="1" value="1"/&gt;
     &lt;Action ID="Info" message="MISSION: REPAIR"/&gt;
-    <span class="c">&lt;!-- inside the subtree, repair_mission reads this tree's key "1" --&gt;</span>
-    &lt;SubTree ID="CompMissionTreeMpc" __shared_blackboard="false" repair_mission="1"/&gt;
+    <span class="c">&lt;!-- repair_mission reads my key "1" --&gt;</span>
+    &lt;SubTree ID="CompMissionTreeMpc"
+             __shared_blackboard="false"
+             repair_mission="1"/&gt;
   <span class="k">&lt;/Sequence&gt;</span>
 <span class="k">&lt;/BehaviorTree&gt;</span></code></pre>
-      <p>Forget the <code>SetBlackboard</code> and the port is silently empty inside the subtree. It happens for real: <code>FireTorpedo</code> calls <code>WaitForActuators</code> with <code>timeout_secs="10"</code> but never writes a key <code>"10"</code>, so the wait's timeout falls back to 0 and the robot does not wait for the actuators at all (<a href="mission-tree.html#watch">Chapter 3</a>; pick it in the explorer below). Likewise the port defaults in the file's <code>TreeNodesModel</code> only document the subtree for Groot; v3 never applies them.</p>
+      <p>Forget the <code>SetBlackboard</code> and the port is silently empty inside the subtree. It happens for real: <code>FireTorpedo</code> calls <code>WaitForActuators</code> with <code>timeout_secs="10"</code> but never writes a key <code>"10"</code>, so the wait's timeout reads as 0. The wait fails at once with a false "Actuators busy!" error, and "Torpedo fired!" never prints; a <code>ForceSuccess</code> named <code>REMOVE ME</code> hides the failure (<a href="mission-tree.html#watch">Chapter 3</a>; pick it in the explorer below). Likewise the port defaults in the file's <code>TreeNodesModel</code> only document the subtree for Groot; v3 never applies them.</p>
     </div>
     <figure class="fig narrow">
       <div class="panel" id="remap"></div>
-      <figcaption><b>Every subtree call in the competition mission</b>, from the main tree down (114 calls, parsed from the XML): each port, the caller's key, and the fixed value the caller writes there. Orange rows pass a number through a key named after it, like <code>timeout="60"</code>; of 79 such mappings, 4 point at a key the caller never writes (red). Pick a call from the list.</figcaption>
+      <figcaption><b>Every subtree call in the competition mission.</b> All 114 calls parsed from the XML, with each port, the caller's key and the value the caller writes there; 4 of the 79 number mappings point at a key that is never written.</figcaption>
     </figure>
 
     <div class="prose">
@@ -182,32 +177,56 @@
         <dt><code>onRunning()</code></dt><dd>Every later tick. Check the reply without waiting; return RUNNING, SUCCESS or FAILURE.</dd>
         <dt><code>onHalted()</code></dt><dd>Called if a parent halts it while RUNNING. <code>FollowPath</code> cancels its goal here. Most service and topic nodes leave it empty, so their request just goes unanswered.</dd>
       </dl>
+      <p>Two ROS words first. An <a class="gl" href="glossary.html#term-action">action server</a> takes a long job (a goal), reports progress, returns a result, and can be told to cancel. A <b>future</b> is a handle to a reply that hasn't arrived yet: you check it later.</p>
       <p><a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/FollowPath.btaction.hpp"><code>FollowPath</code></a> sends a path to the MPC's <code>follow_path</code> action server. Cut down to the parts that matter here:</p>
 <pre><code><span class="k">BT::NodeStatus onStart()</span> override {
     startTime = now();  timeout = input("timeout", 60);
-    <span class="c">// parse "x,y,z,yaw; frame: x,y,z,yaw | arc=...; ..." into waypoints</span>
+    <span class="c">// parse the waypoint string</span>
     return RUNNING;
 }
 <span class="k">BT::NodeStatus onRunning()</span> override {
     if (now() - startTime &gt; timeout) { cancel(); return FAILURE; }
-    if (!goalFuture.valid()) {                     <span class="c">// once the TF frames resolve</span>
-        goalFuture = client-&gt;async_send_goal(goal);  return RUNNING;
+    <span class="c">// send the goal (once the TF frames resolve)</span>
+    if (!goalFuture.valid()) {
+        goalFuture = client-&gt;async_send_goal(goal);
+        return RUNNING;
     }
     if (!goalHandle) {
-        if (goalFuture.wait_for(0s) != ready) return RUNNING;   <span class="c">// poll, never block</span>
+        <span class="c">// poll, never block</span>
+        if (goalFuture.wait_for(0s) != ready) return RUNNING;
         goalHandle = goalFuture.get();
-        if (!goalHandle) return FAILURE;           <span class="c">// rejected</span>
+        <span class="c">// rejected</span>
+        if (!goalHandle) return FAILURE;
         resultFuture = client-&gt;async_get_result(goalHandle);
     }
     if (resultFuture.wait_for(0s) != ready) return RUNNING;
     return resultFuture.get().code == SUCCEEDED ? SUCCESS : FAILURE;
 }
-<span class="k">void onHalted()</span> override { cancel(); }            <span class="c">// async_cancel_goal</span></code></pre>
-      <p>Every step checks a ROS future with <code>wait_for(0s)</code>, which returns at once. Service nodes such as <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/CallTriggerService.btaction.hpp#L37"><code>CallTriggerService</code></a> work the same way. The replies arrive on another thread (a single-threaded executor in <code>main</code>, <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L421-L426">DoTask.cpp</a>), and a tick that blocked waiting for them would stop the whole tree: a <code>ReactiveSequence</code> above could not re-check its conditions or halt the action.</p>
+<span class="c">// a parent halted it: async_cancel_goal</span>
+<span class="k">void onHalted()</span> override { cancel(); }</code></pre>
+      <p>Every step checks a future with <code>wait_for(0s)</code>, which returns at once whether or not the reply is there. Service nodes such as <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_actions/CallTriggerService.btaction.hpp#L37"><code>CallTriggerService</code></a> work the same way. The replies are received on another thread (the tree ticks on its own thread while <code>main</code> handles ROS callbacks, <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp#L421-L426">DoTask.cpp</a>). A tick that blocked waiting for one would freeze the whole tree: a <code>ReactiveSequence</code> above could not re-check its conditions or halt the action.</p>
       <p><strong>Conditions</strong> answer at once from data a subscription already cached: <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/include/riptide_autonomy/bt_conditions/SeenRecently.btcondition.hpp"><code>SeenRecently</code></a> only compares the time a class was last seen with the clock, so it is safe to re-check every tick. <a href="bt-nodes.html">Chapter 2</a> goes through the nodes one by one.</p>
 
+      <h2 id="simulator">Tick it yourself</h2>
+      <p>Now all of it at once. This runs the real <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/trees/RepairCompMpcTree.xml#L2062"><code>SearchMpc</code></a> subtree with BehaviorTree.CPP v3's rules. The torpedo task uses it to fly arcs round where the map thinks the board is until the camera sees it, chase the detection, then hold still until the map is sure.</p>
+      <p>You play the ROS side: the switches are the detector and the map, the buttons are the MPC. The inputs are remapped in from <code>TorpedoTreeMpc</code>: <code>max_dist</code> 2 m, <code>min_dist</code> 1 m, <code>timeout_secs</code> 100 s, and <code>target_cov</code> 0.0025, the map's <a class="gl" href="glossary.html#term-covariance">covariance</a> error in m² (about (5 cm)²: it knows the board's position to a few centimetres).</p>
+    </div>
+    <figure class="fig" id="sim-fig">
+      <div class="panel bt-sim" id="bt-sim"></div>
+      <figcaption><b>The real <code>SearchMpc</code>, one tick at a time.</b> Each tick is 30&nbsp;ms of tree time; a solid chip is what a node returned this tick (orange number: the order reached), a pale one is left from an earlier tick. Tap a node for its XML.</figcaption>
+    </figure>
+    <div class="prose">
+      <p>Things to try:</p>
+      <ol>
+        <li><b>Step</b> a few times. The first tick runs the bookkeeping nodes straight through, then stops at <code>SetMappingTarget</code>, which waits for a service reply. A few ticks later <code>FollowPath</code> is flying.</li>
+        <li>Turn <b>Torpedo in view</b> on and step once. The <code>ReactiveSequence</code> re-checks <code>SeenRecently</code>, its <code>Inverter</code> fails, and <code>FollowPath</code> is halted (its goal is cancelled). The chase starts on the same tick.</li>
+        <li>Reset, switch to <b>plain Sequence</b> and do the same: nothing happens until the path ends, because a <code>Sequence</code> goes straight back to its RUNNING child.</li>
+        <li>In the chase, press <b>Centred</b>, then turn <b>Map converged</b> on and use <b>Skip</b>: the hold ends, <code>getCovariance</code> reads the map, and <code>SearchMpc</code> succeeds.</li>
+      </ol>
+
+
       <h2 id="why">Why trees, not state machines</h2>
-      <p>The team has written mission code in three systems, as its technical design reports (TDRs) show:</p>
+      <p>The team has written mission code in three systems, as its <a class="gl" href="glossary.html#term-tdr">technical design reports</a> (TDRs) show:</p>
     </div>
     <figure class="fig narrow">
       <div class="panel">
@@ -220,21 +239,18 @@
           <li><b>2025</b><span>The behaviour-tree system enters its fourth competition cycle, on Talos. <a href="https://bpb-us-e1.wpmucdn.com/org.osu.edu/dist/1/19/files/2025/07/Robosub_2025.pdf">2025 TDR</a></span></li>
         </ol>
       </div>
-      <figcaption><b>How UWRT has written mission code</b>, from the team's TDRs. The reports don't say why the team left FlexBE.</figcaption>
+      <figcaption><b>How UWRT has written mission code.</b> From the team's TDRs, which don't say why the team left FlexBE.</figcaption>
     </figure>
-    <figure class="fig">
-      <a href="img/bt/tdr2022-groot.webp" aria-label="Open the 2022 TDR tree figure full size"><picture>
-        <source media="(max-width: 600px)" data-srcset="img/bt/tdr2022-groot-move.webp" width="400" height="496">
-        <img class="media" id="tdr-img" data-src="img/bt/tdr2022-groot.webp" width="1383" height="936" alt="A behaviour tree in Groot: a Sequence calling the PrimitiveMovePosition and PrimitiveMoveOrientation subtrees, each built from a RetryUntilSuccessfulOrTimeout around a Sequence of PublishToController, GetOdometry and comparison nodes." loading="lazy" style="background:#fff">
-      </picture></a>
-      <figcaption><b>The first tree in a TDR</b> (2022, Fig. 2), in Groot. <code>PrimitiveMovePosition</code> and <code>PrimitiveMoveOrientation</code> are still in today's trees, built much the same way. The robot then was Tempest. Phones show the <code>PrimitiveMovePosition</code> branch; tap for the whole figure.</figcaption>
+    <figure class="fig narrow">
+      <div class="panel" id="tdr-tree"></div>
+      <figcaption><b>The first tree in a TDR, redrawn.</b> <code>PrimitiveMovePosition</code> from the 2022 TDR's Fig. 2 (on Tempest), with what today's file adds marked <i>new</i>; <a href="img/bt/tdr2022-groot.webp" data-href="img/bt/tdr2022-groot.webp">open the original Groot figure</a>.</figcaption>
     </figure>
     <div class="prose">
-      <p>To see what a tree buys, draw <code>SearchMpc</code> as a state machine:</p>
+      <p>To see what a tree buys, draw <code>SearchMpc</code> as a <a class="gl" href="glossary.html#term-state-machine">state machine</a>:</p>
     </div>
     <figure class="fig">
       <div class="panel" id="fsm-graph"></div>
-      <figcaption><b><code>SearchMpc</code> drawn as a state machine</b>, read off the tree for comparison (the team never wrote it this way). Every state lists its own exits, and the 100 s limit is an arrow from every state. Tap or hover a state for the tree nodes that do its job.</figcaption>
+      <figcaption><b><code>SearchMpc</code> as a state machine.</b> Read off the tree for comparison (the team never wrote it this way); the dashed box is the 100 s limit, which in a plain state machine is an arrow out of every state inside it. Tap a state for the tree nodes that do its job.</figcaption>
     </figure>
     <div class="prose">
       <p>In the tree, the same logic comes from the structure:</p>
@@ -248,6 +264,7 @@
 
       <h2 id="where">Where this lives</h2>
       <ul class="src-list">
+        <li><a href="https://github.com/osu-uwrt/riptide_autonomy/tree/autonomy-mapping"><code>riptide_autonomy</code></a> builds the ROS package <code>riptide_autonomy2</code>; its <a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/package.xml">package.xml</a> pulls in BehaviorTree.CPP v3 (3.8.7 on Humble).</li>
         <li><a href="https://github.com/osu-uwrt/riptide_autonomy/blob/autonomy-mapping/src/riptide_autonomy/DoTask.cpp"><code>src/riptide_autonomy/DoTask.cpp</code></a>: the <code>autonomy/run_tree</code> action server and tick loop.</li>
         <li><a href="https://github.com/osu-uwrt/riptide_autonomy/tree/autonomy-mapping/include/riptide_autonomy"><code>include/riptide_autonomy/</code></a>: one header per node in <code>bt_actions/</code>, <code>bt_conditions/</code>, <code>bt_decorators/</code>.</li>
         <li><a href="https://github.com/osu-uwrt/riptide_autonomy/tree/autonomy-mapping/trees"><code>trees/</code></a>: the tree files and the Groot workspace (<code>.groot/workspace.xml</code>).</li>

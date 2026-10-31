@@ -17,16 +17,16 @@
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
       <li>Eight <strong>Blue Robotics T200</strong> thrusters in one plane: four outer ones push fore and aft, four inner ones at 45° push up or down and sideways at once.</li>
-      <li>The MPC turns each force into a target RPM and sends it over CAN, 20 times a second, to two <strong>ESC boards</strong>. Each runs an RPM loop that drives four <strong>APD 80F3</strong> ESCs over <span class="term">DShot</span>.</li>
-      <li>Thrusters 0, 3, 4 and 7 are marked <code>type: 1</code> in <code>talos.yaml</code> (presumably the counter-rotating propellers) and the ESC firmware spins them backwards, so a positive command always pushes the same way.</li>
-      <li>The thruster test spins each one at 300 rpm for 3 s. Check that the right one spins and that it blows water the right way.</li>
+      <li>The MPC turns each force into a target RPM and sends it over <a class="gl" href="glossary.html#term-can">CAN</a>, 20 times a second, to two <strong>ESC boards</strong>. Each board holds the RPM of four <strong>APD 80F3</strong> ESCs, which it talks to over <span class="term">DShot</span>.</li>
+      <li>Thrusters 0, 3, 4 and 7 carry the opposite-hand propeller, marked <code>type: 1</code> in <code>talos.yaml</code>. The ESC firmware spins them backwards, so a positive command always pushes the same way.</li>
+      <li>The thruster test spins each one at 300 rpm for 3 s, with the robot enabled on its stand. Check that the right one spins and that it blows water the right way.</li>
     </ul></aside>
 
     <div class="prose">
       <p>How the controller chooses the eight forces is in <a href="control/thrusters.html">Thrusters and allocation</a>; thruster power is in <a href="electrical.html#esc">Power and wiring</a>, the ESC board in <a href="boards.html#esc">The circuit boards</a> and its code in <a href="firmware.html#thrusters">Firmware on the boards</a>.</p>
 
       <h2 id="t200">The T200 thruster</h2>
-      <p>A brushless motor with a 76 mm propeller in a duct, flooded so that water cools it and lubricates its bushings. Talos's were bought in 2021 (2023 design report).</p>
+      <p>A brushless motor with a 76 mm propeller in a duct, flooded so that water cools it and lubricates its bushings.</p>
       <dl class="spec">
         <dt>Supply</dt><dd>Rated 7 to 20 V. Talos runs them straight off the battery bus, which goes from about 20.75 V on a full pack down to 16 V (<a href="electrical.html#batteries">The batteries</a>), so a fresh pack is slightly above the rating</dd>
         <dt>Full throttle at 16 V</dt><dd>5.25 kgf (51.5 N) forward, 4.1 kgf (40.2 N) reverse; 24 A, 390 W</dd>
@@ -36,11 +36,11 @@
         <dt>Running dry</dt><dd>No more than about 10 s</dd>
       </dl>
       <p class="src">From the <a href="https://bluerobotics.com/store/thrusters/t100-t200-thrusters/t200-thruster-r2-rp/">T200 product page</a>; Talos's limits from <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml#L47-L67"><code>riptide_mpc/config/models/talos.yaml</code></a>.</p>
-      <p>Both limits were carried over from the old controller's thruster solver (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L302-L306"><code>talos.yaml</code></a>); why those numbers isn't recorded. For context: current grows much faster than thrust (24 N about 7 A, full throttle over 24 A), and each ESC sits behind a 15 A fuse (<a href="electrical.html#esc">Power and wiring</a>).</p>
+      <p>Both limits were carried over from the old controller's thruster solver (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L302-L306"><code>talos.yaml</code></a>); why those numbers isn't recorded. For context: current grows much faster than thrust (24 N takes about 7 A at 18 V, full throttle over 24 A), and each ESC sits behind a 15 A fuse (<a href="electrical.html#esc">Power and wiring</a>).</p>
     </div>
     <figure class="fig">
-      <img class="media th-photo" data-src="img/thrusters-hw/talos-front-photo.webp" width="1400" height="934" loading="lazy" alt="Talos on a lab bench, seen from the bow. Four black T200 thrusters with red propellers sit at the corners in round guards, two on the upper triangular frame modules and two on the lower ones. Between them are the two round hull windows, with the forward camera in the left tube.">
-      <figcaption><b>Talos from the front.</b> The outer thrusters are in the round guards at the corners; the inner four hide behind the angled arms. Team photo, 2026 (<a href="https://org.osu.edu/osu-uwrt/files/2026/05/DSC00372.jpg">org.osu.edu/osu-uwrt</a>).</figcaption>
+      <img class="media th-photo" data-src="img/thrusters-hw/talos-front-photo.webp" width="1400" height="934" loading="lazy" alt="Talos on a lab bench, seen from the bow. Four black T200 thrusters with red propellers sit at the corners in round guards, two on the upper triangular frame modules and two on the lower ones. Between them are the two round hull windows: the forward camera behind the starboard (left) window, and a red handle, the kill switch, on the port (right) window.">
+      <figcaption><b>Talos from the bow.</b> The outer thrusters are in the round guards at the corners; the inner four hide behind the angled arms. The red handle on the right-hand (port) window is the <a class="gl" href="glossary.html#term-kill-switch">kill switch</a>, which cuts power to the ESCs. Team photo, 2026 (<a href="https://org.osu.edu/osu-uwrt/files/2026/05/DSC00372.jpg">org.osu.edu/osu-uwrt</a>).</figcaption>
     </figure>
 
     <div class="prose">
@@ -50,43 +50,42 @@
         <li><strong>The outer four</strong> (<code>V…</code>) point along the robot: surge, plus pitch (top against bottom) and yaw (port against starboard).</li>
         <li><strong>The inner four</strong> (<code>H…</code>) are tilted 45°, each pushing up or down and sideways at once: heave, sway and roll.</li>
       </ul>
-      <p>Names in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L392-L438"><code>talos.yaml</code></a> read <b>H</b>eave/<b>V</b>ector, <b>U</b>pper/<b>L</b>ower, <b>P</b>ort/<b>S</b>tarboard: <code>HLP</code> is heave, lower, port. The index (0 to 7) is the position in that list, used by the firmware, CAN and the thruster test (ignore the file's comments "thruster 7" and "8" on indices 6 and 7).</p>
+      <p>Names in <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L392-L438"><code>talos.yaml</code></a> read <b>H</b>eave/<b>V</b>ector, <b>U</b>pper/<b>L</b>ower, <b>P</b>ort/<b>S</b>tarboard: <code>HLP</code> is heave, lower, port. The index (0 to 7) is the position in that list, used by the firmware, CAN and the thruster test.</p>
     </div>
     <figure class="fig">
       <div class="panel th-layout" id="lay">
         <div class="controls"><span class="seg" role="group" aria-label="Show" id="lay-mode"></span><span class="seg" role="group" aria-label="Motion" id="lay-motion" hidden></span></div>
-        <div class="th-front" id="lay-front">
-          <img class="th-front-img" data-src="media/cad/ctx-thrusters-front.webp" width="1600" height="1265" alt="Talos's CAD model seen from the bow, in grey with the eight thrusters in orange: four at the outer corners facing forward, four inner ones tilted at 45 degrees.">
-          <svg id="lay-svg" viewBox="0 0 1600 1090" role="img" aria-label="Thruster markers and push directions"></svg>
+        <div class="th-lay-body">
+          <div class="th-lay-pic">
+            <div class="th-sides" aria-hidden="true"><span>◂ starboard</span><span>port ▸</span></div>
+            <div class="th-front" id="lay-front">
+              <img class="th-front-img" data-src="media/cad/ctx-thrusters-front.webp" width="1600" height="1265" alt="Talos's CAD model seen from the bow, in grey with the eight thrusters in orange: four at the outer corners facing forward, four inner ones tilted at 45 degrees.">
+              <svg id="lay-svg" viewBox="0 0 1600 1090" role="img" aria-label="Thruster markers and push directions"></svg>
+            </div>
+          </div>
+          <div class="th-cards" id="lay-cards" role="group" aria-label="Thrusters, laid out as seen from the bow"></div>
         </div>
         <div class="graph-note th-note" id="lay-note" aria-live="polite"></div>
       </div>
-      <figcaption><b>Which way each thruster pushes, seen from the bow.</b> Starboard is on your left. Arrows show the push on the robot for a positive command; a dot is forward (toward you), a cross backward. Tap or hover a thruster for its details, or pick a motion to see one way of making it (minimum-norm allocation, <a href="control/thrusters.html#allocation">Thrusters and allocation</a>). CAD render, July 2026.</figcaption>
+      <figcaption id="lay-cap"><b>Which way each thruster pushes, seen from the bow.</b> Starboard is on your left. CAD render, July 2026.</figcaption>
     </figure>
     <div class="prose">
       <ul>
-        <li><strong>Every motion uses several thrusters.</strong> Sway is the inner four with upper and lower pushing opposite ways vertically, so only the sideways part adds up. So the controller works out all eight at once.</li>
+        <li><strong>Every motion uses several thrusters.</strong> None of the six motions above comes from a single thruster, and most thrusters help with several, so the controller works out all eight at once.</li>
         <li><strong>Long lever arms.</strong> The outer four are about 0.4 m to each side of the centre of mass and 0.24 m above or below it: a small force, a strong torque.</li>
         <li><strong>One file for the geometry.</strong> The MPC's thruster matrix (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/fossen_model.cpp#L147-L154"><code>fossen_model.cpp</code></a>) and the URDF frames both come from these poses.</li>
       </ul>
 
       <h2 id="path" data-short="Command path">From newtons to a spinning propeller</h2>
-      <p>Every 50 ms:</p>
-      <ol>
-        <li><strong>The MPC</strong> on the Orin solves for eight forces (±24 N each, 73 N total) and publishes them on <code>thruster_forces</code>.</li>
-        <li><strong>Force to RPM.</strong> <code>forceToRpm</code> inverts the T200 thrust curve (<a href="#curves">below</a>); the RPMs are logged on <code>command/requested_rpm</code>.</li>
-        <li><strong>Two CAN frames</strong> of four signed 16-bit RPMs (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c#L109-L160"><code>send_thruster_cmd_canbus.c</code></a>): <code>0x0B0</code> to board 0 (thrusters 0 to 3), <code>0x0F0</code> to board 1 (4 to 7). No ROS in between.</li>
-        <li><strong>The ESC board</strong> keeps the targets and stops all four thrusters if none arrive for 500 ms. Its RPM loop sends each ESC a throttle over DShot600.</li>
-        <li><strong>The ESC</strong> drives the motor's three phases and replies with its speed, closing the loop.</li>
-      </ol>
-      <p>The boards also take targets on the micro-ROS topic <code>command/thruster_rpm</code> (the force-gauge tool uses it), and only then publish <code>state/thrusters/rpm</code> and <code>/cmd</code>: on the CAN path those stay empty (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/main.c#L112-L115"><code>main.c</code></a>). The MPC writes to CAN only on wall-clock time with a <code>can0</code> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L684-L702"><code>configureHardwareOutput</code></a>), so a simulation can't spin the real thrusters.</p>
+      <p>Every 50 ms the MPC turns its eight forces into target RPMs and sends them straight onto <a class="gl" href="glossary.html#term-can">CAN</a>, one frame per ESC board, with no ROS in between (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c#L109-L160"><code>send_thruster_cmd_canbus.c</code></a>). Each board holds those RPMs until the next frame.</p>
     </div>
     <figure class="fig">
       <div class="panel"><div id="path-graph"></div><div class="graph-note" id="path-note" aria-live="polite"></div></div>
-      <figcaption><b>The thrust path and what comes back.</b> Solid arrows carry commands, dashed ones carry measurements; the POAC's kill switch sits on the power line. Tap or hover a box.</figcaption>
+      <figcaption><b>The thrust path and what comes back.</b> Solid arrows carry commands, dashed ones measurements. The shaded areas show where each part lives: the Orin or the board stack. Tap or hover a box.</figcaption>
     </figure>
     <div class="prose">
-      <p>Pick a thruster and a force to see the actual numbers at every step.</p>
+      <p>The MPC only drives the real thrusters when it runs on real time and the Orin's CAN port <code>can0</code> exists (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L684-L702"><code>configureHardwareOutput</code></a>), so a simulation can't spin them. The boards run <a class="gl" href="glossary.html#term-micro-ros">micro-ROS</a> over the same CAN bus: telemetry comes back that way, and they also accept RPMs on <code>command/thruster_rpm</code> (the force-gauge tool uses that). If <code>can0</code> is down, commands and telemetry both stop.</p>
+      <p>Pick a thruster and a force to see the numbers at every step.</p>
     </div>
     <figure class="fig">
       <div class="panel th-follow" id="follow">
@@ -96,7 +95,7 @@
         </div>
         <ol class="th-steps" id="fol-steps"></ol>
       </div>
-      <figcaption><b>One command, step by step</b>, with the code's formulas and constants. The throttle is only the feed-forward term (the PI loop trims it); the current is Blue Robotics' measurement at 18 V.</figcaption>
+      <figcaption><b>One command, step by step.</b> The numbers come from the code's own formulas and constants. The throttle shown is only the board's first guess (the PI loop trims it); the current is Blue Robotics' measurement at 18 V.</figcaption>
     </figure>
 
     <div class="prose">
@@ -105,7 +104,7 @@
     </div>
     <figure class="fig narrow">
       <img class="media th-board" data-src="media/boards/esc-top.webp" width="1400" height="1003" loading="lazy" alt="Render of the ESC MK II board: four APD 80F3 ESC modules side by side labelled ESC 1/5 to ESC 4/8, the RP2040 and CAN circuitry at the left edge with the board ID jumper, the 12-pin Thruster SubConn connector at the top right, and the ESC V+ and ESC GND power terminals along the bottom.">
-      <figcaption><b>One ESC board (ESC MK II).</b> Four APD 80F3 modules, labelled 1/5 to 4/8 in 1-based numbering; the RP2040 and board-ID jumper at the left, power at the bottom, motor phases out at the top right (<a href="boards.html#esc">The circuit boards</a>).</figcaption>
+      <figcaption><b>One ESC board (ESC MK II).</b> Four APD 80F3 modules. The silkscreen counts from 1: ESC 1/5 drives thruster 0 on board 0 and thruster 4 on board 1, and so on up to ESC 4/8 (thruster 3 or 7). The RP2040 and board-ID jumper are at the left, power at the bottom, motor phases out at the top right (<a href="boards.html#esc">The circuit boards</a>).</figcaption>
     </figure>
     <div class="prose">
       <dl class="spec">
@@ -115,24 +114,33 @@
       </dl>
 
       <h3 id="dshot">DShot</h3>
-      <p>Instead of a PWM pulse, which needs calibrating and picks up noise, <span class="term">DShot</span> sends a 16-bit digital frame: 11 bits of throttle, a telemetry-request bit and a 4-bit checksum. In <span class="term">bidirectional</span> DShot the ESC answers each frame on the same wire with its electrical revolution time; over the T200's 7 pole pairs that is the motor RPM the loop runs on (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/dshot.c#L205-L238"><code>dshot_get_rpm</code></a>). Reversing uses "3D mode" (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/dshot.c#L259-L289"><code>dshot_update_thrusters</code></a>):</p>
-      <div class="M">\text{DShot value} = \begin{cases} 48 + t, &amp; t &gt; 0 \\ 1048 + |t|, &amp; t &lt; 0 \\ 0, &amp; t = 0 \end{cases}</div>
+      <p>Instead of a PWM pulse, which needs calibrating and picks up noise, <span class="term">DShot</span> sends a 16-bit digital frame: 11 bits of throttle, a telemetry-request bit and a 4-bit checksum. In <span class="term">bidirectional</span> DShot the ESC answers each frame on the same wire with how long one electrical turn of the motor took. The T200's motor has 7 pole pairs, so 7 electrical turns make one propeller turn; that gives the RPM the board's loop runs on (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/dshot.c#L205-L238"><code>dshot_get_rpm</code></a>).</p>
+      <p>Both directions use "3D mode", where the value range is split in two: 48 to 1047 turns the motor one way, 1049 to 2047 the other, 0 stops it (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/dshot.c#L259-L289"><code>dshot_update_thrusters</code></a>). Step 5 of the figure above shows a real frame.</p>
 
       <h3 id="patch">The ESC firmware patch</h3>
-      <p>Stock APD firmware could only reverse in DShot with a "change direction" command and a long pause, and PWM would have lost the RPM reply. So a team member patched 3D mode into APD's firmware (version 2.3.0) with Ghidra (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/esc_firmware_patching/README.md">README</a>). The patched binary is <strong>not in the repository</strong> (APD doesn't publish its firmware): it is in the team's Teams files (navionics channel, "Mk 2 stuff/ESCs") with APD's tools. A replacement ESC needs it and the settings below, loaded through its <code>FLASH CONN</code> header; an unpatched ESC won't reverse.</p>
+      <p>Stock APD firmware could only reverse in DShot with a "change direction" command and a long pause, and PWM would have lost the RPM reply. So a team member patched 3D mode into APD's firmware (version 2.3.0) with Ghidra (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/esc_firmware_patching/README.md">README</a>). An unpatched ESC won't reverse, so a replacement ESC needs the patched firmware and Talos's settings:</p>
+      <ul>
+        <li><strong>Firmware.</strong> The patched binary is <strong>not in the repository</strong>, because APD doesn't publish its firmware. It is in the team's Teams files (navionics channel, "Mk 2 stuff/ESCs") with APD's tools. If that copy is lost, the patch itself, <code>esc_firmware_patching/apd_f3x_2.3.0_3ddshot.patch</code>, applies to APD's stock <code>APD_F3X_Standard_2.3.0.bin</code>. Flash it with APD's flashing tool through the ESC's <code>FLASH CONN</code> header.</li>
+        <li><strong>Settings.</strong> Load <code>Talos_Config.cfg</code> with APD Configurator (main rows below).</li>
+        <li><strong>Known quirk.</strong> The author notes the patched ESCs still stumble when starting from rest and when switching direction, probably electrical noise on the board.</li>
+      </ul>
     </div>
-    <div class="table-scroll"><table class="params th-cfg">
-      <thead><tr><th>ESC setting</th><th>Value</th><th>Meaning</th></tr></thead>
-      <tbody id="cfg-body"></tbody>
-    </table></div>
-    <div class="prose">
+    <details class="th-more">
+      <summary>Talos's ESC settings</summary>
+      <div class="table-scroll"><table class="params th-cfg">
+        <thead><tr><th>ESC setting</th><th>Value</th><th>Meaning</th></tr></thead>
+        <tbody id="cfg-body"></tbody>
+      </table></div>
       <p class="src">Main rows of <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/esc_firmware_patching/Talos_Config.cfg"><code>Talos_Config.cfg</code></a>, decoded with <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/esc_firmware_patching/settings_meanings.txt"><code>settings_meanings.txt</code></a>.</p>
+    </details>
+    <div class="prose">
 
       <h3 id="rpm-loop">Why an RPM loop</h3>
-      <p>On the team's force gauge (<a href="#gauge">below</a>) the same throttle gave different thrust on different thrusters and battery levels; the same RPM gave nearly the same thrust (2024 design report). So each board holds an RPM: feed-forward plus PI on the measured RPM, clamped to ±725 of ±999 (<a href="firmware.html#thrusters">Firmware on the boards</a>).</p>
+      <p>On the team's force gauge (<a href="#gauge">below</a>) the same throttle gave different thrust on different thrusters and battery levels; the same RPM gave nearly the same thrust (2024 design report). So each board holds an RPM instead. For each thruster it starts from a <a class="gl" href="glossary.html#term-feedforward">feed-forward</a> guess, the throttle a fitted curve says that RPM needs, and adds a PI correction: one part proportional to the RPM error, one to its running sum. The result is clamped to ±725 of the ESC's ±999 (<a href="firmware.html#thrusters">Firmware on the boards</a>).</p>
 
       <h3 id="reversed">Reversed propellers</h3>
-      <p>A spinning propeller twists the robot the other way; if all eight spun the same way, every surge would also roll Talos. That is the usual reason half carry the counter-rotating propeller. <code>talos.yaml</code> marks them <code>type: 1</code>: thrusters 0, 3, 4 and 7. The ESC firmware spins exactly those backwards (mask <code>0b1001</code> on each board, <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/core1.c#L489-L514"><code>core1_init</code></a>), so every positive command pushes along the arrow above. The catch: the mask is hard-coded and nothing reads <code>type</code>, so nothing checks they agree (<code>tools/thrusters-hw/build_data.py</code> does, for this page).</p>
+      <p>A spinning propeller twists the robot the other way; if all eight spun the same way, every surge would also roll Talos. So half carry the opposite-hand propeller. <code>talos.yaml</code> marks them <code>type: 1</code>, thrusters 0, 3, 4 and 7; its comment calls the type "the attack direction of the thruster", which must match the way the thruster spins in the thruster test (<a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L392"><code>talos.yaml</code></a>).</p>
+      <p>The ESC firmware spins exactly the <code>type: 1</code> thrusters backwards (mask <code>0b1001</code> on each board, <a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/src/core1.c#L489-L514"><code>core1_init</code></a>), so every positive command pushes along the arrow above. The catch: the mask is hard-coded and nothing reads <code>type</code>, so nothing checks that the two agree.</p>
       <h3 id="swap">Swapping a thruster or propeller</h3>
       <ul>
         <li>Same position, same ESC slot, same propeller hand as the one you take off (look before you remove it). Which hand (CW or CCW) goes on which index isn't written down in the repos.</li>
@@ -150,16 +158,16 @@
         <div class="controls">
           <label>against <span class="seg" role="group" aria-label="x axis" id="cur-x"></span></label>
           <label>show <span class="seg" role="group" aria-label="y axis" id="cur-y"></span></label>
-          <label class="chk"><input type="checkbox" id="cur-fit" checked> MPC fit</label>
+          <label class="chk" id="cur-fit-l"><input type="checkbox" id="cur-fit" checked> Blue Robotics fit</label>
         </div>
         <div id="cur-chart"></div>
         <div class="th-readout" id="cur-read"></div>
       </div>
-      <figcaption><b>The T200 at six supply voltages</b> (darker = higher; reverse drawn negative). Against RPM the thrust curves fall on one line; against throttle (Blue Robotics' 1100–1900 µs PWM as a percentage) they spread out. Tap or hover to read values.</figcaption>
+      <figcaption><b>The T200 at six supply voltages.</b> Darker lines are higher voltages; reverse is drawn negative. Against RPM the thrust curves fall on one line, the Blue Robotics fit the MPC uses (dashed); against throttle (Blue Robotics' 1100–1900 µs PWM as a percentage) they spread out. Tap or hover to read values.</figcaption>
     </figure>
     <div class="prose">
       <ul>
-        <li><strong>Command RPM, not throttle.</strong> 1800 µs gives 33.5 N at 16 V but 38.9 N at 20 V; against RPM the voltage drops out.</li>
+        <li><strong>Command RPM, not throttle.</strong> 1800 µs gives 33.5 N at 16 V but 38.9 N at 20 V; at a given RPM the voltage doesn't matter.</li>
         <li><strong>Reverse is weaker</strong>: about 20 % less thrust at the same speed.</li>
         <li><strong>Current is expensive.</strong> It rises roughly with thrust to the power 1.5, so two thrusters at 12 N draw less than one at 24 N.</li>
       </ul>
@@ -168,18 +176,21 @@
       <p>In 2023 the team built a force gauge: a T200 on a lever arm in a tank, with a load cell read by an Arduino (2024 design report, appendix D). <a href="https://github.com/osu-uwrt/thruster_calibration_tools"><code>thruster_calibration_tools</code></a> steps one thruster's raw command, waits 5 s per step, and logs command, RPM, current and force to a CSV.</p>
       <ul>
         <li>It publishes raw values on <code>command/thruster_rpm</code>, so the ESC board must be in raw mode (<code>dshot_tune/set_raw</code>; raises the <code>RAW_MODE</code> fault).</li>
-        <li>The launch file defaults to the old robot Tempest: pass <code>robot:=talos</code>. Five runs from 2023-10-10 are in <a href="https://github.com/osu-uwrt/riptide_control/tree/mpc/riptide_mpc/data/thruster_cal_2023-10-10"><code>riptide_mpc/data</code></a>.</li>
+        <li>The launch file defaults to the old robot, Tempest: pass <code>robot:=talos</code>. Five runs from 2023-10-10 are in <a href="https://github.com/osu-uwrt/riptide_control/tree/mpc/riptide_mpc/data/thruster_cal_2023-10-10"><code>riptide_mpc/data</code></a>.</li>
       </ul>
     </div>
     <figure class="fig">
       <div class="th-gauge">
-        <figure><img class="media" data-src="img/thrusters-hw/force-gauge.webp" width="720" height="959" loading="lazy" alt="Photo of the thruster force gauge: an aluminium extrusion frame clamped across a black stock tank full of water, with a black rod on bearings across the middle as a pivot. A lab bench with Talos's frame stands behind it."></figure>
+        <figure class="th-gauge-photo"><div class="th-pins"><img class="media" data-src="img/thrusters-hw/force-gauge-crop.webp" width="620" height="500" loading="lazy" alt="Photo of the thruster force gauge: an aluminium extrusion frame clamped across a black stock tank of water. A black rod on bearings runs across the middle as a pivot; an arm hangs from it down into the water, where the churned surface shows the running thruster.">
+          <span class="th-pin" style="left:50%;top:80%">pivot rod</span>
+          <span class="th-pin" style="left:45.6%;top:30%">arm down to the T200</span>
+          <span class="th-pin" style="left:42.7%;top:65%">T200 wash</span></div></figure>
         <div class="panel">
           <div class="controls"><label>against <span class="seg" role="group" aria-label="x axis" id="g-x"></span></label></div>
           <div id="g-chart"></div>
         </div>
       </div>
-      <figcaption><b>The force gauge and what it measured.</b> The rig (photo, 2024 design report) and its five 2023 runs (chart), each tared at its lowest step. Against command the thrusters spread; against RPM they nearly agree, but read about a quarter below Blue Robotics' curve (dashed).</figcaption>
+      <figcaption><b>The force gauge and what it measured.</b> Five 2023 runs, each tared at its lowest step and named after its CSV file. The numbers are bench labels on the thrusters tested, not Talos's 0–7 indexes; the CSVs don't say how Talos1 differs. Only Talos1 also ran in reverse. Against command the thrusters spread; against RPM they nearly agree, but read about a quarter below the Blue Robotics fit (dashed). Photo from the 2024 design report; the load cell isn't visible in it.</figcaption>
     </figure>
     <div class="prose">
       <p>The runs read 70 to 76 % of Blue Robotics' thrust at the same RPM. In October 2026 the MPC dropped the old controller's force-to-RPM curves for the Blue Robotics data: the commit says the old curves had forward and reverse swapped and came from a low-reading gauge (<a href="https://github.com/osu-uwrt/riptide_control/commit/03c8ac1">03c8ac1</a>). If you rebuild the gauge, calibrate the load cell with known weights first.</p>
@@ -190,7 +201,8 @@
     <div class="table-scroll"><table class="params">
       <thead><tr><th>Field</th><th>What it tells you</th></tr></thead>
       <tbody>
-        <tr><td><code>disabled_flags</code></td><td>Why the thrusters are held at zero (bits in <a href="firmware.html#thrusters">Firmware on the boards</a>). At the pool you will mostly see <code>ESC_POWERON_DELAY</code> (5 s after every kill) and <code>TGT_RPM_STALE</code> (no targets for 500 ms)</td></tr>
+        <tr><td><code>disabled_flags</code></td><td>Why the thrusters are held at zero: one bit per reason, <a href="#flags">listed below</a></td></tr>
+        <tr><td><code>escs_powered</code></td><td>False when the board has no <code>MOTOR_PWR</code> (under 9 V): killed, or its 60 A fuse is blown</td></tr>
         <tr><td><code>vcc_voltage</code></td><td>The ESC supply as the board measures it</td></tr>
         <tr><td><code>esc_telemetry[i].rpm</code></td><td>Motor RPM from the ESC's UART packet, in steps of about 14 rpm (100 electrical rpm)</td></tr>
         <tr><td><code>.thruster_ready</code></td><td>False after 20 missed RPM replies, which also zeroes that thruster</td></tr>
@@ -199,13 +211,23 @@
     </table></div>
     <div class="prose">
       <ul>
-        <li><strong>Slow</strong>: each ESC reports about 6 times a second, too coarse to see a spin-up.</li>
-        <li><strong>The sign is the motor's</strong>: thrusters 0, 3, 4 and 7 show a positive target as negative RPM.</li>
+        <li><strong>Slow</strong>: one message per board every 500 ms (2 Hz), and the RPM inside can be up to 0.16 s old. Too coarse to see a spin-up.</li>
+        <li><strong>The sign is the motor's</strong>: the <code>type: 1</code> thrusters show a positive target as negative RPM.</li>
         <li><strong>The current isn't usable</strong>: near 0.04 A in pool runs (<a href="electrical.html#budget">Power and wiring</a>). Use the curves above.</li>
       </ul>
+      <h3 id="flags">Why a thruster won't spin: <code>disabled_flags</code></h3>
+      <p>Any set bit holds all four thrusters on that board at zero (<a href="https://github.com/osu-uwrt/titan_firmware/blob/master/talos/ESCBoard/include/core1.h#L9-L15"><code>core1.h</code></a>):</p>
     </div>
-    <figure class="fig narrow">
-      <img class="media" data-src="img/thrusters-hw/viewer-thrust.webp" width="880" height="520" loading="lazy" alt="Close-up of the Nereus viewer's pool view: Talos's 3D model in blue water with red arrows from each thruster showing commanded force, mostly pointing backwards and to the left as it drives toward a target, and the orange MPC path ahead of it.">
+    <ol class="th-flags">
+      <li><span class="th-bit">0</span><div><code>SAFETY_KILLED</code><p>Talos is killed. The usual one on the bench and between runs.</p></div></li>
+      <li><span class="th-bit">1</span><div><code>ESC_BOARD_OFF</code><p>No ESC power (<code>MOTOR_PWR</code> under 9 V): killed, or the board's 60 A fuse is blown. Usually set together with bit 0.</p></div></li>
+      <li><span class="th-bit">2</span><div><code>ESC_POWERON_DELAY</code><p>Power came back less than 5 s ago; the ESCs are still starting up. Normal after every enable.</p></div></li>
+      <li><span class="th-bit">3</span><div><code>TGT_RPM_STALE</code><p>No targets for 500 ms: the MPC isn't running or isn't sending on CAN.</p></div></li>
+      <li><span class="th-bit">4</span><div><code>TGT_RPM_STALE_PENALTY</code><p>Targets stopped while the thrusters were spinning; the board holds them off for 1 s more and raises a fault.</p></div></li>
+      <li><span class="th-bit">5</span><div><code>CONTROLLER_UNCONFIGURED</code><p>The RPM loop's gains were never set, so the board won't run it.</p></div></li>
+    </ol>
+    <figure class="fig narrow th-viewer">
+      <img class="media" data-src="img/thrusters-hw/viewer-thrust.webp" width="920" height="690" loading="lazy" alt="Close-up of the Nereus viewer's pool view: Talos's 3D model in blue water with a red arrow from each thruster showing its commanded force. The four outer thrusters have long arrows all pointing the same way as it drives toward a target; the inner four have short ones. The orange MPC path runs ahead of it.">
       <figcaption><b>Thrust arrows in the <a href="viewer.html">Nereus viewer</a></b>, driving to a goal in simulation. The <b>Thrust</b> toggle draws each commanded force from <code>thruster_forces</code>, for the robot as well as the simulator.</figcaption>
     </figure>
 
@@ -215,33 +237,35 @@
       <ul>
         <li><strong>The right one spins.</strong> At <code>Testing Thruster 2...</code>, <code>HUS</code> should turn. Anything else means swapped motor cables or ESCs.</li>
         <li><strong>It pushes the right way</strong>: along its arrow above, blowing water the opposite way. Watch a thread in the wash. Telemetry can't check this.</li>
-        <li><strong>Telemetry matches.</strong> Only the ESC under test shows about 300 rpm (negative for 0, 3, 4 and 7); <code>pretest guided</code> checks this.</li>
+        <li><strong>Telemetry matches.</strong> Only the ESC under test shows about 300 rpm (negative for the <code>type: 1</code> thrusters); <code>pretest guided</code> checks this.</li>
       </ul>
       <p>300 rpm is only about 0.33 N, so Talos won't move on its stand, but a turning propeller can still catch fingers and cables: keep clear. Out of the water, keep runs short.</p>
     </div>
     <div class="callout safety"><span class="label">Before you run it</span><ul>
       <li>Stop the controller first (<code>control_system.launch.py</code>): the MPC also writes to CAN, and on an enabled robot it spins the thrusters on its own.</li>
       <li>Robot on its stand, hands, cables and tools clear of every propeller, someone at the kill switch.</li>
+      <li>Then give the ESCs power: kill switch in, robot enabled in the <a href="viewer.html#enable">Nereus viewer</a>, and wait 5 s (<code>ESC_POWERON_DELAY</code>). Killed, nothing spins.</li>
       <li>Pulling the kill switch cuts ESC power even while the program commands; <code>pretest guided</code> checks every thruster stops within 1 s.</li>
     </ul></div>
 
     <div class="prose">
       <h2 id="pool" data-short="In the pool">What the thrusters do in the pool</h2>
-      <p>The best recording is the untethered run of 2026-10-26, a <strong>system-identification run</strong> (<a href="control/identify.html#session">System identification</a>): six holds (level twice, pitch ±, roll ±), a ramp on each thruster, null-space patterns, speed runs up to 0.7 m/s (the normal limit is 0.6 m/s) and five releases with every thruster off. The figure drops the releases, ramps and null-space patterns, where the thrusters were told what to do, leaving 13.3 of 20.6 minutes.</p>
+      <p>The best recording is the untethered run of 2026-10-26, a <strong>system-identification run</strong> (<a href="control/identify.html#session">System identification</a>): six holds (level twice, pitch ±, roll ±), a ramp on each thruster, <a class="gl" href="glossary.html#term-null-space">null-space</a> patterns (thrusters pushing against each other), speed runs up to 0.7 m/s (the normal limit is 0.6 m/s) and five releases with every thruster off. The figure drops the releases, ramps and null-space patterns, where the thrusters were told what to do, leaving the 13.3 of 20.6 minutes where the MPC chose.</p>
     </div>
     <figure class="fig">
       <div class="panel">
+        <div class="th-key" aria-hidden="true"><span><i style="background:var(--state)"></i>reverse</span><span><i style="background:var(--muted)"></i>within ±0.5 N</span><span><i style="background:var(--reference)"></i>forward</span></div>
         <div id="use-chart"></div>
         <div class="graph-note" id="use-note" aria-live="polite"></div>
       </div>
-      <figcaption><b>Where each thruster's command sat</b>, in 1 N bins (bar height is the square root of the time share, so rare large commands stay visible). Tap or hover a row for its numbers. <code>thruster_forces</code> from the 2026-10-26 run, without releases, ramps and null-space patterns.</figcaption>
+      <figcaption><b>Where each thruster's command sat.</b> One bar per 1 N bin; bar height is the square root of the time share, so rare large commands stay visible. <code>thruster_forces</code> from the 2026-10-26 run, without releases, ramps and null-space patterns.</figcaption>
     </figure>
     <div class="prose">
       <ul>
         <li><strong>Single thrusters rarely saturate</strong>: at 24 N under 0.2 % of the time, only outer ones, only in surge runs.</li>
         <li><strong>The total limit binds in the fast runs.</strong> The sum was at the 73 N cap 8 % of the time (median 25 N), about 70 % of that in the speed runs (sway from 0.35 m/s, surge from 0.5 m/s, heave down at 0.3 m/s) and the rest diving and re-levelling around the releases. The MPC then scales all eight down together (<a href="control/thrusters.html#allocation">Thrusters and allocation</a>).</li>
-        <li><strong>Holding still is work</strong>: on average 2.5 N down and 3.3 N·m nose-down (<a href="pool-test.html#trim">buoyancy and trim</a>).</li>
-        <li><strong>Time near zero.</strong> The inner thrusters sat within ±0.5 N for 10 to 23 % of the time. The ESCs take about 0.8 s to start a motor from rest (2026-10-03 testing); <code>hardware.spin_bias</code> in <code>mpc.yaml</code> can keep every thruster turning with no net force, but is off.</li>
+        <li><strong>Holding still takes thrust.</strong> In the two level holds (20 s) the thrusters pushed about 1.7 N down and 2.6 N·m nose-down: Talos floats up a little and wants to pitch nose-up (<a href="pool-test.html#trim">buoyancy and trim</a>). That is why rows 0 and 1 (upper outer) lean forward and rows 6 and 7 (lower outer) lean reverse.</li>
+        <li><strong>Time near zero.</strong> The inner thrusters sat within ±0.5 N for 10 to 23 % of the time. The ESCs take about 0.8 s to start a motor from rest (2026-10-03 testing; see the start-up quirk in <a href="#patch">the patch notes</a>). <code>hardware.spin_bias</code> in <code>mpc.yaml</code> can keep every thruster turning with no net force, but is off.</li>
       </ul>
 
       <h2 id="failures" data-short="Failure modes">When thrusters go wrong</h2>
@@ -253,9 +277,9 @@
         <tr><td>Swapped thrusters</td><td>The wrong one spins in the test</td><td>Fix the motor wiring, not the config.</td></tr>
         <tr><td>Fouling (hair, string, iron filings)</td><td>Grinding or uneven sound; the RPM loop hides mild fouling. A jammed thruster reads near 0 rpm and isn't switched off.</td><td>Killed, turn each propeller by hand: it should spin freely.</td></tr>
         <tr><td>Saturation</td><td>Talos lags the motion profile; the total at 73 N</td><td>Slow the profile (<code>motion.*</code> in <code>mpc.yaml</code>) before raising limits.</td></tr>
-        <tr><td>Nothing spins, enabled</td><td><code>disabled_flags</code> non-zero</td><td><code>ESC_POWERON_DELAY</code> for 5 s after a kill is normal; <code>TGT_RPM_STALE</code> means nothing sends targets.</td></tr>
-        <tr><td>Stutter mid-run</td><td><code>TGT_RPM_STALE_PENALTY</code></td><td>Targets stopped for 500 ms while spinning: a stalled MPC or CAN trouble.</td></tr>
-        <tr><td>Slow start from rest</td><td>Small moves lag</td><td>About 0.8 s from 0 rpm, beyond the lag the MPC models (0.03 s delay, 0.08 s rise; <a href="control/thrusters.html#dynamics">Thrust is late</a>). <code>hardware.spin_bias</code> exists for this.</td></tr>
+        <tr><td>Nothing spins, enabled</td><td><code>disabled_flags</code> non-zero</td><td>Look the bit up in <a href="#flags">the list above</a>. Bit 2 for 5 s after enabling is normal; bit 3 means nothing sends targets.</td></tr>
+        <tr><td>Stutter mid-run</td><td>Bit 4, <code>TGT_RPM_STALE_PENALTY</code></td><td>Targets stopped for 500 ms while spinning, then a 1 s hold: a stalled MPC or CAN trouble.</td></tr>
+        <tr><td>Slow start from rest</td><td>Small moves lag</td><td>About 0.8 s from 0 rpm, beyond the lag the MPC models (0.03 s delay, 0.08 s rise; <a href="control/thrusters.html#dynamics">Thrust is late</a>). Likely the patched ESCs' start-up quirk (<a href="#patch">above</a>). <code>hardware.spin_bias</code> exists for this.</td></tr>
         <tr><td>Wrong RPM</td><td>Telemetry consistently off the target</td><td>Old firmware's <a href="firmware.html#thrusters">one-byte bug</a> (fixed in <a href="https://github.com/osu-uwrt/titan_firmware/pull/26">PR #26</a>): flash every ESC board.</td></tr>
       </tbody>
     </table></div>
@@ -268,17 +292,18 @@
           <label>motion <span class="seg" role="group" aria-label="Motion" id="rev-m"></span></label>
           <label>reverse <span class="seg" role="group" aria-label="Reversed thruster" id="rev-t"></span></label>
         </div>
+        <div class="th-key" aria-hidden="true"><span><i class="ask"></i>asked</span><span><i style="background:var(--ink-2)"></i>got, as asked</span><span><i style="background:var(--accent)"></i>got, wrong</span></div>
         <div id="rev-chart"></div>
         <div class="graph-note" id="rev-note" aria-live="polite"></div>
       </div>
-      <figcaption><b>One reversed thruster.</b> The push asked for (outline) against what the minimum-norm allocation from <code>talos.yaml</code> produces with one thruster backwards (filled). Forces and torques have separate scales.</figcaption>
+      <figcaption><b>One reversed thruster.</b> The push asked for against what Talos would get with one thruster running backwards, the forces split as in the figure at the top (the smallest forces that give the push). Forces run to ±20 N, torques to ±5 N·m.</figcaption>
     </figure>
 
     <div class="prose">
       <h2 id="sources" data-short="Where this lives">Where this lives</h2>
       <ul class="src-list">
         <li>Thruster names, types and poses: <a href="https://github.com/osu-uwrt/riptide_core/blob/followpath-speed/riptide_descriptions/config/talos.yaml#L392-L438"><code>riptide_descriptions/config/talos.yaml</code></a> (riptide_core).</li>
-        <li>Limits, lag and the propeller law: <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml#L47-L67"><code>riptide_mpc/config/models/talos.yaml</code></a>; <code>hardware.*</code> in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/mpc.yaml#L49-L53"><code>mpc.yaml</code></a>; CAN output in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L755-L778"><code>mpc_controller_node.cpp</code></a>.</li>
+        <li>Limits, lag and the propeller law: <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/models/talos.yaml#L47-L67"><code>riptide_mpc/config/models/talos.yaml</code></a>; <code>hardware.*</code> in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/config/mpc.yaml#L49-L53"><code>mpc.yaml</code></a>; CAN output in <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/src/mpc_controller_node.cpp#L761-L781"><code>mpc_controller_node.cpp</code></a>.</li>
         <li>CAN sender and the thruster test: <a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c"><code>riptide_controllers/models/complete_system/send_thruster_cmd_canbus.c</code></a>.</li>
         <li>ESC board firmware: <a href="https://github.com/osu-uwrt/titan_firmware/tree/master/talos/ESCBoard"><code>titan_firmware/talos/ESCBoard</code></a>; the ESC patch and settings in <code>esc_firmware_patching/</code>.</li>
         <li>Board design: <code>ESC MK II</code> in <a href="https://github.com/osu-uwrt/electric_boogaloo">electric_boogaloo</a>.</li>

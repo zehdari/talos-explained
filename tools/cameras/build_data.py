@@ -138,7 +138,10 @@ for v in sil.values():  # origin -> base_link
 gate = yaml.safe_load(open(f'{NEREUS}/content/packs/tasks/robosub_2026/gate.yaml'))
 torp = open(f'{NEREUS}/content/packs/tasks/robosub_2026/torpedo.yaml').read()
 half = float(re.search(r'half_size_m:\s*([\d.]+)', torp).group(1))
-gate_w = 2 * float(re.search(r'abs_y_lt_m:\s*([\d.]+)', open(f'{NEREUS}/content/packs/tasks/robosub_2026/gate.yaml').read()).group(1))
+# the gate's full width, outside edge to outside edge of its two posts (not the scoring envelope's 3.0 m)
+gate_text = open(f'{NEREUS}/content/packs/tasks/robosub_2026/gate.yaml').read()
+post = re.search(r'id: post_pos_y, size_m: \[([\d.]+), ([\d.]+), [\d.]+\], center_m: \[[-\d.]+, ([\d.]+)', gate_text)
+gate_w = round(2 * float(post.group(3)) + float(post.group(2)), 4)
 json.dump({'cams': cams_out, 'silhouette': sil, 'props': {'gate_width': gate_w, 'torpedo_board': 2 * half},
            'depth_range': {'ffc': [0.3, 4.0], 'dfc': [0.3, 10.0]}}, open(f'{OUT}/fov.json', 'w'), separators=(',', ':'))
 for n, c in cams_out.items():

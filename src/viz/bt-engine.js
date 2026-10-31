@@ -349,8 +349,10 @@ export class Sim {
     this.halted = new Set();
     this.changed = new Set();
     this.written = new Set();
+    this.wrote = new Set();
   }
   write(key, value, node) {
+    this.wrote.add(key); // every write this tick; `written`: only the ones that changed the value
     if (this.bb.get(key) !== value) this.written.add(key);
     this.bb.set(key, value);
     if (!this.bbInfo.has(key)) this.bbInfo.set(key, {});
@@ -366,6 +368,7 @@ export class Sim {
     this.halted = new Set();
     this.changed = new Set();
     this.written = new Set();
+    this.wrote = new Set();
     const st = this.root.executeTick();
     if (st !== RUNNING) {
       this.result = st;

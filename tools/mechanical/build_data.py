@@ -130,6 +130,12 @@ dims = {
     'extent_min': [round(float(v), 4) for v in mn], 'extent_max': [round(float(v), 4) for v in mx],
 }
 masses = [{'id': s['id'], 'label': s['label'], 'kg': s['mass_kg']} for s in asm['subsystems']]
+# The kill switch (the handle on the port bow window) and the SubConn cover (on the port stern lid) are separate
+# parts that tools/cad grouped into one subsystem: split them so the chart doesn't lump them together.
+node_mass = {n['id']: n.get('mass_kg') for n in asm['nodes']}
+k = next(i for i, m in enumerate(masses) if m['id'] == 'kill_switch_covers')
+masses[k:k + 1] = [{'id': 'kill_switch', 'label': 'Kill switch handle (Kill Switch-1)', 'kg': round(node_mass['Kill Switch-1'], 3)},
+                   {'id': 'subconn_cover', 'label': 'SubConn cover (Subconn Cover-1)', 'kg': round(node_mass['Subconn Cover-1'], 3)}]
 materials = [{'name': k, 'kg': v} for k, v in asm['mass_by_material_kg'].items() if v > 0]
 
 # ---------- picture calibration: content box in pixels <-> model extents ----------

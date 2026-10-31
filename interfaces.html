@@ -16,23 +16,22 @@
   </header>
   <article>
     <aside class="short"><span class="label">The short version</span><ul>
-      <li>Search a name, a message type or a node. Tap a row to see its publishers, subscribers, rates, QoS, source code and the chapter that explains it.</li>
+      <li>Open a group (Sensors, Control, …) or search a name, a message type or a node. Tap a row for its publishers, subscribers, rates, source code and the chapter that explains it.</li>
       <li>Almost every name sits under <code>/talos/</code>. This page leaves that prefix off: <code>odometry/filtered</code> means <code>/talos/odometry/filtered</code>. Names that start with <code>/</code> are outside it.</li>
       <li><b>Robot + sim</b> exists in both. <b>Robot only</b> comes from sensor drivers and the boards' firmware, which Nereus replaces. <b>Sim only</b> is Nereus's own.</li>
       <li>Two kinds of rate: measured on Talos (a pool bag) or set in code, and measured in a Nereus run on a busy desktop. The Nereus numbers are not robot specs.</li>
-      <li>Other pages can link straight to a row: <code>interfaces.html#topic-state/kill</code>.</li>
     </ul></aside>
 
     <div class="prose">
       <p>The <a href="ros2.html">ROS 2 chapter</a> explains what topics, services, actions and frames are. This appendix is the list itself. Keep it open while you read a launch file, a tree or a bag: when you meet a name you don't know, search it here.</p>
 
       <h2 id="names">Reading a name</h2>
-      <p>The launch files start almost every node inside the namespace <code>talos</code> (the <code>robot:=talos</code> argument), so a node that publishes <code>state/kill</code> really publishes <code>/talos/state/kill</code>. The table shows names without that prefix. A few nodes sit outside the namespace (<code>/riptide_acoustics</code>, the viewer's <code>/nereus_viewer</code>, Nereus's <code>/sim_supervisor</code>) but still use <code>/talos/</code> names. A few names aren't under it:</p>
+      <p>The launch files start almost every node in the <a href="glossary.html#term-namespace">namespace</a> <code>talos</code>. These names are outside it:</p>
       <ul>
         <li><code>/tf</code> and <code>/tf_static</code>, the shared transform tree;</li>
         <li><code>/clock</code>, the simulated time in Nereus;</li>
         <li><code>/rosout</code> and <code>/parameter_events</code>, which every node has;</li>
-        <li><code>/&lt;hostname&gt;/autonomy/bag_trigger</code>: doTask names it after the computer it runs on.</li>
+        <li><code>/&lt;hostname&gt;/autonomy/bag_trigger</code>: <a href="glossary.html#term-dotask">doTask</a> names it after the computer it runs on.</li>
       </ul>
       <p>Each row is one of five kinds:</p>
       <dl class="spec ifx-kinds">
@@ -44,55 +43,48 @@
       </dl>
 
       <h2 id="reference">The reference</h2>
-      <p>Type in the box to search names, message types, node names and notes; every word must match. The filters narrow it further. On a phone, tap a card to open it.</p>
+      <p>Start with a group: each shows its most-used names first. Or type in the box to search names, message types, node names and notes; every word must match.</p>
     </div>
 
     <figure class="fig" id="ifx-fig">
       <div class="panel ifx" id="ifx">
         <div class="ifx-bar">
-          <label class="ifx-search"><span class="ifx-vh">Search interfaces</span><input type="search" id="ifx-q" placeholder="Search: kill, odometry, Detection3D, mpc_controller…" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
-          <div class="ifx-filters">
-            <div class="ifx-seg" role="group" aria-label="Kind" id="ifx-kind"></div>
-            <div class="ifx-seg" role="group" aria-label="Robot or simulator" id="ifx-where"></div>
-            <label class="ifx-sub"><span class="ifx-vh">Subsystem</span><select id="ifx-sub"><option value="all">All subsystems</option></select></label>
+          <label class="ifx-search"><span class="ifx-vh">Search interfaces</span><input type="search" id="ifx-q" placeholder="Search a name, type or node" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
+          <div class="ifx-status">
+            <span id="ifx-count" aria-live="polite">Loading…</span>
+            <button type="button" class="ifx-link" id="ifx-back" hidden>‹ All groups</button>
+            <button type="button" class="ifx-link" id="ifx-clear" hidden>Clear filters</button>
+            <button type="button" class="ifx-ftoggle" id="ifx-ftoggle" aria-expanded="false" aria-controls="ifx-filters">Filters: <span id="ifx-fsum">none</span></button>
           </div>
-          <div class="ifx-status"><span id="ifx-count" aria-live="polite">Loading…</span> <button type="button" class="ifx-clear" id="ifx-clear" hidden>Clear filters</button></div>
+          <div class="ifx-filters" id="ifx-filters">
+            <div class="seg ifx-seg" role="group" aria-label="Kind" id="ifx-kind"></div>
+            <div class="seg ifx-seg" role="group" aria-label="Robot or simulator" id="ifx-where"></div>
+            <label class="ifx-sub"><span class="ifx-vh">Group</span><select id="ifx-sub"><option value="all">All groups</option></select></label>
+          </div>
         </div>
-        <div class="ifx-head" aria-hidden="true"><span>Name</span><span>Type</span><span>Publishers → subscribers</span><span>Rate</span><span>Where</span></div>
-        <div class="ifx-list" id="ifx-list"></div>
+        <div class="ifx-overview" id="ifx-overview"></div>
+        <div class="ifx-tree" id="ifx-tree" hidden></div>
+        <div class="ifx-head" id="ifx-head" aria-hidden="true" hidden><span>Name</span><span>Type</span><span>Publishers → subscribers</span><span>Rate</span><span>Where</span></div>
+        <div class="ifx-list" id="ifx-list" hidden></div>
       </div>
-      <figcaption><b>Every interface of the Talos stack.</b> Built from a capture of the full stack running in Nereus (30 Oct 2026), the robot's launch files, the drivers' and firmware's code, and a pool bag (26 Oct 2026). Rates: <b>Talos</b> is measured in the pool bag or set in code (says which); <b>Nereus</b> is the faster of two 3 s measurements on a loaded desktop; <i>idle</i> means nothing was sent in either (commands and events). Tap a row for details.</figcaption>
+      <figcaption><b>Every interface of the Talos stack, by group.</b> Built from a capture of the full stack running in Nereus (30 Oct 2026), the robot's launch files, the drivers' and firmware's code, and a pool bag (26 Oct 2026). Each group lists its most-used names first and folds away unused and debug-only ones.</figcaption>
     </figure>
 
     <div class="prose">
       <p>A few things the list shows that are easy to miss:</p>
       <ul>
-        <li><strong>Hundreds of connections from one node.</strong> Each node in a behaviour tree opens its own publisher or subscription, so in the capture doTask (<code>autonomy</code>) holds 491 subscriptions to <code>odometry/filtered</code> and 339 publishers on <code>controller/linear</code>. The rows show these as <code>×491</code>.</li>
-        <li><strong>The same name as a topic and a service.</strong> <code>command/actuator/torpedo</code> is a topic the POAC firmware listens to, and a service that <a href="actuators.html#ros">actuator_service_translator</a> serves for the trees. Both have rows.</li>
-        <li><strong>Leftovers.</strong> Some names have subscribers but no publisher anywhere in the current stack (<code>ff_auto_tune</code>, <code>controller/drag_comp/forward</code>, <code>thrusterSolver/thrusterState</code>). They belong to the older controllers that the MPC replaced. The rows say <em>no publisher</em>.</li>
+        <li><strong>Hundreds of connections from one node.</strong> Each node in a behaviour tree opens its own publisher or subscription, so in the capture <a href="glossary.html#term-dotask">doTask</a> (<code>autonomy</code>) holds 491 subscriptions to <code>odometry/filtered</code> and 339 publishers on <code>controller/linear</code>. The rows show these as <code>×491</code>.</li>
+        <li><strong>The same name as a topic and a service.</strong> <code>command/actuator/torpedo</code> is a topic the POAC firmware listens to, and a service that ActuatorTranslator (<a href="actuators.html#ros"><code>actuator_service_translator.py</code></a>) serves for the trees. Both have rows.</li>
+        <li><strong>Leftovers.</strong> Some names have subscribers but no publisher anywhere in the current stack (<code>ff_auto_tune</code>, <code>controller/drag_comp/forward</code>, <code>thrusterSolver/thrusterState</code>). They belong to the older controllers that the MPC replaced. They are folded under <em>unused or debug</em> and marked <em>no publisher</em>.</li>
         <li><strong>Missing on purpose.</strong> The six parameter services every node has, the hidden <code>transform_listener_impl</code> nodes, and the launch process itself are left out.</li>
       </ul>
-
-      <h3 id="links">Linking to a row</h3>
-      <p>Every row has an address. Use these from any chapter (names without <code>/talos/</code>, and without the leading <code>/</code> for <code>/tf</code> and friends):</p>
-      <table class="params ifx-anchors">
-        <thead><tr><th>Kind</th><th>Link</th><th>Example</th></tr></thead>
-        <tbody>
-          <tr><td>Topic</td><td><code>#topic-&lt;name&gt;</code></td><td><a href="#topic-odometry/filtered"><code>#topic-odometry/filtered</code></a>, <a href="#topic-tf_static"><code>#topic-tf_static</code></a></td></tr>
-          <tr><td>Service</td><td><code>#service-&lt;name&gt;</code></td><td><a href="#service-mapping_target"><code>#service-mapping_target</code></a></td></tr>
-          <tr><td>Action</td><td><code>#action-&lt;name&gt;</code></td><td><a href="#action-follow_path"><code>#action-follow_path</code></a></td></tr>
-          <tr><td>Frame</td><td><code>#frame-&lt;child frame&gt;</code></td><td><a href="#frame-talos/base_link"><code>#frame-talos/base_link</code></a></td></tr>
-          <tr><td>Node</td><td><code>#node-&lt;name&gt;</code></td><td><a href="#node-mpc_controller"><code>#node-mpc_controller</code></a></td></tr>
-        </tbody>
-      </table>
-      <p>A course object's topic or frame also works: <a href="#topic-mapping/gate"><code>#topic-mapping/gate</code></a> and <a href="#frame-gate_frame"><code>#frame-gate_frame</code></a> open the shared <code>mapping/&lt;object&gt;</code> and <code>&lt;object&gt;_frame</code> rows. The address opens the row and clears the filters.</p>
 
       <h2 id="robot-vs-sim">Robot or simulator: who sends what</h2>
       <p>In Nereus the simulator stands in for the hardware: the sensor drivers, the cameras and the firmware boards. Everything above them (EKF, MPC, detector, mapping, trees, viewer) is the same code with the same names, which is why a tree that works in Nereus can run on Talos unchanged. These are the names where the sender or receiver changes.</p>
     </div>
-    <figure class="fig narrow" id="swap-fig">
+    <figure class="fig" id="swap-fig">
       <div id="swap"></div>
-      <figcaption><b>Who is on each end, on Talos and in Nereus.</b> Only names whose publishers or subscribers differ. Tap a name to open its row.</figcaption>
+      <figcaption><b>What Nereus stands in for.</b> Only names whose sender or receiver differs between the two. Tap a name to open its row in the reference.</figcaption>
     </figure>
     <div class="prose">
       <p>Three differences matter most when something works in one and not the other:</p>
@@ -109,17 +101,17 @@
         <li><strong>The course:</strong> <code>world → map → offset</code> and one frame per object, published by mapping. AprilTag calibration moves <code>world → map</code> (<a href="perception/frames.html#tree">Frames, targets and the mission tree</a>).</li>
         <li><strong>Nereus truth:</strong> <code>world → simulator/talos/base_link</code>, where the simulated Talos really is, so it can be drawn beside the EKF's estimate.</li>
       </ul>
-      <p>The cameras differ between the two. On Talos the ZED's own description hangs <code>talos/ffc_camera_center</code>, the left and right lens frames and their optical frames under <code>talos/ffc_camera_link</code> (the same for <code>dfc</code>). In Nereus the bridge publishes the optical frames straight under the camera link. Both put images in <code>talos/&lt;cam&gt;_left_camera_optical_frame</code>, so nothing downstream notices.</p>
+      <p>The cameras differ between the two. On Talos the ZED's own description hangs <code>talos/ffc_camera_center</code>, the left and right lens frames and their optical frames under <code>talos/ffc_camera_link</code> (the same for <code>dfc</code>). In Nereus the bridge hangs the left optical frame straight under the camera link and the right optical frame under the left one (<a href="https://github.com/osu-uwrt/nereus/blob/main/content/packs/bridges/uwrt_talos/bridge.yaml#L46-L49">bridge.yaml</a>). Both stamp images in <code>talos/&lt;cam&gt;_left_camera_optical_frame</code>, so nothing downstream notices.</p>
 
       <h2 id="config">Parameters and config files</h2>
-      <p>Where each node gets its settings. A node's row in the reference lists the same files, and for the nodes dumped in the Nereus run, every parameter with the value it actually loaded.</p>
+      <p>Where the nodes you are most likely to edit get their settings. A node's row in the reference lists the same files and, for seven nodes, every parameter with the value it loaded in the Nereus run.</p>
     </div>
     <figure class="fig" id="config-fig">
       <div id="config-table"></div>
-      <figcaption><b>Config files per node.</b> Links go to the file on the branch Talos runs. Parameters in a launch file are set inline there. "Dump" means the reference row has the node's full parameter list from the Nereus run.</figcaption>
+      <figcaption><b>Config files per node.</b> Links go to the file on the branch Talos runs. A launch file listed as config means the parameters are set inline there.</figcaption>
     </figure>
     <div class="prose">
-      <p>Two parameters in the dumps differ from the robot because of how the capture was run: <code>use_sim_time</code> is true for most nodes (false on Talos), and the MPC's <code>vehicle_config</code> and <code>hydrodynamics_config</code> point at the simulator's own plant because the run used <code>mpc_model:=sim</code>. On Talos they point at <code>riptide_descriptions/config/talos.yaml</code> and <code>riptide_mpc/config/models/talos.yaml</code> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/launch/mpc_controller.launch.py">mpc_controller.launch.py</a>).</p>
+      <p>Two parameter values in the Nereus run differ from the robot because of how the capture was run: <code>use_sim_time</code> is true for most nodes (false on Talos), and the MPC's <code>vehicle_config</code> and <code>hydrodynamics_config</code> point at the simulator's own plant because the run used <code>mpc_model:=sim</code>. On Talos they point at <code>riptide_descriptions/config/talos.yaml</code> and <code>riptide_mpc/config/models/talos.yaml</code> (<a href="https://github.com/osu-uwrt/riptide_control/blob/mpc/riptide_mpc/launch/mpc_controller.launch.py">mpc_controller.launch.py</a>).</p>
 
       <h2 id="check">Check it yourself</h2>
       <p>The list is a snapshot. To see the live graph, connect to the robot's or your simulator's Zenoh router (<a href="ros2.html#zenoh">ROS 2: Zenoh</a>) and ask ROS directly. Add <code>--no-daemon</code> if lists come back empty.</p>
@@ -153,7 +145,11 @@ ros2 run tf2_ros tf2_echo odom talos/base_link</code></pre>
         <li><strong>Not covered</strong>: <code>riptide_navigation</code>'s alternative navigation (its package isn't in the release sources; see <a href="launch.html#entries">Launching the stack</a>), and the topics of the diagnostics nodes, which are still in the launch list but no longer run (they have one row, marked <em>not used</em>).</li>
         <li><strong>Not covered either</strong>: the ZED nodes publish many more topics than the ones listed (the left and right streams, the camera's own IMU, status and health). Nothing in the stack reads them. On the robot, <code>ros2 topic list | grep zed_node</code> shows them all.</li>
       </ul>
-      <p class="src">Rebuild the data with <code>python3 -I tools/interfaces/build.py</code> (it reads the local clones and <code>tools/interfaces/curated.yaml</code>).</p>
+      <details class="ifx-authors">
+        <summary>For page authors: linking to a row, rebuilding the data</summary>
+        <p>Every row has an address: <code>#&lt;kind&gt;-&lt;name&gt;</code>, with the name written without <code>/talos/</code> and without a leading <code>/</code>. For example <a href="#topic-odometry/filtered"><code>#topic-odometry/filtered</code></a>, <a href="#topic-tf_static"><code>#topic-tf_static</code></a>, <a href="#service-mapping_target"><code>#service-mapping_target</code></a>, <a href="#action-follow_path"><code>#action-follow_path</code></a>, <a href="#frame-talos/base_link"><code>#frame-talos/base_link</code></a> (frames by their child frame) and <a href="#node-mpc_controller"><code>#node-mpc_controller</code></a>. A course object's own topic or frame also works: <a href="#topic-mapping/gate"><code>#topic-mapping/gate</code></a> and <a href="#frame-gate_frame"><code>#frame-gate_frame</code></a> open the shared <code>mapping/&lt;object&gt;</code> and <code>&lt;object&gt;_frame</code> rows.</p>
+        <p>Rebuild the data with <code>python3 -I tools/interfaces/build.py</code>. It reads the local clones and <code>tools/interfaces/curated.yaml</code>, which also lists each group's key rows and the rows folded away as unused or debug.</p>
+      </details>
     </div>
     <nav class="next" aria-label="Chapter navigation"></nav>
   </article>

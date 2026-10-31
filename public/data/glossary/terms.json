@@ -29,6 +29,16 @@
 ]
 },
 {
+"slug": "adc",
+"name": "ADC",
+"exp": "Analog-to-digital converter",
+"part": "electrical",
+"links": [
+"electrical.html#measured",
+"boards.html#led-ivc"
+]
+},
+{
 "slug": "added-mass",
 "name": "Added mass",
 "exp": "",
@@ -51,7 +61,7 @@
 "slug": "apriltag-calibration",
 "name": "AprilTag calibration",
 "exp": "",
-"part": "perception",
+"part": "sensing",
 "links": [
 "localization.html#tag",
 "viewer.html#mapping"
@@ -61,7 +71,7 @@
 "slug": "arm",
 "name": "Arm",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "actuators.html#poac",
 "actuators.html#trees"
@@ -97,6 +107,15 @@
 ]
 },
 {
+"slug": "aux-switch",
+"name": "AUX switch",
+"exp": "",
+"part": "electrical",
+"links": [
+"electrical.html#kill"
+]
+},
+{
 "slug": "back-projection",
 "name": "Back-projection",
 "exp": "",
@@ -109,7 +128,7 @@
 "slug": "bag",
 "name": "Bag",
 "exp": "",
-"part": "start",
+"part": "ops",
 "links": [
 "debugging.html#bags",
 "debugging.html#python"
@@ -119,7 +138,7 @@
 "slug": "base-link",
 "name": "base_link",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "localization.html#frames",
 "control/model.html#frames"
@@ -129,7 +148,7 @@
 "slug": "baseline",
 "name": "Baseline",
 "exp": "",
-"part": "perception",
+"part": "sensing",
 "links": [
 "cameras.html#two-cameras"
 ]
@@ -138,7 +157,7 @@
 "slug": "battery-pods",
 "name": "Battery pods",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "mechanical.html#batteries"
 ]
@@ -191,7 +210,8 @@
 "part": "start",
 "links": [
 "mission-tree.html#bins",
-"perception/frames.html#binfit"
+"perception/frames.html#binfit",
+"robosub.html#course"
 ]
 },
 {
@@ -208,7 +228,7 @@
 "slug": "bms",
 "name": "BMS",
 "exp": "Battery management system",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#batteries",
 "electrical.html#smart"
@@ -218,7 +238,7 @@
 "slug": "board-stack",
 "name": "Board stack",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#glance",
 "boards.html#system"
@@ -228,7 +248,7 @@
 "slug": "bootloader",
 "name": "Bootloader",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "firmware.html#flash"
 ]
@@ -237,7 +257,7 @@
 "slug": "bottom-lock",
 "name": "Bottom lock",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "localization.html#trouble",
 "sensors.html#dvl-driver"
@@ -265,9 +285,10 @@
 "slug": "buoyancy",
 "name": "Buoyancy",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "mechanical.html#trim",
+"pool-test.html#trim",
 "robosub.html#rules"
 ]
 },
@@ -275,7 +296,7 @@
 "slug": "cad",
 "name": "CAD",
 "exp": "Computer-aided design",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "mechanical.html#software",
 "mechanical.html#limits"
@@ -295,7 +316,7 @@
 "slug": "camera-cage",
 "name": "Camera cage",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "mechanical.html#inside",
 "computers.html#orin",
@@ -306,7 +327,7 @@
 "slug": "camera-faker",
 "name": "camera_faker",
 "exp": "",
-"part": "perception",
+"part": "start",
 "links": [
 "code-map.html#explorer"
 ]
@@ -315,7 +336,7 @@
 "slug": "can",
 "name": "CAN",
 "exp": "Controller Area Network",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "firmware.html#can",
 "computers.html#can",
@@ -326,7 +347,7 @@
 "slug": "can-fd",
 "name": "CAN FD",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "firmware.html#can",
 "boards.html#rp2040",
@@ -337,7 +358,7 @@
 "slug": "canmore",
 "name": "CANmore",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "firmware.html#canmore",
 "firmware.html#can"
@@ -347,7 +368,7 @@
 "slug": "ccbb",
 "name": "CCBB",
 "exp": "Camera cage breakout board",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#ccbb"
 ]
@@ -356,7 +377,7 @@
 "slug": "chameleon-tf",
 "name": "chameleon_tf",
 "exp": "",
-"part": "perception",
+"part": "sensing",
 "links": [
 "localization.html#tag",
 "code-map.html#explorer"
@@ -384,7 +405,7 @@
 "slug": "chrony",
 "name": "chrony",
 "exp": "",
-"part": "ops",
+"part": "sensing",
 "links": [
 "computers.html#time"
 ]
@@ -403,7 +424,7 @@
 "slug": "claw",
 "name": "Claw",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "actuators.html#claw"
 ]
@@ -412,7 +433,7 @@
 "slug": "client-id",
 "name": "Client ID",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#glance",
 "computers.html#can"
@@ -422,7 +443,7 @@
 "slug": "cob",
 "name": "COB",
 "exp": "Centre of buoyancy",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "mechanical.html#trim",
 "control/identify.html#statics"
@@ -462,7 +483,7 @@
 "slug": "colcon-deploy",
 "name": "colcon deploy",
 "exp": "",
-"part": "ops",
+"part": "sensing",
 "links": [
 "computers.html#deploy",
 "setup.html#deploy"
@@ -481,7 +502,7 @@
 "slug": "com",
 "name": "COM",
 "exp": "Centre of mass",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "mechanical.html#trim",
 "control/model.html#restoring"
@@ -569,7 +590,7 @@
 "slug": "copro-agent",
 "name": "copro_agent",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#system",
 "computers.html#can"
@@ -593,6 +614,16 @@
 "links": [
 "perception/noise.html#model",
 "perception/tracking.html#confirm"
+]
+},
+{
+"slug": "crc",
+"name": "CRC",
+"exp": "Cyclic redundancy check",
+"part": "electrical",
+"links": [
+"firmware.html#canmore",
+"firmware.html#flash"
 ]
 },
 {
@@ -648,7 +679,7 @@
 "slug": "depressurization-test",
 "name": "Depressurization test",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "pool-test.html#pvt",
 "mechanical.html#sealing"
@@ -677,7 +708,7 @@
 "slug": "depth-sensor",
 "name": "Depth sensor",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "sensors.html#depth",
 "firmware.html#depth"
@@ -736,7 +767,7 @@
 "slug": "dfc",
 "name": "dfc",
 "exp": "Downward-facing camera",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "cameras.html#two-cameras",
 "cameras.html#topics"
@@ -762,6 +793,15 @@
 ]
 },
 {
+"slug": "dorito-taco",
+"name": "Dorito, Taco",
+"exp": "",
+"part": "mechanical",
+"links": [
+"mechanical.html#frame"
+]
+},
+{
 "slug": "dotask",
 "name": "doTask",
 "exp": "",
@@ -775,7 +815,7 @@
 "slug": "dshot",
 "name": "DShot",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "thrusters-hw.html#dshot",
 "firmware.html#thrusters"
@@ -785,7 +825,7 @@
 "slug": "dvl",
 "name": "DVL",
 "exp": "Doppler velocity log",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "sensors.html#dvl"
 ]
@@ -794,7 +834,7 @@
 "slug": "ekf",
 "name": "EKF",
 "exp": "Extended Kalman filter",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "localization.html#ekf",
 "localization.html#fused"
@@ -824,7 +864,7 @@
 "slug": "esc",
 "name": "ESC",
 "exp": "Electronic speed controller",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "thrusters-hw.html#esc",
 "boards.html#esc"
@@ -834,7 +874,7 @@
 "slug": "esc-board",
 "name": "ESC board",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#esc",
 "thrusters-hw.html#rpm-loop",
@@ -883,7 +923,7 @@
 "slug": "ffc",
 "name": "ffc",
 "exp": "Forward-facing camera",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "cameras.html#two-cameras",
 "cameras.html#topics"
@@ -899,10 +939,20 @@
 ]
 },
 {
+"slug": "foam",
+"name": "Foam",
+"exp": "",
+"part": "mechanical",
+"links": [
+"mechanical.html#frame",
+"mechanical.html#trim"
+]
+},
+{
 "slug": "fog",
 "name": "FOG",
 "exp": "Fibre-optic gyro",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "sensors.html#fog"
 ]
@@ -931,7 +981,7 @@
 "slug": "force-gauge",
 "name": "Force gauge",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "thrusters-hw.html#gauge"
 ]
@@ -947,11 +997,21 @@
 ]
 },
 {
+"slug": "fov",
+"name": "FOV",
+"exp": "Field of view",
+"part": "sensing",
+"links": [
+"cameras.html#fov"
+]
+},
+{
 "slug": "frame",
 "name": "Frame",
 "exp": "",
 "part": "start",
 "links": [
+"ros2.html#tf",
 "localization.html#frames",
 "perception/frames.html#tree"
 ]
@@ -960,7 +1020,7 @@
 "slug": "chassis",
 "name": "Frame (mechanical)",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "mechanical.html#frame"
 ]
@@ -979,7 +1039,7 @@
 "slug": "gmsl2",
 "name": "GMSL2",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "cameras.html#two-cameras"
 ]
@@ -991,6 +1051,16 @@
 "part": "control",
 "links": [
 "control/reference.html#governor"
+]
+},
+{
+"slug": "gpio",
+"name": "GPIO",
+"exp": "General-purpose input/output",
+"part": "electrical",
+"links": [
+"firmware.html#identity",
+"boards.html#rp2040-detail"
 ]
 },
 {
@@ -1019,6 +1089,7 @@
 "exp": "",
 "part": "start",
 "links": [
+"ros2.html#time",
 "debugging.html#time",
 "sensors.html#timing"
 ]
@@ -1030,6 +1101,16 @@
 "part": "ops",
 "links": [
 "launch.html#hil"
+]
+},
+{
+"slug": "home",
+"name": "Home",
+"exp": "",
+"part": "start",
+"links": [
+"mission-tree.html#home",
+"robosub.html#course"
 ]
 },
 {
@@ -1056,7 +1137,7 @@
 "slug": "hydrophone",
 "name": "Hydrophone",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "sensors.html#acoustics",
 "boards.html#led-ivc"
@@ -1066,7 +1147,7 @@
 "slug": "ideal-diode-or",
 "name": "Ideal-diode OR",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "electrical.html#two-packs"
 ]
@@ -1084,7 +1165,7 @@
 "slug": "imu",
 "name": "IMU",
 "exp": "Inertial measurement unit",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "sensors.html#imu"
 ]
@@ -1102,7 +1183,7 @@
 "slug": "ivc-board",
 "name": "IVC board",
 "exp": "Inter-vehicle communication board",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#led-ivc",
 "sensors.html#acoustics"
@@ -1121,7 +1202,7 @@
 "slug": "jetson-agx-orin",
 "name": "Jetson AGX Orin",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "computers.html#orin"
 ]
@@ -1140,7 +1221,7 @@
 "slug": "kill-slot",
 "name": "Kill slot",
 "exp": "",
-"part": "ops",
+"part": "control",
 "links": [
 "commanding.html#kill",
 "commanding.html#viewer-slot"
@@ -1150,11 +1231,12 @@
 "slug": "kill-switch",
 "name": "Kill switch",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "electrical.html#kill",
 "boards.html#kill",
-"commanding.html#kill"
+"commanding.html#kill",
+"mechanical.html#inside"
 ]
 },
 {
@@ -1181,7 +1263,7 @@
 "slug": "launcher",
 "name": "Launcher",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "actuators.html#launcher",
 "actuators.html#shot"
@@ -1201,7 +1283,7 @@
 "slug": "led-board",
 "name": "LED board",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#led-ivc",
 "mission-tree.html#leds"
@@ -1249,7 +1331,7 @@
 "slug": "magnet-poker",
 "name": "Magnet poker",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "actuators.html#claw",
 "mission-tree.html#magnets"
@@ -1261,7 +1343,8 @@
 "exp": "",
 "part": "start",
 "links": [
-"mission-tree.html#magnets"
+"mission-tree.html#magnets",
+"robosub.html#course"
 ]
 },
 {
@@ -1278,7 +1361,7 @@
 "slug": "main-hull",
 "name": "Main hull",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "mechanical.html#hull",
 "mechanical.html#inside"
@@ -1288,7 +1371,7 @@
 "slug": "map",
 "name": "map",
 "exp": "",
-"part": "perception",
+"part": "sensing",
 "links": [
 "localization.html#drift",
 "perception/frames.html#tree"
@@ -1328,17 +1411,16 @@
 "slug": "mark-2",
 "name": "Mark 1, Mark 2",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
-"boards.html#rp2040",
-"boards.html#history"
+"boards.html#rp2040"
 ]
 },
 {
 "slug": "mcu",
 "name": "MCU",
 "exp": "Microcontroller unit",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#rp2040",
 "firmware.html#boards"
@@ -1366,7 +1448,7 @@
 "slug": "micro-ros",
 "name": "micro-ROS",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "firmware.html#microros",
 "boards.html#system"
@@ -1479,6 +1561,16 @@
 ]
 },
 {
+"slug": "o-ring",
+"name": "O-ring",
+"exp": "",
+"part": "mechanical",
+"links": [
+"mechanical.html#hull",
+"mechanical.html#service"
+]
+},
+{
 "slug": "octagon",
 "name": "Octagon",
 "exp": "",
@@ -1491,7 +1583,7 @@
 "slug": "odom",
 "name": "odom",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "localization.html#drift",
 "perception/frames.html#tree"
@@ -1501,7 +1593,7 @@
 "slug": "odometry",
 "name": "Odometry",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "localization.html#ekf",
 "localization.html#users"
@@ -1521,7 +1613,7 @@
 "slug": "op-top",
 "name": "op-top",
 "exp": "",
-"part": "ops",
+"part": "sensing",
 "links": [
 "computers.html#optop"
 ]
@@ -1530,7 +1622,7 @@
 "slug": "opbox",
 "name": "Opbox",
 "exp": "",
-"part": "ops",
+"part": "sensing",
 "links": [
 "computers.html#opbox"
 ]
@@ -1549,7 +1641,7 @@
 "slug": "orin-hat",
 "name": "Orin HAT",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#orin-side"
 ]
@@ -1605,7 +1697,7 @@
 "slug": "pcb",
 "name": "PCB",
 "exp": "Printed circuit board",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#design",
 "boards.html#explorer"
@@ -1615,7 +1707,7 @@
 "slug": "pico-sdk",
 "name": "Pico SDK",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "firmware.html#repo",
 "firmware.html#build"
@@ -1638,7 +1730,8 @@
 "part": "start",
 "links": [
 "mission-tree.html#pinger",
-"sensors.html#acoustics"
+"sensors.html#acoustics",
+"robosub.html#course"
 ]
 },
 {
@@ -1648,6 +1741,15 @@
 "part": "autonomy",
 "links": [
 "mission-tree.html#pinger"
+]
+},
+{
+"slug": "pio",
+"name": "PIO",
+"exp": "Programmable I/O",
+"part": "electrical",
+"links": [
+"firmware.html#thrusters"
 ]
 },
 {
@@ -1673,7 +1775,7 @@
 "slug": "poac",
 "name": "POAC",
 "exp": "Power + actuator board",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#poac",
 "electrical.html#rails",
@@ -1684,7 +1786,7 @@
 "slug": "point-cloud",
 "name": "Point cloud",
 "exp": "",
-"part": "perception",
+"part": "ops",
 "links": [
 "nereus.html#cameras",
 "viewer.html#seeing"
@@ -1707,6 +1809,16 @@
 "links": [
 "bt.html#blackboard",
 "bt-workflow.html#ports"
+]
+},
+{
+"slug": "port-starboard",
+"name": "Port, starboard, bow, stern",
+"exp": "",
+"part": "mechanical",
+"links": [
+"mechanical.html#hull",
+"localization.html#frames"
 ]
 },
 {
@@ -1761,7 +1873,7 @@
 "slug": "process-noise",
 "name": "Process noise",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "localization.html#ekf"
 ]
@@ -1788,7 +1900,7 @@
 "slug": "pwm",
 "name": "PWM",
 "exp": "Pulse-width modulation",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "thrusters-hw.html#dshot",
 "thrusters-hw.html#curves"
@@ -1827,7 +1939,7 @@
 "slug": "rail",
 "name": "Rail",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "electrical.html#rails",
 "electrical.html#kill"
@@ -2061,7 +2173,7 @@
 "slug": "robot-lan",
 "name": "Robot LAN",
 "exp": "",
-"part": "ops",
+"part": "sensing",
 "links": [
 "computers.html#lan",
 "computers.html#map"
@@ -2093,6 +2205,7 @@
 "exp": "",
 "part": "start",
 "links": [
+"ros2.html#cli",
 "computers.html#zenoh",
 "debugging.html#cli"
 ]
@@ -2140,7 +2253,7 @@
 "slug": "rp2040",
 "name": "RP2040",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#rp2040",
 "firmware.html#boards"
@@ -2150,7 +2263,7 @@
 "slug": "rpac",
 "name": "RPAC",
 "exp": "",
-"part": "start",
+"part": "ops",
 "links": [
 "pool-test.html#shape",
 "nereus.html#course"
@@ -2160,7 +2273,7 @@
 "slug": "rpm-loop",
 "name": "RPM loop",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "thrusters-hw.html#rpm-loop",
 "firmware.html#thrusters"
@@ -2309,14 +2422,15 @@
 "part": "start",
 "links": [
 "mission-tree.html#slalom",
-"perception/composites.html#slalom"
+"perception/composites.html#slalom",
+"robosub.html#course"
 ]
 },
 {
 "slug": "smart-battery-housing",
 "name": "Smart battery housing",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "electrical.html#smart",
 "boards.html#batteries"
@@ -2344,9 +2458,18 @@
 "slug": "ssh",
 "name": "SSH",
 "exp": "Secure Shell",
-"part": "ops",
+"part": "sensing",
 "links": [
 "computers.html#ssh"
+]
+},
+{
+"slug": "stack-link",
+"name": "Stack link",
+"exp": "",
+"part": "electrical",
+"links": [
+"electrical.html#connectors"
 ]
 },
 {
@@ -2362,7 +2485,7 @@
 "slug": "state-kill",
 "name": "state/kill",
 "exp": "",
-"part": "ops",
+"part": "control",
 "links": [
 "commanding.html#stops",
 "firmware.html#kill"
@@ -2411,10 +2534,20 @@
 "slug": "subconn",
 "name": "SubConn",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "electrical.html#connectors",
 "mechanical.html#sealing"
+]
+},
+{
+"slug": "subconn-cover",
+"name": "SubConn cover",
+"exp": "",
+"part": "mechanical",
+"links": [
+"mechanical.html#hull",
+"pool-test.html#pvt"
 ]
 },
 {
@@ -2451,7 +2584,7 @@
 "slug": "swd",
 "name": "SWD",
 "exp": "Serial Wire Debug",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#rp2040",
 "firmware.html#debug"
@@ -2491,7 +2624,7 @@
 "slug": "t200",
 "name": "T200",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "thrusters-hw.html#t200",
 "control/thrusters.html#rpm"
@@ -2512,7 +2645,7 @@
 "slug": "tailscale",
 "name": "Tailscale",
 "exp": "",
-"part": "ops",
+"part": "sensing",
 "links": [
 "computers.html#map",
 "computers.html#join"
@@ -2532,7 +2665,7 @@
 "slug": "tare",
 "name": "Tare",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "sensors.html#fog-tare",
 "localization.html#trouble"
@@ -2581,7 +2714,7 @@
 "slug": "termination",
 "name": "Termination",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#rp2040"
 ]
@@ -2590,7 +2723,7 @@
 "slug": "tether",
 "name": "Tether",
 "exp": "",
-"part": "ops",
+"part": "sensing",
 "links": [
 "computers.html#lan",
 "cameras.html#bandwidth"
@@ -2629,7 +2762,7 @@
 "slug": "thruster-names",
 "name": "Thruster names",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "thrusters-hw.html#layout",
 "nereus.html#bridge"
@@ -2659,7 +2792,7 @@
 "slug": "titan-firmware",
 "name": "titan_firmware",
 "exp": "",
-"part": "start",
+"part": "electrical",
 "links": [
 "firmware.html#repo"
 ]
@@ -2682,7 +2815,8 @@
 "links": [
 "mission-tree.html#torpedo",
 "perception/composites.html#torpedo",
-"actuators.html#shot"
+"actuators.html#shot",
+"robosub.html#course"
 ]
 },
 {
@@ -2693,6 +2827,16 @@
 "links": [
 "perception/tracking.html#update",
 "perception/tracking.html#confirm"
+]
+},
+{
+"slug": "transducer",
+"name": "Transducer",
+"exp": "",
+"part": "sensing",
+"links": [
+"boards.html#led-ivc",
+"sensors.html#acoustics"
 ]
 },
 {
@@ -2708,7 +2852,7 @@
 "slug": "trim",
 "name": "Trim",
 "exp": "",
-"part": "vehicle",
+"part": "mechanical",
 "links": [
 "mechanical.html#trim",
 "pool-test.html#trim"
@@ -2735,10 +2879,20 @@
 ]
 },
 {
+"slug": "turnbuckle",
+"name": "Turnbuckle",
+"exp": "",
+"part": "mechanical",
+"links": [
+"mechanical.html#frame",
+"mechanical.html#service"
+]
+},
+{
 "slug": "uart",
 "name": "UART",
 "exp": "Universal asynchronous receiver-transmitter",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "boards.html#orin-side",
 "sensors.html#fog",
@@ -2749,7 +2903,7 @@
 "slug": "urdf",
 "name": "URDF",
 "exp": "Unified Robot Description Format",
-"part": "start",
+"part": "sensing",
 "links": [
 "localization.html#urdf",
 "mechanical.html#software"
@@ -2797,7 +2951,7 @@
 "slug": "watchdog",
 "name": "Watchdog",
 "exp": "",
-"part": "vehicle",
+"part": "electrical",
 "links": [
 "firmware.html#safety"
 ]
@@ -2842,7 +2996,7 @@
 "slug": "xacro",
 "name": "Xacro",
 "exp": "",
-"part": "start",
+"part": "sensing",
 "links": [
 "localization.html#urdf",
 "actuators.html#mechanisms"
@@ -2862,7 +3016,7 @@
 "slug": "zed-sdk",
 "name": "ZED SDK",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "cameras.html#pipeline",
 "cameras.html#launch"
@@ -2872,7 +3026,7 @@
 "slug": "zed-x-mini",
 "name": "ZED X Mini",
 "exp": "",
-"part": "vehicle",
+"part": "sensing",
 "links": [
 "cameras.html#two-cameras",
 "cameras.html#settings"
@@ -2894,6 +3048,7 @@
 "exp": "",
 "part": "start",
 "links": [
+"ros2.html#zenoh",
 "computers.html#zenoh",
 "computers.html#join"
 ]
