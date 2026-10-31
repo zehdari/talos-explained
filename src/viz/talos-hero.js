@@ -121,6 +121,7 @@ export function createTalosHero(THREE, { OrbitControls, GLTFLoader, RoomEnvironm
       b.style.setProperty('--c', it.color || 'var(--ink)');
       b.innerHTML = `<span>${it.name}</span>`;
       b.setAttribute('aria-label', it.name);
+      b.tabIndex = -1; // the names under the model do the same job for keyboards and screen readers
       b.addEventListener('click', (e) => { e.stopPropagation(); opts.onDot(id); });
       b.addEventListener('pointerdown', (e) => e.stopPropagation());
       labelHost.appendChild(b);
@@ -212,16 +213,21 @@ export function createTalosHero(THREE, { OrbitControls, GLTFLoader, RoomEnvironm
   // On a wide stage the words sit on the left: draw the model right of centre.
   let wide = false, shiftX = 0;
   const framing = () => ({ frac: wide ? 0.56 : 0.94, fracH: wide ? 0.78 : 0.86 });
-  function fitDistance(box) {
-    // distance at which the box's bounding sphere fits the free part of the view (vertical fov fixed)
+  function fitDistance(box, dir) {
+    // distance from the box centre at which all 8 corners fit the free part of the view, looking along -dir
     const { frac, fracH } = framing();
-    const sphere = box.getBoundingSphere(new THREE.Sphere());
-    const vfov = (camera.fov * Math.PI) / 180;
-    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
-    const r = Math.max(sphere.radius, 0.02);
-    const dV = r / Math.sin((vfov * fracH) / 2);
-    const dH = r / Math.sin(Math.min(hfov * frac, 2.6) / 2);
-    return Math.max(dV, dH);
+    const d = (dir || camera.position.clone().sub(controls.target)).clone().normalize();
+    const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), d).normalize();
+    const up = new THREE.Vector3().crossVectors(d, right);
+    const tv = Math.tan(((camera.fov * Math.PI) / 180) / 2) * fracH, th = Math.tan(((camera.fov * Math.PI) / 180) / 2) * camera.aspect * frac;
+    const c = box.getCenter(new THREE.Vector3()), p = new THREE.Vector3();
+    let need = 0.05;
+    for (let i = 0; i < 8; i++) {
+      p.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).sub(c);
+      const z = p.dot(d);
+      need = Math.max(need, z + Math.abs(p.dot(right)) / th, z + Math.abs(p.dot(up)) / tv);
+    }
+    return need;
   }
   let tween = null;
   function flyTo(target, dist, dir) {
@@ -238,7 +244,8 @@ export function createTalosHero(THREE, { OrbitControls, GLTFLoader, RoomEnvironm
   function homeDist() {
     if (!canvas.clientWidth || !canvas.clientHeight) return HOME.dist;
     const box = new THREE.Box3(new THREE.Vector3(-0.47, -0.47, -0.36), new THREE.Vector3(0.47, 0.31, 0.41));
-    return loaded ? Math.max(fitDistance(box) * 0.86, 1.1) : HOME.dist;
+    // the box's corners stick out past the robot itself, so a little closer than a strict fit
+    return loaded ? Math.max(fitDistance(box, HOME.dir) * (wide ? 0.98 : 0.84), 1.0) : HOME.dist;
   }
   function frameView(animate = true) {
     let target, dist;
@@ -252,10 +259,10 @@ export function createTalosHero(THREE, { OrbitControls, GLTFLoader, RoomEnvironm
       const open = view.sel === view.ctx;
       if (!view.ctx) {
         // a system at the top level: move toward it but keep the robot around it in view
-        dist = THREE.MathUtils.clamp(fitDistance(b) * 2.2, homeDist() * 0.24, homeDist());
+        dist = THREE.MathUtils.clamp(fitDistance(b) * 2.6, 0.55, homeDist());
       } else {
         // never closer than this (keeps context around small parts), never farther than the whole robot
-        dist = THREE.MathUtils.clamp(fitDistance(b) * (open ? 1.0 : 1.25), coarse ? 0.42 : 0.36, homeDist());
+        dist = THREE.MathUtils.clamp(fitDistance(b) * (open ? 1.08 : 1.6), 0.3, homeDist());
       }
     }
     // back home before anyone has turned it: land where the sway is, so it carries on without a jump

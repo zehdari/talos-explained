@@ -1,21 +1,22 @@
 /* The front page. Builds on style.css (.hero, .copy, .dock) and chapter.css. */
 
 /* ---------------------------------------------------------------- hero: Talos in 3D */
-.talos-hero { min-height: 600px; }
+.talos-hero { min-height: 640px; }
 .talos-hero .th-stage { position: absolute; inset: 0; }
 .talos-hero canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; opacity: 0; transition: opacity 0.6s ease; }
 .talos-hero .th-stage.ready canvas { opacity: 1; }
 .th-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.th-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: var(--sans); font-size: 0.86rem; color: var(--ink-2); background: rgba(243, 247, 247, 0.85); padding: 0.35rem 0.8rem; border-radius: 999px; }
+.th-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 0.35rem; font-family: var(--sans); font-size: 0.84rem; color: var(--ink-2); background: rgba(243, 247, 247, 0.88); padding: 0.4rem 0.9rem 0.5rem; border-radius: 12px; font-variant-numeric: tabular-nums; }
 .th-loading[hidden] { display: none; }
-/* The poster: a still of the model where the canvas will draw it (centre a little right, 67% of the stage's height),
-   faded out once the model is in. On wide screens index.js draws the robot 20% of the width right of centre. */
-.th-poster { position: absolute; left: 51.8%; top: 51%; height: 66.8%; width: auto; max-width: none; transform: translate(-50%, -50%); pointer-events: none; transition: opacity 0.6s ease; user-select: none; }
+.th-bar { display: block; width: 11rem; height: 3px; border-radius: 2px; background: var(--rule); overflow: hidden; }
+.th-bar b { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.25s linear; }
+/* The poster: a still of the model where the canvas will draw it, faded out once the model is in. It stays when
+   WebGL is missing. On wide screens index.js draws the robot 20% of the width right of centre. */
+.th-poster { position: absolute; left: 50%; top: 50%; height: 64%; width: auto; max-width: 92%; object-fit: contain; transform: translate(-50%, -50%); pointer-events: none; transition: opacity 0.6s ease; user-select: none; }
 .th-stage.ready .th-poster { opacity: 0; }
-@media (min-width: 1241px) { .th-poster { left: 71.8%; top: 48%; height: 61%; } }
-/* While loading, the note sits under the poster (wide screens: above it, clear of the card). */
-.th-poster ~ .th-loading { left: 51.8%; top: auto; bottom: 0.7rem; transform: translateX(-50%); white-space: nowrap; }
-@media (min-width: 1241px) { .th-poster ~ .th-loading { left: 71.8%; top: 1.4rem; bottom: auto; } }
+@media (min-width: 1241px) { .th-poster { left: 70.5%; top: 48%; height: 51%; max-width: 50%; } }
+.th-poster ~ .th-loading { top: auto; bottom: 0.8rem; transform: translateX(-50%); white-space: nowrap; }
+@media (min-width: 1241px) { .th-poster ~ .th-loading { left: 70%; top: 1.4rem; bottom: auto; } }
 .th-loading:has(.btn) { background: none; padding: 0; }
 .th-tip { position: absolute; left: 0; top: 0; pointer-events: none; font-family: var(--sans); font-size: 0.76rem; background: var(--ink); color: var(--paper); padding: 0.2rem 0.5rem; border-radius: 6px; white-space: nowrap; z-index: 3; }
 .th-tip[hidden] { display: none; }
@@ -34,68 +35,106 @@
 .th-dot:hover span, .th-dot.on span, .th-dot:focus-visible span { display: inline; }
 .th-dot:hover::before { transform: scale(1.15); }
 .th-dot.on::before { background: var(--c, var(--accent)); transform: scale(1.2); }
-.th-dot.dim { opacity: 0.4; }
+/* The picked part's own dot would hide a small part: it becomes a ring with the name beside it, clear of the part. */
+.th-dot.on:not(.open)::before { background: transparent; border-width: 2px; width: 26px; height: 26px; margin: -6px -2px -6px -6px; box-shadow: 0 0 0 2px rgba(243, 247, 247, 0.7); transform: none; }
+.th-dot.on:not(.open) span { margin-left: 0.45rem; }
+.th-dot.dim { opacity: 0.3; }
+.th-stage.no-gl .th-labels { display: none; }
 
 .talos-hero .copy { max-width: 29rem; }
-.talos-hero .dock { align-items: flex-end; }
-.th-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; max-width: 30rem; }
+@media (min-width: 1241px) { .talos-hero.has-sel .copy .sub, .talos-hero.has-sel .copy .th-intro { display: none; } }
+.talos-hero .copy .th-card p { font-family: var(--sans); font-size: 0.9rem; line-height: 1.5; color: var(--ink-2); margin: 0.35rem 0 0.6rem; max-width: none; }
+.talos-hero .copy .th-card { pointer-events: auto; margin-top: 1.1rem; overflow: auto; overscroll-behavior: contain; }
+
+/* The dock: where you are, the names to tap, and the card (the card moves under the title on wide screens while
+   something is picked). */
+.talos-hero .dock { display: grid; grid-template-columns: minmax(0, 36rem) auto; grid-template-rows: auto auto; align-items: end; justify-content: space-between; column-gap: 1.5rem; row-gap: 0.55rem; }
+.talos-hero .dock > .th-card { grid-column: 2; grid-row: 1 / span 2; align-self: end; }
+.th-crumbs { grid-column: 1; display: flex; align-items: center; gap: 0.35rem; font-family: var(--sans); font-size: 0.84rem; color: var(--ink-2); min-width: 0; }
+.th-crumbs[hidden] { display: none; }
+.th-crumbs ol { display: flex; flex-wrap: wrap; align-items: center; margin: 0; padding: 0; list-style: none; min-width: 0; }
+.th-crumbs li { display: inline-flex; align-items: center; }
+.th-crumbs li + li::before { content: '›'; margin: 0 0.35rem; color: var(--muted); }
+.th-crumbs li[aria-current] { font-weight: 650; color: var(--ink); }
+.th-crumbs li button { font: inherit; color: var(--ink-2); background: none; border: 0; padding: 0.15rem 0; cursor: pointer; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+.th-crumbs li button:hover { color: var(--accent-ink); text-decoration-color: var(--accent); }
+.th-back { font: inherit; font-weight: 650; color: var(--paper); background: var(--ink); border: 0; border-radius: 999px; padding: 0.28rem 0.75rem; cursor: pointer; white-space: nowrap; flex: none; }
+.th-back:hover { background: var(--accent-ink); }
+
+.th-chips { grid-column: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.th-chips-h { flex-basis: 100%; font-family: var(--sans); font-size: 0.7rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
 .th-chip {
   display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--sans); font-size: 0.82rem; font-weight: 520;
   background: rgba(243, 247, 247, 0.9); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); color: var(--ink);
   border: 1px solid var(--rule); border-radius: 999px; padding: 0.3rem 0.75rem 0.3rem 0.55rem; cursor: pointer; white-space: nowrap;
 }
 .th-chip i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.th-chip.opens::after { content: '›'; margin-left: -0.1rem; color: var(--muted); font-weight: 700; }
 .th-chip:hover { border-color: var(--ink-2); }
 .th-chip[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .th-chip[aria-pressed='true'] i { box-shadow: 0 0 0 1.5px var(--paper); } /* keeps a dark dot (SubConns) visible on the dark chip */
+.th-chip[aria-pressed='true']::after { color: var(--paper-3); }
 
 .th-card {
-  width: 23rem; max-width: 100%; background: rgba(243, 247, 247, 0.93); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  border-radius: 12px; padding: 0.85rem 1rem 0.8rem; font-family: var(--sans); font-size: 0.86rem; line-height: 1.45; color: var(--ink-2);
+  width: 24rem; max-width: 100%; background: rgba(243, 247, 247, 0.94); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border-radius: 12px; padding: 0.85rem 1rem 0.85rem; font-family: var(--sans); font-size: 0.86rem; line-height: 1.45; color: var(--ink-2);
   box-shadow: 0 1px 0 rgba(15, 38, 51, 0.04), 0 8px 30px rgba(15, 38, 51, 0.08);
 }
-.th-card p { margin: 0.35rem 0 0.55rem; }
-.th-head { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; color: var(--ink); font-stretch: 112%; }
+.th-card p { margin: 0.35rem 0 0.6rem; }
+.th-over { font-size: 0.7rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); margin-bottom: 0.1rem; }
+.th-head { display: flex; align-items: center; gap: 0.5rem; }
 .th-head i { width: 11px; height: 11px; border-radius: 50%; flex: none; }
-.th-head b { font-weight: 680; }
-.th-x { margin-left: auto; border: 0; background: none; font-size: 1.3rem; line-height: 1; color: var(--muted); cursor: pointer; padding: 0 0.2rem; }
-.th-x:hover { color: var(--accent); }
-.th-card dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 0.8rem; margin: 0 0 0.55rem; font-size: 0.82rem; }
+.th-head h2 { margin: 0; font-family: var(--sans); font-size: 1.08rem; font-weight: 680; font-stretch: 112%; line-height: 1.25; color: var(--ink); letter-spacing: 0; }
+.th-x { margin: -0.4rem -0.5rem -0.4rem auto; border: 0; background: none; font-size: 1.35rem; line-height: 1; color: var(--muted); cursor: pointer; width: 2.2rem; height: 2.2rem; flex: none; border-radius: 50%; }
+.th-x:hover { color: var(--accent); background: var(--paper-2); }
+.th-card dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 0.8rem; margin: 0 0 0.6rem; font-size: 0.82rem; }
 .th-card dt { color: var(--muted); }
 .th-card dd { margin: 0; color: var(--ink); }
-.th-read { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; font-weight: 600; }
-.th-read a { color: var(--ink); text-decoration: none; border-bottom: 1.5px solid var(--accent); }
-.th-read a:hover { color: var(--accent); }
+.th-read { list-style: none; margin: 0; padding: 0.55rem 0 0; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 0.2rem; }
+.th-read a { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.45rem; color: var(--ink); font-weight: 600; text-decoration: none; }
+.th-read a::before { content: '→'; color: var(--accent); font-weight: 700; }
+.th-read a:hover { color: var(--accent-ink); }
+.th-read small { font-size: 0.76rem; font-weight: 450; color: var(--muted); }
 .th-glance { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; }
 .th-glance div { display: flex; flex-direction: column; }
 .th-glance b { font-size: 1.55rem; font-weight: 720; font-stretch: 118%; color: var(--ink); line-height: 1.05; font-variant-numeric: tabular-nums; }
 .th-glance span { font-size: 0.74rem; color: var(--muted); line-height: 1.25; margin-top: 0.15rem; }
 .th-help { margin: 0.6rem 0 0 !important; font-size: 0.8rem; color: var(--muted); }
 
-/* Narrow screens: the hero becomes a column (words, model, chips, card) instead of layers over one canvas. Up to
-   1240 px, because below that the canvas is too narrow to draw the robot clear of the words (index.js shifts it right
-   only when the canvas is wider than 900 px). */
+/* Narrow screens: the hero becomes a column (words, model, names, card) instead of layers over one canvas. Up to
+   1240 px, because below that the canvas is too narrow to draw the robot clear of the words. */
 @media (max-width: 1240px) {
   .talos-hero { height: auto; min-height: 0; display: flex; flex-direction: column; }
   .talos-hero .copy { position: static; order: 1; padding: 4.2rem clamp(1.1rem, 4vw, 3.5rem) 0; max-width: none; }
   .talos-hero .copy p:last-child { margin-bottom: 0; }
-  .talos-hero .th-stage { position: relative; order: 2; height: min(56vh, 400px); min-height: 280px; }
-  .talos-hero .dock { position: static; order: 3; padding: 0 clamp(1.1rem, 4vw, 3.5rem) 1.2rem; flex-direction: column; align-items: stretch; gap: 0.7rem; }
-  .th-chips { gap: 0.35rem; max-width: none; }
-  .th-chip { font-size: 0.78rem; padding: 0.26rem 0.62rem 0.26rem 0.5rem; }
+  .talos-hero .th-stage { position: relative; order: 2; height: min(58vh, 430px); min-height: 300px; }
+  .talos-hero .dock { position: static; order: 3; padding: 0 clamp(1.1rem, 4vw, 3.5rem) 1.2rem; display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 0.6rem; min-width: 0; }
+  .talos-hero .dock > * { min-width: 0; }
+  .th-chips { gap: 0.35rem; }
   .th-card { width: 100%; }
   .th-dot span { font-size: 0.7rem; }
 }
-/* Tablets and small laptops: the same column, with a taller stage and the card beside the chips where it fits. */
+/* Tablets and small laptops: the same column, with a taller stage. */
 @media (min-width: 761px) and (max-width: 1240px) {
   .talos-hero .copy { padding-top: 3rem; max-width: 42rem; }
-  .talos-hero .th-stage { height: min(60vh, 480px); }
-  .talos-hero .dock { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
-  .talos-hero .dock .th-chips { flex: 1 1 18rem; }
-  .talos-hero .dock .th-card { width: 23rem; flex: 0 1 23rem; }
+  .talos-hero .th-stage { height: min(62vh, 520px); }
+  .th-card { max-width: 40rem; }
+}
+/* Phones: one row of names that scrolls sideways inside itself (the page never does), and bigger targets. */
+@media (max-width: 760px) {
+  .th-chips { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; margin: 0 calc(-1 * clamp(1.1rem, 4vw, 3.5rem)); padding: 0.1rem clamp(1.1rem, 4vw, 3.5rem) 0.2rem; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 1rem, #000 calc(100% - 1.6rem), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 1rem, #000 calc(100% - 1.6rem), transparent); }
+  .th-chips::-webkit-scrollbar { display: none; }
+  .th-chips-h { flex: none; flex-basis: auto; margin-right: 0.15rem; }
+  .th-chips-h .th-long { display: none; }
+  .th-chip { scroll-snap-align: start; min-height: 2.6rem; font-size: 0.86rem; padding: 0.3rem 0.85rem 0.3rem 0.65rem; }
+  .th-crumbs { font-size: 0.86rem; }
+  .th-back { min-height: 2.6rem; padding: 0.3rem 0.9rem; }
+  .th-crumbs li button { min-height: 2.6rem; }
+  .th-read a { padding: 0.5rem 0; }
+  .th-glance b { font-size: 1.35rem; }
 }
 @media (max-width: 380px) {
-  .th-glance b { font-size: 1.3rem; }
+  .th-glance b { font-size: 1.2rem; }
 }
 
 /* ---------------------------------------------------------------- one minute */

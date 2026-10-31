@@ -199,7 +199,7 @@ The front page's 3D Talos (`index.html` hero, `src/viz/talos-hero.js`, tree and 
 - **Made from** SolidWorks' own display tessellation, read face by face through the API (`tools/cad/tess.cs`), so
   every face keeps its appearance colour (face > feature > body > component > part, the order SolidWorks uses).
   Exported: every leaf component visible in the team's saved display state and at least 2 mm across
-  (`make_tess_args.py`, __NCOMP__ components, __RAW__ raw triangles). Not exported: the hidden ZED 2i and bulkhead
+  (`make_tess_args.py`, 1,162 components, 11.6 M raw triangles; the job takes about 75 minutes because every face is a separate API call). Not exported: the hidden ZED 2i and bulkhead
   plate, the DVL beam cone, the duplicate top-level foam blocks and sub-2 mm board parts (resistors, pins).
 - **Built by** `tools/cad/build_hero.py` (memory-capped, `~/tools/cadvenv`): node per part (`hero_nodes.py`), triangle
   budget shared out by size and detail (fasteners and the Orin's inner chips get less, parts under budget keep their
@@ -207,8 +207,21 @@ The front page's 3D Talos (`index.html` hero, `src/viz/talos-hero.js`, tree and 
   linear) with one material per node and finish (metal, plastic, rubber; clear parts get their own `BLEND` material
   with `extras.kind = 'glass'`). Then `gltfpack -cc -kn -ke` (meshopt compression, quantised; three's
   `MeshoptDecoder` loads it).
-- **Size:** __TRIS__ triangles in __NNODES__ nodes, __MB__ MB.
+- **Size:** 1,138,740 triangles in 94 part nodes under 17 system nodes, 7 materials (vertex colours), 7.8 MB after gltfpack (66 MB before). Budget `HERO_TRIS=1000000`, `gltfpack -vp 13`.
 - **Frame:** the same as `talos-cad.glb` (assembly frame in metres, +X port, +Y up, +Z bow).
+- **Run order** (SolidWorks running in the VM with `Talos.SLDASM` open, as in section 5):
+  `python3 tools/cad/make_tess_args.py > /tmp/args.txt; scp /tmp/args.txt winvm:C:/talos/jobs/args.txt;
+  swjob tools/cad/tess.cs 7000` (writes `C:\talos\explainer_cad\_tess\tess.bin`, 420 MB, plus `colors.txt` and
+  `tess_log.txt`; fetch them with sftp), then
+  `systemd-run --user --scope -q -p MemoryMax=6G -p MemorySwapMax=0 ~/tools/cadvenv/bin/python -I
+  tools/cad/build_hero.py /tmp/raw.glb /tmp/nodes.json <tess dir>...` (about 80 s) and
+  `npx gltfpack -i /tmp/raw.glb -o public/models/talos-hero.glb -cc -kn -ke -vp 13`. `tessread.py` reads `tess.bin`.
+  The four module foam blocks were exported in a second, small run (`_tess2`); `make_tess_args.py` now includes them.
+- **The hero's tree** (`public/data/index/hero.json`): `systems` (the chips, in order), `items` (id → name, `nodes`
+  or `children`, `open` = a container you can go into, `shell` = nodes ghosted when it is open, `context` = nodes
+  kept faintly around it when it is open (everything else is hidden then), `anchorNode` = where its dot sits, `card`
+  = what, does, facts, links with their section names). A GLB node can sit in more than one item (the forward camera
+  is in the camera cage and in Cameras); a tap at the top level picks the smallest system that holds the node.
 - **Nodes** are grouped under one glTF node per system. Node names (ids in `hero.json`):
 
 | System node | Part nodes |

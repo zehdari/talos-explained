@@ -36,367 +36,203 @@ const chTitle = (href) => {
 const chLink = (href, label) => `<a href="${url(href)}">${esc(label || chTitle(href))}</a>`;
 
 // ============================================================================ hero: Talos in 3D
-// Systems of the CAD model (public/models/talos-cad.glb; frame: +X port, +Y up, +Z bow, metres). anchor: where the
-// dot sits. side: split a node's triangles by the sign of x (the one "electronics" node holds both hull cages).
-const SYSTEMS = [
-  { id: 'thrusters', name: 'Thrusters', nodes: ['thruster'], anchor: [0.406, 0.244, 0.075], color: '#d9480f',
-    text: 'Eight Blue Robotics T200s, all in one plane. The four at the corners push fore and aft; the four inner ones are tilted 45° and push up or down and sideways at once.',
-    facts: [['Thrust', '±24 N each, 73 N total'], ['Driven by', '2 ESC boards, 4 thrusters each']],
-    read: ['thrusters-hw.html', 'control/thrusters.html'] },
-  { id: 'frame', name: 'Frame', nodes: ['frame', 'thruster_guards', 'foam'], anchor: [0.15, -0.205, 0.155], color: '#7d8f99',
-    text: 'Four triangular corner modules joined by cross bars and braced by cables. Everything else bolts to it. Foam blocks in the modules make Talos float very slightly.',
-    facts: [['Size', '925 × 639 × 582 mm'], ['Mass', '32.4 kg dry']],
-    read: ['mechanical.html'] },
-  { id: 'hull', name: 'Hull', nodes: ['hull'], anchor: [0.215, 0.1, 0.12], color: '#2a78d6',
-    text: 'Two clear tubes with flat windows at the bow and every connector on the stern lids. Each tube\'s cage slides out of the stern. Clean the O-rings and pressure-test every time it is sealed.',
-    facts: [['Port tube', 'circuit boards'], ['Starboard tube', 'computer, forward camera, IMU']],
-    read: ['mechanical.html#hull'] },
-  { id: 'computer', name: 'Computer', nodes: ['electronics'], side: -1, anchor: [-0.13, 0.06, 0.05], color: '#008300',
-    text: 'A Jetson AGX Orin runs every ROS program on the robot: drivers, EKF, detector, mapping, behaviour trees and the MPC. The forward camera and the IMU share its cage.',
-    facts: [['Software', 'ROS 2 Humble over Zenoh'], ['Started by', 'the ros_launcher web page']],
-    read: ['computers.html', 'launch.html'] },
-  { id: 'boards', name: 'Circuit boards', nodes: ['electronics'], side: 1, anchor: [0.123, 0.03, 0.06], color: '#008300',
-    text: 'A stack of team-made boards, each with an RP2040 microcontroller running the team\'s firmware: power and the kill switch, the ESCs, lights and the acoustic modem. They talk to the Orin over CAN.',
-    facts: [['Bus', 'CAN FD, can0 on the Orin'], ['Firmware', 'titan_firmware, C on the Pico SDK']],
-    read: ['boards.html', 'firmware.html'] },
-  { id: 'batteries', name: 'Batteries', nodes: ['batteries'], anchor: [0.274, 0.078, 0.2], color: '#eda100',
-    text: 'Two sealed pods, one per side, each with a MaxAmps 8000 mAh 5S LiPo and its own protection board. Whichever pack is higher carries the bus.',
-    facts: [['Each pack', '18.5 V nominal, 148 Wh'], ['Rails', '15 V, 5 V, and 12 V for the servo']],
-    read: ['electrical.html'] },
-  { id: 'kill_switch', name: 'Kill switch', nodes: ['kill_switch'], anchor: [0.123, 0.057, 0.2], color: '#e34948',
-    text: 'The handle on the port window. Pulling it cuts power to the thrusters and nothing else, so a kill never reboots the computer. Software can kill too, through the POAC board.',
-    facts: [['Cuts', 'MOTOR_PWR, the ESC supply'], ['Software kill', 'four slots; the viewer owns slot 1']],
-    read: ['commanding.html', 'electrical.html#kill'] },
-  { id: 'subconns', name: 'SubConns', nodes: ['subconns', 'cables'], anchor: [0.14, 0.05, -0.24], color: '#0f2633',
-    text: 'Every cable reaches the inside of the hull through a SubConn wet-mate connector on a stern lid: thrusters, batteries, DVL, hydrophone. A snap-on cover protects the port lid\'s connectors. The cables are drawn in light blue.',
-    facts: [['Port lid', '17 small bulkheads, 2 battery bulkheads'], ['Starboard lid', '4 bulkheads (2 DBH8F, 2 MCBH4F)']],
-    read: ['mechanical.html#hull', 'electrical.html'] },
-  { id: 'dvl', name: 'DVL', nodes: ['dvl'], anchor: [0, -0.25, 0.0], color: '#1baf7a',
-    text: 'A Nortek DVL1000 under the middle of the robot bounces sound off the pool floor to measure Talos\'s velocity. With the IMU, the gyro and the depth sensor it feeds the EKF.',
-    facts: [['Rate', '8 Hz, each reading about 125 ms old'], ['Other sensors', 'VN-100 IMU, fibre-optic gyro, Bar02 depth']],
-    read: ['sensors.html', 'localization.html'] },
-  { id: 'cameras', name: 'Cameras', nodes: ['down_camera'], anchor: [-0.126, -0.1, 0.0], color: '#1baf7a',
-    text: 'Two ZED X Mini stereo cameras: one looks ahead through the starboard window, this one looks down through the tube wall. They give colour and depth for the detector.',
-    facts: [['Image', '1920 × 1200 at 15 Hz'], ['Detector', 'YOLO on one camera at a time']],
-    read: ['cameras.html', 'perception/index.html'] },
-  { id: 'acoustics', name: 'Hydrophone', nodes: ['acoustics'], anchor: [-0.127, -0.29, -0.17], color: '#1baf7a',
-    text: 'A hydrophone pod low at the stern listens for the competition pinger; the mission uses it to choose whether the torpedo or the table comes first. A separate transducer sends acoustic messages.',
-    facts: [['In Nereus', 'not simulated']],
-    read: ['sensors.html#acoustics', 'mission-tree.html'] },
-  { id: 'launcher', name: 'Launcher', nodes: ['launcher'], anchor: [0.14, -0.154, 0.245], color: '#6250d6',
-    text: 'Two torpedoes pointing forward and two markers pointing down, all released by one servo that the POAC board drives. The firmware won\'t fire unless Talos is enabled and the launcher armed.',
-    facts: [['Servo', 'home 120°; torpedoes at 200°, 240°'], ['Markers', 'at 50°, then 0°']],
-    read: ['actuators.html'] },
-  { id: 'claw', name: 'Claw', nodes: ['claw', 'magnet_poker'], anchor: [0, -0.40, 0.32], color: '#6250d6',
-    text: 'A servo-driven rack-and-pinion gripper under the bow carries the table objects. Beside it, a magnet on a rod; Talos flies it onto the target.',
-    facts: [['Task', 'sort four objects into two baskets']],
-    read: ['actuators.html#claw', 'mission-tree.html'] },
-];
-
+// The team's CAD, one node per part (public/models/talos-hero.glb, tools/cad/build_hero.py), and a tree of systems,
+// containers and parts with a card each (public/data/index/hero.json). Pick a system; open a container (the hull, the
+// two cages, a battery pod) to see and pick what is inside it. Back, Escape or a tap on empty space goes up a level.
+const heroEl = document.getElementById('th');
 const heroCard = document.getElementById('th-card');
 const heroChips = document.getElementById('th-chips');
-let hero = null, heroSel = null;
+const heroCrumbs = document.getElementById('th-crumbs');
+const heroStage = document.getElementById('th-stage');
+const heroCopy = heroEl.querySelector('.copy');
+const heroDock = heroEl.querySelector('.dock');
+const loadingEl = document.getElementById('th-loading');
+const wideHero = matchMedia('(min-width: 1241px)');
+let H = null;        // hero.json: { model, systems, extra, items }
+let hero = null;     // the 3D view, once loaded
+let path = [];       // item ids from the top: [] = the whole robot; ['camera_cage', 'cc_orin'] = the Orin in its cage
 
 const GLANCE = `<div class="th-glance">
   <div><b>32.4</b><span>kg dry</span></div><div><b>8</b><span>thrusters</span></div>
   <div><b>2</b><span>stereo cameras</span></div><div><b>20</b><span>Hz control loop</span></div></div>
-  <p class="th-help">Tap a dot or a part of the model. Drag to turn it.</p>`;
+  <p class="th-help">Tap a part, a dot or a name. Some open up: the hull, both cages, the battery pods.</p>`;
 
-function renderHeroCard() {
-  const s = SYSTEMS.find((x) => x.id === heroSel);
-  if (!s) { heroCard.innerHTML = GLANCE; return; }
-  heroCard.innerHTML = `<div class="th-head"><i style="background:${s.color}"></i><b>${s.name}</b><button class="th-x" aria-label="Back to the overview">×</button></div>
-    <p>${s.text}</p>
-    <dl>${s.facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
-    <div class="th-read">${s.read.map((h) => `<a href="${url(h)}">${esc(chTitle(h))} →</a>`).join('')}</div>`;
-  heroCard.querySelector('.th-x').onclick = () => pickHero(null);
+const item = (id) => H.items[id];
+const colourOf = (p) => { for (let i = p.length - 1; i >= 0; i--) if (item(p[i]).color) return item(p[i]).color; return 'var(--ink)'; };
+const ctxIndex = (p) => {
+  // the open container whose parts are on show: the last item if it opens, else the one above it
+  if (!p.length) return -1;
+  return item(p[p.length - 1]).open ? p.length - 1 : p.length - 2;
+};
+const ctxOf = (p) => (ctxIndex(p) >= 0 ? p[ctxIndex(p)] : null);
+const childIds = (ctx) => (ctx ? item(ctx).children : H.systems);
+
+function resolveItems() {
+  // nodes of every item = its own nodes plus all of its children's
+  const memo = new Map();
+  const nodes = (id) => {
+    if (memo.has(id)) return memo.get(id);
+    const it = item(id);
+    const s = new Set(it.nodes || []);
+    (it.children || []).forEach((c) => nodes(c).forEach((n) => s.add(n)));
+    memo.set(id, s);
+    return s;
+  };
+  Object.keys(H.items).forEach((id) => { H.items[id].nodeSet = nodes(id); });
+  // parts without a colour of their own take their system's (chips and dots)
+  const paint = (id, c) => { const it = item(id); it.color ||= c; (it.children || []).forEach((k) => paint(k, it.color)); };
+  [...H.systems, ...(H.extra || [])].forEach((id) => paint(id, item(id).color));
 }
-const chipEls = SYSTEMS.map((s) => {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.className = 'th-chip';
-  b.setAttribute('aria-pressed', 'false');
-  b.innerHTML = `<i style="background:${s.color}"></i>${s.name}`;
-  b.onclick = () => pickHero(heroSel === s.id ? null : s.id);
-  heroChips.appendChild(b);
-  return b;
-});
-function pickHero(id) {
-  heroSel = id || null;
-  chipEls.forEach((b, i) => b.setAttribute('aria-pressed', String(SYSTEMS[i].id === heroSel)));
+
+// Which item a tap on GLB node `node` means here: a part of the open container, or (at the top) the smallest
+// system that holds it, so a tap on the Orin opens the camera cage rather than the whole hull.
+function itemForNode(node, p = path) {
+  if (!node) return null;
+  const ctx = ctxOf(p);
+  if (ctx) return childIds(ctx).find((c) => item(c).nodeSet.has(node)) || null;
+  let best = null;
+  for (const id of [...H.systems, ...(H.extra || [])]) {
+    const s = item(id).nodeSet;
+    if (s.has(node) && (!best || s.size < item(best).nodeSet.size)) best = id;
+  }
+  return best;
+}
+
+function go(p) {
+  path = p;
+  heroEl.classList.toggle('has-sel', path.length > 0);
+  renderCrumbs();
+  renderChips();
   renderHeroCard();
-  hero?.select(heroSel);
-  // Narrow screens stack the card under the model and the chips, often below the fold: bring it up (only if it is off screen).
-  if (heroSel && matchMedia('(max-width: 1240px)').matches) {
+  hero?.setView({ sel: path[path.length - 1] || null, ctx: ctxOf(path), path });
+  if (path.length && !wideHero.matches) {
+    // Phones and tablets stack the card under the model: bring the whole model to the top of the screen, with the
+    // names and the start of the card under it (unless all of that is already in view).
     requestAnimationFrame(() => {
-      if (heroCard.getBoundingClientRect().bottom > innerHeight) heroCard.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
+      const s = heroStage.getBoundingClientRect(), r = heroCard.getBoundingClientRect();
+      if (s.top >= -2 && r.top < innerHeight - 120) return;
+      scrollTo({ top: s.top + scrollY - 4, behavior: reduced ? 'auto' : 'smooth' });
     });
   }
 }
-renderHeroCard();
+function pick(id) {
+  // a chip, a dot or a tap on the model chose item id among the parts on show
+  const ci = ctxIndex(path);
+  const base = path.slice(0, ci + 1);
+  if (path[path.length - 1] === id) { up(); return; }
+  go([...base, id]);
+}
+function up() { if (path.length) go(path.slice(0, -1)); }
 
-// The 3D model is about 2.8 MB, more than the rest of the page together. A still of it (the poster) shows at once;
+function renderCrumbs() {
+  if (!path.length) { heroCrumbs.hidden = true; heroCrumbs.textContent = ''; return; }
+  heroCrumbs.hidden = false;
+  const trail = ['', ...path];
+  heroCrumbs.innerHTML = `<button type="button" class="th-back" aria-label="Back up one level">←<span> Back</span></button><ol>${trail.map((id, i) => {
+    const name = i === 0 ? 'Talos' : (item(id).short || item(id).name);
+    return i === trail.length - 1 ? `<li aria-current="location">${esc(name)}</li>` : `<li><button type="button" data-i="${i}">${esc(name)}</button></li>`;
+  }).join('')}</ol>`;
+  heroCrumbs.querySelector('.th-back').onclick = up;
+  heroCrumbs.querySelectorAll('button[data-i]').forEach((b) => (b.onclick = () => go(path.slice(0, +b.dataset.i))));
+}
+function renderChips() {
+  const ctx = ctxOf(path);
+  const ids = childIds(ctx);
+  const sel = path[path.length - 1];
+  // "Inside the camera cage", or the item's own heading ("The eight thrusters"); phones show the short form only
+  const lc = (n) => (/[A-Z]/.test(n.slice(1)) ? n : n[0].toLowerCase() + n.slice(1));
+  const [h1, h2] = !ctx ? ['Systems', ''] : item(ctx).inside ? item(ctx).inside : ['Inside', ` the ${lc(item(ctx).name)}`];
+  heroChips.setAttribute('aria-label', h1 + h2);
+  heroChips.innerHTML = `<span class="th-chips-h">${esc(h1)}<span class="th-long">${esc(h2)}</span></span>` + ids.map((id) => {
+    const it = item(id);
+    const c = it.color || colourOf(path.slice(0, ctxIndex(path) + 1));
+    return `<button type="button" class="th-chip${it.open ? ' opens' : ''}" data-id="${id}" aria-pressed="${id === sel}"><i style="background:${c}"></i>${esc(it.short || it.name)}</button>`;
+  }).join('');
+  heroChips.querySelectorAll('.th-chip').forEach((b) => (b.onclick = () => pick(b.dataset.id)));
+  // keep the picked name in view inside the row (phones scroll the row sideways); never scroll the page
+  const on = heroChips.querySelector('[aria-pressed="true"]');
+  heroChips.scrollLeft = on ? Math.max(0, on.offsetLeft - heroChips.offsetLeft - 24) : 0;
+}
+function renderHeroCard() {
+  const id = path[path.length - 1];
+  // On a wide screen the card sits under the title while something is picked, clear of the model; otherwise in the dock.
+  const host = id && wideHero.matches ? heroCopy : heroDock;
+  if (heroCard.parentElement !== host) host.appendChild(heroCard);
+  if (!id) { heroCard.innerHTML = GLANCE; heroCard.classList.remove('sel'); return; }
+  heroCard.classList.add('sel');
+  const it = item(id), c = it.card;
+  const parent = path.length > 1 ? item(path[path.length - 2]).name : '';
+  heroCard.innerHTML = `${parent ? `<div class="th-over">${esc(parent)}</div>` : ''}
+    <div class="th-head"><i style="background:${it.color || colourOf(path)}"></i><h2>${esc(it.name)}</h2><button type="button" class="th-x" aria-label="Back up one level">×</button></div>
+    <p>${esc(c.what)} ${esc(c.does)}</p>
+    <dl>${c.facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+    <ul class="th-read">${c.links.map(([h, sec]) => `<li><a href="${url(h)}">${esc(sec || chTitle(h))}${sec && !h.startsWith('glossary') ? `<small>${esc(chTitle(h))}</small>` : ''}</a></li>`).join('')}</ul>`;
+  heroCard.querySelector('.th-x').onclick = up;
+  fitCard();
+}
+// Under the title the card must end above the names in the dock; it scrolls inside itself if it is longer.
+function fitCard() {
+  heroCard.style.maxHeight = '';
+  if (heroCard.parentElement !== heroCopy) return;
+  const room = heroDock.getBoundingClientRect().top - heroCard.getBoundingClientRect().top - 14;
+  heroCard.style.maxHeight = `${Math.max(160, room)}px`;
+}
+addEventListener('resize', fitCard);
+wideHero.addEventListener('change', renderHeroCard);
+addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || !path.length) return;
+  const r = heroEl.getBoundingClientRect();
+  if (r.bottom < 0 || r.top > innerHeight) return;
+  up();
+});
+
+// The 3D model is several MB, more than the rest of the page together. A still of it (the poster) shows at once;
 // three.js and the model load once the page has finished loading and the browser is idle. With Data Saver on, or on
-// a 2G/3G connection, they wait for a tap instead.
-const loadingEl = document.getElementById('th-loading');
+// a 2G/3G connection, they wait for a tap instead. Without WebGL the poster stays and the names and cards still work.
+const MODEL_MB = 7.8;
 function startHero() {
-  loadingEl.textContent = 'Loading the 3D model…';
+  loadingEl.innerHTML = '<span>Loading the 3D model…</span><i class="th-bar"><b></b></i>';
+  const bar = loadingEl.querySelector('.th-bar b'), label = loadingEl.querySelector('span');
   import('three').then((THREE) => Promise.all([
     import('three/examples/jsm/controls/OrbitControls.js'),
     import('three/examples/jsm/loaders/GLTFLoader.js'),
-    import('three/examples/jsm/utils/BufferGeometryUtils.js'),
     import('three/examples/jsm/environments/RoomEnvironment.js'),
-  ]).then(([{ OrbitControls }, { GLTFLoader }, { toCreasedNormals }, { RoomEnvironment }]) => {
-    hero = createHero(THREE, { OrbitControls, GLTFLoader, toCreasedNormals, RoomEnvironment });
-    hero?.select(heroSel);
-  }));
+    import('../viz/talos-hero.js'),
+  ]).then(([{ OrbitControls }, { GLTFLoader }, { RoomEnvironment }, { createTalosHero }]) => {
+    const items = {};
+    Object.entries(H.items).forEach(([id, it]) => (items[id] = { ...it, nodes: it.nodeSet }));
+    hero = createTalosHero(THREE, { OrbitControls, GLTFLoader, RoomEnvironment }, {
+      canvas: document.getElementById('th-canvas'), stage: heroStage, labelHost: document.getElementById('th-labels'),
+      tip: document.getElementById('th-tip'), loading: loadingEl, items, systems: H.systems, reduced,
+      modelUrl: BASE + H.model,
+      onPick: (node) => { const id = itemForNode(node); if (id) pick(id); else up(); },
+      onDot: (id) => pick(id),
+      labelFor: (node) => { const id = itemForNode(node); return id ? item(id).name : null; },
+      onProgress: (got, total) => {
+        const t = total || MODEL_MB * 1e6;
+        bar.style.width = `${Math.min(100, (100 * got) / t).toFixed(0)}%`;
+        label.textContent = `Loading the 3D model… ${(got / 1e6).toFixed(1)} of ${(t / 1e6).toFixed(1)} MB`;
+      },
+      onError: () => { loadingEl.textContent = 'The 3D model did not load. The names below still work.'; },
+    });
+    if (!hero) { heroStage.classList.add('no-gl'); loadingEl.hidden = true; return; }
+    hero.setView({ sel: path[path.length - 1] || null, ctx: ctxOf(path), path }, { fly: false });
+  })).catch(() => { loadingEl.textContent = 'The 3D model did not load. The names below still work.'; });
 }
-const conn = navigator.connection;
-if (conn && (conn.saveData || /(^|-)2g$|^3g$/.test(conn.effectiveType || ''))) {
-  loadingEl.innerHTML = '<button type="button" class="btn">Load the 3D model (2.8 MB)</button>';
-  loadingEl.querySelector('button').addEventListener('click', startHero, { once: true });
-} else {
-  const idle = () => (window.requestIdleCallback ? requestIdleCallback(startHero, { timeout: 1500 }) : setTimeout(startHero, 200));
-  if (document.readyState === 'complete') idle(); else addEventListener('load', idle, { once: true });
-}
 
-function createHero(THREE, { OrbitControls, GLTFLoader, toCreasedNormals, RoomEnvironment }) {
-  const canvas = document.getElementById('th-canvas');
-  const stage = document.getElementById('th-stage');
-  const labelHost = document.getElementById('th-labels');
-  const tip = document.getElementById('th-tip');
-  const loading = document.getElementById('th-loading');
-  let renderer;
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  } catch (e) {
-    // No WebGL: the poster stays, and the chips and the card still work.
-    stage.classList.add('no-gl');
-    loading.hidden = true;
-    return null;
+fetch(`${BASE}data/index/hero.json`).then((r) => r.json()).then((data) => {
+  H = data;
+  resolveItems();
+  go([]);
+  const conn = navigator.connection;
+  if (conn && (conn.saveData || /(^|-)2g$|^3g$/.test(conn.effectiveType || ''))) {
+    loadingEl.innerHTML = `<button type="button" class="btn">Load the 3D model (${MODEL_MB} MB)</button>`;
+    loadingEl.querySelector('button').addEventListener('click', startHero, { once: true });
+  } else {
+    const idle = () => (window.requestIdleCallback ? requestIdleCallback(startHero, { timeout: 1500 }) : setTimeout(startHero, 200));
+    if (document.readyState === 'complete') idle(); else addEventListener('load', idle, { once: true });
   }
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  const scene = new THREE.Scene();
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  const camera = new THREE.PerspectiveCamera(30, 1, 0.02, 30);
-  const home = { target: new THREE.Vector3(0, -0.07, 0.03), dir: new THREE.Vector3(1.0, 0.5, 1.25).normalize(), dist: 2.6 };
-  camera.position.copy(home.target).addScaledVector(home.dir, home.dist);
-  const controls = new OrbitControls(camera, canvas);
-  // OrbitControls sets touch-action: none inline, which would trap vertical swipes on the first screen of the site.
-  // pan-y lets the page scroll; sideways drags still turn the model and taps still pick parts.
-  canvas.style.touchAction = 'pan-y';
-  controls.target.copy(home.target);
-  controls.enableDamping = true;
-  controls.enablePan = false;
-  controls.enableZoom = false; // the page scrolls with the wheel; pinch would fight the page on phones
-  controls.autoRotate = !reduced;
-  controls.autoRotateSpeed = 0.7;
-  controls.update();
-  let touched = false;
-  controls.addEventListener('start', () => { touched = true; controls.autoRotate = false; });
-
-  scene.add(new THREE.HemisphereLight(0xf7fbfc, 0x7f9ea8, 1.15));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-  sun.position.set(2, 4, 3);
-  scene.add(sun);
-  const fill = new THREE.DirectionalLight(0xffffff, 0.45);
-  fill.position.set(-3, -1, -2);
-  scene.add(fill);
-
-  const GHOST = new THREE.Color('#bfd0d4');
-  const model = new THREE.Group();
-  scene.add(model);
-  const groups = new Map(SYSTEMS.map((s) => [s.id, { ...s, meshes: [] }]));
-  const hullMeshes = [];
-  const key = (n) => String(n || '').replace(/[^A-Za-z0-9-]/g, '_');
-  const owner = (name, x) => {
-    const k = key(name);
-    if (k === 'hull') return 'hull';
-    return SYSTEMS.find((s) => s.nodes.some((n) => (n === 'thruster' ? k.startsWith('thruster_') : key(n) === k)) && (!s.side || Math.sign(x) === s.side))?.id;
-  };
-  const splitByX = (geo) => {
-    const g = geo.index ? geo.toNonIndexed() : geo;
-    const pos = g.attributes.position.array;
-    const out = { 1: [], '-1': [] };
-    for (let i = 0; i < pos.length; i += 9) {
-      const cx = (pos[i] + pos[i + 3] + pos[i + 6]) / 3;
-      const dst = out[cx >= 0 ? 1 : -1];
-      for (let k = 0; k < 9; k++) dst.push(pos[i + k]);
-    }
-    return [1, -1].map((s) => {
-      const b = new THREE.BufferGeometry();
-      b.setAttribute('position', new THREE.Float32BufferAttribute(out[s], 3));
-      return [s, b];
-    });
-  };
-
-  // Dots: HTML buttons placed over the model every frame.
-  const dots = SYSTEMS.map((s) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'th-dot';
-    b.style.setProperty('--c', s.color);
-    b.innerHTML = `<span>${s.name}</span>`;
-    b.setAttribute('aria-label', s.name);
-    b.addEventListener('click', (e) => { e.stopPropagation(); pickHero(heroSel === s.id ? null : s.id); });
-    b.addEventListener('pointerdown', (e) => e.stopPropagation());
-    labelHost.appendChild(b);
-    return { el: b, s, pos: new THREE.Vector3(...s.anchor) };
-  });
-
-  let selected = null, loaded = false;
-  function applyLook() {
-    for (const [id, g] of groups) {
-      if (id === 'hull') continue; // glass: handled below
-      const on = !selected || selected === id;
-      g.meshes.forEach((m) => {
-        m.material.color.copy(on ? m.userData.color : GHOST);
-        const op = on ? 1 : 0.2;
-        m.material.opacity = op;
-        m.material.transparent = op < 1;
-        m.material.depthWrite = op >= 1;
-      });
-    }
-    // The hull is glass, a little clearer when something inside is picked.
-    hullMeshes.forEach((m) => {
-      const on = selected === 'hull';
-      m.material.color.copy(on || !selected ? m.userData.color : GHOST);
-      m.material.opacity = on ? 0.55 : selected ? 0.1 : 0.26;
-    });
-    dots.forEach((d) => {
-      d.el.classList.toggle('on', d.s.id === selected);
-      d.el.classList.toggle('dim', !!selected && d.s.id !== selected);
-    });
-  }
-
-  new GLTFLoader().load(`${BASE}models/talos-cad.glb`, (gltf) => {
-    gltf.scene.updateMatrixWorld(true);
-    gltf.scene.traverse((o) => {
-      if (!o.isMesh) return;
-      const name = o.name || o.parent?.name;
-      const c0 = o.material.color, color = new THREE.Color().setRGB(c0.r, c0.g, c0.b, THREE.SRGBColorSpace);
-      const world = o.geometry.clone().applyMatrix4(o.matrixWorld);
-      const isElec = key(name) === 'electronics' || key(o.parent?.name) === 'electronics';
-      const parts = isElec ? splitByX(world) : [[0, world]];
-      parts.forEach(([side, geo]) => {
-        const id = owner(isElec ? 'electronics' : name, side || 1) || owner(o.parent?.name, side || 1);
-        const isHull = id === 'hull';
-        const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.1, roughness: isHull ? 0.15 : 0.6, envMap, envMapIntensity: isHull ? 0.8 : 0.35, side: THREE.DoubleSide, transparent: isHull, opacity: isHull ? 0.26 : 1, depthWrite: !isHull });
-        const mesh = new THREE.Mesh(toCreasedNormals(geo, (35 * Math.PI) / 180), mat);
-        mesh.userData = { id, color };
-        if (isHull) { mesh.renderOrder = 5; hullMeshes.push(mesh); }
-        if (id && groups.has(id)) groups.get(id).meshes.push(mesh);
-        model.add(mesh);
-      });
-    });
-    // Each dot sits on its system: the anchor, or the centre of the split half for the two cages.
-    dots.forEach((d) => {
-      const g = groups.get(d.s.id);
-      if (!d.s.side || !g.meshes.length) return;
-      const box = new THREE.Box3();
-      g.meshes.forEach((m) => { m.geometry.computeBoundingBox(); box.union(m.geometry.boundingBox); });
-      box.getCenter(d.pos);
-    });
-    loaded = true;
-    loading.hidden = true;
-    stage.classList.add('ready');
-    applyLook();
-  }, undefined, () => { loading.textContent = 'The 3D model did not load.'; });
-
-  // Picking: a tap (not a drag) selects what's under the finger; the glass hull only if nothing is behind it.
-  const ray = new THREE.Raycaster();
-  const ndc = (e) => {
-    const r = canvas.getBoundingClientRect();
-    return new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
-  };
-  function hit(e) {
-    if (!loaded) return null;
-    ray.setFromCamera(ndc(e), camera);
-    const hits = ray.intersectObjects(model.children, false);
-    const solid = hits.find((h) => h.object.userData.id && h.object.userData.id !== 'hull');
-    return solid?.object.userData.id || hits[0]?.object.userData.id || null;
-  }
-  let down = null;
-  canvas.addEventListener('pointerdown', (e) => (down = { x: e.clientX, y: e.clientY, t: performance.now() }));
-  canvas.addEventListener('pointerup', (e) => {
-    if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 || performance.now() - down.t > 700) return;
-    const id = hit(e);
-    pickHero(id && id === heroSel ? null : id);
-  });
-  let hoverEv = null;
-  canvas.addEventListener('pointermove', (e) => {
-    if (e.pointerType !== 'mouse' || e.buttons) { tip.hidden = true; return; }
-    hoverEv = e;
-  });
-  canvas.addEventListener('pointerleave', () => { tip.hidden = true; hoverEv = null; canvas.style.cursor = ''; });
-  function doHover() {
-    const e = hoverEv;
-    hoverEv = null;
-    const id = hit(e);
-    const s = id && SYSTEMS.find((x) => x.id === id);
-    canvas.style.cursor = s ? 'pointer' : '';
-    if (!s) { tip.hidden = true; return; }
-    const r = stage.getBoundingClientRect();
-    tip.textContent = s.name;
-    tip.hidden = false;
-    tip.style.transform = `translate(${e.clientX - r.left + 14}px, ${e.clientY - r.top - 12}px)`;
-  }
-
-  // On a wide screen the copy sits on the left: draw the robot right of centre.
-  let wide = false;
-  function resize() {
-    const w = canvas.clientWidth, h = canvas.clientHeight;
-    if (!w || !h) return;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    wide = w > 900;
-    if (wide) camera.setViewOffset(w, h, -w * 0.2, h * 0.03, w, h);
-    else camera.clearViewOffset();
-    camera.updateProjectionMatrix();
-    if (!touched) {
-      // Fit the robot across narrow views (vertical fov is fixed; a tall view needs more distance).
-      const dist = home.dist * Math.max(1, 1.05 / Math.max(camera.aspect, 0.4)) * (wide ? 1 : 0.92);
-      const dir = camera.position.clone().sub(controls.target).normalize();
-      camera.position.copy(controls.target).addScaledVector(dir, dist);
-    }
-  }
-  new ResizeObserver(resize).observe(canvas);
-  resize();
-
-  const tmp = new THREE.Vector3();
-  function place(d, w, h) {
-    tmp.copy(d.pos).project(camera);
-    const x = ((tmp.x + 1) / 2) * w, y = ((1 - tmp.y) / 2) * h;
-    const off = tmp.z > 1 || x < 8 || x > w - 8 || y < 8 || y > h - 8;
-    d.el.style.visibility = off || !loaded ? 'hidden' : '';
-    d.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-7px, -50%)`;
-  }
-  const goal = home.target.clone();
-  let visible = true;
-  new IntersectionObserver(([en]) => (visible = en.isIntersecting)).observe(canvas);
-  renderer.setAnimationLoop(() => {
-    if (!visible) return;
-    controls.target.lerp(goal, 0.08);
-    controls.update();
-    renderer.render(scene, camera);
-    if (hoverEv) doHover();
-    const w = canvas.clientWidth, h = canvas.clientHeight;
-    dots.forEach((d) => place(d, w, h));
-  });
-
-  return {
-    select(id) {
-      selected = id || null;
-      const d = dots.find((x) => x.s.id === selected);
-      // Ease the view a little toward the picked system, not all the way (it should stay the whole robot).
-      if (d) goal.copy(home.target).lerp(d.pos, 0.4); else goal.copy(home.target);
-      if (selected) { controls.autoRotate = false; }
-      if (loaded) applyLook();
-    },
-  };
-}
+});
 
 // ============================================================================ the whole stack
 // Nodes of the stack diagram. Desktop: a loop, data up the left, commands down the right. Phones: a list of layers.

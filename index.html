@@ -9,21 +9,22 @@
 </head>
 <body>
 <main>
-  <section class="hero talos-hero" aria-label="Talos in 3D, from the team's CAD">
+  <section class="hero talos-hero" id="th" aria-label="Talos in 3D, from the team's CAD">
     <div class="th-stage" id="th-stage">
-      <img class="th-poster" id="th-poster" src="/img/index/hero-poster.webp" alt="" width="704" height="720" decoding="async">
-      <canvas id="th-canvas" aria-label="3D model of Talos, coloured by system. Drag to turn it; tap a part to read about it."></canvas>
+      <img class="th-poster" id="th-poster" src="/img/index/hero-poster.webp" alt="Talos, drawn from the team's CAD: an open aluminium frame with eight thrusters around two clear hull tubes" width="760" height="787" decoding="async">
+      <canvas id="th-canvas" aria-label="3D model of Talos from the team's CAD. Drag to turn it; tap a part to read about it."></canvas>
       <div class="th-labels" id="th-labels"></div>
       <div class="th-tip" id="th-tip" hidden></div>
-      <div class="th-loading" id="th-loading">Loading the 3D model…</div>
+      <div class="th-loading" id="th-loading" role="status"><span>Loading the 3D model…</span></div>
     </div>
     <div class="copy">
       <h1>How Talos works</h1>
       <p class="sub">The Ohio State AUV, explained end to end</p>
-      <p>Talos is the Underwater Robotics Team's competition submarine. Once its kill switch goes in, it swims the RoboSub course alone. This site explains all of it, from the frame to the code. Tap a part to start there.</p>
+      <p class="th-intro">Talos is the Underwater Robotics Team's competition submarine. Once its kill switch goes in, it swims the RoboSub course alone. This site explains all of it, from the frame to the code. Tap a part to start there.</p>
     </div>
     <div class="dock">
-      <div class="th-chips" id="th-chips" role="group" aria-label="Parts of Talos"></div>
+      <nav class="th-crumbs" id="th-crumbs" aria-label="Where you are in the model" hidden></nav>
+      <div class="th-chips" id="th-chips" role="group" aria-label="Systems"></div>
       <div class="th-card" id="th-card" aria-live="polite"></div>
     </div>
   </section>

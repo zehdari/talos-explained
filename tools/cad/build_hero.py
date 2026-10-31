@@ -24,7 +24,7 @@ sys.path.insert(0, here)
 import tessread  # noqa: E402
 from hero_nodes import node_of, system_of, FASTENER  # noqa: E402
 
-TOTAL = int(os.environ.get('HERO_TRIS', 1_150_000))
+TOTAL = int(os.environ.get('HERO_TRIS', 1_000_000))
 CREASE = 32.0
 out_glb, out_json, *dirs = sys.argv[1:]
 rows = {}
